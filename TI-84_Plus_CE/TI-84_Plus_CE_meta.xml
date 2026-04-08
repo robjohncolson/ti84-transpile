@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <identifier>TI-84_Plus_CE</identifier>
+  <mediatype>software</mediatype>
+  <collection>open_source_software</collection>
+  <creator>Texas Instruments</creator>
+  <date>2024-12-16</date>
+  <description>ROM dump of a TI-84Pplus CE for use with CEmu (not Cemu). files from calculator (8xv) and file used to create them (8xp) also included. The actual ROM file is ROM.rom</description>
+  <subject>rom; Ti 84 plus ce; ti 84 plus ce dump; dump; ti 84 plus ce rom</subject>
+  <title>TI-84 Plus CE ROM</title>
+  <uploader>edartian29@gmail.com</uploader>
+  <publicdate>2024-12-17 02:09:46</publicdate>
+  <addeddate>2024-12-17 02:09:46</addeddate>
+  <curation>[curator]validator@archive.org[/curator][date]20241217021715[/date][comment]checked for malware[/comment]</curation>
+  <year>2024</year>
+<filesxml>Sun Apr 5 14:01:40 UTC 2026</filesxml></metadata>
