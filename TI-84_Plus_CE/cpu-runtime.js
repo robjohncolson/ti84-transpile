@@ -815,6 +815,36 @@ export function createExecutor(blocks, memory, options = {}) {
         }
 
         if (result < 0) {
+          if (result === -1 && opts.wakeFromHalt) {
+            const haltPc = pc;
+            // HALT returns from the lifted block, so approximate the post-HALT PC.
+            const haltReturnPc = haltPc + 1;
+            cpu.halted = false;
+
+            if (typeof opts.wakeFromHalt === 'object') {
+              cpu.push(opts.wakeFromHalt.returnPc ?? haltReturnPc);
+              pc = opts.wakeFromHalt.vector;
+              mode = opts.wakeFromHalt.mode ?? mode;
+            } else if (opts.wakeFromHalt === 'nmi') {
+              cpu.push(haltReturnPc);
+              pc = 0x000066;
+            } else {
+              cpu.push(haltReturnPc);
+              cpu.iff1 = 1;
+              cpu.iff2 = 1;
+              pc = 0x000038;
+            }
+
+            opts.wakeFromHalt = null;
+
+            if (opts.onWake) {
+              opts.onWake(haltPc, pc, mode);
+            }
+
+            steps++;
+            continue;
+          }
+
           termination = result === -1 ? 'halt' : 'sleep';
           break;
         }

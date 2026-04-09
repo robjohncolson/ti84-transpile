@@ -272,6 +272,86 @@ console.log(`\n  Entries reaching >100 steps: ${deepRuns.length}/${multiResults.
 console.log(`  Entries reaching HALT: ${haltRuns.length}`);
 console.log(`  Entries hitting missing blocks: ${missingRuns.length}`);
 
+// --- Test 6: Post-boot wake from HALT via NMI ---
+console.log('\n--- Post-Boot Wake Tests ---');
+
+// Reuse the shared executor — Tests 1-3 already ran the boot to HALT in 60 steps.
+// The CPU/peripheral state reflects a completed boot (hardware configured, SP set, IM 1).
+console.log(`  Using shared executor post-boot state:`);
+console.log(`  Post-boot SP: 0x${cpu.sp.toString(16).padStart(6, '0')}`);
+console.log(`  Post-boot IM: ${cpu.im}, IFF1: ${cpu.iff1}`);
+
+// NMI pushes the return address (PC after HALT = 0x0019b6) and jumps to 0x0066.
+cpu.halted = false;
+cpu.push(0x0019b6);
+ioLog.length = 0;
+
+const nmiDynamic = [];
+const test6 = executor.runFrom(0x000066, 'adl', {
+  maxSteps: 50000,
+  maxLoopIterations: 200,
+  onMissingBlock: (pc, mode, step) => {},
+  onDynamicTarget: (targetPc, mode, fromPc, step) => {
+    nmiDynamic.push({ targetPc, mode, fromPc });
+  },
+  onLoopBreak: (pc, mode, count, target) => {
+    console.log(`  [NMI] Loop break at 0x${pc.toString(16).padStart(6, '0')}:${mode}`);
+  },
+});
+
+console.log(`\n  Test 6 (NMI wake from 0x0066):`);
+console.log(`    Steps: ${test6.steps}, termination: ${test6.termination}`);
+console.log(`    Last PC: 0x${test6.lastPc.toString(16).padStart(6, '0')}:${test6.lastMode}`);
+console.log(`    I/O ops: ${ioLog.length}, loops forced: ${test6.loopsForced}`);
+console.log(`    Dynamic targets: ${nmiDynamic.length}`);
+if (test6.missingBlocks && test6.missingBlocks.length > 0) {
+  console.log(`    Missing blocks: ${test6.missingBlocks.length}`);
+  for (const key of test6.missingBlocks.slice(0, 10)) {
+    console.log(`      ${key}`);
+  }
+}
+
+// --- Test 7: Post-boot wake via IM 1 interrupt (simulate EI + IRQ) ---
+// Re-run boot on shared executor to get clean post-boot state for IM1 test
+cpu.a = 0; cpu.f = 0; cpu.b = 0; cpu.c = 0; cpu.d = 0; cpu.e = 0;
+cpu.h = 0; cpu.l = 0; cpu.sp = 0; cpu._ix = 0; cpu._iy = 0;
+cpu.i = 0; cpu.im = 0; cpu.iff1 = 0; cpu.iff2 = 0;
+cpu.madl = 1; cpu.halted = false;
+
+executor.runFrom(0x000000, 'z80', { maxSteps: 5000, maxLoopIterations: 32 });
+
+// Simulate: EI then IM 1 interrupt fires.
+cpu.halted = false;
+cpu.iff1 = 1;
+cpu.iff2 = 1;
+cpu.push(0x0019b6);
+ioLog.length = 0;
+
+const im1Dynamic = [];
+const test7 = executor.runFrom(0x000038, 'adl', {
+  maxSteps: 50000,
+  maxLoopIterations: 200,
+  onMissingBlock: (pc, mode, step) => {},
+  onDynamicTarget: (targetPc, mode, fromPc, step) => {
+    im1Dynamic.push({ targetPc, mode, fromPc });
+  },
+  onLoopBreak: (pc, mode, count, target) => {
+    console.log(`  [IM1] Loop break at 0x${pc.toString(16).padStart(6, '0')}:${mode}`);
+  },
+});
+
+console.log(`\n  Test 7 (IM1 wake from 0x0038):`);
+console.log(`    Steps: ${test7.steps}, termination: ${test7.termination}`);
+console.log(`    Last PC: 0x${test7.lastPc.toString(16).padStart(6, '0')}:${test7.lastMode}`);
+console.log(`    I/O ops: ${ioLog.length}, loops forced: ${test7.loopsForced}`);
+console.log(`    Dynamic targets: ${im1Dynamic.length}`);
+if (test7.missingBlocks && test7.missingBlocks.length > 0) {
+  console.log(`    Missing blocks: ${test7.missingBlocks.length}`);
+  for (const key of test7.missingBlocks.slice(0, 10)) {
+    console.log(`      ${key}`);
+  }
+}
+
 // --- Summary ---
 console.log(`\n${'='.repeat(60)}`);
 console.log('SUMMARY');
@@ -281,6 +361,8 @@ console.log(`  Test 2 (startup):       ${test2.steps} steps, terminated: ${test2
 console.log(`  Test 3 (extended):      ${test3.steps} steps, terminated: ${test3.termination}`);
 console.log(`  Test 4 (peripheral):   ${test4.steps} steps, terminated: ${test4.termination}, loops forced: ${test4.loopsForced}`);
 console.log(`  Test 5 (multi-entry):  ${multiResults.length} entry points tested, ${deepRuns.length} reached >100 steps`);
+console.log(`  Test 6 (NMI wake):     ${test6.steps} steps, terminated: ${test6.termination}, dynamic: ${nmiDynamic.length}`);
+console.log(`  Test 7 (IM1 wake):     ${test7.steps} steps, terminated: ${test7.termination}, dynamic: ${im1Dynamic.length}`);
 
 // --- Compilation stats ---
 const totalBlocks = Object.keys(PRELIFTED_BLOCKS).length;
@@ -336,6 +418,18 @@ for (const r of multiResults) {
       allDynamic.add('0x' + d.targetPc.toString(16).padStart(6, '0') + ':' + d.mode);
     }
   }
+}
+for (const d of nmiDynamic) {
+  allDynamic.add('0x' + d.targetPc.toString(16).padStart(6, '0') + ':' + d.mode);
+}
+for (const d of im1Dynamic) {
+  allDynamic.add('0x' + d.targetPc.toString(16).padStart(6, '0') + ':' + d.mode);
+}
+if (test6.missingBlocks) {
+  for (const key of test6.missingBlocks) allMissing.add(key);
+}
+if (test7.missingBlocks) {
+  for (const key of test7.missingBlocks) allMissing.add(key);
 }
 
 if (allDynamic.size > 0) {
