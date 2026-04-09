@@ -578,9 +578,12 @@ function manualEdInstruction(startPc, pc, op1, prefix, mode) {
 function controlFlowInstruction(startPc, pc, op0, prefix, mode) {
   const effectiveImmBytes = prefix ? prefix.immBytes : mode === 'adl' ? 3 : 2;
   const modeAfterControl = prefix ? prefix.mode : mode;
+  const hasDuplicatedIndexPrefix = op0 === 0xdd || op0 === 0xfd;
+  const controlOpcode = hasDuplicatedIndexPrefix ? romBytes[pc + 1] : op0;
+  const controlPc = hasDuplicatedIndexPrefix ? pc + 1 : pc;
 
-  if (op0 === 0x18) {
-    const target = wrap24(startPc + (pc - startPc) + 2 + signedByte(romBytes[pc + 1] ?? 0));
+  if (controlOpcode === 0x18) {
+    const target = wrap24(startPc + (controlPc - startPc) + 2 + signedByte(romBytes[controlPc + 1] ?? 0));
 
     return {
       tag: 'jr',
@@ -588,31 +591,31 @@ function controlFlowInstruction(startPc, pc, op0, prefix, mode) {
       kind: 'jump',
       target,
       targetMode: modeAfterControl,
-      length: pc + 2 - startPc,
+      length: controlPc + 2 - startPc,
       nextMode: mode,
       terminates: true,
     };
   }
 
-  if ([0x20, 0x28, 0x30, 0x38].includes(op0)) {
-    const target = wrap24(startPc + (pc - startPc) + 2 + signedByte(romBytes[pc + 1] ?? 0));
+  if ([0x20, 0x28, 0x30, 0x38].includes(controlOpcode)) {
+    const target = wrap24(startPc + (controlPc - startPc) + 2 + signedByte(romBytes[controlPc + 1] ?? 0));
 
     return {
       tag: 'jr-conditional',
-      dasm: `jr ${conditionNames[op0]}, ${hex(target, 6)}`,
+      dasm: `jr ${conditionNames[controlOpcode]}, ${hex(target, 6)}`,
       kind: 'branch',
-      condition: conditionNames[op0],
+      condition: conditionNames[controlOpcode],
       target,
       targetMode: modeAfterControl,
-      fallthrough: wrap24(startPc + (pc - startPc) + 2),
-      length: pc + 2 - startPc,
+      fallthrough: wrap24(startPc + (controlPc - startPc) + 2),
+      length: controlPc + 2 - startPc,
       nextMode: mode,
       terminates: true,
     };
   }
 
-  if (op0 === 0x10) {
-    const target = wrap24(startPc + (pc - startPc) + 2 + signedByte(romBytes[pc + 1] ?? 0));
+  if (controlOpcode === 0x10) {
+    const target = wrap24(startPc + (controlPc - startPc) + 2 + signedByte(romBytes[controlPc + 1] ?? 0));
 
     return {
       tag: 'djnz',
@@ -621,15 +624,15 @@ function controlFlowInstruction(startPc, pc, op0, prefix, mode) {
       condition: 'djnz',
       target,
       targetMode: modeAfterControl,
-      fallthrough: wrap24(startPc + (pc - startPc) + 2),
-      length: pc + 2 - startPc,
+      fallthrough: wrap24(startPc + (controlPc - startPc) + 2),
+      length: controlPc + 2 - startPc,
       nextMode: mode,
       terminates: true,
     };
   }
 
-  if (op0 === 0xc3) {
-    const target = readLE(pc + 1, effectiveImmBytes);
+  if (controlOpcode === 0xc3) {
+    const target = readLE(controlPc + 1, effectiveImmBytes);
 
     return {
       tag: 'jp',
@@ -637,21 +640,21 @@ function controlFlowInstruction(startPc, pc, op0, prefix, mode) {
       kind: 'jump',
       target,
       targetMode: modeAfterControl,
-      length: pc + 1 + effectiveImmBytes - startPc,
+      length: controlPc + 1 + effectiveImmBytes - startPc,
       nextMode: mode,
       terminates: true,
     };
   }
 
-  if ([0xc2, 0xca, 0xd2, 0xda, 0xe2, 0xea, 0xf2, 0xfa].includes(op0)) {
-    const target = readLE(pc + 1, effectiveImmBytes);
-    const length = pc + 1 + effectiveImmBytes - startPc;
+  if ([0xc2, 0xca, 0xd2, 0xda, 0xe2, 0xea, 0xf2, 0xfa].includes(controlOpcode)) {
+    const target = readLE(controlPc + 1, effectiveImmBytes);
+    const length = controlPc + 1 + effectiveImmBytes - startPc;
 
     return {
       tag: 'jp-conditional',
-      dasm: `jp ${conditionNames[op0]}, ${hex(target, effectiveImmBytes * 2)}`,
+      dasm: `jp ${conditionNames[controlOpcode]}, ${hex(target, effectiveImmBytes * 2)}`,
       kind: 'branch',
-      condition: conditionNames[op0],
+      condition: conditionNames[controlOpcode],
       target,
       targetMode: modeAfterControl,
       fallthrough: wrap24(startPc + length),
@@ -661,8 +664,9 @@ function controlFlowInstruction(startPc, pc, op0, prefix, mode) {
     };
   }
 
-  if (op0 === 0xcd) {
-    const target = readLE(pc + 1, effectiveImmBytes);
+  if (controlOpcode === 0xcd) {
+    const target = readLE(controlPc + 1, effectiveImmBytes);
+    const length = controlPc + 1 + effectiveImmBytes - startPc;
 
     return {
       tag: 'call',
@@ -670,21 +674,21 @@ function controlFlowInstruction(startPc, pc, op0, prefix, mode) {
       kind: 'call',
       target,
       targetMode: modeAfterControl,
-      fallthrough: wrap24(startPc + (pc + 1 + effectiveImmBytes - startPc)),
-      length: pc + 1 + effectiveImmBytes - startPc,
+      fallthrough: wrap24(startPc + length),
+      length,
       nextMode: mode,
     };
   }
 
-  if ([0xc4, 0xcc, 0xd4, 0xdc, 0xe4, 0xec, 0xf4, 0xfc].includes(op0)) {
-    const target = readLE(pc + 1, effectiveImmBytes);
-    const length = pc + 1 + effectiveImmBytes - startPc;
+  if ([0xc4, 0xcc, 0xd4, 0xdc, 0xe4, 0xec, 0xf4, 0xfc].includes(controlOpcode)) {
+    const target = readLE(controlPc + 1, effectiveImmBytes);
+    const length = controlPc + 1 + effectiveImmBytes - startPc;
 
     return {
       tag: 'call-conditional',
-      dasm: `call ${conditionNames[op0]}, ${hex(target, effectiveImmBytes * 2)}`,
+      dasm: `call ${conditionNames[controlOpcode]}, ${hex(target, effectiveImmBytes * 2)}`,
       kind: 'call',
-      condition: conditionNames[op0],
+      condition: conditionNames[controlOpcode],
       target,
       targetMode: modeAfterControl,
       fallthrough: wrap24(startPc + length),
@@ -693,8 +697,8 @@ function controlFlowInstruction(startPc, pc, op0, prefix, mode) {
     };
   }
 
-  if ([0xc7, 0xcf, 0xd7, 0xdf, 0xe7, 0xef, 0xf7, 0xff].includes(op0)) {
-    const target = op0 & 0x38;
+  if ([0xc7, 0xcf, 0xd7, 0xdf, 0xe7, 0xef, 0xf7, 0xff].includes(controlOpcode)) {
+    const target = controlOpcode & 0x38;
 
     return {
       tag: 'rst',
@@ -702,18 +706,18 @@ function controlFlowInstruction(startPc, pc, op0, prefix, mode) {
       kind: 'jump',
       target,
       targetMode: modeAfterControl,
-      length: pc + 1 - startPc,
+      length: controlPc + 1 - startPc,
       nextMode: mode,
       terminates: true,
     };
   }
 
-  if (op0 === 0xc9) {
+  if (controlOpcode === 0xc9) {
     return {
       tag: 'ret',
       dasm: 'ret',
       kind: 'return',
-      length: pc + 1 - startPc,
+      length: controlPc + 1 - startPc,
       nextMode: mode,
       terminates: true,
     };
@@ -730,22 +734,22 @@ function controlFlowInstruction(startPc, pc, op0, prefix, mode) {
     };
   }
 
-  if ([0xc0, 0xc8, 0xd0, 0xd8, 0xe0, 0xe8, 0xf0, 0xf8].includes(op0)) {
+  if ([0xc0, 0xc8, 0xd0, 0xd8, 0xe0, 0xe8, 0xf0, 0xf8].includes(controlOpcode)) {
     return {
       tag: 'ret-conditional',
-      dasm: `ret ${conditionNames[op0]}`,
+      dasm: `ret ${conditionNames[controlOpcode]}`,
       kind: 'return-conditional',
-      condition: conditionNames[op0],
-      fallthrough: wrap24(startPc + (pc + 1 - startPc)),
-      length: pc + 1 - startPc,
+      condition: conditionNames[controlOpcode],
+      fallthrough: wrap24(startPc + (controlPc + 1 - startPc)),
+      length: controlPc + 1 - startPc,
       nextMode: mode,
       terminates: true,
     };
   }
 
-  if (op0 === 0xe9 || (op0 === 0xdd && romBytes[pc + 1] === 0xe9) || (op0 === 0xfd && romBytes[pc + 1] === 0xe9)) {
-    const indirectTarget = op0 === 0xe9 ? 'hl' : op0 === 0xdd ? 'ix' : 'iy';
-    const length = op0 === 0xe9 ? pc + 1 - startPc : pc + 2 - startPc;
+  if (controlOpcode === 0xe9) {
+    const indirectTarget = !hasDuplicatedIndexPrefix ? 'hl' : op0 === 0xdd ? 'ix' : 'iy';
+    const length = controlPc + 1 - startPc;
 
     return {
       tag: 'jp-indirect',
@@ -758,12 +762,12 @@ function controlFlowInstruction(startPc, pc, op0, prefix, mode) {
     };
   }
 
-  if (op0 === 0x76) {
+  if (controlOpcode === 0x76) {
     return {
       tag: 'halt',
       dasm: 'halt',
       kind: 'halt',
-      length: pc + 1 - startPc,
+      length: controlPc + 1 - startPc,
       nextMode: mode,
       terminates: true,
     };
@@ -1143,12 +1147,20 @@ function emitInstructionJs(instruction) {
     return ['cpu.ldir();'];
   }
 
+  if (mnemonic === 'lddr') {
+    return ['cpu.lddr();'];
+  }
+
   if (mnemonic === 'cpir') {
     return ['cpu.cpir();'];
   }
 
   if (mnemonic === 'cpi') {
     return ['cpu.cpi();'];
+  }
+
+  if (mnemonic === 'neg') {
+    return ['cpu.a = cpu.negate(cpu.a);'];
   }
 
   const simpleAssign = /^ld(?:\.[a-z]+)? ([abcdehl]|ixh|ixl|iyh|iyl|bc|de|hl|sp|ix|iy), (0x[0-9a-f]+)$/i.exec(mnemonic);
@@ -1235,25 +1247,25 @@ function emitInstructionJs(instruction) {
     return [`cpu.a &= ~${hex(1 << Number.parseInt(bitReset[1], 10))};`];
   }
 
-  const pushWord = /^push (af|bc|de|hl|ix|iy)$/i.exec(mnemonic);
+  const pushWord = /^push(?:\.[a-z]+)? (af|bc|de|hl|ix|iy)$/i.exec(mnemonic);
 
   if (pushWord) {
     return [`cpu.push(cpu.${pushWord[1].toLowerCase()});`];
   }
 
-  const popWord = /^pop (af|bc|de|hl|ix|iy)$/i.exec(mnemonic);
+  const popWord = /^pop(?:\.[a-z]+)? (af|bc|de|hl|ix|iy)$/i.exec(mnemonic);
 
   if (popWord) {
     return [`cpu.${popWord[1].toLowerCase()} = cpu.pop();`];
   }
 
-  const incrementWord = /^inc (bc|de|hl|sp|ix|iy)$/i.exec(mnemonic);
+  const incrementWord = /^inc(?:\.[a-z]+)? (bc|de|hl|sp|ix|iy)$/i.exec(mnemonic);
 
   if (incrementWord) {
     return [`cpu.${incrementWord[1].toLowerCase()} = (cpu.${incrementWord[1].toLowerCase()} + 1) & cpu.addressMask;`];
   }
 
-  const decrementWord = /^dec (bc|de|hl|sp|ix|iy)$/i.exec(mnemonic);
+  const decrementWord = /^dec(?:\.[a-z]+)? (bc|de|hl|sp|ix|iy)$/i.exec(mnemonic);
 
   if (decrementWord) {
     return [`cpu.${decrementWord[1].toLowerCase()} = (cpu.${decrementWord[1].toLowerCase()} - 1) & cpu.addressMask;`];
@@ -1373,6 +1385,12 @@ function emitInstructionJs(instruction) {
     return ['cpu.a = cpu.ioRead(cpu.c);'];
   }
 
+  const inPortRegister = /^in ([bcdehl]), \(c\)$/i.exec(mnemonic);
+
+  if (inPortRegister) {
+    return [`cpu.${inPortRegister[1].toLowerCase()} = cpu.ioRead(cpu.c);`];
+  }
+
   const outPortRegister = /^out \(c\), ([abcdehl])$/i.exec(mnemonic);
 
   if (outPortRegister) {
@@ -1393,10 +1411,16 @@ function emitInstructionJs(instruction) {
     return [`cpu.sp = cpu.${loadSpFromRegister[1].toLowerCase()};`];
   }
 
-  const addWordRegisters = /^add (hl|ix|iy), (bc|de|hl|sp|ix|iy)$/i.exec(mnemonic);
+  const addWordRegisters = /^add(?:\.[a-z]+)? (hl|ix|iy), (bc|de|hl|sp|ix|iy)$/i.exec(mnemonic);
 
   if (addWordRegisters) {
     return [`cpu.${addWordRegisters[1].toLowerCase()} = cpu.addWord(cpu.${addWordRegisters[1].toLowerCase()}, cpu.${addWordRegisters[2].toLowerCase()});`];
+  }
+
+  const adcWordRegisters = /^adc hl, (bc|de|hl|sp)$/i.exec(mnemonic);
+
+  if (adcWordRegisters) {
+    return [`cpu.hl = cpu.addWithCarryWord(cpu.hl, cpu.${adcWordRegisters[1].toLowerCase()});`];
   }
 
   const sbcWordRegisters = /^sbc(?:\.[a-z]+)? (hl|ix|iy), (bc|de|hl|sp|ix|iy)$/i.exec(mnemonic);
@@ -1427,6 +1451,14 @@ function emitInstructionJs(instruction) {
 
   if (compareIndexed) {
     return [`cpu.compare(cpu.a, cpu.readIndexed8('${compareIndexed[1].toLowerCase()}', ${normalizeNumericLiteral(compareIndexed[2])}));`];
+  }
+
+  const incrementMalformedIndexed = /^inc (ix|iy)([+-](?:0x[0-9a-f]+|\$[0-9a-f]+|\d+))$/i.exec(mnemonic);
+
+  if (incrementMalformedIndexed) {
+    return [
+      `cpu.writeIndexed8('${incrementMalformedIndexed[1].toLowerCase()}', ${normalizeNumericLiteral(incrementMalformedIndexed[2])}, (cpu.readIndexed8('${incrementMalformedIndexed[1].toLowerCase()}', ${normalizeNumericLiteral(incrementMalformedIndexed[2])}) + 1) & 0xff);`,
+    ];
   }
 
   if (mnemonic === 'inc (hl)') {
@@ -1541,6 +1573,14 @@ function emitInstructionJs(instruction) {
 
   if (xorImmediate) {
     return [`cpu.a ^= ${xorImmediate[1].toLowerCase()};`, 'cpu.updateLogicFlags(cpu.a);'];
+  }
+
+  const jrPcRelative = /^jr pc([+-]\d+)$/i.exec(mnemonic);
+
+  if (jrPcRelative) {
+    const jrTarget = wrap24(instruction.pc + 2 + Number.parseInt(jrPcRelative[1], 10));
+
+    return [`return ${hex(jrTarget, 6)};`];
   }
 
   const orImmediate = /^or (0x[0-9a-f]+)$/i.exec(mnemonic);

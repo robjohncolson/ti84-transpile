@@ -1,8 +1,8 @@
 # Continuation Prompt — TI-84 Plus CE ROM Transpilation
 
-**Last updated**: 2026-04-09T13:05Z
+**Last updated**: 2026-04-09T13:15Z
 **Focus**: Continue the TI-84 Plus CE ROM to JavaScript transpilation effort
-**Current phase**: Phase 1 (generic emitter widening) is complete — stubs dropped from 46 to 19. The next phase is cleaning up ED-family, mixed-mode prefix, and remaining edge cases, then pushing reachable coverage beyond the current 2048-block frontier.
+**Current phase**: Phase 1 and Phase 2 are complete — ALL stubs eliminated (46 → 19 → 0). The next phase is pushing reachable coverage beyond the current 2048-block frontier.
 
 ---
 
@@ -20,6 +20,18 @@ Added 6 emitter families to `emitInstructionJs()`, eliminating 27 of 46 live stu
 - `set bit, register` (b/c/d/e/h/l)
 
 Also fixed Windows path resolution (`fileURLToPath` instead of raw `URL.pathname`).
+
+### Phase 2 — ED-family, Mixed-mode, and Edge Cases (complete)
+
+Eliminated all remaining 19 stubs:
+
+- `in r, (c)` for b/c/d/e/h/l registers
+- `adc hl, rr` word-ALU
+- `lddr` and `neg`
+- `.sil` prefix normalization on inc/dec/add/push/pop word patterns
+- Indexed increment malformed form (`inc ix-1` → proper indexed read-modify-write)
+- Duplicated-prefix control-flow decoding (`DD/FD` + `CD/C3/18` etc.)
+- Malformed `jr pc+N` branch text fallback
 
 ### Earlier work (previous sessions)
 
@@ -61,14 +73,14 @@ Generated module containing:
 
 ### `TI-84_Plus_CE/ROM.transpiled.report.json`
 
-Current metrics (after Phase 1):
+Current metrics (after Phase 2):
 
 - ROM size: `4194304`
 - Block count: `2048`
 - Covered bytes: `22033`
 - Coverage percent: `0.5253`
 - Seed count: `11`
-- Live stubs: `19` (down from `46`)
+- Live stubs: `0` (down from `46`)
 
 Historical baselines:
 
@@ -221,29 +233,9 @@ The biggest remaining gaps are now broader emitter and prefix-normalization issu
 
 ## Remaining `cpu.unimplemented(...)` Surface
 
-After Phase 1, the live stubs in `ROM.transpiled.js` are:
+After Phase 2, there are **zero** live `cpu.unimplemented()` stubs in `ROM.transpiled.js`.
 
-- `in e, (c)` × `3`
-- `inc ix-1` × `3`
-- `call 0x000138` × `2`
-- `call 0x0021c2` × `2`
-- `adc hl, hl` × `2`
-- `add.sil hl, bc` × `1`
-- `call 0x001c7c` × `1`
-- `dec.sil de` × `1`
-- `in d, (c)` × `1`
-- `jr pc+30` × `1`
-- `lddr` × `1`
-- `neg` × `1`
-
-Total live stubs: `19`
-
-Categories:
-- **ED-family I/O**: `in r, (c)` (4 stubs)
-- **ED-family ALU**: `adc hl, rr` (2), `neg` (1), `lddr` (1)
-- **Mixed-mode prefix**: `.sil` forms (2), malformed branch text (1)
-- **Indexed increment**: `inc ix-1` missing parens (3)
-- **Duplicated-prefix calls**: `call` stubs that are likely `fd cd` sequences (5)
+All 46 original stubs have been eliminated across two phases. The emitter now covers every instruction encountered within the 2048-block reachable frontier.
 
 ---
 
@@ -253,19 +245,9 @@ Categories:
 
 Completed. Stubs reduced from 46 to 19.
 
-### Phase 2: Clean mixed-mode and remaining ED edge cases
+### Phase 2: Clean mixed-mode and remaining ED edge cases — DONE ✓
 
-Good next moves:
-
-1. Add support for `in r, (c)`
-2. Add support for `adc hl, rr`
-3. Add support for `lddr`
-4. Add support for `neg`
-5. Normalize `.sil` and duplicated-prefix renderings such as `dec.sil de`, `add.sil hl, bc`, and prefixed `call` weirdness
-
-Goal:
-
-- make the deeper `2048`-block frontier less noisy and stop false malformed text from creating new stubs
+Completed. All stubs eliminated.
 
 ### Phase 3: Push beyond the current reachability frontier
 
@@ -302,20 +284,16 @@ This should support the emitted JS, not replace it.
 
 Continue with this exact objective:
 
-> Improve `scripts/transpile-ti84-rom.mjs` so that the generated `ROM.transpiled.js` removes the remaining `19` live `cpu.unimplemented(...)` cases at the `2048`-block frontier, then increase coverage beyond `2048` blocks / `0.5253%` without abandoning the byte-lift approach.
+> All stubs are eliminated at the 2048-block frontier. Raise the block cap to discover new reachable blocks, handle any new stubs that emerge, and push coverage well beyond `0.5253%`.
 
-Concrete first moves (Phase 2):
+Concrete first moves (Phase 3):
 
-1. Add emitter support for `in r, (c)` — 4 stubs
-2. Add emitter support for `adc hl, rr` — 2 stubs
-3. Add `lddr` — 1 stub
-4. Add `neg` — 1 stub
-5. Fix `.sil` prefix normalization so `dec.sil de` and `add.sil hl, bc` match existing regex handlers — 2 stubs
-6. Fix `inc ix-1` → should render as `inc (ix-1)` — 3 stubs
-7. Fix duplicated-prefix `call` sequences (likely `fd cd ...`) in control-flow decoder — 5 stubs
-8. Fix malformed branch text `jr pc+30` — 1 stub
-9. Regenerate and recount stubs
-10. If generation is still manageable, raise the block cap beyond 2048
+1. Raise `blockLimit` from `2048` to `4096` (or `8192` if generation completes in <30s)
+2. Regenerate and check for new `cpu.unimplemented()` stubs at the deeper frontier
+3. If new stubs appear, add emitter support for them
+4. Add additional seed entry points from reverse-engineering notes already in the repo
+5. Check whether any blocks are prematurely truncated by unsupported instructions
+6. Report the new block count, covered bytes, and coverage percent
 
 ---
 
