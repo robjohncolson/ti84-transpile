@@ -221,11 +221,15 @@ for (const ep of entryPoints) {
   ioLog.length = 0;
 
   const epMissing = [];
+  const epDynamic = [];
   const result = executor.runFrom(ep.addr, ep.mode, {
     maxSteps: 5000,
     maxLoopIterations: 64,
     onMissingBlock: (pc, mode, step) => {
       epMissing.push({ pc, mode, step });
+    },
+    onDynamicTarget: (targetPc, mode, fromPc, step) => {
+      epDynamic.push({ targetPc, mode, fromPc, step });
     },
   });
 
@@ -239,6 +243,7 @@ for (const ep of entryPoints) {
     loopsForced: result.loopsForced || 0,
     ioOps: ioLog.length,
     missingBlocksFound: epMissing,
+    dynamicTargets: epDynamic,
   });
 }
 
@@ -322,6 +327,36 @@ for (const key of sorted.slice(0, 20)) {
 }
 if (sorted.length > 20) {
   console.log(`    ... and ${sorted.length - 20} more`);
+}
+
+const allDynamic = new Set();
+for (const r of multiResults) {
+  if (r.dynamicTargets) {
+    for (const d of r.dynamicTargets) {
+      allDynamic.add('0x' + d.targetPc.toString(16).padStart(6, '0') + ':' + d.mode);
+    }
+  }
+}
+
+if (allDynamic.size > 0) {
+  console.log(`\n  Dynamic jump targets discovered: ${allDynamic.size}`);
+  const sortedDynamic = [...allDynamic].sort();
+  for (const key of sortedDynamic.slice(0, 30)) {
+    console.log(`    ${key}`);
+  }
+  if (sortedDynamic.length > 30) {
+    console.log(`    ... and ${sortedDynamic.length - 30} more`);
+  }
+}
+
+if (test4.blockVisits) {
+  const visits = Object.entries(test4.blockVisits)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 15);
+  console.log(`\n  Hot blocks (Test 4, top 15 by visit count):`);
+  for (const [key, count] of visits) {
+    console.log(`    ${key}: ${count} visits`);
+  }
 }
 
 console.log('\nDone.');

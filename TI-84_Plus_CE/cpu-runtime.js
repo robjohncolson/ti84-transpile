@@ -710,6 +710,8 @@ export function createExecutor(blocks, memory, options = {}) {
       let termination = 'max_steps';
       let loopsForced = 0;
       const missingBlocks = new Set();
+      const blockVisits = new Map();
+      const dynamicTargets = new Set();
 
       // Loop detection: track recent block keys in a small ring buffer
       const recentKeys = [];
@@ -798,11 +800,14 @@ export function createExecutor(blocks, memory, options = {}) {
             termination,
             error: err,
             loopsForced,
+            blockVisits: Object.fromEntries(blockVisits),
+            dynamicTargets: [...dynamicTargets],
             missingBlocks: [...missingBlocks],
           };
         }
 
         steps++;
+        blockVisits.set(key, (blockVisits.get(key) || 0) + 1);
 
         if (result === undefined || result === null) {
           termination = 'no_return';
@@ -812,6 +817,16 @@ export function createExecutor(blocks, memory, options = {}) {
         if (result < 0) {
           termination = result === -1 ? 'halt' : 'sleep';
           break;
+        }
+
+        if (meta && meta.exits) {
+          const isStaticExit = meta.exits.some((exit) => exit.target === result);
+          if (!isStaticExit && typeof result === 'number' && result >= 0) {
+            dynamicTargets.add(result);
+            if (opts.onDynamicTarget) {
+              opts.onDynamicTarget(result, mode, pc, steps);
+            }
+          }
         }
 
         // Resolve next mode from block exit metadata
@@ -826,6 +841,8 @@ export function createExecutor(blocks, memory, options = {}) {
         halted: cpu.halted,
         termination,
         loopsForced,
+        blockVisits: Object.fromEntries(blockVisits),
+        dynamicTargets: [...dynamicTargets],
         missingBlocks: [...missingBlocks],
       };
     },

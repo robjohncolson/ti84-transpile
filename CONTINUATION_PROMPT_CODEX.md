@@ -1,134 +1,102 @@
 # Continuation Prompt — TI-84 Plus CE ROM Transpilation
 
-**Last updated**: 2026-04-09T14:55Z
+**Last updated**: 2026-04-09T16:30Z
 **Focus**: Continue the TI-84 Plus CE ROM to JavaScript transpilation effort
-**Current phase**: Phases 1-6 complete. Coverage at 5.20% (32768 blocks). Reset vector executes to HALT (1308 steps). Call/return tracking works via stack-based approach.
+**Current phase**: Phases 1-10C complete. Coverage at 7.55% (50383 blocks, 30.22% of OS area). Reset vector executes to HALT (60 steps with peripherals). I/O peripheral model active. Multi-entry testing operational.
 
 ---
 
-## What Was Completed In This Session
+## What Was Completed In This Session (Phases 7-10C)
 
-### Phase 5 — Test Harness + Reset Vector Validation (complete)
+### Phase 7: I/O Peripheral Model (complete)
 
-Created `TI-84_Plus_CE/test-harness.mjs` and fixed `TI-84_Plus_CE/cpu-runtime.js`:
+**Created `TI-84_Plus_CE/peripherals.js`:**
+- Factory function `createPeripheralBus(options)` returns `{ read, write, register, getState }`
+- `register(portOrRange, handler)` — supports single port, array range, or object range
+- Unregistered ports return 0xFF (preserves legacy behavior)
+- Optional `trace` mode logs all I/O to console
 
-**cpu-runtime.js changes:**
-- `createExecutor()` rewritten: robust block compilation (body extraction via indexOf/lastIndexOf), block exit metadata tracking for mode resolution
-- Mode tracking: executor follows `targetMode` from block exits (z80 ↔ adl transitions work correctly)
-- I/O tracing hooks: `cpu.onIoRead(port, value)` and `cpu.onIoWrite(port, value)` called from all I/O methods
-- `onBlock` callback: `runFrom()` accepts `opts.onBlock(pc, mode, meta, step)` for execution tracing
-- Loop detector: ring buffer of recent block keys, force-breaks after `maxLoopIterations` (default 64) by advancing to fallthrough exit or setting carry flag
-- `call()` method updated: pushes argument to hardware stack (though emitted code now handles this directly)
-- Return value includes `loopsForced` count and `lastMode`
+**Built-in peripheral handlers:**
+- **PLL Controller (port 0x28)**: Returns 0x00 until configured (first write), then returns 0x00 for `pllDelay` reads (default 2), then returns 0x04 (bit 2 set = PLL locked). Repeated writes of the same config value do NOT reset the delay counter.
+- **CPU Control Register (port 0x00)**: Read/write register, default 0x00
+- **GPIO Port (port 0x03)**: Configurable read value (default 0xFF = no buttons), stores writes
+- **Flash Controller (port 0x06)**: Returns 0x00 (ready), stores writes
+- **Timer/Counter ports (0x10-0x18)**: Returns 0x00, stores writes
 
-**test-harness.mjs:**
-- 3 test runs: reset vector (500 steps), startup (1000 steps), extended (5000 steps)
-- Traces block entries, logs I/O ops, prints register state
-- Reports termination reason, missing blocks, loop breaks
+**Modified `TI-84_Plus_CE/cpu-runtime.js`:**
+- `createExecutor(blocks, memory, options = {})` — new third parameter
+- `options.peripherals` wired into `cpu._ioRead`/`cpu._ioWrite` BEFORE tracing hooks (so tracing still works)
+
+**Key finding — PLL loop is interrupt-driven:**
+- ROM code at 0x000697: `out0 (0x28), a` → `in0 a, (0x28)` → `bit 2, a` → `jr nc, 0x000690`
+- `bit 2, a` sets Z flag but NOT carry flag
+- `jr nc` checks carry — which is never modified in this loop
+- The loop is designed to exit via interrupt (NMI or timer), not via PLL register value
+- Force-breaker at `maxLoopIterations` remains the correct workaround until interrupt dispatch is implemented
+
+### Phase 8: Multi-Entry-Point Execution (complete)
+
+Added Test 5 to `test-harness.mjs` — 14 entry points tested without block trace (quiet mode):
+
+| Entry Point | Steps | Termination | Notes |
+|-------------|-------|-------------|-------|
+| RST 0x08-0x38 (7 handlers) | 4-13 | halt | All reach power-down at 0x0019b5 |
+| OS entry 0x020110 | 4 | halt | Power-down |
+| Mid-ROM 0x4000 | 2 | missing_block | Wild jump to 0x7eedf3 (uninitialized regs) |
+| Mid-ROM 0x21000 | 5000 | max_steps | Deep execution, reaches 0x08278d |
+| Post-vector 0x100 | 4 | missing_block | Wild jump to 0xc202fe |
+| ADL startup 0x658 | 5000 | max_steps | PLL loop (59 forced breaks) |
+| Region 0x800 | 5000 | max_steps | PLL loop |
+| Region 0x1afa | 5000 | max_steps | PLL loop |
+
+**Key: 8/14 reach HALT, 4 run to max_steps (3 PLL-stuck, 1 deep), 2 hit missing blocks.**
+
+### Phase 9A: Coverage Expansion (complete)
+
+- Block limit raised: 32768 → 65536
+- Added 30 new seed entry points:
+  - ISR handlers: 0x000040-0x000068 (6 entries)
+  - OS jump table: 0x020008-0x020040 (8 entries)
+  - Mid-ROM functions: 0x004100, 0x004200, 0x005000, 0x008000, 0x010000
+  - Graphics/display: 0x021100, 0x021200, 0x021400
+  - Upper ROM: 0x050000-0x0C0000 (5 entries)
+- Reachability exhausted at 50307 blocks (didn't hit 64K ceiling)
+- Coverage: 5.20% → 7.54%
+
+### Phase 10A: Missing Block Discovery (complete)
+
+**Modified executor `runFrom()` in cpu-runtime.js:**
+- `onMissingBlock(pc, mode, steps)` callback
+- Skip-ahead: when block is missing, tries pc+1 through pc+16 for next valid block
+- `missingBlocks` Set collected and returned with results
+- Discovery summary aggregates all missing blocks across all tests
+
+**Modified test-harness.mjs:**
+- All tests and multi-entry runs now collect `onMissingBlock` data
+- Discovery Summary section at the end reports unique missing addresses
+- Result: only 2 dynamic missing targets (0x7eedf3, 0xc202fe — both wild jumps)
+
+### Phase 10B: Coverage Gap Analysis (complete)
+
+**Created `TI-84_Plus_CE/coverage-analyzer.mjs`:**
+- Standalone analysis script, no dependencies
+- 16KB-region heatmap (non-zero regions only)
+- Top 20 uncovered gaps ranked by size
+- Suggested new seed entry points from largest OS-area gaps
+- Summary: gaps >1KB, gaps >10KB, OS vs data area coverage
 
 **Key findings:**
-- Mode switch at step 1: `000000:z80` → `000658:adl` (RSMIX + LIL-prefixed JP)
-- PLL init loop at `0x000690`↔`0x000697` polls port 0x28, exit condition is `jr nc` with carry never set — infinite without hardware. Loop breaker force-advances to `0x0006b3`
-- SP correctly initialized to `0xd1a87e`
-- I/O port configuration sequence: ports 0x00-0x28 (CPU control, flash, PLL, GPIO, timers)
+- OS area (0x000000-0x0FFFFF): **30.22% covered** (316,833 bytes)
+- Data area (0x100000+): **~0% covered** (27 bytes) — not code
+- Largest OS-area gaps: 0x0DCDC6-0x0FDD02 (135KB), 0x0C0001-0x0D2AFC (77KB)
+- 10 suggested seeds from gap analysis
 
-### Phase 5.3 — Emitter Fixes (complete)
+### Phase 10C: Feed-Forward Seeds (complete)
 
-**CALL instructions made block-terminating:**
-- Previously calls were non-terminating — `cpu.call(target)` was a side effect, block continued past
-- Now calls end the block: `cpu.push(returnAddress); return callTarget;`
-- Conditional calls: `if (condition) { cpu.push(ret); return target; } return fallthrough;`
-- `buildBlock()` adds `break` after call handling, emits `call-return` exit type
-- Dead code eliminated: check for `kind === 'call'` in fallthrough-append logic
-
-**Conditional return fallthrough fix:**
-- `ret c`, `ret z`, etc. previously had no fallthrough exit — reachability walker never discovered the block after the conditional return
-- Added fallthrough exit with target for `return-conditional` kind
-- Fixed reachability: block `0x001c82` (after `ret c` at `0x001c81`) now discovered
-
-**Block limit raised:** 16384 → 32768 to compensate for call-terminating blocks creating more, smaller blocks
-
-### Phase 6 — Extended Execution + Call/Return Tracking (complete)
-
-With call-terminating blocks, the stack-based approach handles call/return naturally:
-
-1. CALL block pushes return address, returns call target
-2. Executor follows call target (normal block-to-block execution)
-3. Subroutine eventually hits RET → pops return address from stack
-4. Executor continues at the return address
-
-**Results:**
-- Reset vector executes 1308 blocks to reach HALT at `0x0019b5`
-- HALT block: `di; ld a, 0x10; out0 (0x00), a; nop; nop; halt` — CPU power-down sequence
-- 64 I/O operations across the full startup
-- 1 loop forced (PLL init), all other execution is natural
-- 32768/32768 blocks compile, 0 failures
-- Call depth returns to 0 at halt (all calls/returns balanced)
-
-### Phase 1 — Generic Emitter Widening (complete)
-
-Added 6 emitter families to `emitInstructionJs()`, eliminating 27 of 46 live stubs:
-
-- `add a, register` (a/b/c/d/e/h/l)
-- `xor register` (b/c/d/e/h/l)
-- `xor immediate` (0xNN)
-- `or immediate` (0xNN)
-- `sbc a, register` (a/b/c/d/e/h/l)
-- `set bit, register` (b/c/d/e/h/l)
-
-Also fixed Windows path resolution (`fileURLToPath` instead of raw `URL.pathname`).
-
-### Phase 2 — ED-family, Mixed-mode, and Edge Cases (complete)
-
-Eliminated all remaining 19 stubs:
-
-- `in r, (c)` for b/c/d/e/h/l registers
-- `adc hl, rr` word-ALU
-- `lddr` and `neg`
-- `.sil` prefix normalization on inc/dec/add/push/pop word patterns
-- Indexed increment malformed form (`inc ix-1` → proper indexed read-modify-write)
-- Duplicated-prefix control-flow decoding (`DD/FD` + `CD/C3/18` etc.)
-- Malformed `jr pc+N` branch text fallback
-
-### Phase 3 — Push Coverage (complete)
-
-Raised block limit from 2048 → 16384 (8x). Coverage: 0.53% → 4.05%.
-
-- Added 7 new seed entry points (OS entry, ISR, function tables, mid-ROM regions)
-- Added emitters: `ldd`, `rld`, `rrd`, `sla r`, `sra r`, `rlc r`, `rrc r`, `rl r`
-- Added emitters: `adc a, n`, `res bit, register`, `cp ixh/ixl/iyh/iyl`
-- Added indexed: `dec (ix+d)`, `sub (ix+d)`, `add a, (ix+d)`, `and (ix+d)`, `or (ix+d)` malformed forms
-- Fixed `.sil`/`.lil` tolerance on `sub`, `ld a,(pair)`, `ld (pair),a`
-- Fixed `nop.sil` prefix matching
-- Added `FD ED`/`DD ED` prefix-through decoding in `decodeInstruction`
-- 3 irreducible stubs remain (z80js `{1}` parser bugs + nonsense `ED DD`)
-
-### Phase 4 — CPU Runtime Scaffold (complete)
-
-Created `TI-84_Plus_CE/cpu-runtime.js`:
-
-- Full `CPU` class implementing all `cpu.*` methods used by emitted blocks
-- Registers: 8-bit (a-l,f) with 16/24-bit pair getters/setters, alternates, index half-registers
-- ALU: add8, subtract8, addWithCarry8, subtractWithBorrow8, compare, negate, DAA
-- Word ALU: addWord, addWithCarryWord, subtractWithBorrowWord, multiplyBytes
-- Rotate/Shift: all RLC/RRC/RL/RR/SLA/SRA/SRL/SLL via rotateShift8
-- Block transfer: ldi, ldir, ldd, lddr, cpi, cpir
-- BCD: rld, rrd
-- I/O: ioRead/Write, page-0 variants, testIo, otimr
-- Stack: push/pop with ADL/Z80 mode-aware width
-- Control: checkCondition, decrementAndCheckB, halt, sleep
-- `createExecutor()` that compiles block source strings and runs them
-
-### Earlier work (previous sessions)
-
-- Eliminated malformed live stub set (ED 07/0F/17/27, indexed, in/cp)
-- Added manual indexed decoding (DD/FD 36, DD/FD BE, duplicated-prefix CB)
-- Added manual ED decoding (LD rr,(HL), LD (HL),rr, OTIMR)
-- Added emitted JS support for EX (SP),HL/IX/IY, CPI, IN A,(n)
-- Fixed RETN/RETI control-flow classification
-- Raised block cap from 1024 to 2048
-
-This is still not a decompiler or a runnable emulator. It remains a byte-lift scaffold.
+- Added 10 OS-area seed entry points from coverage gap analysis
+- Pruned 3 data-area seeds (0x100000, 0x200000, 0x300000) that produced 0% code
+- Result: +76 blocks, +657 bytes — minimal gain, frontier truly exhausted
+- Final: 50383 blocks, 7.55% total, 30.22% OS area
 
 ---
 
@@ -136,87 +104,65 @@ This is still not a decompiler or a runnable emulator. It remains a byte-lift sc
 
 ### `scripts/transpile-ti84-rom.mjs`
 
-This is still the source of truth for generation.
-
-Current behavior:
-
-- Reads `TI-84_Plus_CE/ROM.rom`
-- Embeds the full ROM in generated JS as base64
-- Uses `z80js` as the base disassembler
-- Overrides several eZ80- and CE-specific instruction forms manually
-- Walks reachable control flow from seed vectors plus additional known anchors
-- Emits readable JavaScript block bodies with original bytes and disassembly comments
+Source of truth for generation. Current seed count: 55 (RST vectors + 45 known anchors).
 
 ### `TI-84_Plus_CE/ROM.transpiled.js`
 
-Generated module containing:
-
-- `TRANSPILATION_META`
-- `ROM_BASE64`
-- `ENTRY_POINTS`
-- `PRELIFTED_BLOCKS`
-- `decodeEmbeddedRom()`
+Generated module: 50383 blocks, 7.55% coverage.
 
 ### `TI-84_Plus_CE/cpu-runtime.js`
 
-CPU runtime with `createExecutor()`:
-
+CPU runtime (~830 lines):
 - Full `CPU` class (registers, ALU, I/O, stack, block transfer, rotate/shift)
-- `createExecutor(blocks, memory)` → `{ cpu, compiledBlocks, blockMeta, runFrom() }`
-- Mode-aware execution via block exit metadata
-- Loop detection + force-break for hardware init loops
-- I/O tracing hooks (`onIoRead`, `onIoWrite`)
-- Block trace callback (`onBlock`)
+- `createExecutor(blocks, memory, options)` with peripheral bus support
+- Missing block skip-ahead + discovery collection
+- Mode-aware execution, loop detection, I/O tracing
+
+### `TI-84_Plus_CE/peripherals.js`
+
+I/O peripheral bus (~237 lines): PLL, CPU control, GPIO, flash, timers.
 
 ### `TI-84_Plus_CE/test-harness.mjs`
 
-Validation script: `node TI-84_Plus_CE/test-harness.mjs`
+Validation harness (~275 lines): 5 tests, multi-entry exploration, missing block discovery, PLL validation.
 
-- 3 test runs from reset vector with increasing step limits
-- Block trace, register dump, I/O log, termination analysis
-- Expected result: 1308 steps → HALT at `0x0019b5`
+### `TI-84_Plus_CE/coverage-analyzer.mjs`
+
+Standalone gap analysis: heatmap, gap ranking, seed suggestions.
 
 ### `TI-84_Plus_CE/ROM.transpiled.report.json`
 
-Current metrics (after Phase 6):
-
+Current metrics:
 - ROM size: `4194304`
-- Block count: `32768`
-- Covered bytes: `218062`
-- Coverage percent: `5.199`
-- Seed count: `18`
+- Block count: `50383`
+- Covered bytes: `316860`
+- Coverage percent: `7.5545`
+- Seed count: `55`
 - Live stubs: `3` (irreducible — z80js parser artifacts)
 
 Historical baselines:
-
-- After Phase 5 (call-terminating, 16K): blocks=`16384`, bytes=`119253`, coverage=`2.84%`
-- After Phase 3 (non-terminating calls): blocks=`16384`, bytes=`170053`, coverage=`4.05%`
+- After Phase 10C: blocks=`50383`, bytes=`316860`, coverage=`7.55%`, OS=`30.22%`
+- After Phase 10B: blocks=`50307`, bytes=`316203`, coverage=`7.54%`, OS=`30.15%`
+- After Phase 9A: blocks=`50307`, bytes=`316203`, coverage=`7.54%`
+- After Phase 6: blocks=`32768`, bytes=`218062`, coverage=`5.20%`
+- After Phase 3: blocks=`16384`, bytes=`170053`, coverage=`4.05%`
 - After Phase 2: blocks=`2048`, bytes=`22033`, stubs=`0`
-- After Phase 1: blocks=`2048`, bytes=`22033`, stubs=`19`
-- Before Phase 1: blocks=`2048`, bytes=`22033`, stubs=`46`
-- After 1024-block session: blocks=`1024`, bytes=`10268`
 - Initial: blocks=`384`, bytes=`3613`
 
 ---
 
 ## Verified State
 
-The following were verified after the latest changes:
-
 1. `node --check scripts/transpile-ti84-rom.mjs` passes
-2. `node scripts/transpile-ti84-rom.mjs` generates 32768 blocks at 5.199% coverage
-3. `TI-84_Plus_CE/ROM.transpiled.js` imports successfully
-4. `decodeEmbeddedRom().length === 4194304`
-5. All 32768 blocks compile successfully (0 failures)
-6. `node TI-84_Plus_CE/test-harness.mjs` runs 3 tests:
-   - Reset vector: 500+ steps, reaches hardware config tables
-   - Startup: 1000+ steps, deep into init sequence
-   - Extended: **1308 steps → HALT at 0x0019b5** (CPU power-down)
-7. Mode tracking works: z80 → adl transition at step 1 (RSMIX + LIL JP)
-8. Call/return tracking works: nested calls to depth 4+, all returns balanced
-9. I/O port init sequence: 64 operations across ports 0x00-0x28
-10. Only 1 hardware loop force-break needed (PLL poll at 0x000690↔0x000697)
-11. 3 irreducible `cpu.unimplemented()` stubs remain (z80js parser artifacts)
+2. `node scripts/transpile-ti84-rom.mjs` generates 50383 blocks at 7.55% coverage
+3. All 50383 blocks compile successfully (0 failures)
+4. `node TI-84_Plus_CE/test-harness.mjs` runs 5 tests:
+   - Tests 1-3: Reset vector → HALT in 60 steps (with peripherals + loop breaker)
+   - Test 4: Peripheral validation — PLL returns 0x04 correctly, 1 forced break (interrupt-driven loop)
+   - Test 5: 14 entry points — 8 reach HALT, 4 run deep, 2 hit missing blocks
+5. `node TI-84_Plus_CE/coverage-analyzer.mjs` — OS area 30.22%, 10 gap seeds identified
+6. Missing block discovery: 2 dynamic targets (0x7eedf3, 0xc202fe — wild jumps)
+7. 3 irreducible `cpu.unimplemented()` stubs remain
 
 ---
 
@@ -225,17 +171,6 @@ The following were verified after the latest changes:
 ### This repo is already dirty
 
 There are many unrelated modified files in the worktree. Do not revert them.
-
-### Current git state for the transpilation handoff
-
-At the time of this prompt update:
-
-- `scripts/transpile-ti84-rom.mjs` is tracked and modified
-- `TI-84_Plus_CE/ROM.transpiled.report.json` is tracked and modified
-- `TI-84_Plus_CE/ROM.transpiled.js` is untracked
-- `CONTINUATION_PROMPT_CODEX.md` is untracked
-
-Be careful not to confuse that with unrelated repo changes.
 
 ### This is still a lift, not a handwritten rewrite
 
@@ -259,109 +194,16 @@ npm install --no-save --package-lock=false z80js
 node scripts/transpile-ti84-rom.mjs
 ```
 
-Quick validation:
-
-```bash
-node - <<'JS'
-import('./TI-84_Plus_CE/ROM.transpiled.js').then((mod) => {
-  console.log(mod.TRANSPILATION_META);
-  console.log(mod.decodeEmbeddedRom().length);
-});
-JS
-```
-
-Full execution validation:
+Full validation:
 
 ```bash
 node TI-84_Plus_CE/test-harness.mjs
+node TI-84_Plus_CE/coverage-analyzer.mjs
 ```
 
-Expected output: Test 3 reaches 1308 steps, terminates at HALT.
-
 ---
 
-## What The Current Lift Handles Well
-
-- **Full reset vector execution** to HALT (1308 blocks, 64 I/O ops)
-- **Call/return tracking** via stack-based push/pop (calls are block-terminating)
-- **Mode switching** between z80 and ADL modes via block exit metadata
-- **Loop detection** with configurable force-break for hardware init loops
-- Reset/vector startup sequence
-- Additional reachability seeded from:
-  - `0x000658`
-  - `0x001afa`
-  - `0x020110`
-- eZ80 mode-switch detection around `.LIL` and `RSMIX`
-- Page-0 I/O ops used in startup:
-  - `IN0`
-  - `OUT0`
-- Common control flow:
-  - `JR`
-  - `JP`
-  - `CALL`
-  - `RET`
-  - `RST`
-  - indirect `JP`
-  - `RETN`
-  - `RETI`
-- Many common stateful ops:
-  - `XOR A`
-  - `CP n`
-  - many `LD` register/immediate forms
-  - more absolute-memory `LD` forms
-  - more indexed loads/stores
-  - indexed immediate stores
-  - indexed compare forms
-  - many `(hl)` ALU forms
-  - `EXX`
-  - `EX AF,AF'`
-  - `EX (SP),HL|IX|IY`
-  - `DI`
-  - `EI`
-  - `IM 0`
-  - `IM 1`
-  - `IM 2`
-  - several rotate/shift helpers
-  - `LDI`
-  - `LDIR`
-  - `CPI`
-  - `CPIR`
-  - `OTIMR`
-  - `IN A,(n)`
-  - `LD rr,(HL)` and `LD (HL),rr`
-- Manual decoding of indexed `DD/FD CB d opcode` forms, including duplicated-prefix malformed cases
-
----
-
-## What Is Still Missing
-
-With Phases 1-6 complete, the remaining gaps are:
-
-1. **I/O peripheral model**: All port reads return 0xFF. The PLL init loop requires a force-break. A proper model for ports 0x00, 0x03, 0x06, 0x28 would allow natural execution.
-
-2. **Coverage ceiling**: At 32768 blocks and 5.2% coverage, call-terminating blocks consume budget faster. Raising the limit or optimizing block discovery would help.
-
-3. **Execution path validation**: No comparison against CEmu's real execution trace yet. The lifted blocks produce results but correctness beyond "it reaches HALT" is unverified.
-
-4. **3 irreducible stubs**: z80js parser bugs at `0x024343`, `0x028298` (ADL mode oversized displacement), and `0x070b2b` (nonsense `ED DD` prefix). Require manual decoders or z80js replacement.
-
-5. **Call address bug (known, non-blocking)**: `cpu.call()` method still exists but emitted code now handles push directly. The method is dead code — can be removed.
-
----
-
-## Remaining `cpu.unimplemented(...)` Surface
-
-After Phase 3, there are **3** irreducible `cpu.unimplemented()` stubs in `ROM.transpiled.js`:
-
-- `ld (ix+0xFFF9), {1}` at `0x024343` — z80js parser bug (ADL mode oversized displacement, `{1}` placeholder)
-- `ld (ix+0x00E6), {1}` at `0x028298` — same z80js parser bug
-- `Error disassembling ED DD` at `0x070b2b` — nonsense prefix sequence
-
-These cannot be fixed without replacing the z80js disassembler or adding manual decoders for these specific byte sequences.
-
----
-
-## Recommended Next Phase
+## Phase Completion Status
 
 ### Phase 1: Widen the generic emitter — DONE ✓
 ### Phase 2: Clean mixed-mode and remaining ED edge cases — DONE ✓
@@ -369,107 +211,85 @@ These cannot be fixed without replacing the z80js disassembler or adding manual 
 ### Phase 4: Add an executable runtime scaffold — DONE ✓
 ### Phase 5: Test harness + reset vector validation — DONE ✓
 ### Phase 6: Extended execution + call/return tracking — DONE ✓
+### Phase 7: I/O Peripheral Model — DONE ✓
+### Phase 8: Multi-Entry-Point Execution — DONE ✓
+### Phase 9A: Coverage Expansion (static seeds) — DONE ✓
+### Phase 10A: Missing Block Discovery — DONE ✓
+### Phase 10B: Coverage Gap Analysis — DONE ✓
+### Phase 10C: Feed-Forward Seeds — DONE ✓
 
 ---
 
-## Suggested Immediate Task For Next Session
+## What Is Still Missing / Next Frontiers
 
-Phases 1-6 are complete. The reset vector executes to HALT. Next steps:
+The static reachability frontier is exhausted at ~50K blocks. Further coverage requires dynamic techniques:
 
-### Phase 7: I/O Peripheral Model
+### 1. Indirect Jump Resolution (highest impact)
 
-The current I/O stub returns 0xFF for all reads. A basic peripheral model would:
+Many blocks end in `jp (hl)`, `jp (ix)`, or computed jumps. The transpiler can't follow these statically. Approach:
+- Instrument the executor to log all indirect jump targets during test runs
+- Feed discovered targets back as seeds for the next transpiler pass
+- This creates a feedback loop: execute → discover targets → regenerate → execute deeper
 
-1. Simulate the PLL/flash controller (port 0x28) — return "ready" after init
-2. Simulate the GPIO port (0x03) — return meaningful button/status values
-3. Model the CPU control register (0x00) — detect power-down writes
-4. This would eliminate the need for the loop force-breaker on the PLL init loop
-5. Allow the startup to proceed naturally without artificial loop breaking
+### 2. Interrupt Dispatch Model
 
-### Phase 8: Multi-Entry-Point Execution
+The PLL loop at 0x000690-0x000697 exits via interrupt (carry set externally). Without interrupt dispatch:
+- Reset vector reaches HALT in 60 steps (with force-break) instead of continuing past PLL init
+- Entry points 0x658, 0x800, 0x1afa are stuck in PLL loop
 
-Test execution from other entry points beyond the reset vector:
+Approach:
+- Add a basic interrupt controller to peripherals.js
+- Timer interrupt fires after configurable cycle count
+- Interrupt handler pushes PC, jumps to vector table entry
+- This would unlock the full post-PLL startup sequence
 
-1. Run from ISR entry (`0x000008:adl`, `0x000010:adl`, etc.)
-2. Run from OS entry (`0x020110:adl`)
-3. Run from the mid-ROM function tables (`0x004000`, `0x021000`)
-4. Document which entry points reach interesting execution depths
+### 3. Unimplemented Instruction Stubs
 
-### Phase 9: Coverage Expansion
+3 irreducible stubs from z80js parser bugs:
+- `ld (ix+0xFFF9), {1}` at `0x024343` — ADL mode oversized displacement
+- `ld (ix+0x00E6), {1}` at `0x028298` — same pattern
+- `Error disassembling ED DD` at `0x070b2b` — nonsense prefix
 
-With call-terminating blocks consuming more of the budget:
+Fix: manual byte-level decoders for these specific addresses, or replace z80js.
 
-1. Raise block limit further (64K or higher) if generation time is acceptable
-2. Add more seed entry points discovered from the execution trace
-3. Profile which blocks are "hot" (frequently visited) to prioritize coverage
-4. Target coverage beyond 10%
+### 4. Execution Trace Verification
 
-### Phase 10: Execution Trace Verification
+Compare against CEmu's real execution trace:
+- CEmu logging of first N blocks from reset
+- Block-by-block comparison of register/flag state
+- Identify emitter correctness bugs
 
-Compare the lifted execution trace against CEmu's real execution:
+### 5. Deep Execution Analysis
 
-1. Run CEmu with the same ROM, log the first N blocks
-2. Compare block-by-block against our executor's trace
-3. Identify divergences where our emitted JS produces different register/flag states
-4. Use divergences to find emitter bugs
+`0x021000` runs 5000 steps without halting — substantial code path. Investigate:
+- What code is executing (graphics init? OS setup?)
+- What blocks are hot (frequently visited)
+- What missing blocks would unlock further depth
+
+---
+
+## Remaining `cpu.unimplemented(...)` Surface
+
+3 irreducible stubs in `ROM.transpiled.js`:
+
+- `ld (ix+0xFFF9), {1}` at `0x024343` — z80js parser bug
+- `ld (ix+0x00E6), {1}` at `0x028298` — z80js parser bug
+- `Error disassembling ED DD` at `0x070b2b` — nonsense prefix
 
 ---
 
 ## Useful Repo Files
 
-- `scripts/transpile-ti84-rom.mjs` — ROM transpiler (source of truth for generation)
+- `scripts/transpile-ti84-rom.mjs` — ROM transpiler (source of truth, 55 seeds)
 - `TI-84_Plus_CE/ROM.rom` — TI-84 Plus CE ROM image (4MB)
-- `TI-84_Plus_CE/ROM.transpiled.js` — Generated module (32768 blocks)
+- `TI-84_Plus_CE/ROM.transpiled.js` — Generated module (50383 blocks)
 - `TI-84_Plus_CE/ROM.transpiled.report.json` — Coverage metrics
-- `TI-84_Plus_CE/cpu-runtime.js` — CPU class + createExecutor
-- `TI-84_Plus_CE/test-harness.mjs` — Execution validation harness
+- `TI-84_Plus_CE/cpu-runtime.js` — CPU class + createExecutor + missing block discovery
+- `TI-84_Plus_CE/peripherals.js` — I/O peripheral bus (PLL, GPIO, flash, timers)
+- `TI-84_Plus_CE/test-harness.mjs` — 5-test validation harness + multi-entry + discovery
+- `TI-84_Plus_CE/coverage-analyzer.mjs` — Gap analysis + heatmap + seed suggestions
 - `ti84-rom-disassembly-spec.md`
 - `codex-rom-disassembly-prompt.md`
 - `codex-rom-state-machine-prompt.md`
 - `ti84-native-port-spec.md`
 - `CONTINUATION_PROMPT.md`
-
----
-
-## Notes About GitNexus In This Session
-
-The repo-level GitNexus instructions were followed as far as the local CLI allowed:
-
-- `npx gitnexus impact transpile-ti84-rom.mjs --repo follow-alongs --direction upstream` reported:
-  - risk: `LOW`
-  - direct dependents: `0`
-  - affected processes: `0`
-  - affected modules: `0`
-
-Important caveat:
-
-- GitNexus indexed `scripts/transpile-ti84-rom.mjs` only at file granularity, not at per-function symbol granularity, so the impact check was done at the file level
-- `gitnexus_detect_changes()` was not part of this turn because no commit was made
-
----
-
-## Notes About Research Done So Far
-
-The eZ80 manual was consulted previously to validate several instruction encodings, especially:
-
-- `.LIL` prefix behavior
-- `RSMIX`
-- `STMIX`
-- `SLP`
-- `IN0`
-- `OUT0`
-- `TST`
-
-This session also used the manual to validate:
-
-- `EX (SP),IX`
-- `EX (SP),IY`
-- `IN A,(n)`
-- `CP A,(IX+d)`
-- `LD rr,(HL)`
-- `LD (HL),rr`
-
-The next research need is narrower:
-
-- confirm the best normalization strategy for remaining `.sil` forms and duplicated-prefix mixed-mode sequences
-- validate the remaining ED/repeat and register-ALU instructions that are now showing up at the deeper frontier
