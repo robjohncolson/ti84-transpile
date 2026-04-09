@@ -1,19 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createRequire } from 'node:module';
-
-const require = createRequire(import.meta.url);
-
-let Z80;
-
-try {
-  Z80 = require('z80js');
-} catch (error) {
-  console.error('Missing generation dependency: z80js');
-  console.error('Install it once with: npm install --no-save --package-lock=false z80js');
-  throw error;
-}
+import { decodeInstruction as decodeEz80 } from '../TI-84_Plus_CE/ez80-decoder.js';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const romPath = path.join(repoRoot, 'TI-84_Plus_CE', 'ROM.rom');
@@ -23,137 +11,7 @@ const reportPath = path.join(repoRoot, 'TI-84_Plus_CE', 'ROM.transpiled.report.j
 const romBytes = fs.readFileSync(romPath);
 const romBase64 = romBytes.toString('base64');
 
-const prefixTable = {
-  0x40: { suffix: 'SIS', mode: 'z80', immBytes: 2 },
-  0x49: { suffix: 'LIS', mode: 'adl', immBytes: 2 },
-  0x52: { suffix: 'SIL', mode: 'z80', immBytes: 3 },
-  0x5b: { suffix: 'LIL', mode: 'adl', immBytes: 3 },
-};
-
-const absoluteImmOps = new Set([
-  0x01, 0x11, 0x21, 0x31,
-  0x22, 0x2a, 0x32, 0x3a,
-  0xc2, 0xca, 0xd2, 0xda, 0xe2, 0xea, 0xf2, 0xfa,
-  0xc3,
-  0xc4, 0xcc, 0xd4, 0xdc, 0xe4, 0xec, 0xf4, 0xfc,
-  0xcd,
-]);
-
-const absoluteEdOps = new Set([0x43, 0x4b, 0x53, 0x5b, 0x63, 0x6b, 0x73, 0x7b]);
-
-const in0Regs = {
-  0x38: 'a',
-  0x00: 'b',
-  0x08: 'c',
-  0x10: 'd',
-  0x18: 'e',
-  0x20: 'h',
-  0x28: 'l',
-};
-
-const out0Regs = {
-  0x39: 'a',
-  0x01: 'b',
-  0x09: 'c',
-  0x11: 'd',
-  0x19: 'e',
-  0x21: 'h',
-  0x29: 'l',
-};
-
-const tstRegs = {
-  0x3c: 'a',
-  0x04: 'b',
-  0x0c: 'c',
-  0x14: 'd',
-  0x1c: 'e',
-  0x24: 'h',
-  0x2c: 'l',
-};
-
-const leaIxRegs = {
-  0x02: 'bc',
-  0x12: 'de',
-  0x22: 'hl',
-};
-
-const leaIyRegs = {
-  0x03: 'bc',
-  0x13: 'de',
-  0x23: 'hl',
-};
-
-const mltRegs = {
-  0x4c: 'bc',
-  0x5c: 'de',
-  0x6c: 'hl',
-  0x7c: 'sp',
-};
-
-const loadWordFromHlRegs = {
-  0x07: 'bc',
-  0x17: 'de',
-  0x27: 'hl',
-};
-
-const storeWordToHlRegs = {
-  0x0f: 'bc',
-  0x1f: 'de',
-  0x2f: 'hl',
-};
-
-const conditionNames = {
-  0x20: 'nz',
-  0x28: 'z',
-  0x30: 'nc',
-  0x38: 'c',
-  0xc0: 'nz',
-  0xc8: 'z',
-  0xd0: 'nc',
-  0xd8: 'c',
-  0xe0: 'po',
-  0xe8: 'pe',
-  0xf0: 'p',
-  0xf8: 'm',
-  0xc2: 'nz',
-  0xca: 'z',
-  0xd2: 'nc',
-  0xda: 'c',
-  0xe2: 'po',
-  0xea: 'pe',
-  0xf2: 'p',
-  0xfa: 'm',
-  0xc4: 'nz',
-  0xcc: 'z',
-  0xd4: 'nc',
-  0xdc: 'c',
-  0xe4: 'po',
-  0xec: 'pe',
-  0xf4: 'p',
-  0xfc: 'm',
-};
-
-const indexedCbRegisters = ['b', 'c', 'd', 'e', 'h', 'l', null, 'a'];
-
-const indexedCbOperations = ['rlc', 'rrc', 'rl', 'rr', 'sla', 'sra', 'sll', 'srl'];
-
-const z80Memory = {
-  read8(address) {
-    return romBytes[address] ?? 0;
-  },
-  write8() {},
-};
-
-const z80 = new Z80(
-  z80Memory,
-  {
-    read() {
-      return 0;
-    },
-    write() {},
-  },
-  false
-);
+// --- Utilities ---
 
 function hex(value, width = 2) {
   return `0x${value.toString(16).padStart(width, '0')}`;
@@ -163,51 +21,19 @@ function formatKey(pc, mode) {
   return `${pc.toString(16).padStart(6, '0')}:${mode}`;
 }
 
-function signedByte(byte) {
-  return byte & 0x80 ? byte - 0x100 : byte;
-}
-
-function readLE(address, byteCount) {
-  let value = 0;
-
-  for (let index = 0; index < byteCount; index += 1) {
-    value |= (romBytes[address + index] ?? 0) << (index * 8);
-  }
-
-  return value >>> 0;
-}
-
 function bytesToHex(address, length) {
   return Array.from(romBytes.slice(address, address + length))
     .map((byte) => byte.toString(16).padStart(2, '0'))
     .join(' ');
 }
 
-function canonicalizeDasm(dasm) {
-  return dasm.replace(/\$([0-9a-fA-F]+)/g, (_, raw) => hex(Number.parseInt(raw, 16), raw.length));
-}
-
 function wrap24(value) {
   return value & 0xffffff;
 }
 
-function normalizeNumericLiteral(raw) {
-  return raw.replace('$', '0x').toLowerCase();
-}
-
-function formatIndexedOperand(register, displacement) {
-  return `(${register}${displacement >= 0 ? '+' : ''}${displacement})`;
-}
-
 function getWordByteWidth(instruction) {
-  if (instruction.prefix === 'SIS' || instruction.prefix === 'LIS') {
-    return 2;
-  }
-
-  if (instruction.prefix === 'SIL' || instruction.prefix === 'LIL') {
-    return 3;
-  }
-
+  if (instruction.prefix === 'SIS' || instruction.prefix === 'LIS') return 2;
+  if (instruction.prefix === 'SIL' || instruction.prefix === 'LIL') return 3;
   return instruction.mode === 'adl' ? 3 : 2;
 }
 
@@ -219,1536 +45,517 @@ function getWordWriteAccessor(instruction) {
   return getWordByteWidth(instruction) === 2 ? 'write16' : 'write24';
 }
 
-function manualIndexedCbInstruction(startPc, pc, op0, mode) {
-  if (op0 !== 0xdd && op0 !== 0xfd) {
-    return null;
+// --- Disassembly string builder (for source comments) ---
+
+function buildDasm(d) {
+  const disp = (v) => (v >= 0 ? `+${v}` : `${v}`);
+  const ixd = (reg, displacement) => `(${reg}${disp(displacement)})`;
+
+  switch (d.tag) {
+    case 'nop': return 'nop';
+    case 'halt': return 'halt';
+    case 'di': return 'di';
+    case 'ei': return 'ei';
+    case 'scf': return 'scf';
+    case 'ccf': return 'ccf';
+    case 'cpl': return 'cpl';
+    case 'daa': return 'daa';
+    case 'neg': return 'neg';
+    case 'rlca': return 'rlca';
+    case 'rrca': return 'rrca';
+    case 'rla': return 'rla';
+    case 'rra': return 'rra';
+    case 'rrd': return 'rrd';
+    case 'rld': return 'rld';
+    case 'exx': return 'exx';
+    case 'ex-af': return "ex af, af'";
+    case 'ex-de-hl': return 'ex de, hl';
+    case 'ex-sp-hl': return 'ex (sp), hl';
+    case 'ldi': return 'ldi';
+    case 'ldir': return 'ldir';
+    case 'ldd': return 'ldd';
+    case 'lddr': return 'lddr';
+    case 'cpi': return 'cpi';
+    case 'cpir': return 'cpir';
+    case 'cpd': return 'cpd';
+    case 'cpdr': return 'cpdr';
+    case 'stmix': return 'stmix';
+    case 'rsmix': return 'rsmix';
+    case 'slp': return 'slp';
+    case 'otimr': return 'otimr';
+    case 'ini': return 'ini';
+    case 'ind': return 'ind';
+    case 'outi': return 'outi';
+    case 'outd': return 'outd';
+    case 'inir': return 'inir';
+    case 'indr': return 'indr';
+    case 'otir': return 'otir';
+    case 'otdr': return 'otdr';
+
+    case 'ld-reg-reg': return `ld ${d.dest}, ${d.src}`;
+    case 'ld-reg-imm': return `ld ${d.dest}, ${hex(d.value)}`;
+    case 'ld-reg-ind': return `ld ${d.dest}, (${d.src})`;
+    case 'ld-ind-reg': return `ld (${d.dest}), ${d.src}`;
+    case 'ld-reg-mem': return `ld ${d.dest}, (${hex(d.addr, 6)})`;
+    case 'ld-mem-reg': return `ld (${hex(d.addr, 6)}), ${d.src}`;
+    case 'ld-pair-imm': return `ld ${d.pair}, ${hex(d.value, 6)}`;
+    case 'ld-pair-mem':
+      return d.direction === 'to-mem'
+        ? `ld (${hex(d.addr, 6)}), ${d.pair}`
+        : `ld ${d.pair}, (${hex(d.addr, 6)})`;
+    case 'ld-mem-pair': return `ld (${hex(d.addr, 6)}), ${d.pair}`;
+    case 'ld-ind-imm': return `ld (hl), ${hex(d.value)}`;
+    case 'ld-sp-hl': return 'ld sp, hl';
+    case 'ld-sp-pair': return `ld sp, ${d.pair}`;
+    case 'ld-special': return `ld ${d.dest}, ${d.src}`;
+    case 'ld-pair-ind': return `ld ${d.pair}, (${d.src})`;
+    case 'ld-ind-pair': return `ld (${d.dest}), ${d.pair}`;
+
+    case 'ld-reg-ixd': return `ld ${d.dest}, ${ixd(d.indexRegister, d.displacement)}`;
+    case 'ld-ixd-reg': return `ld ${ixd(d.indexRegister, d.displacement)}, ${d.src}`;
+    case 'ld-ixd-imm': return `ld ${ixd(d.indexRegister, d.displacement)}, ${hex(d.value)}`;
+
+    case 'alu-reg': {
+      const prefix = (d.op === 'add' || d.op === 'adc' || d.op === 'sbc') ? `${d.op} a, ` : `${d.op} `;
+      return d.src === '(hl)' ? `${prefix}(hl)` : `${prefix}${d.src}`;
+    }
+    case 'alu-imm': {
+      const prefix = (d.op === 'add' || d.op === 'adc' || d.op === 'sbc') ? `${d.op} a, ` : `${d.op} `;
+      return `${prefix}${hex(d.value)}`;
+    }
+    case 'alu-ixd': {
+      const prefix = (d.op === 'add' || d.op === 'adc' || d.op === 'sbc') ? `${d.op} a, ` : `${d.op} `;
+      return `${prefix}${ixd(d.indexRegister, d.displacement)}`;
+    }
+
+    case 'inc-reg': return `inc ${d.reg}`;
+    case 'dec-reg': return `dec ${d.reg}`;
+    case 'inc-pair': return `inc ${d.pair}`;
+    case 'dec-pair': return `dec ${d.pair}`;
+    case 'inc-ixd': return `inc ${ixd(d.indexRegister, d.displacement)}`;
+    case 'dec-ixd': return `dec ${ixd(d.indexRegister, d.displacement)}`;
+
+    case 'add-pair': return `add ${d.dest}, ${d.src}`;
+    case 'sbc-pair': return `sbc hl, ${d.src}`;
+    case 'adc-pair': return `adc hl, ${d.src}`;
+
+    case 'push': return `push ${d.pair}`;
+    case 'pop': return `pop ${d.pair}`;
+
+    case 'bit-test': return `bit ${d.bit}, ${d.reg}`;
+    case 'bit-set': return `set ${d.bit}, ${d.reg}`;
+    case 'bit-res': return `res ${d.bit}, ${d.reg}`;
+    case 'bit-test-ind': return `bit ${d.bit}, (${d.indirectRegister})`;
+    case 'bit-set-ind': return `set ${d.bit}, (${d.indirectRegister})`;
+    case 'bit-res-ind': return `res ${d.bit}, (${d.indirectRegister})`;
+
+    case 'rotate-reg': return `${d.op} ${d.reg}`;
+    case 'rotate-ind': return `${d.op} (${d.indirectRegister})`;
+
+    case 'indexed-cb-rotate': return `${d.operation} ${ixd(d.indexRegister, d.displacement)}`;
+    case 'indexed-cb-bit': return `bit ${d.bit}, ${ixd(d.indexRegister, d.displacement)}`;
+    case 'indexed-cb-res': return `res ${d.bit}, ${ixd(d.indexRegister, d.displacement)}`;
+    case 'indexed-cb-set': return `set ${d.bit}, ${ixd(d.indexRegister, d.displacement)}`;
+
+    case 'jp': return `jp ${hex(d.target, 6)}`;
+    case 'jr': return `jr ${hex(d.target, 6)}`;
+    case 'jp-conditional': return `jp ${d.condition}, ${hex(d.target, 6)}`;
+    case 'jr-conditional': return `jr ${d.condition}, ${hex(d.target, 6)}`;
+    case 'jp-indirect': return `jp (${d.indirectRegister})`;
+    case 'djnz': return `djnz ${hex(d.target, 6)}`;
+    case 'call': return `call ${hex(d.target, 6)}`;
+    case 'call-conditional': return `call ${d.condition}, ${hex(d.target, 6)}`;
+    case 'ret': return 'ret';
+    case 'retn': return 'retn';
+    case 'reti': return 'reti';
+    case 'ret-conditional': return `ret ${d.condition}`;
+    case 'rst': return `rst ${hex(d.target)}`;
+
+    case 'im': return `im ${d.value}`;
+
+    case 'in0': return `in0 ${d.reg}, (${hex(d.port)})`;
+    case 'out0': return `out0 (${hex(d.port)}), ${d.reg}`;
+    case 'in-reg': return `in ${d.reg}, (c)`;
+    case 'out-reg': return `out (c), ${d.reg}`;
+    case 'in-imm': return `in a, (${hex(d.port)})`;
+    case 'out-imm': return `out (${hex(d.port)}), a`;
+
+    case 'mlt': return `mlt ${d.reg}`;
+    case 'tst-reg': return `tst a, ${d.reg}`;
+    case 'tst-ind': return 'tst a, (hl)';
+    case 'tst-imm': return `tst a, ${hex(d.value)}`;
+    case 'tstio': return `tstio ${hex(d.value)}`;
+
+    case 'lea': return `lea ${d.dest}, ${d.base}${disp(d.displacement)}`;
+    case 'ex-sp-pair': return `ex (sp), ${d.pair}`;
+
+    default: return `??? tag=${d.tag}`;
   }
-
-  let indexRegister = op0 === 0xdd ? 'ix' : 'iy';
-  let cbPc = pc;
-
-  if ((romBytes[pc + 1] === 0xdd || romBytes[pc + 1] === 0xfd) && romBytes[pc + 2] === 0xcb) {
-    indexRegister = romBytes[pc + 1] === 0xdd ? 'ix' : 'iy';
-    cbPc = pc + 1;
-  } else if (romBytes[pc + 1] !== 0xcb) {
-    return null;
-  }
-
-  const displacement = signedByte(romBytes[cbPc + 2] ?? 0);
-  const opcode = romBytes[cbPc + 3] ?? 0;
-  const group = opcode >> 6;
-  const bit = (opcode >> 3) & 0x07;
-  const registerCode = opcode & 0x07;
-  const destination = indexedCbRegisters[registerCode];
-  const operand = formatIndexedOperand(indexRegister, displacement);
-  const length = cbPc + 4 - startPc;
-
-  if (group === 0) {
-    const operation = indexedCbOperations[bit];
-
-    return {
-      tag: 'indexed-cb-rotate',
-      dasm: destination ? `ld ${destination}, ${operation} ${operand}` : `${operation} ${operand}`,
-      indexRegister,
-      displacement,
-      operation,
-      destination,
-      length,
-      nextMode: mode,
-    };
-  }
-
-  if (group === 1) {
-    return {
-      tag: 'indexed-cb-bit',
-      dasm: `bit ${bit}, ${operand}`,
-      indexRegister,
-      displacement,
-      bit,
-      length,
-      nextMode: mode,
-    };
-  }
-
-  if (group === 2) {
-    return {
-      tag: 'indexed-cb-res',
-      dasm: destination ? `ld ${destination}, res ${bit}, ${operand}` : `res ${bit}, ${operand}`,
-      indexRegister,
-      displacement,
-      bit,
-      destination,
-      length,
-      nextMode: mode,
-    };
-  }
-
-  return {
-    tag: 'indexed-cb-set',
-    dasm: destination ? `ld ${destination}, set ${bit}, ${operand}` : `set ${bit}, ${operand}`,
-    indexRegister,
-    displacement,
-    bit,
-    destination,
-    length,
-    nextMode: mode,
-  };
 }
 
-function manualIndexedInstruction(startPc, pc, op0, mode) {
-  if (op0 !== 0xdd && op0 !== 0xfd) {
-    return null;
-  }
-
-  const op1 = romBytes[pc + 1];
-  const indexRegister = op0 === 0xdd ? 'ix' : 'iy';
-  const displacement = signedByte(romBytes[pc + 2] ?? 0);
-
-  if (op1 === 0x36) {
-    const value = romBytes[pc + 3] ?? 0;
-
-    return {
-      tag: 'indexed-immediate-store',
-      dasm: `ld ${formatIndexedOperand(indexRegister, displacement)}, ${hex(value)}`,
-      indexRegister,
-      displacement,
-      value,
-      length: pc + 4 - startPc,
-      nextMode: mode,
-    };
-  }
-
-  if (op1 === 0xbe) {
-    return {
-      tag: 'indexed-compare',
-      dasm: `cp a, ${formatIndexedOperand(indexRegister, displacement)}`,
-      indexRegister,
-      displacement,
-      length: pc + 3 - startPc,
-      nextMode: mode,
-    };
-  }
-
-  return null;
-}
-
-function manualEdInstruction(startPc, pc, op1, prefix, mode) {
-  const operand8 = romBytes[pc + 2];
-  const displacement = signedByte(romBytes[pc + 2] ?? 0);
-
-  if (op1 === 0x7e) {
-    return {
-      tag: 'rsmix',
-      dasm: 'rsmix',
-      length: pc + 2 - startPc,
-      nextMode: mode,
-    };
-  }
-
-  if (op1 === 0x7d) {
-    return {
-      tag: 'stmix',
-      dasm: 'stmix',
-      length: pc + 2 - startPc,
-      nextMode: mode,
-    };
-  }
-
-  if (op1 === 0x76) {
-    return {
-      tag: 'slp',
-      dasm: 'slp',
-      length: pc + 2 - startPc,
-      nextMode: mode,
-      terminates: true,
-    };
-  }
-
-  if (op1 in in0Regs) {
-    return {
-      tag: 'in0',
-      dasm: `in0 ${in0Regs[op1]}, (${hex(operand8)})`,
-      reg: in0Regs[op1],
-      port: operand8,
-      length: pc + 3 - startPc,
-      nextMode: mode,
-    };
-  }
-
-  if (op1 in out0Regs) {
-    return {
-      tag: 'out0',
-      dasm: `out0 (${hex(operand8)}), ${out0Regs[op1]}`,
-      reg: out0Regs[op1],
-      port: operand8,
-      length: pc + 3 - startPc,
-      nextMode: mode,
-    };
-  }
-
-  if (op1 === 0x64) {
-    return {
-      tag: 'tst-immediate',
-      dasm: `tst a, ${hex(operand8)}`,
-      value: operand8,
-      length: pc + 3 - startPc,
-      nextMode: mode,
-    };
-  }
-
-  if (op1 === 0x74) {
-    return {
-      tag: 'tstio',
-      dasm: `tstio ${hex(operand8)}`,
-      value: operand8,
-      length: pc + 3 - startPc,
-      nextMode: mode,
-    };
-  }
-
-  if (op1 === 0x34) {
-    return {
-      tag: 'tst-hl',
-      dasm: 'tst a, (hl)',
-      length: pc + 2 - startPc,
-      nextMode: mode,
-    };
-  }
-
-  if (op1 in tstRegs) {
-    return {
-      tag: 'tst-register',
-      dasm: `tst a, ${tstRegs[op1]}`,
-      reg: tstRegs[op1],
-      length: pc + 2 - startPc,
-      nextMode: mode,
-    };
-  }
-
-  if (op1 in mltRegs) {
-    return {
-      tag: 'mlt',
-      dasm: `mlt ${mltRegs[op1]}`,
-      reg: mltRegs[op1],
-      length: pc + 2 - startPc,
-      nextMode: mode,
-    };
-  }
-
-  if (op1 === 0x93) {
-    return {
-      tag: 'otimr',
-      dasm: 'otimr',
-      length: pc + 2 - startPc,
-      nextMode: mode,
-    };
-  }
-
-  if (op1 in loadWordFromHlRegs) {
-    return {
-      tag: 'load-word-from-hl',
-      dasm: `ld ${loadWordFromHlRegs[op1]}, (hl)`,
-      register: loadWordFromHlRegs[op1],
-      length: pc + 2 - startPc,
-      nextMode: mode,
-    };
-  }
-
-  if (op1 in storeWordToHlRegs) {
-    return {
-      tag: 'store-word-to-hl',
-      dasm: `ld (hl), ${storeWordToHlRegs[op1]}`,
-      register: storeWordToHlRegs[op1],
-      length: pc + 2 - startPc,
-      nextMode: mode,
-    };
-  }
-
-  if (op1 === 0x31) {
-    return {
-      tag: 'ld-iy-from-hl',
-      dasm: 'ld iy, (hl)',
-      length: pc + 2 - startPc,
-      nextMode: mode,
-    };
-  }
-
-  if (op1 === 0x37) {
-    return {
-      tag: 'ld-ix-from-hl',
-      dasm: 'ld ix, (hl)',
-      length: pc + 2 - startPc,
-      nextMode: mode,
-    };
-  }
-
-  if (op1 === 0x3e) {
-    return {
-      tag: 'ld-hl-from-iy',
-      dasm: 'ld (hl), iy',
-      length: pc + 2 - startPc,
-      nextMode: mode,
-    };
-  }
-
-  if (op1 === 0x3f) {
-    return {
-      tag: 'ld-hl-from-ix',
-      dasm: 'ld (hl), ix',
-      length: pc + 2 - startPc,
-      nextMode: mode,
-    };
-  }
-
-  if (op1 === 0x32) {
-    return {
-      tag: 'lea',
-      dasm: `lea ix, ix${displacement >= 0 ? '+' : ''}${displacement}`,
-      destination: 'ix',
-      base: 'ix',
-      displacement,
-      length: pc + 3 - startPc,
-      nextMode: mode,
-    };
-  }
-
-  if (op1 === 0x33) {
-    return {
-      tag: 'lea',
-      dasm: `lea iy, iy${displacement >= 0 ? '+' : ''}${displacement}`,
-      destination: 'iy',
-      base: 'iy',
-      displacement,
-      length: pc + 3 - startPc,
-      nextMode: mode,
-    };
-  }
-
-  if (op1 === 0x54) {
-    return {
-      tag: 'lea',
-      dasm: `lea ix, iy${displacement >= 0 ? '+' : ''}${displacement}`,
-      destination: 'ix',
-      base: 'iy',
-      displacement,
-      length: pc + 3 - startPc,
-      nextMode: mode,
-    };
-  }
-
-  if (op1 === 0x55) {
-    return {
-      tag: 'lea',
-      dasm: `lea iy, ix${displacement >= 0 ? '+' : ''}${displacement}`,
-      destination: 'iy',
-      base: 'ix',
-      displacement,
-      length: pc + 3 - startPc,
-      nextMode: mode,
-    };
-  }
-
-  if (op1 in leaIxRegs) {
-    return {
-      tag: 'lea',
-      dasm: `lea ${leaIxRegs[op1]}, ix${displacement >= 0 ? '+' : ''}${displacement}`,
-      destination: leaIxRegs[op1],
-      base: 'ix',
-      displacement,
-      length: pc + 3 - startPc,
-      nextMode: mode,
-    };
-  }
-
-  if (op1 in leaIyRegs) {
-    return {
-      tag: 'lea',
-      dasm: `lea ${leaIyRegs[op1]}, iy${displacement >= 0 ? '+' : ''}${displacement}`,
-      destination: leaIyRegs[op1],
-      base: 'iy',
-      displacement,
-      length: pc + 3 - startPc,
-      nextMode: mode,
-    };
-  }
-
-  // Undefined ED opcodes are 2-byte NOPs on eZ80
-  // Covers: prefix bytes (DD/FD/CB), C0+ range, and other undocumented slots
-  if (op1 === 0xdd || op1 === 0xfd || op1 === 0xcb || op1 === 0xed ||
-      op1 >= 0xc0 || op1 === 0xee || op1 === 0x77 || op1 === 0x94) {
-    return {
-      tag: 'nop',
-      dasm: `nop ; undefined ED ${hex(op1)}`,
-      length: pc + 2 - startPc,
-      nextMode: mode,
-    };
-  }
-
-  return null;
-}
-
-function controlFlowInstruction(startPc, pc, op0, prefix, mode) {
-  const effectiveImmBytes = prefix ? prefix.immBytes : mode === 'adl' ? 3 : 2;
-  const modeAfterControl = prefix ? prefix.mode : mode;
-  const hasDuplicatedIndexPrefix = op0 === 0xdd || op0 === 0xfd;
-  const controlOpcode = hasDuplicatedIndexPrefix ? romBytes[pc + 1] : op0;
-  const controlPc = hasDuplicatedIndexPrefix ? pc + 1 : pc;
-
-  if (controlOpcode === 0x18) {
-    const target = wrap24(startPc + (controlPc - startPc) + 2 + signedByte(romBytes[controlPc + 1] ?? 0));
-
-    return {
-      tag: 'jr',
-      dasm: `jr ${hex(target, 6)}`,
-      kind: 'jump',
-      target,
-      targetMode: modeAfterControl,
-      length: controlPc + 2 - startPc,
-      nextMode: mode,
-      terminates: true,
-    };
-  }
-
-  if ([0x20, 0x28, 0x30, 0x38].includes(controlOpcode)) {
-    const target = wrap24(startPc + (controlPc - startPc) + 2 + signedByte(romBytes[controlPc + 1] ?? 0));
-
-    return {
-      tag: 'jr-conditional',
-      dasm: `jr ${conditionNames[controlOpcode]}, ${hex(target, 6)}`,
-      kind: 'branch',
-      condition: conditionNames[controlOpcode],
-      target,
-      targetMode: modeAfterControl,
-      fallthrough: wrap24(startPc + (controlPc - startPc) + 2),
-      length: controlPc + 2 - startPc,
-      nextMode: mode,
-      terminates: true,
-    };
-  }
-
-  if (controlOpcode === 0x10) {
-    const target = wrap24(startPc + (controlPc - startPc) + 2 + signedByte(romBytes[controlPc + 1] ?? 0));
-
-    return {
-      tag: 'djnz',
-      dasm: `djnz ${hex(target, 6)}`,
-      kind: 'branch',
-      condition: 'djnz',
-      target,
-      targetMode: modeAfterControl,
-      fallthrough: wrap24(startPc + (controlPc - startPc) + 2),
-      length: controlPc + 2 - startPc,
-      nextMode: mode,
-      terminates: true,
-    };
-  }
-
-  if (controlOpcode === 0xc3) {
-    const target = readLE(controlPc + 1, effectiveImmBytes);
-
-    return {
-      tag: 'jp',
-      dasm: `jp ${hex(target, effectiveImmBytes * 2)}`,
-      kind: 'jump',
-      target,
-      targetMode: modeAfterControl,
-      length: controlPc + 1 + effectiveImmBytes - startPc,
-      nextMode: mode,
-      terminates: true,
-    };
-  }
-
-  if ([0xc2, 0xca, 0xd2, 0xda, 0xe2, 0xea, 0xf2, 0xfa].includes(controlOpcode)) {
-    const target = readLE(controlPc + 1, effectiveImmBytes);
-    const length = controlPc + 1 + effectiveImmBytes - startPc;
-
-    return {
-      tag: 'jp-conditional',
-      dasm: `jp ${conditionNames[controlOpcode]}, ${hex(target, effectiveImmBytes * 2)}`,
-      kind: 'branch',
-      condition: conditionNames[controlOpcode],
-      target,
-      targetMode: modeAfterControl,
-      fallthrough: wrap24(startPc + length),
-      length,
-      nextMode: mode,
-      terminates: true,
-    };
-  }
-
-  if (controlOpcode === 0xcd) {
-    const target = readLE(controlPc + 1, effectiveImmBytes);
-    const length = controlPc + 1 + effectiveImmBytes - startPc;
-
-    return {
-      tag: 'call',
-      dasm: `call ${hex(target, effectiveImmBytes * 2)}`,
-      kind: 'call',
-      target,
-      targetMode: modeAfterControl,
-      fallthrough: wrap24(startPc + length),
-      length,
-      nextMode: mode,
-    };
-  }
-
-  if ([0xc4, 0xcc, 0xd4, 0xdc, 0xe4, 0xec, 0xf4, 0xfc].includes(controlOpcode)) {
-    const target = readLE(controlPc + 1, effectiveImmBytes);
-    const length = controlPc + 1 + effectiveImmBytes - startPc;
-
-    return {
-      tag: 'call-conditional',
-      dasm: `call ${conditionNames[controlOpcode]}, ${hex(target, effectiveImmBytes * 2)}`,
-      kind: 'call',
-      condition: conditionNames[controlOpcode],
-      target,
-      targetMode: modeAfterControl,
-      fallthrough: wrap24(startPc + length),
-      length,
-      nextMode: mode,
-    };
-  }
-
-  if ([0xc7, 0xcf, 0xd7, 0xdf, 0xe7, 0xef, 0xf7, 0xff].includes(controlOpcode)) {
-    const target = controlOpcode & 0x38;
-
-    return {
-      tag: 'rst',
-      dasm: `rst ${hex(target)}`,
-      kind: 'jump',
-      target,
-      targetMode: modeAfterControl,
-      length: controlPc + 1 - startPc,
-      nextMode: mode,
-      terminates: true,
-    };
-  }
-
-  if (controlOpcode === 0xc9) {
-    return {
-      tag: 'ret',
-      dasm: 'ret',
-      kind: 'return',
-      length: controlPc + 1 - startPc,
-      nextMode: mode,
-      terminates: true,
-    };
-  }
-
-  if (op0 === 0xed && (romBytes[pc + 1] === 0x45 || romBytes[pc + 1] === 0x4d)) {
-    return {
-      tag: 'ret',
-      dasm: romBytes[pc + 1] === 0x45 ? 'retn' : 'reti',
-      kind: 'return',
-      length: pc + 2 - startPc,
-      nextMode: mode,
-      terminates: true,
-    };
-  }
-
-  if ([0xc0, 0xc8, 0xd0, 0xd8, 0xe0, 0xe8, 0xf0, 0xf8].includes(controlOpcode)) {
-    return {
-      tag: 'ret-conditional',
-      dasm: `ret ${conditionNames[controlOpcode]}`,
-      kind: 'return-conditional',
-      condition: conditionNames[controlOpcode],
-      fallthrough: wrap24(startPc + (controlPc + 1 - startPc)),
-      length: controlPc + 1 - startPc,
-      nextMode: mode,
-      terminates: true,
-    };
-  }
-
-  if (controlOpcode === 0xe9) {
-    const indirectTarget = !hasDuplicatedIndexPrefix ? 'hl' : op0 === 0xdd ? 'ix' : 'iy';
-    const length = controlPc + 1 - startPc;
-
-    return {
-      tag: 'jp-indirect',
-      dasm: `jp (${indirectTarget})`,
-      kind: 'jump-indirect',
-      indirectRegister: indirectTarget,
-      length,
-      nextMode: mode,
-      terminates: true,
-    };
-  }
-
-  if (controlOpcode === 0x76) {
-    return {
-      tag: 'halt',
-      dasm: 'halt',
-      kind: 'halt',
-      length: controlPc + 1 - startPc,
-      nextMode: mode,
-      terminates: true,
-    };
-  }
-
-  return null;
-}
+// --- Decoder adapter: wraps ez80-decoder output for buildBlock compatibility ---
 
 function decodeInstruction(pc, mode) {
-  const startPc = pc;
-  const first = romBytes[pc];
-  let prefix = null;
+  const decoded = decodeEz80(romBytes, pc, mode);
+  const bytes = bytesToHex(pc, decoded.length);
+  const dasm = buildDasm(decoded);
 
-  if (first in prefixTable) {
-    prefix = prefixTable[first];
-    pc += 1;
-  }
+  // Determine target execution mode from prefix
+  const prefixMode = decoded.modePrefix
+    ? (decoded.modePrefix[0] === 's' ? 'z80' : 'adl')
+    : mode;
 
-  // Doubled index prefixes: FD DD or DD FD — consume the first, let the second win
-  const op0Peek = romBytes[pc];
-  if ((op0Peek === 0xdd || op0Peek === 0xfd) &&
-      (romBytes[pc + 1] === 0xdd || romBytes[pc + 1] === 0xfd) &&
-      op0Peek !== romBytes[pc + 1]) {
-    pc += 1; // skip the first prefix, second one becomes op0
-  }
-
-  const op0 = romBytes[pc];
-  const op1 = romBytes[pc + 1];
-
-  const indexedCb = manualIndexedCbInstruction(startPc, pc, op0, mode);
-
-  if (indexedCb) {
-    const bytes = bytesToHex(startPc, indexedCb.length);
-
-    return {
-      ...indexedCb,
-      pc: startPc,
-      mode,
-      prefix: prefix?.suffix ?? null,
-      op0,
-      op1,
-      bytes,
-    };
-  }
-
-  const indexed = manualIndexedInstruction(startPc, pc, op0, mode);
-
-  if (indexed) {
-    const bytes = bytesToHex(startPc, indexed.length);
-
-    return {
-      ...indexed,
-      pc: startPc,
-      mode,
-      prefix: prefix?.suffix ?? null,
-      op0,
-      op1,
-      bytes,
-    };
-  }
-
-  const manual = op0 === 0xed ? manualEdInstruction(startPc, pc, op1, prefix, mode) : null;
-
-  if (manual) {
-    const bytes = bytesToHex(startPc, manual.length);
-
-    return {
-      ...manual,
-      pc: startPc,
-      mode,
-      prefix: prefix?.suffix ?? null,
-      op0,
-      op1,
-      bytes,
-    };
-  }
-
-  if ((op0 === 0xdd || op0 === 0xfd) && op1 === 0xed) {
-    const edOp = romBytes[pc + 2] ?? 0;
-    const prefixedEd = manualEdInstruction(startPc, pc + 1, edOp, prefix, mode);
-
-    if (prefixedEd) {
-      prefixedEd.length = (pc + 1 - startPc) + (prefixedEd.length - (pc + 1 - startPc));
-      const bytes = bytesToHex(startPc, prefixedEd.length);
-
-      return {
-        ...prefixedEd,
-        pc: startPc,
-        mode,
-        prefix: prefix?.suffix ?? null,
-        op0,
-        op1,
-        bytes,
-      };
-    }
-  }
-
-  if (op0 === 0xdb) {
-    const port = romBytes[pc + 1] ?? 0;
-    const length = pc + 2 - startPc;
-
-    return {
-      tag: 'in-immediate',
-      pc: startPc,
-      mode,
-      prefix: prefix?.suffix ?? null,
-      op0,
-      op1,
-      port,
-      length,
-      nextMode: mode,
-      dasm: `in a, (${hex(port)})`,
-      bytes: bytesToHex(startPc, length),
-    };
-  }
-
-  const control = controlFlowInstruction(startPc, pc, op0, prefix, mode);
-
-  if (control) {
-    const bytes = bytesToHex(startPc, control.length);
-
-    return {
-      ...control,
-      pc: startPc,
-      mode,
-      prefix: prefix?.suffix ?? null,
-      op0,
-      op1,
-      bytes,
-    };
-  }
-
-  const baseResult = z80.disassemble(pc);
-  let dasm = canonicalizeDasm(baseResult.dasm);
-  let length = baseResult.nextAddr - pc;
-
-  const effectiveImmBytes = prefix ? prefix.immBytes : mode === 'adl' ? 3 : 2;
-
-  if (!dasm.startsWith('Error')) {
-    if (absoluteImmOps.has(op0)) {
-      const target = readLE(pc + 1, effectiveImmBytes);
-      dasm = dasm.replace(/0x[0-9a-fA-F]+/, hex(target, effectiveImmBytes * 2));
-      length = 1 + effectiveImmBytes;
-    } else if ((op0 === 0xdd || op0 === 0xfd) && absoluteImmOps.has(op1)) {
-      const target = readLE(pc + 2, effectiveImmBytes);
-      dasm = dasm.replace(/0x[0-9a-fA-F]+/, hex(target, effectiveImmBytes * 2));
-      length = 2 + effectiveImmBytes;
-    } else if (op0 === 0xed && absoluteEdOps.has(op1)) {
-      const target = readLE(pc + 2, effectiveImmBytes);
-      dasm = dasm.replace(/0x[0-9a-fA-F]+/, hex(target, effectiveImmBytes * 2));
-      length = 2 + effectiveImmBytes;
-    }
-  }
-
-  if (prefix) {
-    const [mnemonic, ...rest] = dasm.split(' ');
-    dasm = `${mnemonic}.${prefix.suffix.toLowerCase()}${rest.length ? ` ${rest.join(' ')}` : ''}`;
-  }
-
-  return {
-    tag: dasm.startsWith('Error') ? 'unsupported' : 'generic',
-    pc: startPc,
+  const result = {
+    pc: decoded.pc,
     mode,
-    prefix: prefix?.suffix ?? null,
-    op0,
-    op1,
-    length: (pc - startPc) + length,
+    tag: decoded.tag,
+    length: decoded.length,
     nextMode: mode,
+    prefix: decoded.modePrefix ? decoded.modePrefix.toUpperCase() : null,
     dasm,
-    bytes: bytesToHex(startPc, (pc - startPc) + length),
+    bytes,
   };
+
+  // Copy all tag-specific fields from decoder (target, fallthrough, condition, etc.)
+  for (const key of Object.keys(decoded)) {
+    if (key !== 'pc' && key !== 'length' && key !== 'nextPc' &&
+        key !== 'mode' && key !== 'modePrefix' && !(key in result)) {
+      result[key] = decoded[key];
+    }
+  }
+
+  // Wrap addresses to 24 bits
+  if (result.target !== undefined && typeof result.target === 'number') {
+    result.target = wrap24(result.target);
+  }
+  if (result.fallthrough !== undefined) {
+    result.fallthrough = wrap24(result.fallthrough);
+  }
+
+  // Map tags to control flow kind (used by buildBlock for block termination)
+  switch (decoded.tag) {
+    case 'jp': case 'jr': case 'rst':
+      result.kind = 'jump';
+      result.targetMode = prefixMode;
+      break;
+    case 'jp-indirect':
+      result.kind = 'jump-indirect';
+      break;
+    case 'jp-conditional': case 'jr-conditional':
+      result.kind = 'branch';
+      result.targetMode = prefixMode;
+      break;
+    case 'djnz':
+      result.kind = 'branch';
+      result.condition = 'djnz';
+      result.targetMode = prefixMode;
+      break;
+    case 'call':
+      result.kind = 'call';
+      result.targetMode = prefixMode;
+      break;
+    case 'call-conditional':
+      result.kind = 'call';
+      result.targetMode = prefixMode;
+      break;
+    case 'ret': case 'retn': case 'reti':
+      result.kind = 'return';
+      break;
+    case 'ret-conditional':
+      result.kind = 'return-conditional';
+      break;
+    case 'halt': case 'slp':
+      result.kind = 'halt';
+      break;
+  }
+
+  return result;
 }
 
-function emitInstructionJs(instruction) {
-  const { tag, dasm, condition, target, fallthrough } = instruction;
+// --- ALU emit helper ---
 
+function emitAlu(op, srcExpr) {
+  switch (op) {
+    case 'add': return [`cpu.a = cpu.add8(cpu.a, ${srcExpr});`];
+    case 'adc': return [`cpu.a = cpu.addWithCarry8(cpu.a, ${srcExpr});`];
+    case 'sub': return [`cpu.a = cpu.subtract8(cpu.a, ${srcExpr});`];
+    case 'sbc': return [`cpu.a = cpu.subtractWithBorrow8(cpu.a, ${srcExpr});`];
+    case 'and': return [`cpu.a &= ${srcExpr};`, 'cpu.updateLogicFlags(cpu.a);'];
+    case 'xor': return [`cpu.a ^= ${srcExpr};`, 'cpu.updateOrXorFlags(cpu.a);'];
+    case 'or': return [`cpu.a |= ${srcExpr};`, 'cpu.updateOrXorFlags(cpu.a);'];
+    case 'cp': return [`cpu.compare(cpu.a, ${srcExpr});`];
+    default: return [];
+  }
+}
+
+// --- Instruction emitter: direct tag dispatch (no regex/mnemonic parsing) ---
+
+function emitInstructionJs(instruction) {
+  const { tag } = instruction;
+
+  // --- NOP / HALT / SLP ---
+  if (tag === 'nop') return [];
+  if (tag === 'halt') return ['return cpu.halt();'];
+  if (tag === 'slp') return ['return cpu.sleep();'];
+
+  // --- Control flow ---
+  if (tag === 'jp' || tag === 'jr' || tag === 'rst') {
+    return [`return ${hex(instruction.target, 6)};`];
+  }
+  if (tag === 'jp-indirect') {
+    return [`return cpu.${instruction.indirectRegister};`];
+  }
+  if (tag === 'jp-conditional' || tag === 'jr-conditional') {
+    return [
+      `if (cpu.checkCondition('${instruction.condition}')) return ${hex(instruction.target, 6)};`,
+      `return ${hex(instruction.fallthrough, 6)};`,
+    ];
+  }
+  if (tag === 'djnz') {
+    return [
+      `if (cpu.decrementAndCheckB()) return ${hex(instruction.target, 6)};`,
+      `return ${hex(instruction.fallthrough, 6)};`,
+    ];
+  }
+  if (tag === 'call') {
+    return [
+      `cpu.push(${hex(instruction.fallthrough, 6)});`,
+      `return ${hex(instruction.target, 6)};`,
+    ];
+  }
+  if (tag === 'call-conditional') {
+    return [
+      `if (cpu.checkCondition('${instruction.condition}')) { cpu.push(${hex(instruction.fallthrough, 6)}); return ${hex(instruction.target, 6)}; }`,
+      `return ${hex(instruction.fallthrough, 6)};`,
+    ];
+  }
+  if (tag === 'ret' || tag === 'retn' || tag === 'reti') {
+    return ['return cpu.popReturn();'];
+  }
+  if (tag === 'ret-conditional') {
+    return [
+      `if (cpu.checkCondition('${instruction.condition}')) return cpu.popReturn();`,
+      `return ${hex(instruction.fallthrough, 6)};`,
+    ];
+  }
+
+  // --- LD register ↔ register ---
+  if (tag === 'ld-reg-reg') return [`cpu.${instruction.dest} = cpu.${instruction.src};`];
+  if (tag === 'ld-reg-imm') return [`cpu.${instruction.dest} = ${hex(instruction.value)};`];
+  if (tag === 'ld-reg-ind') return [`cpu.${instruction.dest} = cpu.readIndirect8('${instruction.src}');`];
+  if (tag === 'ld-ind-reg') return [`cpu.writeIndirect8('${instruction.dest}', cpu.${instruction.src});`];
+  if (tag === 'ld-reg-mem') return [`cpu.${instruction.dest} = cpu.read8(${hex(instruction.addr, 6)});`];
+  if (tag === 'ld-mem-reg') return [`cpu.write8(${hex(instruction.addr, 6)}, cpu.${instruction.src});`];
+  if (tag === 'ld-ind-imm') return [`cpu.writeIndirect8('hl', ${hex(instruction.value)});`];
+
+  // --- LD pair ---
+  if (tag === 'ld-pair-imm') return [`cpu.${instruction.pair} = ${hex(instruction.value, 6)};`];
+  if (tag === 'ld-pair-mem') {
+    if (instruction.direction === 'to-mem') {
+      return [`cpu.${getWordWriteAccessor(instruction)}(${hex(instruction.addr, 6)}, cpu.${instruction.pair});`];
+    }
+    return [`cpu.${instruction.pair} = cpu.${getWordReadAccessor(instruction)}(${hex(instruction.addr, 6)});`];
+  }
+  if (tag === 'ld-mem-pair') {
+    return [`cpu.${getWordWriteAccessor(instruction)}(${hex(instruction.addr, 6)}, cpu.${instruction.pair});`];
+  }
+  if (tag === 'ld-sp-hl') return ['cpu.sp = cpu.hl;'];
+  if (tag === 'ld-sp-pair') return [`cpu.sp = cpu.${instruction.pair};`];
+  if (tag === 'ld-special') return [`cpu.${instruction.dest} = cpu.${instruction.src};`];
+
+  // --- LD pair ↔ indirect (eZ80: ld ix,(hl) etc.) ---
+  if (tag === 'ld-pair-ind') return [`cpu.${instruction.pair} = cpu.readIndirect24('${instruction.src}');`];
+  if (tag === 'ld-ind-pair') return [`cpu.writeIndirect24('${instruction.dest}', cpu.${instruction.pair});`];
+
+  // --- LD indexed ---
+  if (tag === 'ld-reg-ixd') return [`cpu.${instruction.dest} = cpu.readIndexed8('${instruction.indexRegister}', ${instruction.displacement});`];
+  if (tag === 'ld-ixd-reg') return [`cpu.writeIndexed8('${instruction.indexRegister}', ${instruction.displacement}, cpu.${instruction.src});`];
+  if (tag === 'ld-ixd-imm') return [`cpu.writeIndexed8('${instruction.indexRegister}', ${instruction.displacement}, ${hex(instruction.value)});`];
+
+  // --- ALU 8-bit ---
+  if (tag === 'alu-reg') {
+    const src = instruction.src === '(hl)' ? "cpu.readIndirect8('hl')" : `cpu.${instruction.src}`;
+    return emitAlu(instruction.op, src);
+  }
+  if (tag === 'alu-imm') return emitAlu(instruction.op, hex(instruction.value));
+  if (tag === 'alu-ixd') {
+    return emitAlu(instruction.op, `cpu.readIndexed8('${instruction.indexRegister}', ${instruction.displacement})`);
+  }
+
+  // --- INC / DEC 8-bit (with flag updates: S, Z, H, PV, N; C preserved) ---
+  if (tag === 'inc-reg') {
+    if (instruction.reg === '(hl)') return ["cpu.writeIndirect8('hl', cpu.inc8(cpu.readIndirect8('hl')));"];
+    return [`cpu.${instruction.reg} = cpu.inc8(cpu.${instruction.reg});`];
+  }
+  if (tag === 'dec-reg') {
+    if (instruction.reg === '(hl)') return ["cpu.writeIndirect8('hl', cpu.dec8(cpu.readIndirect8('hl')));"];
+    return [`cpu.${instruction.reg} = cpu.dec8(cpu.${instruction.reg});`];
+  }
+  if (tag === 'inc-ixd') {
+    return [`cpu.writeIndexed8('${instruction.indexRegister}', ${instruction.displacement}, cpu.inc8(cpu.readIndexed8('${instruction.indexRegister}', ${instruction.displacement})));`];
+  }
+  if (tag === 'dec-ixd') {
+    return [`cpu.writeIndexed8('${instruction.indexRegister}', ${instruction.displacement}, cpu.dec8(cpu.readIndexed8('${instruction.indexRegister}', ${instruction.displacement})));`];
+  }
+
+  // --- INC / DEC 16-bit ---
+  if (tag === 'inc-pair') return [`cpu.${instruction.pair} = (cpu.${instruction.pair} + 1) & cpu.addressMask;`];
+  if (tag === 'dec-pair') return [`cpu.${instruction.pair} = (cpu.${instruction.pair} - 1) & cpu.addressMask;`];
+
+  // --- 16-bit ALU ---
+  if (tag === 'add-pair') return [`cpu.${instruction.dest} = cpu.addWord(cpu.${instruction.dest}, cpu.${instruction.src});`];
+  if (tag === 'sbc-pair') return [`cpu.hl = cpu.subtractWithBorrowWord(cpu.hl, cpu.${instruction.src});`];
+  if (tag === 'adc-pair') return [`cpu.hl = cpu.addWithCarryWord(cpu.hl, cpu.${instruction.src});`];
+
+  // --- PUSH / POP ---
+  if (tag === 'push') return [`cpu.push(cpu.${instruction.pair});`];
+  if (tag === 'pop') return [`cpu.${instruction.pair} = cpu.pop();`];
+
+  // --- BIT test/set/res register ---
+  if (tag === 'bit-test') return [`cpu.testBit(cpu.${instruction.reg}, ${instruction.bit});`];
+  if (tag === 'bit-set') return [`cpu.${instruction.reg} |= ${hex(1 << instruction.bit)};`];
+  if (tag === 'bit-res') return [`cpu.${instruction.reg} &= ~${hex(1 << instruction.bit)};`];
+
+  // --- BIT test/set/res indirect (HL) ---
+  if (tag === 'bit-test-ind') return [`cpu.testBit(cpu.readIndirect8('${instruction.indirectRegister}'), ${instruction.bit});`];
+  if (tag === 'bit-set-ind') return [`cpu.writeIndirect8('${instruction.indirectRegister}', cpu.readIndirect8('${instruction.indirectRegister}') | ${hex(1 << instruction.bit)});`];
+  if (tag === 'bit-res-ind') return [`cpu.writeIndirect8('${instruction.indirectRegister}', cpu.readIndirect8('${instruction.indirectRegister}') & ~${hex(1 << instruction.bit)});`];
+
+  // --- Indexed CB (DD/FD CB d op) ---
   if (tag === 'indexed-cb-bit') {
     return [`cpu.testBit(cpu.readIndexed8('${instruction.indexRegister}', ${instruction.displacement}), ${instruction.bit});`];
   }
-
-  if (tag === 'indexed-immediate-store') {
-    return [`cpu.writeIndexed8('${instruction.indexRegister}', ${instruction.displacement}, ${hex(instruction.value)});`];
-  }
-
-  if (tag === 'indexed-compare') {
-    return [`cpu.compare(cpu.a, cpu.readIndexed8('${instruction.indexRegister}', ${instruction.displacement}));`];
-  }
-
   if (tag === 'indexed-cb-rotate') {
-    const lines = [
+    return [
       '{',
       `  const value = cpu.readIndexed8('${instruction.indexRegister}', ${instruction.displacement});`,
       `  const result = cpu.rotateShift8('${instruction.operation}', value);`,
       `  cpu.writeIndexed8('${instruction.indexRegister}', ${instruction.displacement}, result);`,
+      '}',
     ];
-
-    if (instruction.destination) {
-      lines.push(`  cpu.${instruction.destination} = result;`);
-    }
-
-    lines.push('}');
-
-    return lines;
   }
-
   if (tag === 'indexed-cb-res' || tag === 'indexed-cb-set') {
     const operator = tag === 'indexed-cb-res' ? '& ~' : '| ';
-    const lines = [
+    return [
       '{',
       `  const value = cpu.readIndexed8('${instruction.indexRegister}', ${instruction.displacement});`,
       `  const result = value ${operator}${hex(1 << instruction.bit)};`,
       `  cpu.writeIndexed8('${instruction.indexRegister}', ${instruction.displacement}, result);`,
-    ];
-
-    if (instruction.destination) {
-      lines.push(`  cpu.${instruction.destination} = result;`);
-    }
-
-    lines.push('}');
-
-    return lines;
-  }
-
-  if (tag === 'rsmix') {
-    return ['cpu.madl = 0;'];
-  }
-
-  if (tag === 'stmix') {
-    return ['cpu.madl = 1;'];
-  }
-
-  if (tag === 'slp') {
-    return ['return cpu.sleep();'];
-  }
-
-  if (tag === 'in0') {
-    return [`cpu.${instruction.reg} = cpu.ioReadPage0(${hex(instruction.port)});`];
-  }
-
-  if (tag === 'out0') {
-    return [`cpu.ioWritePage0(${hex(instruction.port)}, cpu.${instruction.reg});`];
-  }
-
-  if (tag === 'in-immediate') {
-    return [`cpu.a = cpu.ioReadImmediate(cpu.a, ${hex(instruction.port)});`];
-  }
-
-  if (tag === 'tst-immediate') {
-    return [`cpu.test(cpu.a, ${hex(instruction.value)});`];
-  }
-
-  if (tag === 'tst-register') {
-    return [`cpu.test(cpu.a, cpu.${instruction.reg});`];
-  }
-
-  if (tag === 'tst-hl') {
-    return ["cpu.test(cpu.a, cpu.readIndirect8('hl'));"];
-  }
-
-  if (tag === 'tstio') {
-    return [`cpu.testIo(${hex(instruction.value)});`];
-  }
-
-  if (tag === 'mlt') {
-    return [`cpu.${instruction.reg} = cpu.multiplyBytes(cpu.${instruction.reg});`];
-  }
-
-  if (tag === 'otimr') {
-    return ['cpu.otimr();'];
-  }
-
-  if (tag === 'load-word-from-hl') {
-    return [`cpu.${instruction.register} = cpu.${getWordReadAccessor(instruction)}(cpu.hl);`];
-  }
-
-  if (tag === 'store-word-to-hl') {
-    return [`cpu.${getWordWriteAccessor(instruction)}(cpu.hl, cpu.${instruction.register});`];
-  }
-
-  if (tag === 'ld-iy-from-hl') {
-    return ["cpu.iy = cpu.readIndirect24('hl');"];
-  }
-
-  if (tag === 'ld-ix-from-hl') {
-    return ["cpu.ix = cpu.readIndirect24('hl');"];
-  }
-
-  if (tag === 'ld-hl-from-iy') {
-    return ["cpu.writeIndirect24('hl', cpu.iy);"];
-  }
-
-  if (tag === 'ld-hl-from-ix') {
-    return ["cpu.writeIndirect24('hl', cpu.ix);"];
-  }
-
-  if (tag === 'lea') {
-    const displacement = instruction.displacement;
-    const operator = displacement >= 0 ? '+' : '-';
-    const magnitude = Math.abs(displacement);
-
-    return [`cpu.${instruction.destination} = (cpu.${instruction.base} ${operator} ${magnitude}) & cpu.addressMask;`];
-  }
-
-  if (tag === 'nop') {
-    return [];
-  }
-
-  if (tag === 'jp' || tag === 'jr' || tag === 'rst' || tag === 'jump' || tag === 'jp-indirect') {
-    if (instruction.indirectRegister) {
-      return [`return cpu.${instruction.indirectRegister};`];
-    }
-
-    return [`return ${hex(target, 6)};`];
-  }
-
-  if (tag === 'jp-conditional' || tag === 'jr-conditional' || tag === 'djnz' || tag === 'branch') {
-    if (condition === 'djnz') {
-      return [`if (cpu.decrementAndCheckB()) return ${hex(target, 6)};`, `return ${hex(fallthrough, 6)};`];
-    }
-
-    return [`if (cpu.checkCondition('${condition}')) return ${hex(target, 6)};`, `return ${hex(fallthrough, 6)};`];
-  }
-
-  if (tag === 'call' || tag === 'call-conditional') {
-    if (condition) {
-      return [
-        `if (cpu.checkCondition('${condition}')) { cpu.push(${hex(fallthrough, 6)}); return ${hex(target, 6)}; }`,
-        `return ${hex(fallthrough, 6)};`,
-      ];
-    }
-
-    return [
-      `cpu.push(${hex(fallthrough, 6)});`,
-      `return ${hex(target, 6)};`,
-    ];
-  }
-
-  if (tag === 'return' || tag === 'ret') {
-    return ['return cpu.popReturn();'];
-  }
-
-  if (tag === 'return-conditional' || tag === 'ret-conditional') {
-    return [`if (cpu.checkCondition('${condition}')) return cpu.popReturn();`, `return ${hex(fallthrough, 6)};`];
-  }
-
-  if (tag === 'halt') {
-    return ['return cpu.halt();'];
-  }
-
-  const mnemonic = dasm.toLowerCase().replace(/\.(sil|sis|lil|lis) /g, ' ').replace(/0x0x/g, '0x');
-
-  if (mnemonic === 'di') {
-    return ['cpu.iff1 = 0;', 'cpu.iff2 = 0;'];
-  }
-
-  if (mnemonic === 'ei') {
-    return ['cpu.iff1 = 1;', 'cpu.iff2 = 1;'];
-  }
-
-  if (mnemonic === 'nop' || mnemonic.startsWith('nop.')) {
-    return [];
-  }
-
-  if (mnemonic === 'xor a') {
-    return ['cpu.a = 0;', 'cpu.updateLogicFlags(cpu.a);'];
-  }
-
-  if (mnemonic === 'or a') {
-    return ['cpu.updateLogicFlags(cpu.a);'];
-  }
-
-  if (mnemonic === 'cpl') {
-    return ['cpu.a = (~cpu.a) & 0xff;'];
-  }
-
-  if (mnemonic === 'rrca') {
-    return ['cpu.a = cpu.rotateRightCircular(cpu.a);'];
-  }
-
-  if (mnemonic === 'rla') {
-    return ['cpu.a = cpu.rotateLeftThroughCarry(cpu.a);'];
-  }
-
-  if (mnemonic === 'rra') {
-    return ['cpu.a = cpu.rotateRightThroughCarry(cpu.a);'];
-  }
-
-  if (mnemonic === 'rlca') {
-    return ['cpu.a = cpu.rotateLeftCircular(cpu.a);'];
-  }
-
-  if (mnemonic === 'ccf') {
-    return ['cpu.complementCarryFlag();'];
-  }
-
-  if (mnemonic === 'scf') {
-    return ['cpu.setCarryFlag();'];
-  }
-
-  if (mnemonic === 'daa') {
-    return ['cpu.a = cpu.decimalAdjustAccumulator(cpu.a);'];
-  }
-
-  if (mnemonic === 'ld a, i') {
-    return ['cpu.a = cpu.i;'];
-  }
-
-  if (mnemonic === 'ldi') {
-    return ['cpu.ldi();'];
-  }
-
-  if (mnemonic === 'ldir') {
-    return ['cpu.ldir();'];
-  }
-
-  if (mnemonic === 'lddr') {
-    return ['cpu.lddr();'];
-  }
-
-  if (mnemonic === 'ldd') {
-    return ['cpu.ldd();'];
-  }
-
-  if (mnemonic === 'cpir') {
-    return ['cpu.cpir();'];
-  }
-
-  if (mnemonic === 'cpi') {
-    return ['cpu.cpi();'];
-  }
-
-  if (mnemonic === 'neg') {
-    return ['cpu.a = cpu.negate(cpu.a);'];
-  }
-
-  if (mnemonic === 'rld') {
-    return ['cpu.rld();'];
-  }
-
-  if (mnemonic === 'rrd') {
-    return ['cpu.rrd();'];
-  }
-
-  const simpleAssign = /^ld(?:\.[a-z]+)? ([abcdehl]|ixh|ixl|iyh|iyl|bc|de|hl|sp|ix|iy), (0x[0-9a-f]+)$/i.exec(mnemonic);
-
-  if (simpleAssign) {
-    return [`cpu.${simpleAssign[1].toLowerCase()} = ${simpleAssign[2].toLowerCase()};`];
-  }
-
-  const registerAssign = /^ld(?:\.[a-z]+)? ([abcdehl]|ixh|ixl|iyh|iyl), ([abcdehl]|ixh|ixl|iyh|iyl)$/i.exec(mnemonic);
-
-  if (registerAssign) {
-    return [`cpu.${registerAssign[1].toLowerCase()} = cpu.${registerAssign[2].toLowerCase()};`];
-  }
-
-  const loadRegisterAbsolute8 = /^ld(?:\.[a-z]+)? ([abcdehl]), \((0x[0-9a-f]+)\)$/i.exec(mnemonic);
-
-  if (loadRegisterAbsolute8) {
-    return [`cpu.${loadRegisterAbsolute8[1].toLowerCase()} = cpu.read8(${loadRegisterAbsolute8[2].toLowerCase()});`];
-  }
-
-  const loadAbsoluteWord = /^ld(?:\.[a-z]+)? (bc|de|hl|sp|ix|iy), \((0x[0-9a-f]+)\)$/i.exec(mnemonic);
-
-  if (loadAbsoluteWord) {
-    return [`cpu.${loadAbsoluteWord[1].toLowerCase()} = cpu.${getWordReadAccessor(instruction)}(${loadAbsoluteWord[2].toLowerCase()});`];
-  }
-
-  const storeAbsoluteByte = /^ld(?:\.[a-z]+)? \((0x[0-9a-f]+)\), ([abcdehl])$/i.exec(mnemonic);
-
-  if (storeAbsoluteByte) {
-    return [`cpu.write8(${storeAbsoluteByte[1].toLowerCase()}, cpu.${storeAbsoluteByte[2].toLowerCase()});`];
-  }
-
-  const storeAbsoluteWord = /^ld(?:\.[a-z]+)? \((0x[0-9a-f]+)\), (bc|de|hl|sp|ix|iy)$/i.exec(mnemonic);
-
-  if (storeAbsoluteWord) {
-    return [`cpu.${getWordWriteAccessor(instruction)}(${storeAbsoluteWord[1].toLowerCase()}, cpu.${storeAbsoluteWord[2].toLowerCase()});`];
-  }
-
-  const compareImmediate = /^cp (0x[0-9a-f]+)$/i.exec(mnemonic);
-
-  if (compareImmediate) {
-    return [`cpu.compare(cpu.a, ${compareImmediate[1].toLowerCase()});`];
-  }
-
-  const andImmediate = /^and (0x[0-9a-f]+)$/i.exec(mnemonic);
-
-  if (andImmediate) {
-    return [`cpu.a &= ${andImmediate[1].toLowerCase()};`, 'cpu.updateLogicFlags(cpu.a);'];
-  }
-
-  const addImmediate = /^add a, (0x[0-9a-f]+)$/i.exec(mnemonic);
-
-  if (addImmediate) {
-    return [`cpu.a = cpu.add8(cpu.a, ${addImmediate[1].toLowerCase()});`];
-  }
-
-  const subImmediate = /^sub (0x[0-9a-f]+)$/i.exec(mnemonic);
-
-  if (subImmediate) {
-    return [`cpu.a = cpu.subtract8(cpu.a, ${subImmediate[1].toLowerCase()});`];
-  }
-
-  const bitTest = /^bit (\d), a$/i.exec(mnemonic);
-
-  if (bitTest) {
-    return [`cpu.testBit(cpu.a, ${bitTest[1]});`];
-  }
-
-  const bitTestRegister = /^bit (\d), ([bcdehl])$/i.exec(mnemonic);
-
-  if (bitTestRegister) {
-    return [`cpu.testBit(cpu.${bitTestRegister[2].toLowerCase()}, ${bitTestRegister[1]});`];
-  }
-
-  const bitSet = /^set (\d), a$/i.exec(mnemonic);
-
-  if (bitSet) {
-    return [`cpu.a |= ${hex(1 << Number.parseInt(bitSet[1], 10))};`];
-  }
-
-  const bitReset = /^res (\d), a$/i.exec(mnemonic);
-
-  if (bitReset) {
-    return [`cpu.a &= ~${hex(1 << Number.parseInt(bitReset[1], 10))};`];
-  }
-
-  const bitResetRegister = /^res (\d), ([bcdehl])$/i.exec(mnemonic);
-
-  if (bitResetRegister) {
-    return [`cpu.${bitResetRegister[2].toLowerCase()} &= ~${hex(1 << Number.parseInt(bitResetRegister[1], 10))};`];
-  }
-
-  const pushWord = /^push(?:\.[a-z]+)? (af|bc|de|hl|ix|iy)$/i.exec(mnemonic);
-
-  if (pushWord) {
-    return [`cpu.push(cpu.${pushWord[1].toLowerCase()});`];
-  }
-
-  const popWord = /^pop(?:\.[a-z]+)? (af|bc|de|hl|ix|iy)$/i.exec(mnemonic);
-
-  if (popWord) {
-    return [`cpu.${popWord[1].toLowerCase()} = cpu.pop();`];
-  }
-
-  const incrementWord = /^inc(?:\.[a-z]+)? (bc|de|hl|sp|ix|iy)$/i.exec(mnemonic);
-
-  if (incrementWord) {
-    return [`cpu.${incrementWord[1].toLowerCase()} = (cpu.${incrementWord[1].toLowerCase()} + 1) & cpu.addressMask;`];
-  }
-
-  const decrementWord = /^dec(?:\.[a-z]+)? (bc|de|hl|sp|ix|iy)$/i.exec(mnemonic);
-
-  if (decrementWord) {
-    return [`cpu.${decrementWord[1].toLowerCase()} = (cpu.${decrementWord[1].toLowerCase()} - 1) & cpu.addressMask;`];
-  }
-
-  const loadAImmediate = /^ld a, (0x[0-9a-f]+)$/i.exec(mnemonic);
-
-  if (loadAImmediate) {
-    return [`cpu.a = ${loadAImmediate[1].toLowerCase()};`];
-  }
-
-  const storeIndexedRegister = /^ld(?:\.[a-z]+)? \((ix|iy)([+-](?:0x[0-9a-f]+|\$[0-9a-f]+|\d+))\), ([abcdehl])$/i.exec(mnemonic);
-
-  if (storeIndexedRegister) {
-    return [
-      `cpu.writeIndexed8('${storeIndexedRegister[1].toLowerCase()}', ${normalizeNumericLiteral(storeIndexedRegister[2])}, cpu.${storeIndexedRegister[3].toLowerCase()});`,
-    ];
-  }
-
-  const storeIndexedImmediate = /^ld(?:\.[a-z]+)? \((ix|iy)([+-](?:0x[0-9a-f]+|\$[0-9a-f]+|\d+))\), (0x[0-9a-f]+)$/i.exec(mnemonic);
-
-  if (storeIndexedImmediate) {
-    return [
-      `cpu.writeIndexed8('${storeIndexedImmediate[1].toLowerCase()}', ${normalizeNumericLiteral(storeIndexedImmediate[2])}, ${storeIndexedImmediate[3].toLowerCase()});`,
-    ];
-  }
-
-  const loadIndexedRegister = /^ld(?:\.[a-z]+)? ([abcdehl]), \((ix|iy)([+-](?:0x[0-9a-f]+|\$[0-9a-f]+|\d+))\)$/i.exec(mnemonic);
-
-  if (loadIndexedRegister) {
-    return [
-      `cpu.${loadIndexedRegister[1].toLowerCase()} = cpu.readIndexed8('${loadIndexedRegister[2].toLowerCase()}', ${normalizeNumericLiteral(loadIndexedRegister[3])});`,
-    ];
-  }
-
-  const loadRegisterIndirectHl = /^ld(?:\.[a-z]+)? ([abcdehl]), \(hl\)$/i.exec(mnemonic);
-
-  if (loadRegisterIndirectHl) {
-    return [`cpu.${loadRegisterIndirectHl[1].toLowerCase()} = cpu.readIndirect8('hl');`];
-  }
-
-  const loadAFromPair = /^ld(?:\.[a-z]+)? a, \((bc|de)\)$/i.exec(mnemonic);
-
-  if (loadAFromPair) {
-    return [`cpu.a = cpu.readIndirect8('${loadAFromPair[1].toLowerCase()}');`];
-  }
-
-  const inImmediate = /^in a, \((0x[0-9a-f]+)\)$/i.exec(mnemonic);
-
-  if (inImmediate) {
-    return [`cpu.a = cpu.ioReadImmediate(cpu.a, ${inImmediate[1].toLowerCase()});`];
-  }
-
-  if (mnemonic === "ld (hl), a") {
-    return ["cpu.writeIndirect8('hl', cpu.a);"];
-  }
-
-  const loadImmediateIndirectHl = /^ld \(hl\), (0x[0-9a-f]+)$/i.exec(mnemonic);
-
-  if (loadImmediateIndirectHl) {
-    return [`cpu.writeIndirect8('hl', ${loadImmediateIndirectHl[1].toLowerCase()});`];
-  }
-
-  const storeRegisterIndirectHl = /^ld(?:\.[a-z]+)? \(hl\), ([abcdehl])$/i.exec(mnemonic);
-
-  if (storeRegisterIndirectHl) {
-    return [`cpu.writeIndirect8('hl', cpu.${storeRegisterIndirectHl[1].toLowerCase()});`];
-  }
-
-  const storeAToPair = /^ld(?:\.[a-z]+)? \((bc|de)\), a$/i.exec(mnemonic);
-
-  if (storeAToPair) {
-    return [`cpu.writeIndirect8('${storeAToPair[1].toLowerCase()}', cpu.a);`];
-  }
-
-  if (mnemonic === 'exx') {
-    return ['cpu.swapMainAlternate();'];
-  }
-
-  if (mnemonic === "ex af, af'") {
-    return ['cpu.swapAf();'];
-  }
-
-  const exchangeStackWord = /^ex \(sp\), (hl|ix|iy)$/i.exec(mnemonic);
-
-  if (exchangeStackWord) {
-    const register = exchangeStackWord[1].toLowerCase();
-    const readAccessor = getWordReadAccessor(instruction);
-    const writeAccessor = getWordWriteAccessor(instruction);
-
-    return [
-      '{',
-      `  const stackValue = cpu.${readAccessor}(cpu.sp);`,
-      `  cpu.${writeAccessor}(cpu.sp, cpu.${register});`,
-      `  cpu.${register} = stackValue;`,
       '}',
     ];
   }
 
-  if (mnemonic === 'ex de, hl') {
-    return ['{', '  const temp = cpu.de;', '  cpu.de = cpu.hl;', '  cpu.hl = temp;', '}'];
-  }
-
-  if (mnemonic === 'im 1') {
-    return ['cpu.im = 1;'];
-  }
-
-  if (mnemonic === 'im 2') {
-    return ['cpu.im = 2;'];
-  }
-
-  if (mnemonic === 'out (c), a') {
-    return ['cpu.ioWrite(cpu.c, cpu.a);'];
-  }
-
-  const outImmediate = /^out \((0x[0-9a-f]+|\d+)\), a$/i.exec(mnemonic);
-
-  if (outImmediate) {
-    return [`cpu.ioWrite(${outImmediate[1].toLowerCase()}, cpu.a);`];
-  }
-
-  if (mnemonic === 'in a, (c)') {
-    return ['cpu.a = cpu.ioRead(cpu.c);'];
-  }
-
-  const inPortRegister = /^in ([bcdehl]), \(c\)$/i.exec(mnemonic);
-
-  if (inPortRegister) {
-    return [`cpu.${inPortRegister[1].toLowerCase()} = cpu.ioRead(cpu.c);`];
-  }
-
-  const outPortRegister = /^out \(c\), ([abcdehl])$/i.exec(mnemonic);
-
-  if (outPortRegister) {
-    return [`cpu.ioWrite(cpu.c, cpu.${outPortRegister[1].toLowerCase()});`];
-  }
-
-  if (mnemonic === 'reti' || mnemonic === 'retn') {
-    return ['return cpu.popReturn();'];
-  }
-
-  if (mnemonic === 'im 0') {
-    return ['cpu.im = 0;'];
-  }
-
-  const loadSpFromRegister = /^ld sp, (hl|ix|iy)$/i.exec(mnemonic);
-
-  if (loadSpFromRegister) {
-    return [`cpu.sp = cpu.${loadSpFromRegister[1].toLowerCase()};`];
-  }
-
-  const addWordRegisters = /^add(?:\.[a-z]+)? (hl|ix|iy), (bc|de|hl|sp|ix|iy)$/i.exec(mnemonic);
-
-  if (addWordRegisters) {
-    return [`cpu.${addWordRegisters[1].toLowerCase()} = cpu.addWord(cpu.${addWordRegisters[1].toLowerCase()}, cpu.${addWordRegisters[2].toLowerCase()});`];
-  }
-
-  const adcWordRegisters = /^adc hl, (bc|de|hl|sp)$/i.exec(mnemonic);
-
-  if (adcWordRegisters) {
-    return [`cpu.hl = cpu.addWithCarryWord(cpu.hl, cpu.${adcWordRegisters[1].toLowerCase()});`];
-  }
-
-  const sbcWordRegisters = /^sbc(?:\.[a-z]+)? (hl|ix|iy), (bc|de|hl|sp|ix|iy)$/i.exec(mnemonic);
-
-  if (sbcWordRegisters) {
+  // --- Rotate/Shift register ---
+  if (tag === 'rotate-reg') return [`cpu.${instruction.reg} = cpu.rotateShift8('${instruction.op}', cpu.${instruction.reg});`];
+  if (tag === 'rotate-ind') {
     return [
-      `cpu.${sbcWordRegisters[1].toLowerCase()} = cpu.subtractWithBorrowWord(cpu.${sbcWordRegisters[1].toLowerCase()}, cpu.${sbcWordRegisters[2].toLowerCase()});`,
+      '{',
+      `  const value = cpu.readIndirect8('${instruction.indirectRegister}');`,
+      `  const result = cpu.rotateShift8('${instruction.op}', value);`,
+      `  cpu.writeIndirect8('${instruction.indirectRegister}', result);`,
+      '}',
     ];
   }
 
-  const incrementByte = /^inc ([abcdehl])$/i.exec(mnemonic);
+  // --- Accumulator rotates ---
+  if (tag === 'rlca') return ['cpu.a = cpu.rotateLeftCircular(cpu.a);'];
+  if (tag === 'rrca') return ['cpu.a = cpu.rotateRightCircular(cpu.a);'];
+  if (tag === 'rla') return ['cpu.a = cpu.rotateLeftThroughCarry(cpu.a);'];
+  if (tag === 'rra') return ['cpu.a = cpu.rotateRightThroughCarry(cpu.a);'];
 
-  if (incrementByte) {
-    return [`cpu.${incrementByte[1].toLowerCase()} = (cpu.${incrementByte[1].toLowerCase()} + 1) & 0xff;`];
+  // --- Exchange ---
+  if (tag === 'exx') return ['cpu.swapMainAlternate();'];
+  if (tag === 'ex-af') return ['cpu.swapAf();'];
+  if (tag === 'ex-de-hl') return ['{', '  const temp = cpu.de;', '  cpu.de = cpu.hl;', '  cpu.hl = temp;', '}'];
+  if (tag === 'ex-sp-hl') {
+    const r = getWordReadAccessor(instruction);
+    const w = getWordWriteAccessor(instruction);
+    return ['{', `  const v = cpu.${r}(cpu.sp);`, `  cpu.${w}(cpu.sp, cpu.hl);`, '  cpu.hl = v;', '}'];
+  }
+  if (tag === 'ex-sp-pair') {
+    const r = getWordReadAccessor(instruction);
+    const w = getWordWriteAccessor(instruction);
+    return ['{', `  const v = cpu.${r}(cpu.sp);`, `  cpu.${w}(cpu.sp, cpu.${instruction.pair});`, `  cpu.${instruction.pair} = v;`, '}'];
   }
 
-  const decrementByte = /^dec ([abcdehl])$/i.exec(mnemonic);
+  // --- Flags ---
+  if (tag === 'scf') return ['cpu.setCarryFlag();'];
+  if (tag === 'ccf') return ['cpu.complementCarryFlag();'];
+  if (tag === 'cpl') return ['cpu.a = (~cpu.a) & 0xff;', 'cpu.f |= 0x12;']; // set H and N
+  if (tag === 'daa') return ['cpu.a = cpu.decimalAdjustAccumulator(cpu.a);'];
+  if (tag === 'neg') return ['cpu.a = cpu.negate(cpu.a);'];
 
-  if (decrementByte) {
-    return [`cpu.${decrementByte[1].toLowerCase()} = (cpu.${decrementByte[1].toLowerCase()} - 1) & 0xff;`];
+  // --- DI / EI ---
+  if (tag === 'di') return ['cpu.iff1 = 0;', 'cpu.iff2 = 0;'];
+  if (tag === 'ei') return ['cpu.iff1 = 1;', 'cpu.iff2 = 1;'];
+
+  // --- Interrupt mode ---
+  if (tag === 'im') return [`cpu.im = ${instruction.value};`];
+
+  // --- Block transfer/compare ---
+  if (tag === 'ldi') return ['cpu.ldi();'];
+  if (tag === 'ldir') return ['cpu.ldir();'];
+  if (tag === 'ldd') return ['cpu.ldd();'];
+  if (tag === 'lddr') return ['cpu.lddr();'];
+  if (tag === 'cpi') return ['cpu.cpi();'];
+  if (tag === 'cpir') return ['cpu.cpir();'];
+  if (tag === 'cpd') return ['cpu.cpd();'];
+  if (tag === 'cpdr') return ['cpu.cpdr();'];
+
+  // --- BCD rotate ---
+  if (tag === 'rrd') return ['cpu.rrd();'];
+  if (tag === 'rld') return ['cpu.rld();'];
+
+  // --- Block I/O ---
+  if (tag === 'ini') return ['cpu.ini();'];
+  if (tag === 'ind') return ['cpu.ind();'];
+  if (tag === 'outi') return ['cpu.outi();'];
+  if (tag === 'outd') return ['cpu.outd();'];
+  if (tag === 'inir') return ['cpu.inir();'];
+  if (tag === 'indr') return ['cpu.indr();'];
+  if (tag === 'otir') return ['cpu.otir();'];
+  if (tag === 'otdr') return ['cpu.otdr();'];
+
+  // --- I/O ---
+  if (tag === 'in0') {
+    if (instruction.reg === '(hl)') return [`cpu.ioReadPage0(${hex(instruction.port)});`];
+    return [`cpu.${instruction.reg} = cpu.ioReadPage0(${hex(instruction.port)});`];
+  }
+  if (tag === 'out0') {
+    if (instruction.reg === '(hl)') return [`cpu.ioWritePage0(${hex(instruction.port)}, cpu.readIndirect8('hl'));`];
+    return [`cpu.ioWritePage0(${hex(instruction.port)}, cpu.${instruction.reg});`];
+  }
+  if (tag === 'in-reg') {
+    if (instruction.reg === '(hl)') return ['cpu.ioRead(cpu.c);'];
+    return [`cpu.${instruction.reg} = cpu.ioRead(cpu.c);`];
+  }
+  if (tag === 'out-reg') {
+    if (instruction.reg === '(hl)') return ['cpu.ioWrite(cpu.c, 0);'];
+    return [`cpu.ioWrite(cpu.c, cpu.${instruction.reg});`];
+  }
+  if (tag === 'in-imm') return [`cpu.a = cpu.ioReadImmediate(cpu.a, ${hex(instruction.port)});`];
+  if (tag === 'out-imm') return [`cpu.ioWrite(${hex(instruction.port)}, cpu.a);`];
+
+  // --- eZ80 specific ---
+  if (tag === 'stmix') return ['cpu.madl = 1;'];
+  if (tag === 'rsmix') return ['cpu.madl = 0;'];
+  if (tag === 'mlt') return [`cpu.${instruction.reg} = cpu.multiplyBytes(cpu.${instruction.reg});`];
+  if (tag === 'tst-reg') return [`cpu.test(cpu.a, cpu.${instruction.reg});`];
+  if (tag === 'tst-ind') return ["cpu.test(cpu.a, cpu.readIndirect8('hl'));"];
+  if (tag === 'tst-imm') return [`cpu.test(cpu.a, ${hex(instruction.value)});`];
+  if (tag === 'tstio') return [`cpu.testIo(${hex(instruction.value)});`];
+  if (tag === 'otimr') return ['cpu.otimr();'];
+  if (tag === 'lea') {
+    const op = instruction.displacement >= 0 ? '+' : '-';
+    const mag = Math.abs(instruction.displacement);
+    return [`cpu.${instruction.dest} = (cpu.${instruction.base} ${op} ${mag}) & cpu.addressMask;`];
   }
 
-  if (mnemonic === 'cp (hl)') {
-    return ["cpu.compare(cpu.a, cpu.readIndirect8('hl'));"];
-  }
-
-  const compareIndexed = /^cp(?: a)?, \((ix|iy)([+-](?:0x[0-9a-f]+|\$[0-9a-f]+|\d+))\)$/i.exec(mnemonic);
-
-  if (compareIndexed) {
-    return [`cpu.compare(cpu.a, cpu.readIndexed8('${compareIndexed[1].toLowerCase()}', ${normalizeNumericLiteral(compareIndexed[2])}));`];
-  }
-
-  const incrementMalformedIndexed = /^inc (ix|iy)([+-](?:0x[0-9a-f]+|\$[0-9a-f]+|\d+))$/i.exec(mnemonic);
-
-  if (incrementMalformedIndexed) {
-    return [
-      `cpu.writeIndexed8('${incrementMalformedIndexed[1].toLowerCase()}', ${normalizeNumericLiteral(incrementMalformedIndexed[2])}, (cpu.readIndexed8('${incrementMalformedIndexed[1].toLowerCase()}', ${normalizeNumericLiteral(incrementMalformedIndexed[2])}) + 1) & 0xff);`,
-    ];
-  }
-
-  const decrementMalformedIndexed = /^dec (ix|iy)([+-](?:0x[0-9a-f]+|\$[0-9a-f]+|\d+))$/i.exec(mnemonic);
-
-  if (decrementMalformedIndexed) {
-    return [
-      `cpu.writeIndexed8('${decrementMalformedIndexed[1].toLowerCase()}', ${normalizeNumericLiteral(decrementMalformedIndexed[2])}, (cpu.readIndexed8('${decrementMalformedIndexed[1].toLowerCase()}', ${normalizeNumericLiteral(decrementMalformedIndexed[2])}) - 1) & 0xff);`,
-    ];
-  }
-
-  const subIndexed = /^sub \((ix|iy)([+-](?:0x[0-9a-f]+|\$[0-9a-f]+|\d+))\)$/i.exec(mnemonic);
-
-  if (subIndexed) {
-    return [`cpu.a = cpu.subtract8(cpu.a, cpu.readIndexed8('${subIndexed[1].toLowerCase()}', ${normalizeNumericLiteral(subIndexed[2])}));`];
-  }
-
-  const addIndexed = /^add a, \((ix|iy)([+-](?:0x[0-9a-f]+|\$[0-9a-f]+|\d+))\)$/i.exec(mnemonic);
-
-  if (addIndexed) {
-    return [`cpu.a = cpu.add8(cpu.a, cpu.readIndexed8('${addIndexed[1].toLowerCase()}', ${normalizeNumericLiteral(addIndexed[2])}));`];
-  }
-
-  const andMalformedIndexed = /^and (ix|iy)([+-](?:0x[0-9a-f]+|\$[0-9a-f]+|\d+))$/i.exec(mnemonic);
-
-  if (andMalformedIndexed) {
-    return [`cpu.a &= cpu.readIndexed8('${andMalformedIndexed[1].toLowerCase()}', ${normalizeNumericLiteral(andMalformedIndexed[2])});`, 'cpu.updateLogicFlags(cpu.a);'];
-  }
-
-  const orMalformedIndexed = /^or (ix|iy)([+-](?:0x[0-9a-f]+|\$[0-9a-f]+|\d+))$/i.exec(mnemonic);
-
-  if (orMalformedIndexed) {
-    return [`cpu.a |= cpu.readIndexed8('${orMalformedIndexed[1].toLowerCase()}', ${normalizeNumericLiteral(orMalformedIndexed[2])});`, 'cpu.updateLogicFlags(cpu.a);'];
-  }
-
-  if (mnemonic === 'inc (hl)') {
-    return ["cpu.writeIndirect8('hl', (cpu.readIndirect8('hl') + 1) & 0xff);"];
-  }
-
-  if (mnemonic === 'dec (hl)') {
-    return ["cpu.writeIndirect8('hl', (cpu.readIndirect8('hl') - 1) & 0xff);"];
-  }
-
-  if (mnemonic === 'and (hl)') {
-    return ["cpu.a &= cpu.readIndirect8('hl');", 'cpu.updateLogicFlags(cpu.a);'];
-  }
-
-  const andRegister = /^and ([abcdehl]|a)$/i.exec(mnemonic);
-
-  if (andRegister) {
-    return [`cpu.a &= cpu.${andRegister[1].toLowerCase()};`, 'cpu.updateLogicFlags(cpu.a);'];
-  }
-
-  if (mnemonic === 'or (hl)') {
-    return ["cpu.a |= cpu.readIndirect8('hl');", 'cpu.updateLogicFlags(cpu.a);'];
-  }
-
-  const orRegister = /^or ([abcdehl]|a)$/i.exec(mnemonic);
-
-  if (orRegister) {
-    return [`cpu.a |= cpu.${orRegister[1].toLowerCase()};`, 'cpu.updateLogicFlags(cpu.a);'];
-  }
-
-  if (mnemonic === 'xor (hl)') {
-    return ["cpu.a ^= cpu.readIndirect8('hl');", 'cpu.updateLogicFlags(cpu.a);'];
-  }
-
-  if (mnemonic === 'add a, (hl)') {
-    return ["cpu.a = cpu.add8(cpu.a, cpu.readIndirect8('hl'));"];
-  }
-
-  const adcRegister = /^adc a, ([abcdehl]|a)$/i.exec(mnemonic);
-
-  if (adcRegister) {
-    return [`cpu.a = cpu.addWithCarry8(cpu.a, cpu.${adcRegister[1].toLowerCase()});`];
-  }
-
-  const adcImmediate = /^adc a, (0x[0-9a-f]+)$/i.exec(mnemonic);
-
-  if (adcImmediate) {
-    return [`cpu.a = cpu.addWithCarry8(cpu.a, ${adcImmediate[1].toLowerCase()});`];
-  }
-
-  if (mnemonic === 'adc a, (hl)') {
-    return ["cpu.a = cpu.addWithCarry8(cpu.a, cpu.readIndirect8('hl'));"];
-  }
-
-  const subRegister = /^sub(?:\.[a-z]+)? ([abcdehl]|a)$/i.exec(mnemonic);
-
-  if (subRegister) {
-    return [`cpu.a = cpu.subtract8(cpu.a, cpu.${subRegister[1].toLowerCase()});`];
-  }
-
-  if (mnemonic === 'sub (hl)') {
-    return ["cpu.a = cpu.subtract8(cpu.a, cpu.readIndirect8('hl'));"];
-  }
-
-  const compareRegister = /^cp ([abcdehl]|ixh|ixl|iyh|iyl|a)$/i.exec(mnemonic);
-
-  if (compareRegister) {
-    return [`cpu.compare(cpu.a, cpu.${compareRegister[1].toLowerCase()});`];
-  }
-
-  if (mnemonic === 'sbc a, (hl)') {
-    return ["cpu.a = cpu.subtractWithBorrow8(cpu.a, cpu.readIndirect8('hl'));"];
-  }
-
-  const rrRegister = /^rr ([abcdehl])$/i.exec(mnemonic);
-
-  if (rrRegister) {
-    return [`cpu.${rrRegister[1].toLowerCase()} = cpu.rotateShift8('rr', cpu.${rrRegister[1].toLowerCase()});`];
-  }
-
-  const srlRegister = /^srl ([abcdehl])$/i.exec(mnemonic);
-
-  if (srlRegister) {
-    return [`cpu.${srlRegister[1].toLowerCase()} = cpu.rotateShift8('srl', cpu.${srlRegister[1].toLowerCase()});`];
-  }
-
-  const slaRegister = /^sla ([abcdehl])$/i.exec(mnemonic);
-
-  if (slaRegister) {
-    return [`cpu.${slaRegister[1].toLowerCase()} = cpu.rotateShift8('sla', cpu.${slaRegister[1].toLowerCase()});`];
-  }
-
-  const sraRegister = /^sra ([abcdehl])$/i.exec(mnemonic);
-
-  if (sraRegister) {
-    return [`cpu.${sraRegister[1].toLowerCase()} = cpu.rotateShift8('sra', cpu.${sraRegister[1].toLowerCase()});`];
-  }
-
-  const rlcRegister = /^rlc ([abcdehl])$/i.exec(mnemonic);
-
-  if (rlcRegister) {
-    return [`cpu.${rlcRegister[1].toLowerCase()} = cpu.rotateShift8('rlc', cpu.${rlcRegister[1].toLowerCase()});`];
-  }
-
-  const rrcRegister = /^rrc ([abcdehl])$/i.exec(mnemonic);
-
-  if (rrcRegister) {
-    return [`cpu.${rrcRegister[1].toLowerCase()} = cpu.rotateShift8('rrc', cpu.${rrcRegister[1].toLowerCase()});`];
-  }
-
-  const rlRegister = /^rl ([abcdehl])$/i.exec(mnemonic);
-
-  if (rlRegister) {
-    return [`cpu.${rlRegister[1].toLowerCase()} = cpu.rotateShift8('rl', cpu.${rlRegister[1].toLowerCase()});`];
-  }
-
-  const bitTestIndirectHl = /^bit (\d), \(hl\)$/i.exec(mnemonic);
-
-  if (bitTestIndirectHl) {
-    return [`cpu.testBit(cpu.readIndirect8('hl'), ${bitTestIndirectHl[1]});`];
-  }
-
-  const bitSetIndirectHl = /^set (\d), \(hl\)$/i.exec(mnemonic);
-
-  if (bitSetIndirectHl) {
-    return [`cpu.writeIndirect8('hl', cpu.readIndirect8('hl') | ${hex(1 << Number.parseInt(bitSetIndirectHl[1], 10))});`];
-  }
-
-  const bitResetIndirectHl = /^res (\d), \(hl\)$/i.exec(mnemonic);
-
-  if (bitResetIndirectHl) {
-    return [`cpu.writeIndirect8('hl', cpu.readIndirect8('hl') & ~${hex(1 << Number.parseInt(bitResetIndirectHl[1], 10))});`];
-  }
-
-  const addRegister = /^add a, ([abcdehl])$/i.exec(mnemonic);
-
-  if (addRegister) {
-    return [`cpu.a = cpu.add8(cpu.a, cpu.${addRegister[1].toLowerCase()});`];
-  }
-
-  const xorRegister = /^xor ([bcdehl])$/i.exec(mnemonic);
-
-  if (xorRegister) {
-    return [`cpu.a ^= cpu.${xorRegister[1].toLowerCase()};`, 'cpu.updateLogicFlags(cpu.a);'];
-  }
-
-  const xorImmediate = /^xor (0x[0-9a-f]+)$/i.exec(mnemonic);
-
-  if (xorImmediate) {
-    return [`cpu.a ^= ${xorImmediate[1].toLowerCase()};`, 'cpu.updateLogicFlags(cpu.a);'];
-  }
-
-  const jrPcRelative = /^jr pc([+-]\d+)$/i.exec(mnemonic);
-
-  if (jrPcRelative) {
-    const jrTarget = wrap24(instruction.pc + 2 + Number.parseInt(jrPcRelative[1], 10));
-
-    return [`return ${hex(jrTarget, 6)};`];
-  }
-
-  const orImmediate = /^or (0x[0-9a-f]+)$/i.exec(mnemonic);
-
-  if (orImmediate) {
-    return [`cpu.a |= ${orImmediate[1].toLowerCase()};`, 'cpu.updateLogicFlags(cpu.a);'];
-  }
-
-  const sbcImmediate = /^sbc a, (0x[0-9a-f]+|\d+)$/i.exec(mnemonic);
-
-  if (sbcImmediate) {
-    return [`cpu.a = cpu.subtractWithBorrow8(cpu.a, ${sbcImmediate[1].toLowerCase()});`];
-  }
-
-  const sbcRegister = /^sbc a, ([abcdehl])$/i.exec(mnemonic);
-
-  if (sbcRegister) {
-    return [`cpu.a = cpu.subtractWithBorrow8(cpu.a, cpu.${sbcRegister[1].toLowerCase()});`];
-  }
-
-  const bitSetRegister = /^set (\d), ([bcdehl])$/i.exec(mnemonic);
-
-  if (bitSetRegister) {
-    return [`cpu.${bitSetRegister[2].toLowerCase()} |= ${hex(1 << Number.parseInt(bitSetRegister[1], 10))};`];
-  }
-
-  return [`cpu.unimplemented(${hex(instruction.pc, 6)}, ${JSON.stringify(dasm)});`];
+  // --- Fallback ---
+  return [`cpu.unimplemented(${hex(instruction.pc, 6)}, ${JSON.stringify(instruction.dasm)});`];
 }
+
+// --- Block builder (unchanged from previous phases) ---
 
 function buildBlock(startPc, mode, options) {
   const instructions = [];
@@ -1889,6 +696,8 @@ function buildBlock(startPc, mode, options) {
     source: sourceLines.join('\n'),
   };
 }
+
+// --- Block walker: seed-based reachability analysis ---
 
 function walkBlocks() {
   const seedEntries = [];
@@ -2073,6 +882,8 @@ function walkBlocks() {
     coveredBytes: byteCoverage.size,
   };
 }
+
+// --- Generate output ---
 
 const walk = walkBlocks();
 const blockEntries = Object.entries(walk.blocks);

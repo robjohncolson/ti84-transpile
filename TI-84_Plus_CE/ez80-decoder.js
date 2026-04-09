@@ -613,15 +613,25 @@ function decodeDDFD(romBytes, startPc, prefixPc, indexReg, mode, modePrefix, imm
   if (op === 0x26) return emit(2, { tag: 'ld-reg-imm', dest: halfH, value: romBytes[prefixPc + 2] ?? 0 });
   if (op === 0x2e) return emit(2, { tag: 'ld-reg-imm', dest: halfL, value: romBytes[prefixPc + 2] ?? 0 });
 
-  // Fallback: treat as NOP (unknown DD/FD instruction, consume prefix + opcode)
-  return emit(1, { tag: 'nop' });
+  // DD/FD ED xx → forward to ED decoder (DD/FD prefix ignored for ED instructions)
+  if (op === 0xed) {
+    return decodeED(romBytes, startPc, prefixPc + 1, mode, modePrefix, immW);
+  }
+
+  // Fallback: DD/FD prefix on non-IX/IY opcodes — prefix is consumed silently,
+  // opcode executes as-is (e.g., DD 2F = CPL, DD AF = XOR A).
+  // For stacked prefixes (DD DD, FD FD, etc.) or CB, treat as NOP.
+  if (op === 0xdd || op === 0xfd || op === 0xcb) {
+    return emit(1, { tag: 'nop' });
+  }
+  return decodeMain(romBytes, startPc, prefixPc + 1, op, mode, modePrefix, immW);
 }
 
 // --- ED prefix: extended instructions ---
-const IN0_REGS = { 0x00: 'b', 0x08: 'c', 0x10: 'd', 0x18: 'e', 0x20: 'h', 0x28: 'l', 0x30: '(hl)', 0x38: 'a' };
-const OUT0_REGS = { 0x01: 'b', 0x09: 'c', 0x11: 'd', 0x19: 'e', 0x21: 'h', 0x29: 'l', 0x31: '(hl)', 0x39: 'a' };
+const IN0_REGS = { 0x00: 'b', 0x08: 'c', 0x10: 'd', 0x18: 'e', 0x20: 'h', 0x28: 'l', 0x38: 'a' };
+const OUT0_REGS = { 0x01: 'b', 0x09: 'c', 0x11: 'd', 0x19: 'e', 0x21: 'h', 0x29: 'l', 0x39: 'a' };
 const MLT_REGS = { 0x4c: 'bc', 0x5c: 'de', 0x6c: 'hl', 0x7c: 'sp' };
-const TST_REGS = { 0x04: 'b', 0x0c: 'c', 0x14: 'd', 0x1c: 'e', 0x24: 'h', 0x2c: 'l' };
+const TST_REGS = { 0x04: 'b', 0x0c: 'c', 0x14: 'd', 0x1c: 'e', 0x24: 'h', 0x2c: 'l', 0x3c: 'a' };
 
 function decodeED(romBytes, startPc, edPc, mode, modePrefix, immW) {
   const op = romBytes[edPc + 1] ?? 0;
@@ -699,6 +709,15 @@ function decodeED(romBytes, startPc, edPc, mode, modePrefix, immW) {
   if (op === 0xb1) return emit(0, { tag: 'cpir' });
   if (op === 0xb8) return emit(0, { tag: 'lddr' });
   if (op === 0xb9) return emit(0, { tag: 'cpdr' });
+  // Block I/O
+  if (op === 0xa2) return emit(0, { tag: 'ini' });
+  if (op === 0xa3) return emit(0, { tag: 'outi' });
+  if (op === 0xaa) return emit(0, { tag: 'ind' });
+  if (op === 0xab) return emit(0, { tag: 'outd' });
+  if (op === 0xb2) return emit(0, { tag: 'inir' });
+  if (op === 0xb3) return emit(0, { tag: 'otir' });
+  if (op === 0xba) return emit(0, { tag: 'indr' });
+  if (op === 0xbb) return emit(0, { tag: 'otdr' });
   // MLT rr (eZ80)
   if (op in MLT_REGS) return emit(0, { tag: 'mlt', reg: MLT_REGS[op] });
   // TST A, r (eZ80)
@@ -716,7 +735,20 @@ function decodeED(romBytes, startPc, edPc, mode, modePrefix, immW) {
   if (op === 0x76) return emit(0, { tag: 'slp', terminates: true });
   // OTIMR
   if (op === 0x93) return emit(0, { tag: 'otimr' });
+  // LD rr, (HL) word / LD (HL), rr word (eZ80)
+  if (op === 0x07) return emit(0, { tag: 'ld-pair-ind', pair: 'bc', src: 'hl' });
+  if (op === 0x17) return emit(0, { tag: 'ld-pair-ind', pair: 'de', src: 'hl' });
+  if (op === 0x27) return emit(0, { tag: 'ld-pair-ind', pair: 'hl', src: 'hl' });
+  if (op === 0x0f) return emit(0, { tag: 'ld-ind-pair', dest: 'hl', pair: 'bc' });
+  if (op === 0x1f) return emit(0, { tag: 'ld-ind-pair', dest: 'hl', pair: 'de' });
+  if (op === 0x2f) return emit(0, { tag: 'ld-ind-pair', dest: 'hl', pair: 'hl' });
   // LEA instructions (eZ80)
+  if (op === 0x02) return emit(1, { tag: 'lea', dest: 'bc', base: 'ix', displacement: disp });
+  if (op === 0x03) return emit(1, { tag: 'lea', dest: 'bc', base: 'iy', displacement: disp });
+  if (op === 0x12) return emit(1, { tag: 'lea', dest: 'de', base: 'ix', displacement: disp });
+  if (op === 0x13) return emit(1, { tag: 'lea', dest: 'de', base: 'iy', displacement: disp });
+  if (op === 0x22) return emit(1, { tag: 'lea', dest: 'hl', base: 'ix', displacement: disp });
+  if (op === 0x23) return emit(1, { tag: 'lea', dest: 'hl', base: 'iy', displacement: disp });
   if (op === 0x32) return emit(1, { tag: 'lea', dest: 'ix', base: 'ix', displacement: disp });
   if (op === 0x33) return emit(1, { tag: 'lea', dest: 'iy', base: 'iy', displacement: disp });
   if (op === 0x54) return emit(1, { tag: 'lea', dest: 'ix', base: 'iy', displacement: disp });

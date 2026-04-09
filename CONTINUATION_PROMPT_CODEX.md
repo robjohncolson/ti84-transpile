@@ -1,12 +1,12 @@
 # Continuation Prompt — TI-84 Plus CE ROM Transpilation
 
-**Last updated**: 2026-04-09T17:15Z
+**Last updated**: 2026-04-09T22:45Z
 **Focus**: Continue the TI-84 Plus CE ROM to JavaScript transpilation effort
-**Current phase**: Phases 1-11B complete. Coverage at 7.58% (50488 blocks, ~30% of OS area). Zero live stubs. Reset vector executes to HALT (60 steps with peripherals). I/O peripheral model active. Multi-entry testing + indirect jump instrumentation operational.
+**Current phase**: Phases 1-20 complete. Coverage at 7.58% (50485 blocks, ~30% of OS area). Zero live stubs. Reset vector executes to HALT (60 steps). z80js dependency eliminated. Timer interrupt dispatch model active (NMI + IRQ). Interrupt status registers modeled (port 0x3D/0x3E). DD/FD prefix passthrough. Complete eZ80 ED-prefix instruction set (LEA, block I/O, word load/store).
 
 ---
 
-## What Was Completed In This Session (Phases 7-11B)
+## What Was Completed (Phases 7-19)
 
 ### Phase 7: I/O Peripheral Model (complete)
 
@@ -158,11 +158,104 @@ Table-driven decoder to replace the z80js npm dependency. Produces structured in
 - eZ80 mode prefixes: .SIS/.LIS/.SIL/.LIL affect immediate width
 - Undefined ED opcodes → 2-byte NOP
 
-**NOT YET INTEGRATED** — the decoder is built and tested but not wired into the transpiler. Phase 13B (next session) will:
-1. Add ~30 new tag handlers to the emitter
-2. Replace z80js decode calls with the new decoder
-3. Remove z80js npm dependency
-4. Regenerate and compare output
+**INTEGRATED in Phase 13B** — decoder wired into transpiler, z80js removed.
+
+---
+
+### Phase 13B: Integrate Decoder into Transpiler (complete)
+
+Replaced `scripts/transpile-ti84-rom.mjs` (2128→830 lines):
+- Removed z80js dependency entirely
+- Imported `decodeInstruction` from `ez80-decoder.js`
+- Added `buildDasm()` for human-readable disassembly strings in comments
+- Added adapter function that maps decoder output to buildBlock-compatible format (kind, targetMode, condition, etc.)
+- Replaced regex-heavy `emitInstructionJs()` with direct tag dispatch (~50 handlers, zero regex)
+- Fixed decoder bugs: IN0/OUT0 register tables (0x30/0x31 shadowed eZ80 LD IX/IY,(HL)), DD/FD→ED forwarding
+
+### Phase 14: Interrupt Dispatch Model (complete)
+
+**Modified `TI-84_Plus_CE/peripherals.js`:**
+- Added interrupt controller state: `timerPending`, `nmiPending`, counter, interval
+- Timer fires IRQ or NMI every N blocks (configurable `timerInterval`, `timerMode`)
+- Methods: `tick()`, `hasPendingIRQ()`, `hasPendingNMI()`, `acknowledgeIRQ()`, `acknowledgeNMI()`, `triggerNMI()`, `triggerIRQ()`
+- Added interrupt status register (port 0x3D) returning 0x00 — NMI handler at 0x0066 takes alternate path
+- Added interrupt acknowledge register (port 0x3E)
+
+**Modified `TI-84_Plus_CE/cpu-runtime.js`:**
+- After each block: `peripherals.tick()` → check NMI (non-maskable) → check IRQ (if IFF1)
+- NMI dispatch: push PC, save IFF1→IFF2, clear IFF1, jump to 0x0066
+- IRQ dispatch: push PC, clear IFF1/IFF2, jump to IM1 (0x0038) or IM2 (vector table)
+- HALT wake: check NMI/IRQ before terminating, dispatch interrupt to wake CPU
+- `onInterrupt(type, fromPc, vector, step)` callback
+
+**Key finding — NMI handler branching:**
+- Port 0x3D = 0xFF (old): NMI handler re-enters startup (infinite cycle)
+- Port 0x3D = 0x00 (new): NMI handler takes alternate path (0x000047 → call 0x0008BB → halt)
+
+### Phase 15: DD/FD Prefix Passthrough (complete)
+
+- DD/FD prefix on non-IX/IY opcodes now executes the opcode as-is (DD consumed silently)
+- Example: DD 2F = CPL (was NOP), DD AF = XOR A (was NOP)
+- Stacked prefix bytes (DD DD, FD FD) still treated as NOP
+- Added DD/FD→ED forwarding in decodeDDFD (DD ED xx decoded as ED instruction)
+- Block count decreased from 50533 to 50369 due to corrected instruction lengths
+
+### Phase 16: CPU Completeness + Deep Profiling (complete)
+
+**16A: Added missing CPU methods:**
+- `cpd()` / `cpdr()` — block compare with decrement (mirrors cpi/cpir)
+
+**16B: Deep execution profiling (0x021000, 100K steps):**
+- Created `TI-84_Plus_CE/deep-profile.mjs`
+- 0x021000 → JP 0x09BF16 → OS dispatch loop at 0x082000
+- 210 steps to halt (NMI triggers at step 200, handler halts)
+- 50 dynamic targets discovered (all in 0x082xxx jump table)
+- 0 missing blocks — static analysis covers all reachable code
+- 94 blocks visited in 0x082000 region (OS jump table dispatch)
+- 11 active 4KB regions across the ROM
+
+**16C: Block I/O instructions added:**
+- Decoder: INI, IND, INIR, INDR, OUTI, OUTD, OTIR, OTDR (ED prefix)
+- CPU: ini(), ind(), outi(), outd(), inir(), indr(), otir(), otdr()
+- Emitter: direct tag handlers for all 8 block I/O tags
+
+### Phase 19: Peripheral Audit + OS Wake Analysis (complete)
+
+**19A: Port I/O audit:**
+- Traced port reads across 4 entry points (0x000000, 0x021000, 0x000658, 0x0012CA) at 10K steps each
+- Result: **zero unregistered port reads**. All reads go to registered handlers (GPIO 0x03, flash 0x06, PLL 0x28)
+- The OS boot completes normally in 18 steps (post-PLL) and enters power-down HALT at 0x0019B5
+
+**19B: IRQ wake analysis:**
+- IM1 handler at 0x000038: saves registers (EX AF/EXX, push IX/IY), loads IY=0xD00080 (OS system vars), JP 0x0006F3
+- 0x0006F3: checks flash status (port 0x06 bit 2). If flash ready → 0x000704
+- 0x000704: sets system flag (IY+27 bit 6), checks if A=0xD0 for interrupt dispatch
+- If A≠0xD0 → power-down. If A=0xD0 → 0x000710 (reads callback address from RAM at 0xD02AD7, calls 0x001713)
+- **Current behavior**: A=0x00 (flash returns 0x00), so handler always re-enters power-down
+- **To unlock deeper interrupt handling**: need A=0xD0 at the CP check, which requires modeling a hardware interrupt source register
+
+**Key finding — OS execution flow:**
+1. Boot: DI → PLL init → hardware setup → RST 0x08 → init function → power-down HALT
+2. IRQ wake: EX AF/EXX → check flash → set flag → CP 0xD0 → power-down (no dispatch)
+3. NMI wake: check port 0x3D → if 0x00: call 0x0008BB → quick return → HALT
+
+### Phase 18: Flag Accuracy + Dead Code Cleanup (complete)
+
+**18A: INC/DEC flag updates:**
+- Added `inc8(value)` / `dec8(value)` to CPU class with proper S/Z/H/PV/N flags (C preserved)
+- Updated emitter: INC r, DEC r, INC (HL), DEC (HL), INC (IX+d), DEC (IX+d)
+
+**18B: CALL return address:**
+- Verified the emitter was already correct (`cpu.push(fallthrough); return target;`)
+- Removed dead `cpu.call()` method with stale BUG comment
+
+**18C: OR/XOR flag fix:**
+- Added `updateOrXorFlags()` (H=0) separate from `updateLogicFlags()` (H=1, for AND)
+- Updated emitter: OR/XOR now use `updateOrXorFlags`, AND uses `updateLogicFlags`
+
+**18D: CPL and accumulator rotate flags:**
+- CPL now sets H=1, N=1
+- RLCA/RRCA/RLA/RRA now set X/Y (bits 3/5) from result
 
 ---
 
@@ -170,15 +263,15 @@ Table-driven decoder to replace the z80js npm dependency. Produces structured in
 
 ### `scripts/transpile-ti84-rom.mjs`
 
-Source of truth for generation. Current seed count: 125 (RST vectors + known anchors + gap seeds + 70 dynamic targets). Still uses z80js + manual decoders (Phase 13B will replace).
+Source of truth for generation. Current seed count: 125 (RST vectors + known anchors + gap seeds + 70 dynamic targets). Uses the table-driven eZ80 decoder with direct tag dispatch — no z80js dependency, no regex parsing.
 
 ### `TI-84_Plus_CE/ROM.transpiled.js`
 
-Generated module: 50488 blocks, 7.58% coverage.
+Generated module: 50485 blocks, 7.58% coverage.
 
 ### `TI-84_Plus_CE/cpu-runtime.js`
 
-CPU runtime (~840 lines):
+CPU runtime (~930 lines):
 - Full `CPU` class (registers, ALU, I/O, stack, block transfer, rotate/shift)
 - `createExecutor(blocks, memory, options)` with peripheral bus support
 - Missing block skip-ahead + discovery collection
@@ -187,11 +280,11 @@ CPU runtime (~840 lines):
 
 ### `TI-84_Plus_CE/peripherals.js`
 
-I/O peripheral bus (~237 lines): PLL, CPU control, GPIO, flash, timers.
+I/O peripheral bus + interrupt controller (~290 lines): PLL, CPU control, GPIO, flash, timers, interrupt status (0x3D), interrupt ack (0x3E), timer-driven NMI/IRQ.
 
 ### `TI-84_Plus_CE/test-harness.mjs`
 
-Validation harness (~320 lines): 5 tests, multi-entry exploration, missing block discovery, dynamic target discovery, hot block profiling, PLL validation.
+Validation harness (~400 lines): 8 tests, multi-entry exploration, missing block discovery, dynamic target discovery, hot block profiling, PLL validation, NMI/IM1 wake, timer interrupt dispatch.
 
 ### `TI-84_Plus_CE/coverage-analyzer.mjs`
 
@@ -201,13 +294,16 @@ Standalone gap analysis: heatmap, gap ranking, seed suggestions.
 
 Current metrics:
 - ROM size: `4194304`
-- Block count: `50488`
+- Block count: `50485`
 - Covered bytes: `317806`
 - Coverage percent: `7.5771`
 - Seed count: `125`
 - Live stubs: `0`
 
 Historical baselines:
+- After Phase 17: blocks=`50485`, bytes=`317806`, coverage=`7.58%`, stubs=`0`, complete ED instruction set
+- After Phase 15: blocks=`50369`, bytes=`316523`, coverage=`7.55%`, stubs=`0`, DD/FD passthrough
+- After Phase 13B: blocks=`50533`, bytes=`316782`, coverage=`7.55%`, stubs=`0`, z80js removed
 - After Phase 11B: blocks=`50488`, bytes=`317806`, coverage=`7.58%`, stubs=`0`
 - After Phase 11A: blocks=`50407`, bytes=`317118`, coverage=`7.56%`, stubs=`25`
 - After Phase 10C: blocks=`50383`, bytes=`316860`, coverage=`7.55%`, OS=`30.22%`
@@ -223,16 +319,20 @@ Historical baselines:
 ## Verified State
 
 1. `node --check scripts/transpile-ti84-rom.mjs` passes
-2. `node scripts/transpile-ti84-rom.mjs` generates 50488 blocks at 7.58% coverage
-3. All 50488 blocks compile successfully (0 failures)
-4. `node TI-84_Plus_CE/test-harness.mjs` runs 5 tests:
+2. `node scripts/transpile-ti84-rom.mjs` generates 50485 blocks at 7.58% coverage (no z80js needed)
+3. All 50485 blocks compile successfully (0 failures)
+4. `node TI-84_Plus_CE/test-harness.mjs` runs 8 tests:
    - Tests 1-3: Reset vector → HALT in 60 steps (with peripherals + loop breaker)
    - Test 4: Peripheral validation — PLL returns 0x04 correctly, 1 forced break (interrupt-driven loop)
    - Test 5: 14 entry points — 8 reach HALT, 4 run deep, 2 hit missing blocks
+   - Test 6: NMI wake — 9 steps, halt (port 0x3D returns 0x00)
+   - Test 7: IM1 wake — 6 steps to halt
+   - Test 8: Timer NMI from reset — 110 steps, 1 interrupt fired, halt
 5. `node TI-84_Plus_CE/coverage-analyzer.mjs` — OS area ~30%, gap seeds identified
 6. Missing block discovery: 2 dynamic targets (0x7eedf3, 0xc202fe — wild jumps)
 7. Dynamic jump instrumentation: 72 targets discovered, all already statically reachable
-8. **Zero** `cpu.unimplemented()` live stubs (all 25 fixed via decoder + emitter patches)
+8. **Zero** `cpu.unimplemented()` live stubs
+9. **z80js dependency eliminated** — new table-driven eZ80 decoder (ez80-decoder.js) handles all decoding
 
 ---
 
@@ -257,10 +357,9 @@ Do not replace this with a high-level emulator rewrite unless the user explicitl
 
 ## How To Regenerate
 
-From repo root:
+From repo root (no dependencies needed):
 
 ```bash
-npm install --no-save --package-lock=false z80js
 node scripts/transpile-ti84-rom.mjs
 ```
 
@@ -291,7 +390,14 @@ node TI-84_Plus_CE/coverage-analyzer.mjs
 ### Phase 11B: Stub Elimination (25→0) — DONE ✓
 ### Phase 12: Post-HALT Wake + Executor Wake Support — DONE ✓
 ### Phase 13A: Complete eZ80 Instruction Decoder — DONE ✓
-### Phase 13B: Integrate Decoder into Transpiler — TODO (next session)
+### Phase 13B: Integrate Decoder into Transpiler — DONE ✓
+### Phase 14: Interrupt Dispatch Model — DONE ✓
+### Phase 15: DD/FD Prefix Passthrough — DONE ✓
+### Phase 16: CPU Completeness + Deep Profiling — DONE ✓
+### Phase 17: Missing ED Instructions (LEA GP, word LD) — DONE ✓
+### Phase 18: Flag Accuracy + Dead Code Cleanup — DONE ✓
+### Phase 19: Peripheral Audit + OS Wake Analysis — DONE ✓
+### Phase 20: ALU Tests + MMIO Tracking + Browser Shell — DONE ✓
 
 ---
 
@@ -299,53 +405,20 @@ node TI-84_Plus_CE/coverage-analyzer.mjs
 
 The static reachability frontier is exhausted at ~50K blocks. Further coverage requires dynamic techniques:
 
-### 1. Integrate eZ80 Decoder (Phase 13B — immediate next step)
+### 1. Hardware Interrupt Source Modeling
 
-The standalone decoder at `TI-84_Plus_CE/ez80-decoder.js` (784 lines) is built and tested. Integration requires:
-1. Import decoder into `scripts/transpile-ti84-rom.mjs`
-2. Add ~30 new tag handlers to `emitInstructionJs()` (ld-reg-reg, ld-reg-imm, alu-reg, alu-imm, inc-reg, dec-reg, add-pair, sbc-pair, adc-pair, push, pop, bit-test, bit-set, bit-res, rotate-reg, rotate-ind, in-reg, out-reg, out-imm, ld-special, ex-de-hl, ex-sp-pair, ex-af, exx, di, ei, scf, ccf, cpl, daa, neg, rlca, rrca, rla, rra, rrd, rld, ldi/ldir/ldd/lddr/cpi/cpir, retn, reti, im, ld-reg-ixd, ld-ixd-reg, ld-ixd-imm, alu-ixd, inc-ixd, dec-ixd, ld-sp-pair, ld-pair-ind, ld-ind-pair, ld-reg-ind, ld-ind-reg, ld-reg-mem, ld-mem-reg, ld-pair-imm, ld-pair-mem, ld-mem-pair, ld-ind-imm, in-imm)
-3. Replace `z80js` decode calls with new decoder
-4. Remove `z80js` npm dependency
-5. Regenerate and verify: block count should be ≥ 50488, stubs should be 0
+The OS interrupt handler at 0x000704 checks if A=0xD0 to dispatch to a callback table. This value comes from a hardware status register. Modeling the correct interrupt source register (likely a timer or keyboard controller) would allow the interrupt handler to dispatch to the OS event loop at 0x000710.
 
-The decoder produces structured objects so the emitter can use direct tag dispatch — no more mnemonic regex matching. This eliminates the entire z80js→text→regex pipeline.
-
-### 2. Indirect Jump Resolution
-
-Many blocks end in `jp (hl)`, `jp (ix)`, or computed jumps. The transpiler can't follow these statically. Approach:
-- Instrument the executor to log all indirect jump targets during test runs
-- Feed discovered targets back as seeds for the next transpiler pass
-- This creates a feedback loop: execute → discover targets → regenerate → execute deeper
-
-### 2. Interrupt Dispatch Model
-
-The PLL loop at 0x000690-0x000697 exits via interrupt (carry set externally). Without interrupt dispatch:
-- Reset vector reaches HALT in 60 steps (with force-break) instead of continuing past PLL init
-- Entry points 0x658, 0x800, 0x1afa are stuck in PLL loop
-
-Approach:
-- Add a basic interrupt controller to peripherals.js
-- Timer interrupt fires after configurable cycle count
-- Interrupt handler pushes PC, jumps to vector table entry
-- This would unlock the full post-PLL startup sequence
-
-### 3. New Instruction Forms at Deeper Frontier
-
-As coverage expands, new instruction forms will appear. The Phase 11B pattern (fix stubs → discover new paths → new stubs → fix again) should be repeated iteratively. Current emitter coverage is comprehensive but not exhaustive — the eZ80 instruction set is large.
-
-### 4. Execution Trace Verification
+### 2. Execution Trace Verification
 
 Compare against CEmu's real execution trace:
 - CEmu logging of first N blocks from reset
 - Block-by-block comparison of register/flag state
-- Identify emitter correctness bugs
+- Identify emitter correctness bugs (flag computation, edge cases)
 
-### 5. Deep Execution Analysis
+### 3. Browser-Based Runtime
 
-`0x021000` runs 5000 steps without halting — substantial code path. Investigate:
-- What code is executing (graphics init? OS setup?)
-- What blocks are hot (frequently visited)
-- What missing blocks would unlock further depth
+Wire the transpiled blocks + CPU + peripherals into an HTML canvas. The LCD controller is memory-mapped at 0xF00000+. Modeling the display buffer would show what the ROM renders during boot (TI logo, homescreen).
 
 ---
 
@@ -362,15 +435,18 @@ Compare against CEmu's real execution trace:
 
 ## Useful Repo Files
 
-- `scripts/transpile-ti84-rom.mjs` — ROM transpiler (source of truth, 55 seeds)
+- `scripts/transpile-ti84-rom.mjs` — ROM transpiler (source of truth, 125 seeds)
 - `TI-84_Plus_CE/ROM.rom` — TI-84 Plus CE ROM image (4MB)
-- `TI-84_Plus_CE/ROM.transpiled.js` — Generated module (50383 blocks)
+- `TI-84_Plus_CE/ROM.transpiled.js` — Generated module (50485 blocks)
 - `TI-84_Plus_CE/ROM.transpiled.report.json` — Coverage metrics
 - `TI-84_Plus_CE/cpu-runtime.js` — CPU class + createExecutor + missing block discovery
 - `TI-84_Plus_CE/peripherals.js` — I/O peripheral bus (PLL, GPIO, flash, timers)
-- `TI-84_Plus_CE/test-harness.mjs` — 5-test validation harness + multi-entry + discovery
+- `TI-84_Plus_CE/test-harness.mjs` — 8-test validation harness + multi-entry + discovery + interrupts
+- `TI-84_Plus_CE/deep-profile.mjs` — Deep execution profiler (0x021000 analysis)
 - `TI-84_Plus_CE/coverage-analyzer.mjs` — Gap analysis + heatmap + seed suggestions
-- `TI-84_Plus_CE/ez80-decoder.js` — Complete eZ80 instruction decoder (784 lines, NOT YET INTEGRATED)
+- `TI-84_Plus_CE/ez80-decoder.js` — Complete eZ80 instruction decoder (~790 lines, integrated into transpiler)
+- `TI-84_Plus_CE/test-alu.mjs` — ALU unit tests (72 tests: inc8, dec8, add8, sub8, adc, sbc, flags)
+- `TI-84_Plus_CE/browser-shell.html` — Browser-based ROM executor (320x240 canvas, step/run controls, register display, block trace log)
 - `ti84-rom-disassembly-spec.md`
 - `codex-rom-disassembly-prompt.md`
 - `codex-rom-state-machine-prompt.md`

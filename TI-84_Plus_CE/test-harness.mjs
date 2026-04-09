@@ -352,6 +352,54 @@ if (test7.missingBlocks && test7.missingBlocks.length > 0) {
   }
 }
 
+// --- Test 8: Timer-interrupt-driven NMI execution from reset ---
+// Create a new executor with NMI timer interrupts to test the interrupt dispatch model.
+console.log('\n--- Test 8: Timer Interrupt Dispatch ---');
+
+const intPeripherals = createPeripheralBus({
+  trace: false,
+  pllDelay: 2,
+  timerInterrupt: true,
+  timerInterval: 100,  // fire NMI every 100 blocks
+  timerMode: 'nmi',
+});
+const intExecutor = createExecutor(PRELIFTED_BLOCKS, romBytes, { peripherals: intPeripherals });
+const intCpu = intExecutor.cpu;
+
+intCpu.a = 0; intCpu.f = 0; intCpu.b = 0; intCpu.c = 0;
+intCpu.d = 0; intCpu.e = 0; intCpu.h = 0; intCpu.l = 0;
+intCpu.sp = 0; intCpu._ix = 0; intCpu._iy = 0;
+intCpu.i = 0; intCpu.im = 0; intCpu.iff1 = 0; intCpu.iff2 = 0;
+intCpu.madl = 1; intCpu.halted = false;
+
+const intInterrupts = [];
+const intDynamic = [];
+const test8 = intExecutor.runFrom(0x000000, 'z80', {
+  maxSteps: 10000,
+  maxLoopIterations: 200,
+  onInterrupt: (type, fromPc, vector, step) => {
+    intInterrupts.push({ type, fromPc, vector, step });
+  },
+  onDynamicTarget: (targetPc, mode, fromPc, step) => {
+    intDynamic.push({ targetPc, mode, fromPc, step });
+  },
+  onLoopBreak: (pc, mode, count, target) => {
+    console.log(`  [INT] Loop break at 0x${pc.toString(16).padStart(6, '0')}:${mode} (${count} iterations)`);
+  },
+});
+
+console.log(`\n  Test 8 (timer NMI from reset):`);
+console.log(`    Steps: ${test8.steps}, termination: ${test8.termination}`);
+console.log(`    Last PC: 0x${test8.lastPc.toString(16).padStart(6, '0')}:${test8.lastMode}`);
+console.log(`    Loops forced: ${test8.loopsForced}, dynamic targets: ${intDynamic.length}`);
+console.log(`    Interrupts fired: ${intInterrupts.length}`);
+for (const intr of intInterrupts.slice(0, 10)) {
+  console.log(`      ${intr.type} at step ${intr.step}: 0x${intr.fromPc.toString(16).padStart(6, '0')} -> 0x${intr.vector.toString(16).padStart(6, '0')}`);
+}
+if (intInterrupts.length > 10) {
+  console.log(`      ... and ${intInterrupts.length - 10} more`);
+}
+
 // --- Summary ---
 console.log(`\n${'='.repeat(60)}`);
 console.log('SUMMARY');
@@ -363,6 +411,7 @@ console.log(`  Test 4 (peripheral):   ${test4.steps} steps, terminated: ${test4.
 console.log(`  Test 5 (multi-entry):  ${multiResults.length} entry points tested, ${deepRuns.length} reached >100 steps`);
 console.log(`  Test 6 (NMI wake):     ${test6.steps} steps, terminated: ${test6.termination}, dynamic: ${nmiDynamic.length}`);
 console.log(`  Test 7 (IM1 wake):     ${test7.steps} steps, terminated: ${test7.termination}, dynamic: ${im1Dynamic.length}`);
+console.log(`  Test 8 (timer NMI):    ${test8.steps} steps, terminated: ${test8.termination}, interrupts: ${intInterrupts.length}`);
 
 // --- Compilation stats ---
 const totalBlocks = Object.keys(PRELIFTED_BLOCKS).length;

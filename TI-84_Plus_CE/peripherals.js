@@ -223,6 +223,71 @@ export function createPeripheralBus(options = {}) {
     };
   }
 
+  // Interrupt controller state
+  const interruptState = {
+    irqPending: false,
+    nmiPending: false,
+    timerEnabled: options.timerInterrupt !== false,
+    timerInterval: Math.max(1, Number(options.timerInterval ?? 200) | 0),
+    timerCounter: 0,
+    timerMode: options.timerMode ?? 'irq', // 'irq' or 'nmi'
+    totalTicks: 0,
+  };
+
+  function tick() {
+    interruptState.totalTicks++;
+
+    if (!interruptState.timerEnabled) return;
+
+    interruptState.timerCounter++;
+
+    if (interruptState.timerCounter >= interruptState.timerInterval) {
+      if (interruptState.timerMode === 'nmi') {
+        interruptState.nmiPending = true;
+      } else {
+        interruptState.irqPending = true;
+      }
+      interruptState.timerCounter = 0;
+    }
+  }
+
+  function hasPendingIRQ() {
+    return interruptState.irqPending;
+  }
+
+  function hasPendingNMI() {
+    return interruptState.nmiPending;
+  }
+
+  function acknowledgeIRQ() {
+    interruptState.irqPending = false;
+  }
+
+  function acknowledgeNMI() {
+    interruptState.nmiPending = false;
+  }
+
+  function triggerNMI() {
+    interruptState.nmiPending = true;
+  }
+
+  function triggerIRQ() {
+    interruptState.irqPending = true;
+  }
+
+  // Interrupt status/acknowledge registers (ports 0x3D-0x3E)
+  // The NMI handler reads 0x3D to determine interrupt source.
+  // Returning 0x00 means "no recognized interrupt" → NMI handler takes the
+  // alternate path (0x000047 → call 0x0008BB).
+  register(0x3d, {
+    read() { return 0x00; },
+    write() {},
+  });
+  register(0x3e, {
+    read() { return 0x00; },
+    write() {},
+  });
+
   register(0x00, createCpuControlHandler(state));
   register(0x03, createGpioHandler(state));
   register(0x06, createFlashHandler(state));
@@ -234,5 +299,12 @@ export function createPeripheralBus(options = {}) {
     write,
     register,
     getState,
+    tick,
+    hasPendingIRQ,
+    hasPendingNMI,
+    acknowledgeIRQ,
+    acknowledgeNMI,
+    triggerNMI,
+    triggerIRQ,
   };
 }

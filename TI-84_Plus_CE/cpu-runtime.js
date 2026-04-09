@@ -253,11 +253,45 @@ export class CPU {
     return result;
   }
 
+  inc8(value) {
+    const result = (value + 1) & 0xff;
+    this._szFlags(result);
+    this._setFlag(FLAG_H, (value & 0x0f) === 0x0f);
+    this._setFlag(FLAG_PV, value === 0x7f);
+    this._setFlag(FLAG_N, false);
+    // C flag preserved
+    return result;
+  }
+
+  dec8(value) {
+    const result = (value - 1) & 0xff;
+    this._szFlags(result);
+    this._setFlag(FLAG_H, (value & 0x0f) === 0x00);
+    this._setFlag(FLAG_PV, value === 0x80);
+    this._setFlag(FLAG_N, true);
+    // C flag preserved
+    return result;
+  }
+
   updateLogicFlags(result) {
+    // AND: H=1, N=0, C=0
     const r = result & 0xff;
     this._setFlag(FLAG_S, r & 0x80);
     this._setFlag(FLAG_Z, r === 0);
     this._setFlag(FLAG_H, true);
+    this._setFlag(FLAG_PV, parity(r));
+    this._setFlag(FLAG_N, false);
+    this._setFlag(FLAG_C, false);
+    this._setFlag(FLAG_X, r & FLAG_X);
+    this._setFlag(FLAG_Y, r & FLAG_Y);
+  }
+
+  updateOrXorFlags(result) {
+    // OR/XOR: H=0, N=0, C=0
+    const r = result & 0xff;
+    this._setFlag(FLAG_S, r & 0x80);
+    this._setFlag(FLAG_Z, r === 0);
+    this._setFlag(FLAG_H, false);
     this._setFlag(FLAG_PV, parity(r));
     this._setFlag(FLAG_N, false);
     this._setFlag(FLAG_C, false);
@@ -319,6 +353,8 @@ export class CPU {
     this._setFlag(FLAG_H, false);
     this._setFlag(FLAG_N, false);
     this._setFlag(FLAG_C, bit7);
+    this._setFlag(FLAG_X, result & FLAG_X);
+    this._setFlag(FLAG_Y, result & FLAG_Y);
     return result;
   }
 
@@ -328,6 +364,8 @@ export class CPU {
     this._setFlag(FLAG_H, false);
     this._setFlag(FLAG_N, false);
     this._setFlag(FLAG_C, bit0);
+    this._setFlag(FLAG_X, result & FLAG_X);
+    this._setFlag(FLAG_Y, result & FLAG_Y);
     return result;
   }
 
@@ -338,6 +376,8 @@ export class CPU {
     this._setFlag(FLAG_H, false);
     this._setFlag(FLAG_N, false);
     this._setFlag(FLAG_C, bit7);
+    this._setFlag(FLAG_X, result & FLAG_X);
+    this._setFlag(FLAG_Y, result & FLAG_Y);
     return result;
   }
 
@@ -348,6 +388,8 @@ export class CPU {
     this._setFlag(FLAG_H, false);
     this._setFlag(FLAG_N, false);
     this._setFlag(FLAG_C, bit0);
+    this._setFlag(FLAG_X, result & FLAG_X);
+    this._setFlag(FLAG_Y, result & FLAG_Y);
     return result;
   }
 
@@ -478,6 +520,23 @@ export class CPU {
     } while (this.bc !== 0 && !this._getFlag(FLAG_Z));
   }
 
+  cpd() {
+    const value = this.read8(this.hl);
+    const result = this.a - value;
+    this.hl = (this.hl - 1) & this.addressMask;
+    this.bc = (this.bc - 1) & this.addressMask;
+    this._szFlags(result);
+    this._setFlag(FLAG_H, ((this.a ^ value ^ result) & 0x10) !== 0);
+    this._setFlag(FLAG_PV, this.bc !== 0);
+    this._setFlag(FLAG_N, true);
+  }
+
+  cpdr() {
+    do {
+      this.cpd();
+    } while (this.bc !== 0 && !this._getFlag(FLAG_Z));
+  }
+
   // --- BCD rotate ---
 
   rld() {
@@ -535,7 +594,58 @@ export class CPU {
     this.ioWrite(this.c, value);
     this.hl = (this.hl + 1) & this.addressMask;
     this.b = (this.b - 1) & 0xff;
-    // Repeat is handled in emitter, not here
+  }
+
+  ini() {
+    const value = this.ioRead(this.c);
+    this.write8(this.hl, value);
+    this.hl = (this.hl + 1) & this.addressMask;
+    this.b = (this.b - 1) & 0xff;
+    this._setFlag(FLAG_Z, this.b === 0);
+    this._setFlag(FLAG_N, true);
+  }
+
+  ind() {
+    const value = this.ioRead(this.c);
+    this.write8(this.hl, value);
+    this.hl = (this.hl - 1) & this.addressMask;
+    this.b = (this.b - 1) & 0xff;
+    this._setFlag(FLAG_Z, this.b === 0);
+    this._setFlag(FLAG_N, true);
+  }
+
+  outi() {
+    const value = this.read8(this.hl);
+    this.ioWrite(this.c, value);
+    this.hl = (this.hl + 1) & this.addressMask;
+    this.b = (this.b - 1) & 0xff;
+    this._setFlag(FLAG_Z, this.b === 0);
+    this._setFlag(FLAG_N, true);
+  }
+
+  outd() {
+    const value = this.read8(this.hl);
+    this.ioWrite(this.c, value);
+    this.hl = (this.hl - 1) & this.addressMask;
+    this.b = (this.b - 1) & 0xff;
+    this._setFlag(FLAG_Z, this.b === 0);
+    this._setFlag(FLAG_N, true);
+  }
+
+  inir() {
+    do { this.ini(); } while (this.b !== 0);
+  }
+
+  indr() {
+    do { this.ind(); } while (this.b !== 0);
+  }
+
+  otir() {
+    do { this.outi(); } while (this.b !== 0);
+  }
+
+  otdr() {
+    do { this.outd(); } while (this.b !== 0);
   }
 
   // --- Stack/Control ---
@@ -559,15 +669,6 @@ export class CPU {
     const value = this.read16(this.sp);
     this.sp = (this.sp + 2) & 0xffff;
     return value;
-  }
-
-  call(target) {
-    // BUG: The emitter passes the CALL TARGET (subroutine address), not the
-    // return address (fallthrough after call). This means RET will pop a wrong
-    // value. Fix requires emitter change to pass fallthrough instead.
-    // For now: push target to keep stack balanced, track depth for debugging.
-    this.push(target);
-    this._callDepth = (this._callDepth || 0) + 1;
   }
 
   popReturn() {
@@ -634,6 +735,11 @@ export class CPU {
 
   onIoRead(port, value) {}
   onIoWrite(port, value) {}
+
+  // --- Memory-mapped I/O hooks (no-ops by default) ---
+  // Installed by executor when trackMemoryMapped option is set
+  onMmioRead(addr, value) {}
+  onMmioWrite(addr, value) {}
 }
 
 export function createExecutor(blocks, memory, options = {}) {
@@ -658,6 +764,21 @@ export function createExecutor(blocks, memory, options = {}) {
     origIoWrite(port, value);
     cpu.onIoWrite(port, value);
   };
+
+  // Optional: wrap memory reads/writes for memory-mapped I/O tracking (0xE00000+)
+  if (options.trackMemoryMapped) {
+    const origRead8 = cpu.read8.bind(cpu);
+    const origWrite8 = cpu.write8.bind(cpu);
+    cpu.read8 = (addr) => {
+      const value = origRead8(addr);
+      if (addr >= 0xe00000) cpu.onMmioRead(addr, value);
+      return value;
+    };
+    cpu.write8 = (addr, value) => {
+      origWrite8(addr, value);
+      if (addr >= 0xe00000) cpu.onMmioWrite(addr, value);
+    };
+  }
 
   // Compile block source strings into callable functions
   const compiledBlocks = {};
@@ -845,8 +966,86 @@ export function createExecutor(blocks, memory, options = {}) {
             continue;
           }
 
+          // HALT: check for peripheral-driven interrupt wake
+          if (result === -1 && options.peripherals && options.peripherals.tick) {
+            options.peripherals.tick();
+
+            // NMI wakes from HALT regardless of IFF1
+            if (options.peripherals.hasPendingNMI()) {
+              cpu.halted = false;
+              const haltReturnPc = pc + 1;
+              cpu.push(haltReturnPc);
+              cpu.iff2 = cpu.iff1;
+              cpu.iff1 = 0;
+              pc = 0x000066;
+              options.peripherals.acknowledgeNMI();
+              if (opts.onInterrupt) {
+                opts.onInterrupt('nmi', haltReturnPc, 0x000066, steps);
+              }
+              steps++;
+              continue;
+            }
+
+            // Maskable IRQ wakes from HALT only if IFF1 is set
+            if (options.peripherals.hasPendingIRQ() && cpu.iff1) {
+              cpu.halted = false;
+              const haltReturnPc = pc + 1;
+              cpu.push(haltReturnPc);
+              cpu.iff1 = 0;
+              cpu.iff2 = 0;
+              const vector = cpu.im === 2
+                ? cpu.read16((cpu.i << 8) | 0xff)
+                : 0x000038;
+              pc = vector;
+              options.peripherals.acknowledgeIRQ();
+              if (opts.onInterrupt) {
+                opts.onInterrupt('irq', haltReturnPc, vector, steps);
+              }
+              steps++;
+              continue;
+            }
+          }
+
           termination = result === -1 ? 'halt' : 'sleep';
           break;
+        }
+
+        // Check for peripheral-driven interrupts after each block
+        if (options.peripherals && options.peripherals.tick) {
+          options.peripherals.tick();
+
+          // NMI: non-maskable, fires regardless of IFF1
+          if (options.peripherals.hasPendingNMI()) {
+            cpu.push(result);
+            cpu.iff2 = cpu.iff1;
+            cpu.iff1 = 0;
+            pc = 0x000066;
+            mode = 'adl';
+            options.peripherals.acknowledgeNMI();
+            if (opts.onInterrupt) {
+              opts.onInterrupt('nmi', result, 0x000066, steps);
+            }
+            steps++;
+            continue;
+          }
+
+          // Maskable IRQ: only fires if interrupts are enabled
+          if (options.peripherals.hasPendingIRQ() && cpu.iff1) {
+            cpu.push(result);
+            cpu.iff1 = 0;
+            cpu.iff2 = 0;
+            const vector = cpu.im === 2
+              ? cpu.read16((cpu.i << 8) | 0xff)
+              : 0x000038;
+            pc = vector;
+            mode = 'adl';
+            options.peripherals.acknowledgeIRQ();
+            if (opts.onInterrupt) {
+              opts.onInterrupt('irq', result, vector, steps);
+            }
+            steps++;
+            continue;
+          }
         }
 
         if (meta && meta.exits) {

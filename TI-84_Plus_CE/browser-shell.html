@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TI-84 Plus CE ROM Runner</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #1a1a2e; color: #e0e0e0; font-family: 'Courier New', monospace; font-size: 13px; padding: 16px; }
+h1 { font-size: 16px; color: #6cb4ee; margin-bottom: 12px; }
+.layout { display: flex; gap: 16px; }
+.left { flex: 0 0 340px; }
+.right { flex: 1; min-width: 0; }
+canvas { border: 2px solid #444; background: #000; display: block; margin-bottom: 12px; image-rendering: pixelated; }
+.controls { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+button { background: #2a2a4a; color: #e0e0e0; border: 1px solid #555; padding: 6px 14px; cursor: pointer; font-family: inherit; font-size: 12px; border-radius: 3px; }
+button:hover { background: #3a3a6a; }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+.regs { background: #0d0d1a; border: 1px solid #333; padding: 10px; margin-bottom: 12px; font-size: 12px; line-height: 1.6; border-radius: 4px; }
+.regs .label { color: #888; }
+.regs .val { color: #6cb4ee; }
+.log { background: #0d0d1a; border: 1px solid #333; padding: 8px; height: 500px; overflow-y: auto; font-size: 11px; line-height: 1.4; border-radius: 4px; }
+.log .step { color: #555; }
+.log .addr { color: #6cb4ee; }
+.log .dasm { color: #ccc; }
+.log .info { color: #e8a838; }
+.status { background: #1e3a1e; border: 1px solid #2a5a2a; padding: 8px; margin-bottom: 12px; border-radius: 4px; color: #7ddf7d; font-size: 12px; }
+.status.error { background: #3a1e1e; border-color: #5a2a2a; color: #df7d7d; }
+</style>
+</head>
+<body>
+<h1>TI-84 Plus CE ROM Executor</h1>
+<div class="layout">
+  <div class="left">
+    <canvas id="lcd" width="320" height="240"></canvas>
+    <div class="controls">
+      <button id="btnBoot">Boot</button>
+      <button id="btnStep" disabled>Step</button>
+      <button id="btnRun100" disabled>Run 100</button>
+      <button id="btnRun1K" disabled>Run 1K</button>
+      <button id="btnReset">Reset</button>
+    </div>
+    <div id="status" class="status">Ready. Click Boot to start.</div>
+    <div class="regs" id="regs">
+      <span class="label">A=</span><span class="val" id="rA">00</span>
+      <span class="label"> F=</span><span class="val" id="rF">00</span>
+      <span class="label"> BC=</span><span class="val" id="rBC">0000</span>
+      <span class="label"> DE=</span><span class="val" id="rDE">0000</span>
+      <span class="label"> HL=</span><span class="val" id="rHL">0000</span><br>
+      <span class="label">SP=</span><span class="val" id="rSP">000000</span>
+      <span class="label"> IX=</span><span class="val" id="rIX">000000</span>
+      <span class="label"> IY=</span><span class="val" id="rIY">000000</span><br>
+      <span class="label">PC=</span><span class="val" id="rPC">000000</span>
+      <span class="label"> IM=</span><span class="val" id="rIM">0</span>
+      <span class="label"> IFF=</span><span class="val" id="rIFF">0</span>
+      <span class="label"> Steps=</span><span class="val" id="rSteps">0</span>
+    </div>
+  </div>
+  <div class="right">
+    <div class="log" id="log"></div>
+  </div>
+</div>
+
+<script type="module">
+import { PRELIFTED_BLOCKS, TRANSPILATION_META, decodeEmbeddedRom } from './ROM.transpiled.js';
+import { createExecutor } from './cpu-runtime.js';
+import { createPeripheralBus } from './peripherals.js';
+
+const hex = (v, w) => v.toString(16).padStart(w, '0');
+const $ = id => document.getElementById(id);
+
+const logEl = $('log');
+const statusEl = $('status');
+
+let executor = null;
+let cpu = null;
+let totalSteps = 0;
+let lastPc = 0;
+let lastMode = 'z80';
+
+function log(html) {
+  const line = document.createElement('div');
+  line.innerHTML = html;
+  logEl.appendChild(line);
+  if (logEl.children.length > 500) logEl.removeChild(logEl.firstChild);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function updateRegs() {
+  if (!cpu) return;
+  $('rA').textContent = hex(cpu.a, 2);
+  $('rF').textContent = hex(cpu.f, 2);
+  $('rBC').textContent = hex(cpu.bc, 4);
+  $('rDE').textContent = hex(cpu.de, 4);
+  $('rHL').textContent = hex(cpu.hl, 4);
+  $('rSP').textContent = hex(cpu.sp, 6);
+  $('rIX').textContent = hex(cpu.ix, 6);
+  $('rIY').textContent = hex(cpu.iy, 6);
+  $('rPC').textContent = hex(lastPc, 6);
+  $('rIM').textContent = cpu.im;
+  $('rIFF').textContent = cpu.iff1;
+  $('rSteps').textContent = totalSteps;
+}
+
+function setStatus(msg, error = false) {
+  statusEl.textContent = msg;
+  statusEl.className = error ? 'status error' : 'status';
+}
+
+function enableButtons(booted) {
+  $('btnStep').disabled = !booted;
+  $('btnRun100').disabled = !booted;
+  $('btnRun1K').disabled = !booted;
+}
+
+function runSteps(n) {
+  if (!executor) return;
+  const result = executor.runFrom(lastPc, lastMode, {
+    maxSteps: n,
+    maxLoopIterations: 64,
+    onBlock: (pc, mode, meta, step) => {
+      const dasm = meta?.instructions?.[0]?.dasm ?? '???';
+      log(`<span class="step">[${totalSteps + step}]</span> <span class="addr">${hex(pc, 6)}:${mode}</span> <span class="dasm">${dasm}</span>`);
+    },
+  });
+  totalSteps += result.steps;
+  lastPc = result.lastPc;
+  lastMode = result.lastMode;
+  updateRegs();
+  setStatus(`${result.steps} steps, ${result.termination} | Total: ${totalSteps}`);
+  if (result.termination === 'halt') {
+    log(`<span class="info">--- HALT at ${hex(result.lastPc, 6)} ---</span>`);
+  }
+}
+
+// Boot
+$('btnBoot').addEventListener('click', () => {
+  log(`<span class="info">--- Decoding ROM (${TRANSPILATION_META.blockCount} blocks, ${TRANSPILATION_META.coveragePercent}% coverage) ---</span>`);
+
+  const romBytes = decodeEmbeddedRom();
+  const peripherals = createPeripheralBus({ pllDelay: 2 });
+  executor = createExecutor(PRELIFTED_BLOCKS, romBytes, { peripherals });
+  cpu = executor.cpu;
+  totalSteps = 0;
+  lastPc = 0x000000;
+  lastMode = 'z80';
+
+  log(`<span class="info">--- Boot from 0x000000:z80 ---</span>`);
+  enableButtons(true);
+  runSteps(200);
+});
+
+$('btnStep').addEventListener('click', () => runSteps(1));
+$('btnRun100').addEventListener('click', () => runSteps(100));
+$('btnRun1K').addEventListener('click', () => runSteps(1000));
+
+$('btnReset').addEventListener('click', () => {
+  executor = null;
+  cpu = null;
+  totalSteps = 0;
+  lastPc = 0;
+  logEl.innerHTML = '';
+  enableButtons(false);
+  updateRegs();
+  setStatus('Ready. Click Boot to start.');
+});
+
+log(`<span class="info">ROM: ${TRANSPILATION_META.blockCount} blocks, ${TRANSPILATION_META.coveredBytes} bytes, ${TRANSPILATION_META.coveragePercent}% coverage</span>`);
+</script>
+</body>
+</html>
