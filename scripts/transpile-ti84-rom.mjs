@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
@@ -14,7 +15,7 @@ try {
   throw error;
 }
 
-const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const romPath = path.join(repoRoot, 'TI-84_Plus_CE', 'ROM.rom');
 const outPath = path.join(repoRoot, 'TI-84_Plus_CE', 'ROM.transpiled.js');
 const reportPath = path.join(repoRoot, 'TI-84_Plus_CE', 'ROM.transpiled.report.json');
@@ -87,6 +88,18 @@ const mltRegs = {
   0x5c: 'de',
   0x6c: 'hl',
   0x7c: 'sp',
+};
+
+const loadWordFromHlRegs = {
+  0x07: 'bc',
+  0x17: 'de',
+  0x27: 'hl',
+};
+
+const storeWordToHlRegs = {
+  0x0f: 'bc',
+  0x1f: 'de',
+  0x2f: 'hl',
 };
 
 const conditionNames = {
@@ -207,19 +220,28 @@ function getWordWriteAccessor(instruction) {
 }
 
 function manualIndexedCbInstruction(startPc, pc, op0, mode) {
-  if ((op0 !== 0xdd && op0 !== 0xfd) || romBytes[pc + 1] !== 0xcb) {
+  if (op0 !== 0xdd && op0 !== 0xfd) {
     return null;
   }
 
-  const indexRegister = op0 === 0xdd ? 'ix' : 'iy';
-  const displacement = signedByte(romBytes[pc + 2] ?? 0);
-  const opcode = romBytes[pc + 3] ?? 0;
+  let indexRegister = op0 === 0xdd ? 'ix' : 'iy';
+  let cbPc = pc;
+
+  if ((romBytes[pc + 1] === 0xdd || romBytes[pc + 1] === 0xfd) && romBytes[pc + 2] === 0xcb) {
+    indexRegister = romBytes[pc + 1] === 0xdd ? 'ix' : 'iy';
+    cbPc = pc + 1;
+  } else if (romBytes[pc + 1] !== 0xcb) {
+    return null;
+  }
+
+  const displacement = signedByte(romBytes[cbPc + 2] ?? 0);
+  const opcode = romBytes[cbPc + 3] ?? 0;
   const group = opcode >> 6;
   const bit = (opcode >> 3) & 0x07;
   const registerCode = opcode & 0x07;
   const destination = indexedCbRegisters[registerCode];
   const operand = formatIndexedOperand(indexRegister, displacement);
-  const length = pc + 4 - startPc;
+  const length = cbPc + 4 - startPc;
 
   if (group === 0) {
     const operation = indexedCbOperations[bit];
@@ -271,6 +293,43 @@ function manualIndexedCbInstruction(startPc, pc, op0, mode) {
     length,
     nextMode: mode,
   };
+}
+
+function manualIndexedInstruction(startPc, pc, op0, mode) {
+  if (op0 !== 0xdd && op0 !== 0xfd) {
+    return null;
+  }
+
+  const op1 = romBytes[pc + 1];
+  const indexRegister = op0 === 0xdd ? 'ix' : 'iy';
+  const displacement = signedByte(romBytes[pc + 2] ?? 0);
+
+  if (op1 === 0x36) {
+    const value = romBytes[pc + 3] ?? 0;
+
+    return {
+      tag: 'indexed-immediate-store',
+      dasm: `ld ${formatIndexedOperand(indexRegister, displacement)}, ${hex(value)}`,
+      indexRegister,
+      displacement,
+      value,
+      length: pc + 4 - startPc,
+      nextMode: mode,
+    };
+  }
+
+  if (op1 === 0xbe) {
+    return {
+      tag: 'indexed-compare',
+      dasm: `cp a, ${formatIndexedOperand(indexRegister, displacement)}`,
+      indexRegister,
+      displacement,
+      length: pc + 3 - startPc,
+      nextMode: mode,
+    };
+  }
+
+  return null;
 }
 
 function manualEdInstruction(startPc, pc, op1, prefix, mode) {
@@ -371,6 +430,35 @@ function manualEdInstruction(startPc, pc, op1, prefix, mode) {
       tag: 'mlt',
       dasm: `mlt ${mltRegs[op1]}`,
       reg: mltRegs[op1],
+      length: pc + 2 - startPc,
+      nextMode: mode,
+    };
+  }
+
+  if (op1 === 0x93) {
+    return {
+      tag: 'otimr',
+      dasm: 'otimr',
+      length: pc + 2 - startPc,
+      nextMode: mode,
+    };
+  }
+
+  if (op1 in loadWordFromHlRegs) {
+    return {
+      tag: 'load-word-from-hl',
+      dasm: `ld ${loadWordFromHlRegs[op1]}, (hl)`,
+      register: loadWordFromHlRegs[op1],
+      length: pc + 2 - startPc,
+      nextMode: mode,
+    };
+  }
+
+  if (op1 in storeWordToHlRegs) {
+    return {
+      tag: 'store-word-to-hl',
+      dasm: `ld (hl), ${storeWordToHlRegs[op1]}`,
+      register: storeWordToHlRegs[op1],
       length: pc + 2 - startPc,
       nextMode: mode,
     };
@@ -631,6 +719,17 @@ function controlFlowInstruction(startPc, pc, op0, prefix, mode) {
     };
   }
 
+  if (op0 === 0xed && (romBytes[pc + 1] === 0x45 || romBytes[pc + 1] === 0x4d)) {
+    return {
+      tag: 'ret',
+      dasm: romBytes[pc + 1] === 0x45 ? 'retn' : 'reti',
+      kind: 'return',
+      length: pc + 2 - startPc,
+      nextMode: mode,
+      terminates: true,
+    };
+  }
+
   if ([0xc0, 0xc8, 0xd0, 0xd8, 0xe0, 0xe8, 0xf0, 0xf8].includes(op0)) {
     return {
       tag: 'ret-conditional',
@@ -702,6 +801,22 @@ function decodeInstruction(pc, mode) {
     };
   }
 
+  const indexed = manualIndexedInstruction(startPc, pc, op0, mode);
+
+  if (indexed) {
+    const bytes = bytesToHex(startPc, indexed.length);
+
+    return {
+      ...indexed,
+      pc: startPc,
+      mode,
+      prefix: prefix?.suffix ?? null,
+      op0,
+      op1,
+      bytes,
+    };
+  }
+
   const manual = op0 === 0xed ? manualEdInstruction(startPc, pc, op1, prefix, mode) : null;
 
   if (manual) {
@@ -715,6 +830,25 @@ function decodeInstruction(pc, mode) {
       op0,
       op1,
       bytes,
+    };
+  }
+
+  if (op0 === 0xdb) {
+    const port = romBytes[pc + 1] ?? 0;
+    const length = pc + 2 - startPc;
+
+    return {
+      tag: 'in-immediate',
+      pc: startPc,
+      mode,
+      prefix: prefix?.suffix ?? null,
+      op0,
+      op1,
+      port,
+      length,
+      nextMode: mode,
+      dasm: `in a, (${hex(port)})`,
+      bytes: bytesToHex(startPc, length),
     };
   }
 
@@ -782,6 +916,14 @@ function emitInstructionJs(instruction) {
     return [`cpu.testBit(cpu.readIndexed8('${instruction.indexRegister}', ${instruction.displacement}), ${instruction.bit});`];
   }
 
+  if (tag === 'indexed-immediate-store') {
+    return [`cpu.writeIndexed8('${instruction.indexRegister}', ${instruction.displacement}, ${hex(instruction.value)});`];
+  }
+
+  if (tag === 'indexed-compare') {
+    return [`cpu.compare(cpu.a, cpu.readIndexed8('${instruction.indexRegister}', ${instruction.displacement}));`];
+  }
+
   if (tag === 'indexed-cb-rotate') {
     const lines = [
       '{',
@@ -837,6 +979,10 @@ function emitInstructionJs(instruction) {
     return [`cpu.ioWritePage0(${hex(instruction.port)}, cpu.${instruction.reg});`];
   }
 
+  if (tag === 'in-immediate') {
+    return [`cpu.a = cpu.ioReadImmediate(cpu.a, ${hex(instruction.port)});`];
+  }
+
   if (tag === 'tst-immediate') {
     return [`cpu.test(cpu.a, ${hex(instruction.value)});`];
   }
@@ -855,6 +1001,18 @@ function emitInstructionJs(instruction) {
 
   if (tag === 'mlt') {
     return [`cpu.${instruction.reg} = cpu.multiplyBytes(cpu.${instruction.reg});`];
+  }
+
+  if (tag === 'otimr') {
+    return ['cpu.otimr();'];
+  }
+
+  if (tag === 'load-word-from-hl') {
+    return [`cpu.${instruction.register} = cpu.${getWordReadAccessor(instruction)}(cpu.hl);`];
+  }
+
+  if (tag === 'store-word-to-hl') {
+    return [`cpu.${getWordWriteAccessor(instruction)}(cpu.hl, cpu.${instruction.register});`];
   }
 
   if (tag === 'ld-iy-from-hl') {
@@ -989,6 +1147,10 @@ function emitInstructionJs(instruction) {
     return ['cpu.cpir();'];
   }
 
+  if (mnemonic === 'cpi') {
+    return ['cpu.cpi();'];
+  }
+
   const simpleAssign = /^ld(?:\.[a-z]+)? ([abcdehl]|ixh|ixl|iyh|iyl|bc|de|hl|sp|ix|iy), (0x[0-9a-f]+)$/i.exec(mnemonic);
 
   if (simpleAssign) {
@@ -1111,6 +1273,14 @@ function emitInstructionJs(instruction) {
     ];
   }
 
+  const storeIndexedImmediate = /^ld(?:\.[a-z]+)? \((ix|iy)([+-](?:0x[0-9a-f]+|\$[0-9a-f]+|\d+))\), (0x[0-9a-f]+)$/i.exec(mnemonic);
+
+  if (storeIndexedImmediate) {
+    return [
+      `cpu.writeIndexed8('${storeIndexedImmediate[1].toLowerCase()}', ${normalizeNumericLiteral(storeIndexedImmediate[2])}, ${storeIndexedImmediate[3].toLowerCase()});`,
+    ];
+  }
+
   const loadIndexedRegister = /^ld(?:\.[a-z]+)? ([abcdehl]), \((ix|iy)([+-](?:0x[0-9a-f]+|\$[0-9a-f]+|\d+))\)$/i.exec(mnemonic);
 
   if (loadIndexedRegister) {
@@ -1129,6 +1299,12 @@ function emitInstructionJs(instruction) {
 
   if (loadAFromPair) {
     return [`cpu.a = cpu.readIndirect8('${loadAFromPair[1].toLowerCase()}');`];
+  }
+
+  const inImmediate = /^in a, \((0x[0-9a-f]+)\)$/i.exec(mnemonic);
+
+  if (inImmediate) {
+    return [`cpu.a = cpu.ioReadImmediate(cpu.a, ${inImmediate[1].toLowerCase()});`];
   }
 
   if (mnemonic === "ld (hl), a") {
@@ -1159,6 +1335,22 @@ function emitInstructionJs(instruction) {
 
   if (mnemonic === "ex af, af'") {
     return ['cpu.swapAf();'];
+  }
+
+  const exchangeStackWord = /^ex \(sp\), (hl|ix|iy)$/i.exec(mnemonic);
+
+  if (exchangeStackWord) {
+    const register = exchangeStackWord[1].toLowerCase();
+    const readAccessor = getWordReadAccessor(instruction);
+    const writeAccessor = getWordWriteAccessor(instruction);
+
+    return [
+      '{',
+      `  const stackValue = cpu.${readAccessor}(cpu.sp);`,
+      `  cpu.${writeAccessor}(cpu.sp, cpu.${register});`,
+      `  cpu.${register} = stackValue;`,
+      '}',
+    ];
   }
 
   if (mnemonic === 'ex de, hl') {
@@ -1229,6 +1421,12 @@ function emitInstructionJs(instruction) {
 
   if (mnemonic === 'cp (hl)') {
     return ["cpu.compare(cpu.a, cpu.readIndirect8('hl'));"];
+  }
+
+  const compareIndexed = /^cp(?: a)?, \((ix|iy)([+-](?:0x[0-9a-f]+|\$[0-9a-f]+|\d+))\)$/i.exec(mnemonic);
+
+  if (compareIndexed) {
+    return [`cpu.compare(cpu.a, cpu.readIndexed8('${compareIndexed[1].toLowerCase()}', ${normalizeNumericLiteral(compareIndexed[2])}));`];
   }
 
   if (mnemonic === 'inc (hl)') {
@@ -1325,6 +1523,42 @@ function emitInstructionJs(instruction) {
 
   if (bitResetIndirectHl) {
     return [`cpu.writeIndirect8('hl', cpu.readIndirect8('hl') & ~${hex(1 << Number.parseInt(bitResetIndirectHl[1], 10))});`];
+  }
+
+  const addRegister = /^add a, ([abcdehl])$/i.exec(mnemonic);
+
+  if (addRegister) {
+    return [`cpu.a = cpu.add8(cpu.a, cpu.${addRegister[1].toLowerCase()});`];
+  }
+
+  const xorRegister = /^xor ([bcdehl])$/i.exec(mnemonic);
+
+  if (xorRegister) {
+    return [`cpu.a ^= cpu.${xorRegister[1].toLowerCase()};`, 'cpu.updateLogicFlags(cpu.a);'];
+  }
+
+  const xorImmediate = /^xor (0x[0-9a-f]+)$/i.exec(mnemonic);
+
+  if (xorImmediate) {
+    return [`cpu.a ^= ${xorImmediate[1].toLowerCase()};`, 'cpu.updateLogicFlags(cpu.a);'];
+  }
+
+  const orImmediate = /^or (0x[0-9a-f]+)$/i.exec(mnemonic);
+
+  if (orImmediate) {
+    return [`cpu.a |= ${orImmediate[1].toLowerCase()};`, 'cpu.updateLogicFlags(cpu.a);'];
+  }
+
+  const sbcRegister = /^sbc a, ([abcdehl])$/i.exec(mnemonic);
+
+  if (sbcRegister) {
+    return [`cpu.a = cpu.subtractWithBorrow8(cpu.a, cpu.${sbcRegister[1].toLowerCase()});`];
+  }
+
+  const bitSetRegister = /^set (\d), ([bcdehl])$/i.exec(mnemonic);
+
+  if (bitSetRegister) {
+    return [`cpu.${bitSetRegister[2].toLowerCase()} |= ${hex(1 << Number.parseInt(bitSetRegister[1], 10))};`];
   }
 
   return [`cpu.unimplemented(${hex(instruction.pc, 6)}, ${JSON.stringify(dasm)});`];
@@ -1470,7 +1704,7 @@ function walkBlocks() {
 
   const options = {
     instructionsPerBlock: 64,
-    blockLimit: 1024,
+    blockLimit: 2048,
   };
 
   while (queue.length > 0 && Object.keys(blocks).length < options.blockLimit) {
