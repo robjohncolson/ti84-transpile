@@ -1,8 +1,8 @@
 # Continuation Prompt — TI-84 Plus CE ROM Transpilation
 
-**Last updated**: 2026-04-09T13:36Z
+**Last updated**: 2026-04-09T13:55Z
 **Focus**: Continue the TI-84 Plus CE ROM to JavaScript transpilation effort
-**Current phase**: Phases 1-3 complete. Coverage pushed from 0.53% to 4.05% (16384 blocks, 170053 bytes). Only 3 irreducible stubs remain (z80js parser bugs and nonsense opcodes).
+**Current phase**: Phases 1-4 complete. Coverage at 4.05% (16384 blocks). CPU runtime scaffold created. Only 3 irreducible stubs remain.
 
 ---
 
@@ -45,6 +45,22 @@ Raised block limit from 2048 → 16384 (8x). Coverage: 0.53% → 4.05%.
 - Fixed `nop.sil` prefix matching
 - Added `FD ED`/`DD ED` prefix-through decoding in `decodeInstruction`
 - 3 irreducible stubs remain (z80js `{1}` parser bugs + nonsense `ED DD`)
+
+### Phase 4 — CPU Runtime Scaffold (complete)
+
+Created `TI-84_Plus_CE/cpu-runtime.js`:
+
+- Full `CPU` class implementing all `cpu.*` methods used by emitted blocks
+- Registers: 8-bit (a-l,f) with 16/24-bit pair getters/setters, alternates, index half-registers
+- ALU: add8, subtract8, addWithCarry8, subtractWithBorrow8, compare, negate, DAA
+- Word ALU: addWord, addWithCarryWord, subtractWithBorrowWord, multiplyBytes
+- Rotate/Shift: all RLC/RRC/RL/RR/SLA/SRA/SRL/SLL via rotateShift8
+- Block transfer: ldi, ldir, ldd, lddr, cpi, cpir
+- BCD: rld, rrd
+- I/O: ioRead/Write, page-0 variants, testIo, otimr
+- Stack: push/pop with ADL/Z80 mode-aware width
+- Control: checkCondition, decrementAndCheckB, halt, sleep
+- `createExecutor()` that compiles block source strings and runs them
 
 ### Earlier work (previous sessions)
 
@@ -303,22 +319,20 @@ This should support the emitted JS, not replace it.
 
 ## Suggested Immediate Task For Next Session
 
-The byte-lift is now at a natural plateau. Continue with Phase 4:
+Phases 1-4 are complete. The next step is validation and integration:
 
-> Build a minimal CPU runtime scaffold so lifted blocks can actually execute. The emitted JS already targets a `cpu` object API — implement that API.
+> Wire the CPU runtime to the transpiled ROM and verify that the reset vector executes correctly through the first several blocks.
 
-Concrete first moves (Phase 4):
+Concrete first moves (Phase 5):
 
-1. Create `TI-84_Plus_CE/cpu-runtime.js` with a class implementing all methods called by emitted blocks
-2. Implement registers: a/b/c/d/e/h/l/f, bc/de/hl/sp/ix/iy/af, ixh/ixl/iyh/iyl
-3. Implement flags and condition checking: z/nz/c/nc/po/pe/p/m
-4. Implement memory: read8/write8/read16/write16/read24/write24
-5. Implement the helper methods used by emitted code: add8, subtract8, addWithCarry8, subtractWithBorrow8, compare, addWord, subtractWithBorrowWord, addWithCarryWord, updateLogicFlags, test, negate, rotateShift8, testBit, etc.
-6. Implement block transfer: ldi, ldir, ldd, lddr, cpi, cpir
-7. Implement I/O stubs: ioRead, ioWrite, ioReadPage0, ioWritePage0, ioReadImmediate
-8. Implement stack: push, pop, call, popReturn
-9. Implement control: halt, sleep, checkCondition, decrementAndCheckB
-10. Wire it up with a simple executor that runs blocks from PRELIFTED_BLOCKS
+1. Create a test harness that loads ROM.transpiled.js and cpu-runtime.js
+2. Initialize CPU memory from the ROM image
+3. Run from address 0x000000 in z80 mode (reset vector)
+4. Log each block entry and the instruction trace
+5. Verify that the initial I/O port configuration sequence executes correctly
+6. Add I/O callback hooks that log port reads/writes
+7. Check that the SP initialization and stack frame setup look correct
+8. Identify any missing emitter patterns that only appear at execution time (vs. static analysis)
 
 ---
 
