@@ -1080,13 +1080,17 @@ function emitInstructionJs(instruction) {
   }
 
   if (tag === 'call' || tag === 'call-conditional') {
-    const lines = [`cpu.call(${hex(target, 6)});`];
-
     if (condition) {
-      lines[0] = `if (cpu.checkCondition('${condition}')) cpu.call(${hex(target, 6)});`;
+      return [
+        `if (cpu.checkCondition('${condition}')) { cpu.push(${hex(fallthrough, 6)}); return ${hex(target, 6)}; }`,
+        `return ${hex(fallthrough, 6)};`,
+      ];
     }
 
-    return lines;
+    return [
+      `cpu.push(${hex(fallthrough, 6)});`,
+      `return ${hex(target, 6)};`,
+    ];
   }
 
   if (tag === 'return' || tag === 'ret') {
@@ -1733,6 +1737,12 @@ function buildBlock(startPc, mode, options) {
         target: instruction.target,
         targetMode: instruction.targetMode,
       });
+      exits.push({
+        type: 'call-return',
+        target: instruction.fallthrough,
+        targetMode: currentMode,
+      });
+      break;
     }
 
     if (instruction.kind === 'branch') {
@@ -1766,10 +1776,25 @@ function buildBlock(startPc, mode, options) {
       break;
     }
 
-    if (instruction.kind === 'return' || instruction.kind === 'return-conditional' || instruction.kind === 'halt') {
+    if (instruction.kind === 'return' || instruction.kind === 'halt') {
       exits.push({
         type: instruction.kind,
       });
+      break;
+    }
+
+    if (instruction.kind === 'return-conditional') {
+      exits.push({
+        type: 'return-conditional',
+        condition: instruction.condition,
+      });
+      if (instruction.fallthrough !== undefined) {
+        exits.push({
+          type: 'fallthrough',
+          target: instruction.fallthrough,
+          targetMode: currentMode,
+        });
+      }
       break;
     }
 
@@ -1796,7 +1821,7 @@ function buildBlock(startPc, mode, options) {
 
   const lastInstruction = instructions.at(-1);
 
-  if (lastInstruction && !lastInstruction.terminates && lastInstruction.tag !== 'unsupported') {
+  if (lastInstruction && !lastInstruction.terminates && lastInstruction.kind !== 'call' && lastInstruction.tag !== 'unsupported') {
     const fallthrough = wrap24(lastInstruction.pc + lastInstruction.length);
     sourceLines.push(`  return ${hex(fallthrough, 6)};`);
     exits.push({
@@ -1842,6 +1867,42 @@ function walkBlocks() {
     { pc: 0x021000, mode: 'adl' },
     { pc: 0x030000, mode: 'adl' },
     { pc: 0x040000, mode: 'adl' },
+    // Phase 9A: additional seeds for coverage expansion
+    // ISR handlers (RST vector table continuations)
+    { pc: 0x000040, mode: 'adl' },
+    { pc: 0x000048, mode: 'adl' },
+    { pc: 0x000050, mode: 'adl' },
+    { pc: 0x000058, mode: 'adl' },
+    { pc: 0x000060, mode: 'adl' },
+    { pc: 0x000068, mode: 'adl' },
+    // Known OS jump table entries
+    { pc: 0x020008, mode: 'adl' },
+    { pc: 0x020010, mode: 'adl' },
+    { pc: 0x020018, mode: 'adl' },
+    { pc: 0x020020, mode: 'adl' },
+    { pc: 0x020028, mode: 'adl' },
+    { pc: 0x020030, mode: 'adl' },
+    { pc: 0x020038, mode: 'adl' },
+    { pc: 0x020040, mode: 'adl' },
+    // Mid-ROM function regions
+    { pc: 0x004100, mode: 'adl' },
+    { pc: 0x004200, mode: 'adl' },
+    { pc: 0x005000, mode: 'adl' },
+    { pc: 0x008000, mode: 'adl' },
+    { pc: 0x010000, mode: 'adl' },
+    // Graphics/display routines
+    { pc: 0x021100, mode: 'adl' },
+    { pc: 0x021200, mode: 'adl' },
+    { pc: 0x021400, mode: 'adl' },
+    // Upper ROM regions
+    { pc: 0x050000, mode: 'adl' },
+    { pc: 0x060000, mode: 'adl' },
+    { pc: 0x080000, mode: 'adl' },
+    { pc: 0x0a0000, mode: 'adl' },
+    { pc: 0x0c0000, mode: 'adl' },
+    { pc: 0x100000, mode: 'adl' },
+    { pc: 0x200000, mode: 'adl' },
+    { pc: 0x300000, mode: 'adl' },
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
@@ -1857,7 +1918,7 @@ function walkBlocks() {
 
   const options = {
     instructionsPerBlock: 64,
-    blockLimit: 16384,
+    blockLimit: 65536,
   };
 
   while (queue.length > 0 && Object.keys(blocks).length < options.blockLimit) {

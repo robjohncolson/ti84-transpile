@@ -562,12 +562,12 @@ export class CPU {
   }
 
   call(target) {
-    // Push return address — the emitted code handles control flow
-    // The return address is the PC after the call instruction,
-    // which the block already computed as fallthrough
-    // For now, push a placeholder; actual PC tracking done by executor
-    this._callStack = this._callStack || [];
-    this._callStack.push(target);
+    // BUG: The emitter passes the CALL TARGET (subroutine address), not the
+    // return address (fallthrough after call). This means RET will pop a wrong
+    // value. Fix requires emitter change to pass fallthrough instead.
+    // For now: push target to keep stack balanced, track depth for debugging.
+    this.push(target);
+    this._callDepth = (this._callDepth || 0) + 1;
   }
 
   popReturn() {
@@ -629,54 +629,167 @@ export class CPU {
       console.warn(`Unimplemented: ${dasm} at 0x${pc.toString(16).padStart(6, '0')}`);
     }
   }
+
+  // --- I/O tracing hooks (no-ops by default) ---
+
+  onIoRead(port, value) {}
+  onIoWrite(port, value) {}
 }
 
-export function createExecutor(blocks, memory) {
+export function createExecutor(blocks, memory, options = {}) {
   const cpu = new CPU(memory);
+
+  if (options.peripherals) {
+    cpu._ioRead = (port) => options.peripherals.read(port);
+    cpu._ioWrite = (port, value) => options.peripherals.write(port, value);
+  }
+
+  // Wrap I/O methods to call tracing hooks
+  const origIoRead = cpu._ioRead;
+  const origIoWrite = cpu._ioWrite;
+
+  cpu._ioRead = (port) => {
+    const value = origIoRead(port);
+    cpu.onIoRead(port, value);
+    return value;
+  };
+
+  cpu._ioWrite = (port, value) => {
+    origIoWrite(port, value);
+    cpu.onIoWrite(port, value);
+  };
 
   // Compile block source strings into callable functions
   const compiledBlocks = {};
+  const blockMeta = {};
+
   for (const [key, block] of Object.entries(blocks)) {
     try {
-      // The source is a function declaration — wrap it to extract
-      const fn = new Function('cpu', block.source.replace(/^function [^(]+\(cpu\) \{/, '').replace(/\}$/, ''));
-      compiledBlocks[key] = fn;
+      // Extract function body between first '{' and last '}'
+      const src = block.source;
+      const bodyStart = src.indexOf('{') + 1;
+      const bodyEnd = src.lastIndexOf('}');
+      const body = src.slice(bodyStart, bodyEnd);
+
+      compiledBlocks[key] = new Function('cpu', body);
+      blockMeta[key] = block;
     } catch {
       // Skip blocks that fail to compile
     }
   }
 
+  // Build exit lookup: given a block key and a returned PC, find the target mode
+  function resolveNextMode(blockKey, returnedPc, currentMode) {
+    const meta = blockMeta[blockKey];
+    if (!meta || !meta.exits) return currentMode;
+
+    for (const exit of meta.exits) {
+      if (exit.target === returnedPc && exit.targetMode) {
+        return exit.targetMode;
+      }
+    }
+
+    // If no exit matched the exact target, keep current mode
+    return currentMode;
+  }
+
   return {
     cpu,
     compiledBlocks,
+    blockMeta,
 
-    runFrom(startAddress, mode = 'adl', maxSteps = 100000) {
+    runFrom(startAddress, startMode = 'adl', opts = {}) {
+      const maxSteps = opts.maxSteps ?? 100000;
+      const onBlock = opts.onBlock ?? null;
+      const maxLoopIter = opts.maxLoopIterations ?? 64;
+      const onLoopBreak = opts.onLoopBreak ?? null;
+
       let pc = startAddress;
+      let mode = startMode;
       let steps = 0;
+      let termination = 'max_steps';
+      let loopsForced = 0;
+
+      // Loop detection: track recent block keys in a small ring buffer
+      const recentKeys = [];
+      const recentMax = 4;
+      let loopHitCount = 0;
 
       while (steps < maxSteps) {
         const key = pc.toString(16).padStart(6, '0') + ':' + mode;
+
+        // Loop detection: check if this key appeared recently (1 or 2-block loop)
+        if (recentKeys.includes(key)) {
+          loopHitCount++;
+        } else {
+          loopHitCount = 0;
+        }
+        recentKeys.push(key);
+        if (recentKeys.length > recentMax) recentKeys.shift();
+
+        if (loopHitCount > maxLoopIter) {
+          // Force-break: find fallthrough exit from this block
+          const meta = blockMeta[key];
+          const fallthrough = meta?.exits?.find(e => e.type === 'fallthrough');
+          if (fallthrough) {
+            if (onLoopBreak) {
+              onLoopBreak(pc, mode, loopHitCount, fallthrough.target);
+            }
+            mode = fallthrough.targetMode ?? mode;
+            pc = fallthrough.target;
+            loopHitCount = 0;
+            recentKeys.length = 0;
+            loopsForced++;
+            continue;
+          }
+          // No fallthrough available — try to break by setting carry flag
+          cpu.f |= FLAG_C;
+          if (onLoopBreak) {
+            onLoopBreak(pc, mode, loopHitCount, null);
+          }
+          loopHitCount = 0;
+          recentKeys.length = 0;
+          loopsForced++;
+        }
+
         const fn = compiledBlocks[key];
 
         if (!fn) {
-          break; // No block at this address
+          termination = 'missing_block';
+          break;
         }
 
-        const result = fn(cpu);
+        const meta = blockMeta[key];
+        if (onBlock) {
+          onBlock(pc, mode, meta, steps);
+        }
+
+        let result;
+        try {
+          result = fn(cpu);
+        } catch (err) {
+          termination = 'error';
+          return { steps, lastPc: pc, lastMode: mode, halted: cpu.halted, termination, error: err, loopsForced };
+        }
+
         steps++;
 
         if (result === undefined || result === null) {
-          break; // Block didn't return next PC
+          termination = 'no_return';
+          break;
         }
 
         if (result < 0) {
-          break; // Halt/sleep sentinel
+          termination = result === -1 ? 'halt' : 'sleep';
+          break;
         }
 
+        // Resolve next mode from block exit metadata
+        mode = resolveNextMode(key, result, mode);
         pc = result;
       }
 
-      return { steps, lastPc: pc, halted: cpu.halted };
+      return { steps, lastPc: pc, lastMode: mode, halted: cpu.halted, termination, loopsForced };
     },
   };
 }
