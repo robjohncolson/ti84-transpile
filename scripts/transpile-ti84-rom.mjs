@@ -572,6 +572,18 @@ function manualEdInstruction(startPc, pc, op1, prefix, mode) {
     };
   }
 
+  // Undefined ED opcodes are 2-byte NOPs on eZ80
+  // Covers: prefix bytes (DD/FD/CB), C0+ range, and other undocumented slots
+  if (op1 === 0xdd || op1 === 0xfd || op1 === 0xcb || op1 === 0xed ||
+      op1 >= 0xc0 || op1 === 0xee || op1 === 0x77 || op1 === 0x94) {
+    return {
+      tag: 'nop',
+      dasm: `nop ; undefined ED ${hex(op1)}`,
+      length: pc + 2 - startPc,
+      nextMode: mode,
+    };
+  }
+
   return null;
 }
 
@@ -784,6 +796,14 @@ function decodeInstruction(pc, mode) {
   if (first in prefixTable) {
     prefix = prefixTable[first];
     pc += 1;
+  }
+
+  // Doubled index prefixes: FD DD or DD FD — consume the first, let the second win
+  const op0Peek = romBytes[pc];
+  if ((op0Peek === 0xdd || op0Peek === 0xfd) &&
+      (romBytes[pc + 1] === 0xdd || romBytes[pc + 1] === 0xfd) &&
+      op0Peek !== romBytes[pc + 1]) {
+    pc += 1; // skip the first prefix, second one becomes op0
   }
 
   const op0 = romBytes[pc];
@@ -1063,6 +1083,10 @@ function emitInstructionJs(instruction) {
     return [`cpu.${instruction.destination} = (cpu.${instruction.base} ${operator} ${magnitude}) & cpu.addressMask;`];
   }
 
+  if (tag === 'nop') {
+    return [];
+  }
+
   if (tag === 'jp' || tag === 'jr' || tag === 'rst' || tag === 'jump' || tag === 'jp-indirect') {
     if (instruction.indirectRegister) {
       return [`return cpu.${instruction.indirectRegister};`];
@@ -1105,7 +1129,7 @@ function emitInstructionJs(instruction) {
     return ['return cpu.halt();'];
   }
 
-  const mnemonic = dasm.toLowerCase();
+  const mnemonic = dasm.toLowerCase().replace(/\.(sil|sis|lil|lis) /g, ' ').replace(/0x0x/g, '0x');
 
   if (mnemonic === 'di') {
     return ['cpu.iff1 = 0;', 'cpu.iff2 = 0;'];
@@ -1423,6 +1447,12 @@ function emitInstructionJs(instruction) {
     return ['cpu.ioWrite(cpu.c, cpu.a);'];
   }
 
+  const outImmediate = /^out \((0x[0-9a-f]+|\d+)\), a$/i.exec(mnemonic);
+
+  if (outImmediate) {
+    return [`cpu.ioWrite(${outImmediate[1].toLowerCase()}, cpu.a);`];
+  }
+
   if (mnemonic === 'in a, (c)') {
     return ['cpu.a = cpu.ioRead(cpu.c);'];
   }
@@ -1697,6 +1727,12 @@ function emitInstructionJs(instruction) {
 
   if (orImmediate) {
     return [`cpu.a |= ${orImmediate[1].toLowerCase()};`, 'cpu.updateLogicFlags(cpu.a);'];
+  }
+
+  const sbcImmediate = /^sbc a, (0x[0-9a-f]+|\d+)$/i.exec(mnemonic);
+
+  if (sbcImmediate) {
+    return [`cpu.a = cpu.subtractWithBorrow8(cpu.a, ${sbcImmediate[1].toLowerCase()});`];
   }
 
   const sbcRegister = /^sbc a, ([abcdehl])$/i.exec(mnemonic);
