@@ -1900,9 +1900,17 @@ function walkBlocks() {
     { pc: 0x080000, mode: 'adl' },
     { pc: 0x0a0000, mode: 'adl' },
     { pc: 0x0c0000, mode: 'adl' },
-    { pc: 0x100000, mode: 'adl' },
-    { pc: 0x200000, mode: 'adl' },
-    { pc: 0x300000, mode: 'adl' },
+    // Phase 10: seeds from coverage gap analysis (OS area gaps)
+    { pc: 0x0dcdc6, mode: 'adl' },
+    { pc: 0x0c0001, mode: 'adl' },
+    { pc: 0x0d2afe, mode: 'adl' },
+    { pc: 0x0712fa, mode: 'adl' },
+    { pc: 0x015b46, mode: 'adl' },
+    { pc: 0x01cbfe, mode: 'adl' },
+    { pc: 0x02c0b7, mode: 'adl' },
+    { pc: 0x063570, mode: 'adl' },
+    { pc: 0x0bd424, mode: 'adl' },
+    { pc: 0x0fdd04, mode: 'adl' },
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
