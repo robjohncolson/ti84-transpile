@@ -837,6 +837,26 @@ function decodeInstruction(pc, mode) {
     };
   }
 
+  if ((op0 === 0xdd || op0 === 0xfd) && op1 === 0xed) {
+    const edOp = romBytes[pc + 2] ?? 0;
+    const prefixedEd = manualEdInstruction(startPc, pc + 1, edOp, prefix, mode);
+
+    if (prefixedEd) {
+      prefixedEd.length = (pc + 1 - startPc) + (prefixedEd.length - (pc + 1 - startPc));
+      const bytes = bytesToHex(startPc, prefixedEd.length);
+
+      return {
+        ...prefixedEd,
+        pc: startPc,
+        mode,
+        prefix: prefix?.suffix ?? null,
+        op0,
+        op1,
+        bytes,
+      };
+    }
+  }
+
   if (op0 === 0xdb) {
     const port = romBytes[pc + 1] ?? 0;
     const length = pc + 2 - startPc;
@@ -1091,7 +1111,7 @@ function emitInstructionJs(instruction) {
     return ['cpu.iff1 = 1;', 'cpu.iff2 = 1;'];
   }
 
-  if (mnemonic === 'nop') {
+  if (mnemonic === 'nop' || mnemonic.startsWith('nop.')) {
     return [];
   }
 
@@ -1151,6 +1171,10 @@ function emitInstructionJs(instruction) {
     return ['cpu.lddr();'];
   }
 
+  if (mnemonic === 'ldd') {
+    return ['cpu.ldd();'];
+  }
+
   if (mnemonic === 'cpir') {
     return ['cpu.cpir();'];
   }
@@ -1161,6 +1185,14 @@ function emitInstructionJs(instruction) {
 
   if (mnemonic === 'neg') {
     return ['cpu.a = cpu.negate(cpu.a);'];
+  }
+
+  if (mnemonic === 'rld') {
+    return ['cpu.rld();'];
+  }
+
+  if (mnemonic === 'rrd') {
+    return ['cpu.rrd();'];
   }
 
   const simpleAssign = /^ld(?:\.[a-z]+)? ([abcdehl]|ixh|ixl|iyh|iyl|bc|de|hl|sp|ix|iy), (0x[0-9a-f]+)$/i.exec(mnemonic);
@@ -1247,6 +1279,12 @@ function emitInstructionJs(instruction) {
     return [`cpu.a &= ~${hex(1 << Number.parseInt(bitReset[1], 10))};`];
   }
 
+  const bitResetRegister = /^res (\d), ([bcdehl])$/i.exec(mnemonic);
+
+  if (bitResetRegister) {
+    return [`cpu.${bitResetRegister[2].toLowerCase()} &= ~${hex(1 << Number.parseInt(bitResetRegister[1], 10))};`];
+  }
+
   const pushWord = /^push(?:\.[a-z]+)? (af|bc|de|hl|ix|iy)$/i.exec(mnemonic);
 
   if (pushWord) {
@@ -1307,7 +1345,7 @@ function emitInstructionJs(instruction) {
     return [`cpu.${loadRegisterIndirectHl[1].toLowerCase()} = cpu.readIndirect8('hl');`];
   }
 
-  const loadAFromPair = /^ld a, \((bc|de)\)$/i.exec(mnemonic);
+  const loadAFromPair = /^ld(?:\.[a-z]+)? a, \((bc|de)\)$/i.exec(mnemonic);
 
   if (loadAFromPair) {
     return [`cpu.a = cpu.readIndirect8('${loadAFromPair[1].toLowerCase()}');`];
@@ -1335,7 +1373,7 @@ function emitInstructionJs(instruction) {
     return [`cpu.writeIndirect8('hl', cpu.${storeRegisterIndirectHl[1].toLowerCase()});`];
   }
 
-  const storeAToPair = /^ld \((bc|de)\), a$/i.exec(mnemonic);
+  const storeAToPair = /^ld(?:\.[a-z]+)? \((bc|de)\), a$/i.exec(mnemonic);
 
   if (storeAToPair) {
     return [`cpu.writeIndirect8('${storeAToPair[1].toLowerCase()}', cpu.a);`];
@@ -1461,6 +1499,38 @@ function emitInstructionJs(instruction) {
     ];
   }
 
+  const decrementMalformedIndexed = /^dec (ix|iy)([+-](?:0x[0-9a-f]+|\$[0-9a-f]+|\d+))$/i.exec(mnemonic);
+
+  if (decrementMalformedIndexed) {
+    return [
+      `cpu.writeIndexed8('${decrementMalformedIndexed[1].toLowerCase()}', ${normalizeNumericLiteral(decrementMalformedIndexed[2])}, (cpu.readIndexed8('${decrementMalformedIndexed[1].toLowerCase()}', ${normalizeNumericLiteral(decrementMalformedIndexed[2])}) - 1) & 0xff);`,
+    ];
+  }
+
+  const subIndexed = /^sub \((ix|iy)([+-](?:0x[0-9a-f]+|\$[0-9a-f]+|\d+))\)$/i.exec(mnemonic);
+
+  if (subIndexed) {
+    return [`cpu.a = cpu.subtract8(cpu.a, cpu.readIndexed8('${subIndexed[1].toLowerCase()}', ${normalizeNumericLiteral(subIndexed[2])}));`];
+  }
+
+  const addIndexed = /^add a, \((ix|iy)([+-](?:0x[0-9a-f]+|\$[0-9a-f]+|\d+))\)$/i.exec(mnemonic);
+
+  if (addIndexed) {
+    return [`cpu.a = cpu.add8(cpu.a, cpu.readIndexed8('${addIndexed[1].toLowerCase()}', ${normalizeNumericLiteral(addIndexed[2])}));`];
+  }
+
+  const andMalformedIndexed = /^and (ix|iy)([+-](?:0x[0-9a-f]+|\$[0-9a-f]+|\d+))$/i.exec(mnemonic);
+
+  if (andMalformedIndexed) {
+    return [`cpu.a &= cpu.readIndexed8('${andMalformedIndexed[1].toLowerCase()}', ${normalizeNumericLiteral(andMalformedIndexed[2])});`, 'cpu.updateLogicFlags(cpu.a);'];
+  }
+
+  const orMalformedIndexed = /^or (ix|iy)([+-](?:0x[0-9a-f]+|\$[0-9a-f]+|\d+))$/i.exec(mnemonic);
+
+  if (orMalformedIndexed) {
+    return [`cpu.a |= cpu.readIndexed8('${orMalformedIndexed[1].toLowerCase()}', ${normalizeNumericLiteral(orMalformedIndexed[2])});`, 'cpu.updateLogicFlags(cpu.a);'];
+  }
+
   if (mnemonic === 'inc (hl)') {
     return ["cpu.writeIndirect8('hl', (cpu.readIndirect8('hl') + 1) & 0xff);"];
   }
@@ -1503,11 +1573,17 @@ function emitInstructionJs(instruction) {
     return [`cpu.a = cpu.addWithCarry8(cpu.a, cpu.${adcRegister[1].toLowerCase()});`];
   }
 
+  const adcImmediate = /^adc a, (0x[0-9a-f]+)$/i.exec(mnemonic);
+
+  if (adcImmediate) {
+    return [`cpu.a = cpu.addWithCarry8(cpu.a, ${adcImmediate[1].toLowerCase()});`];
+  }
+
   if (mnemonic === 'adc a, (hl)') {
     return ["cpu.a = cpu.addWithCarry8(cpu.a, cpu.readIndirect8('hl'));"];
   }
 
-  const subRegister = /^sub ([abcdehl]|a)$/i.exec(mnemonic);
+  const subRegister = /^sub(?:\.[a-z]+)? ([abcdehl]|a)$/i.exec(mnemonic);
 
   if (subRegister) {
     return [`cpu.a = cpu.subtract8(cpu.a, cpu.${subRegister[1].toLowerCase()});`];
@@ -1517,7 +1593,7 @@ function emitInstructionJs(instruction) {
     return ["cpu.a = cpu.subtract8(cpu.a, cpu.readIndirect8('hl'));"];
   }
 
-  const compareRegister = /^cp ([abcdehl]|a)$/i.exec(mnemonic);
+  const compareRegister = /^cp ([abcdehl]|ixh|ixl|iyh|iyl|a)$/i.exec(mnemonic);
 
   if (compareRegister) {
     return [`cpu.compare(cpu.a, cpu.${compareRegister[1].toLowerCase()});`];
@@ -1537,6 +1613,36 @@ function emitInstructionJs(instruction) {
 
   if (srlRegister) {
     return [`cpu.${srlRegister[1].toLowerCase()} = cpu.rotateShift8('srl', cpu.${srlRegister[1].toLowerCase()});`];
+  }
+
+  const slaRegister = /^sla ([abcdehl])$/i.exec(mnemonic);
+
+  if (slaRegister) {
+    return [`cpu.${slaRegister[1].toLowerCase()} = cpu.rotateShift8('sla', cpu.${slaRegister[1].toLowerCase()});`];
+  }
+
+  const sraRegister = /^sra ([abcdehl])$/i.exec(mnemonic);
+
+  if (sraRegister) {
+    return [`cpu.${sraRegister[1].toLowerCase()} = cpu.rotateShift8('sra', cpu.${sraRegister[1].toLowerCase()});`];
+  }
+
+  const rlcRegister = /^rlc ([abcdehl])$/i.exec(mnemonic);
+
+  if (rlcRegister) {
+    return [`cpu.${rlcRegister[1].toLowerCase()} = cpu.rotateShift8('rlc', cpu.${rlcRegister[1].toLowerCase()});`];
+  }
+
+  const rrcRegister = /^rrc ([abcdehl])$/i.exec(mnemonic);
+
+  if (rrcRegister) {
+    return [`cpu.${rrcRegister[1].toLowerCase()} = cpu.rotateShift8('rrc', cpu.${rrcRegister[1].toLowerCase()});`];
+  }
+
+  const rlRegister = /^rl ([abcdehl])$/i.exec(mnemonic);
+
+  if (rlRegister) {
+    return [`cpu.${rlRegister[1].toLowerCase()} = cpu.rotateShift8('rl', cpu.${rlRegister[1].toLowerCase()});`];
   }
 
   const bitTestIndirectHl = /^bit (\d), \(hl\)$/i.exec(mnemonic);
@@ -1726,9 +1832,16 @@ function buildBlock(startPc, mode, options) {
 function walkBlocks() {
   const seedEntries = [];
   const knownEntryAnchors = [
+    { pc: 0x000100, mode: 'adl' },
     { pc: 0x000658, mode: 'adl' },
+    { pc: 0x000800, mode: 'adl' },
     { pc: 0x001afa, mode: 'adl' },
+    { pc: 0x004000, mode: 'adl' },
+    { pc: 0x020000, mode: 'adl' },
     { pc: 0x020110, mode: 'adl' },
+    { pc: 0x021000, mode: 'adl' },
+    { pc: 0x030000, mode: 'adl' },
+    { pc: 0x040000, mode: 'adl' },
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
@@ -1744,7 +1857,7 @@ function walkBlocks() {
 
   const options = {
     instructionsPerBlock: 64,
-    blockLimit: 2048,
+    blockLimit: 16384,
   };
 
   while (queue.length > 0 && Object.keys(blocks).length < options.blockLimit) {

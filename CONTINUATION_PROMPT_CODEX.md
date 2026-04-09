@@ -1,8 +1,8 @@
 # Continuation Prompt — TI-84 Plus CE ROM Transpilation
 
-**Last updated**: 2026-04-09T13:15Z
+**Last updated**: 2026-04-09T13:36Z
 **Focus**: Continue the TI-84 Plus CE ROM to JavaScript transpilation effort
-**Current phase**: Phase 1 and Phase 2 are complete — ALL stubs eliminated (46 → 19 → 0). The next phase is pushing reachable coverage beyond the current 2048-block frontier.
+**Current phase**: Phases 1-3 complete. Coverage pushed from 0.53% to 4.05% (16384 blocks, 170053 bytes). Only 3 irreducible stubs remain (z80js parser bugs and nonsense opcodes).
 
 ---
 
@@ -32,6 +32,19 @@ Eliminated all remaining 19 stubs:
 - Indexed increment malformed form (`inc ix-1` → proper indexed read-modify-write)
 - Duplicated-prefix control-flow decoding (`DD/FD` + `CD/C3/18` etc.)
 - Malformed `jr pc+N` branch text fallback
+
+### Phase 3 — Push Coverage (complete)
+
+Raised block limit from 2048 → 16384 (8x). Coverage: 0.53% → 4.05%.
+
+- Added 7 new seed entry points (OS entry, ISR, function tables, mid-ROM regions)
+- Added emitters: `ldd`, `rld`, `rrd`, `sla r`, `sra r`, `rlc r`, `rrc r`, `rl r`
+- Added emitters: `adc a, n`, `res bit, register`, `cp ixh/ixl/iyh/iyl`
+- Added indexed: `dec (ix+d)`, `sub (ix+d)`, `add a, (ix+d)`, `and (ix+d)`, `or (ix+d)` malformed forms
+- Fixed `.sil`/`.lil` tolerance on `sub`, `ld a,(pair)`, `ld (pair),a`
+- Fixed `nop.sil` prefix matching
+- Added `FD ED`/`DD ED` prefix-through decoding in `decodeInstruction`
+- 3 irreducible stubs remain (z80js `{1}` parser bugs + nonsense `ED DD`)
 
 ### Earlier work (previous sessions)
 
@@ -73,18 +86,20 @@ Generated module containing:
 
 ### `TI-84_Plus_CE/ROM.transpiled.report.json`
 
-Current metrics (after Phase 2):
+Current metrics (after Phase 3):
 
 - ROM size: `4194304`
-- Block count: `2048`
-- Covered bytes: `22033`
-- Coverage percent: `0.5253`
-- Seed count: `11`
-- Live stubs: `0` (down from `46`)
+- Block count: `16384`
+- Covered bytes: `170053`
+- Coverage percent: `4.0544`
+- Seed count: `18`
+- Live stubs: `3` (irreducible — z80js parser artifacts)
 
 Historical baselines:
 
-- After 2048-block session: blocks=`2048`, bytes=`22033`, stubs=`46`
+- After Phase 2: blocks=`2048`, bytes=`22033`, stubs=`0`
+- After Phase 1: blocks=`2048`, bytes=`22033`, stubs=`19`
+- Before Phase 1: blocks=`2048`, bytes=`22033`, stubs=`46`
 - After 1024-block session: blocks=`1024`, bytes=`10268`
 - Initial: blocks=`384`, bytes=`3613`
 
@@ -233,9 +248,13 @@ The biggest remaining gaps are now broader emitter and prefix-normalization issu
 
 ## Remaining `cpu.unimplemented(...)` Surface
 
-After Phase 2, there are **zero** live `cpu.unimplemented()` stubs in `ROM.transpiled.js`.
+After Phase 3, there are **3** irreducible `cpu.unimplemented()` stubs in `ROM.transpiled.js`:
 
-All 46 original stubs have been eliminated across two phases. The emitter now covers every instruction encountered within the 2048-block reachable frontier.
+- `ld (ix+0xFFF9), {1}` at `0x024343` — z80js parser bug (ADL mode oversized displacement, `{1}` placeholder)
+- `ld (ix+0x00E6), {1}` at `0x028298` — same z80js parser bug
+- `Error disassembling ED DD` at `0x070b2b` — nonsense prefix sequence
+
+These cannot be fixed without replacing the z80js disassembler or adding manual decoders for these specific byte sequences.
 
 ---
 
@@ -246,6 +265,8 @@ All 46 original stubs have been eliminated across two phases. The emitter now co
 Completed. Stubs reduced from 46 to 19.
 
 ### Phase 2: Clean mixed-mode and remaining ED edge cases — DONE ✓
+
+### Phase 3: Push beyond the current reachability frontier — DONE ✓
 
 Completed. All stubs eliminated.
 
@@ -282,18 +303,22 @@ This should support the emitted JS, not replace it.
 
 ## Suggested Immediate Task For Next Session
 
-Continue with this exact objective:
+The byte-lift is now at a natural plateau. Continue with Phase 4:
 
-> All stubs are eliminated at the 2048-block frontier. Raise the block cap to discover new reachable blocks, handle any new stubs that emerge, and push coverage well beyond `0.5253%`.
+> Build a minimal CPU runtime scaffold so lifted blocks can actually execute. The emitted JS already targets a `cpu` object API — implement that API.
 
-Concrete first moves (Phase 3):
+Concrete first moves (Phase 4):
 
-1. Raise `blockLimit` from `2048` to `4096` (or `8192` if generation completes in <30s)
-2. Regenerate and check for new `cpu.unimplemented()` stubs at the deeper frontier
-3. If new stubs appear, add emitter support for them
-4. Add additional seed entry points from reverse-engineering notes already in the repo
-5. Check whether any blocks are prematurely truncated by unsupported instructions
-6. Report the new block count, covered bytes, and coverage percent
+1. Create `TI-84_Plus_CE/cpu-runtime.js` with a class implementing all methods called by emitted blocks
+2. Implement registers: a/b/c/d/e/h/l/f, bc/de/hl/sp/ix/iy/af, ixh/ixl/iyh/iyl
+3. Implement flags and condition checking: z/nz/c/nc/po/pe/p/m
+4. Implement memory: read8/write8/read16/write16/read24/write24
+5. Implement the helper methods used by emitted code: add8, subtract8, addWithCarry8, subtractWithBorrow8, compare, addWord, subtractWithBorrowWord, addWithCarryWord, updateLogicFlags, test, negate, rotateShift8, testBit, etc.
+6. Implement block transfer: ldi, ldir, ldd, lddr, cpi, cpir
+7. Implement I/O stubs: ioRead, ioWrite, ioReadPage0, ioWritePage0, ioReadImmediate
+8. Implement stack: push, pop, call, popReturn
+9. Implement control: halt, sleep, checkCondition, decrementAndCheckB
+10. Wire it up with a simple executor that runs blocks from PRELIFTED_BLOCKS
 
 ---
 
