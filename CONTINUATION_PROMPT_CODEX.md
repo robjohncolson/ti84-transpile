@@ -1,12 +1,12 @@
 # Continuation Prompt — TI-84 Plus CE ROM Transpilation
 
-**Last updated**: 2026-04-09T16:30Z
+**Last updated**: 2026-04-09T17:15Z
 **Focus**: Continue the TI-84 Plus CE ROM to JavaScript transpilation effort
-**Current phase**: Phases 1-10C complete. Coverage at 7.55% (50383 blocks, 30.22% of OS area). Reset vector executes to HALT (60 steps with peripherals). I/O peripheral model active. Multi-entry testing operational.
+**Current phase**: Phases 1-11B complete. Coverage at 7.58% (50488 blocks, ~30% of OS area). Zero live stubs. Reset vector executes to HALT (60 steps with peripherals). I/O peripheral model active. Multi-entry testing + indirect jump instrumentation operational.
 
 ---
 
-## What Was Completed In This Session (Phases 7-10C)
+## What Was Completed In This Session (Phases 7-11B)
 
 ### Phase 7: I/O Peripheral Model (complete)
 
@@ -96,7 +96,38 @@ Added Test 5 to `test-harness.mjs` — 14 entry points tested without block trac
 - Added 10 OS-area seed entry points from coverage gap analysis
 - Pruned 3 data-area seeds (0x100000, 0x200000, 0x300000) that produced 0% code
 - Result: +76 blocks, +657 bytes — minimal gain, frontier truly exhausted
-- Final: 50383 blocks, 7.55% total, 30.22% OS area
+
+### Phase 11A: Indirect Jump Instrumentation (complete)
+
+**Modified cpu-runtime.js `runFrom()`:**
+- `blockVisits` Map tracks per-block visit counts (hot block profiling)
+- `dynamicTargets` Set collects PCs reached via non-static exits (indirect jumps/returns)
+- `onDynamicTarget(targetPc, mode, fromPc, step)` callback
+- Both included in return objects
+
+**Modified test-harness.mjs:**
+- Multi-entry runs collect dynamic targets
+- Discovery Summary reports both missing blocks AND dynamic jump targets
+- Hot Blocks section shows top 15 most-visited blocks from Test 4
+
+**First feedback loop iteration:**
+- 72 dynamic jump targets discovered (dense jump table at 0x082xxx from 0x021000 execution)
+- All 70 valid targets were already statically reachable — 0 new blocks
+- Confirms static analysis is comprehensive within reachable frontier
+
+### Phase 11B: Stub Elimination (complete)
+
+**Decoder fixes in `decodeInstruction()`:**
+- Doubled index prefix consumption: `FD DD` / `DD FD` → skip first, second prefix wins
+- Extended ED NOP fallback: undefined opcodes DD/FD/CB/ED/C0+ range/EE/77/94 → 2-byte NOP
+
+**Emitter fixes in `emitInstructionJs()`:**
+- `nop` tag handler for manual decoder NOPs (was falling through to unimplemented)
+- `sbc a, immediate` pattern (was only `sbc a, register`)
+- `out (n), a` pattern with malformed `0x0x` hex normalization
+- `.sil`/`.sis`/`.lil`/`.lis` suffix stripping from z80js mnemonics before regex matching
+
+**Results:** Stubs went 3 → 25 (new paths discovered) → 0 (all fixed). +105 blocks from newly reachable code.
 
 ---
 
@@ -104,18 +135,19 @@ Added Test 5 to `test-harness.mjs` — 14 entry points tested without block trac
 
 ### `scripts/transpile-ti84-rom.mjs`
 
-Source of truth for generation. Current seed count: 55 (RST vectors + 45 known anchors).
+Source of truth for generation. Current seed count: 125 (RST vectors + known anchors + gap seeds + 70 dynamic targets).
 
 ### `TI-84_Plus_CE/ROM.transpiled.js`
 
-Generated module: 50383 blocks, 7.55% coverage.
+Generated module: 50488 blocks, 7.58% coverage.
 
 ### `TI-84_Plus_CE/cpu-runtime.js`
 
-CPU runtime (~830 lines):
+CPU runtime (~840 lines):
 - Full `CPU` class (registers, ALU, I/O, stack, block transfer, rotate/shift)
 - `createExecutor(blocks, memory, options)` with peripheral bus support
 - Missing block skip-ahead + discovery collection
+- Block visit counting + dynamic target detection (indirect jump instrumentation)
 - Mode-aware execution, loop detection, I/O tracing
 
 ### `TI-84_Plus_CE/peripherals.js`
@@ -124,7 +156,7 @@ I/O peripheral bus (~237 lines): PLL, CPU control, GPIO, flash, timers.
 
 ### `TI-84_Plus_CE/test-harness.mjs`
 
-Validation harness (~275 lines): 5 tests, multi-entry exploration, missing block discovery, PLL validation.
+Validation harness (~320 lines): 5 tests, multi-entry exploration, missing block discovery, dynamic target discovery, hot block profiling, PLL validation.
 
 ### `TI-84_Plus_CE/coverage-analyzer.mjs`
 
@@ -134,13 +166,15 @@ Standalone gap analysis: heatmap, gap ranking, seed suggestions.
 
 Current metrics:
 - ROM size: `4194304`
-- Block count: `50383`
-- Covered bytes: `316860`
-- Coverage percent: `7.5545`
-- Seed count: `55`
-- Live stubs: `3` (irreducible — z80js parser artifacts)
+- Block count: `50488`
+- Covered bytes: `317806`
+- Coverage percent: `7.5771`
+- Seed count: `125`
+- Live stubs: `0`
 
 Historical baselines:
+- After Phase 11B: blocks=`50488`, bytes=`317806`, coverage=`7.58%`, stubs=`0`
+- After Phase 11A: blocks=`50407`, bytes=`317118`, coverage=`7.56%`, stubs=`25`
 - After Phase 10C: blocks=`50383`, bytes=`316860`, coverage=`7.55%`, OS=`30.22%`
 - After Phase 10B: blocks=`50307`, bytes=`316203`, coverage=`7.54%`, OS=`30.15%`
 - After Phase 9A: blocks=`50307`, bytes=`316203`, coverage=`7.54%`
@@ -154,15 +188,16 @@ Historical baselines:
 ## Verified State
 
 1. `node --check scripts/transpile-ti84-rom.mjs` passes
-2. `node scripts/transpile-ti84-rom.mjs` generates 50383 blocks at 7.55% coverage
-3. All 50383 blocks compile successfully (0 failures)
+2. `node scripts/transpile-ti84-rom.mjs` generates 50488 blocks at 7.58% coverage
+3. All 50488 blocks compile successfully (0 failures)
 4. `node TI-84_Plus_CE/test-harness.mjs` runs 5 tests:
    - Tests 1-3: Reset vector → HALT in 60 steps (with peripherals + loop breaker)
    - Test 4: Peripheral validation — PLL returns 0x04 correctly, 1 forced break (interrupt-driven loop)
    - Test 5: 14 entry points — 8 reach HALT, 4 run deep, 2 hit missing blocks
-5. `node TI-84_Plus_CE/coverage-analyzer.mjs` — OS area 30.22%, 10 gap seeds identified
+5. `node TI-84_Plus_CE/coverage-analyzer.mjs` — OS area ~30%, gap seeds identified
 6. Missing block discovery: 2 dynamic targets (0x7eedf3, 0xc202fe — wild jumps)
-7. 3 irreducible `cpu.unimplemented()` stubs remain
+7. Dynamic jump instrumentation: 72 targets discovered, all already statically reachable
+8. **Zero** `cpu.unimplemented()` live stubs (all 25 fixed via decoder + emitter patches)
 
 ---
 
@@ -217,6 +252,8 @@ node TI-84_Plus_CE/coverage-analyzer.mjs
 ### Phase 10A: Missing Block Discovery — DONE ✓
 ### Phase 10B: Coverage Gap Analysis — DONE ✓
 ### Phase 10C: Feed-Forward Seeds — DONE ✓
+### Phase 11A: Indirect Jump Instrumentation — DONE ✓
+### Phase 11B: Stub Elimination (25→0) — DONE ✓
 
 ---
 
@@ -243,14 +280,9 @@ Approach:
 - Interrupt handler pushes PC, jumps to vector table entry
 - This would unlock the full post-PLL startup sequence
 
-### 3. Unimplemented Instruction Stubs
+### 3. New Instruction Forms at Deeper Frontier
 
-3 irreducible stubs from z80js parser bugs:
-- `ld (ix+0xFFF9), {1}` at `0x024343` — ADL mode oversized displacement
-- `ld (ix+0x00E6), {1}` at `0x028298` — same pattern
-- `Error disassembling ED DD` at `0x070b2b` — nonsense prefix
-
-Fix: manual byte-level decoders for these specific addresses, or replace z80js.
+As coverage expands, new instruction forms will appear. The Phase 11B pattern (fix stubs → discover new paths → new stubs → fix again) should be repeated iteratively. Current emitter coverage is comprehensive but not exhaustive — the eZ80 instruction set is large.
 
 ### 4. Execution Trace Verification
 
@@ -270,11 +302,12 @@ Compare against CEmu's real execution trace:
 
 ## Remaining `cpu.unimplemented(...)` Surface
 
-3 irreducible stubs in `ROM.transpiled.js`:
+**Zero live stubs** as of Phase 11B. All previously irreducible stubs were fixed:
 
-- `ld (ix+0xFFF9), {1}` at `0x024343` — z80js parser bug
-- `ld (ix+0x00E6), {1}` at `0x028298` — z80js parser bug
-- `Error disassembling ED DD` at `0x070b2b` — nonsense prefix
+- `ld (ix+0xFFF9), {1}` at `0x024343` — fixed by doubled-prefix consumption (FD DD → DD wins)
+- `ld (ix+0x00E6), {1}` at `0x028298` — same fix
+- `Error disassembling ED DD` at `0x070b2b` — fixed by ED NOP fallback for undefined opcodes
+- 22 additional stubs discovered at deeper frontier — all fixed via emitter patches (sbc a imm, out (n) a, .sil normalization, nop tag)
 
 ---
 
