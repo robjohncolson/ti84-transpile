@@ -84,10 +84,14 @@ function runTest(label, startAddr, startMode, maxSteps) {
   ioLog.length = 0;
 
   console.log('Block trace:');
+  const missingBlocksFound = [];
   const result = executor.runFrom(startAddr, startMode, {
     maxSteps,
     maxLoopIterations: 32,
     onBlock: traceCallback,
+    onMissingBlock: (pc, mode, step) => {
+      missingBlocksFound.push({ pc, mode, step });
+    },
     onLoopBreak: (pc, mode, count, target) => {
       const dest = target ? hex(target) : '(carry forced)';
       console.log(`  ** LOOP BREAK at ${hex(pc)}:${mode} after ${count} iterations → ${dest}`);
@@ -114,7 +118,22 @@ function runTest(label, startAddr, startMode, maxSteps) {
   console.log(`\nI/O log (${ioLog.length} operations):`);
   printIoLog(ioLog);
 
-  return result;
+  if (missingBlocksFound.length > 0) {
+    console.log(`\nMissing blocks encountered: ${missingBlocksFound.length}`);
+    const unique = [...new Set(missingBlocksFound.map(m => '0x' + m.pc.toString(16).padStart(6, '0') + ':' + m.mode))];
+    console.log(`  Unique missing: ${unique.length}`);
+    for (const key of unique.slice(0, 10)) {
+      console.log(`    ${key}`);
+    }
+    if (unique.length > 10) {
+      console.log(`    ... and ${unique.length - 10} more`);
+    }
+  }
+
+  return {
+    ...result,
+    missingBlocksFound,
+  };
 }
 
 // --- Test 1: Reset vector (z80 mode) ---
@@ -201,9 +220,13 @@ for (const ep of entryPoints) {
   cpu._callDepth = 0;
   ioLog.length = 0;
 
+  const epMissing = [];
   const result = executor.runFrom(ep.addr, ep.mode, {
     maxSteps: 5000,
     maxLoopIterations: 64,
+    onMissingBlock: (pc, mode, step) => {
+      epMissing.push({ pc, mode, step });
+    },
   });
 
   multiResults.push({
@@ -215,6 +238,7 @@ for (const ep of entryPoints) {
     lastMode: result.lastMode,
     loopsForced: result.loopsForced || 0,
     ioOps: ioLog.length,
+    missingBlocksFound: epMissing,
   });
 }
 
@@ -270,6 +294,34 @@ if (failedBlocks > 0) {
       if (++count >= 10) break;
     }
   }
+}
+
+// --- Discovery Summary ---
+console.log(`\n${'='.repeat(60)}`);
+console.log('DISCOVERY SUMMARY â€” Potential New Seeds');
+console.log(`${'='.repeat(60)}`);
+
+const allMissing = new Set();
+// Gather from test4's result
+if (test4.missingBlocks) {
+  for (const key of test4.missingBlocks) allMissing.add(key);
+}
+// Gather from multi-entry results
+for (const r of multiResults) {
+  if (r.missingBlocksFound) {
+    for (const m of r.missingBlocksFound) {
+      allMissing.add('0x' + m.pc.toString(16).padStart(6, '0') + ':' + m.mode);
+    }
+  }
+}
+
+console.log(`  Total unique missing block addresses: ${allMissing.size}`);
+const sorted = [...allMissing].sort();
+for (const key of sorted.slice(0, 20)) {
+  console.log(`    ${key}`);
+}
+if (sorted.length > 20) {
+  console.log(`    ... and ${sorted.length - 20} more`);
 }
 
 console.log('\nDone.');

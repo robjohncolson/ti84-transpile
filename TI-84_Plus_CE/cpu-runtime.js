@@ -709,6 +709,7 @@ export function createExecutor(blocks, memory, options = {}) {
       let steps = 0;
       let termination = 'max_steps';
       let loopsForced = 0;
+      const missingBlocks = new Set();
 
       // Loop detection: track recent block keys in a small ring buffer
       const recentKeys = [];
@@ -755,8 +756,28 @@ export function createExecutor(blocks, memory, options = {}) {
         const fn = compiledBlocks[key];
 
         if (!fn) {
-          termination = 'missing_block';
-          break;
+          if (opts.onMissingBlock) {
+            opts.onMissingBlock(pc, mode, steps);
+          }
+          missingBlocks.add(key);
+
+          // Try to skip ahead and find the next valid block (up to 16 bytes)
+          let skipped = false;
+          for (let offset = 1; offset <= 16; offset++) {
+            const tryPc = pc + offset;
+            const tryKey = tryPc.toString(16).padStart(6, '0') + ':' + mode;
+            if (compiledBlocks[tryKey]) {
+              pc = tryPc;
+              skipped = true;
+              break;
+            }
+          }
+          if (!skipped) {
+            termination = 'missing_block';
+            break;
+          }
+          steps++;
+          continue;
         }
 
         const meta = blockMeta[key];
@@ -769,7 +790,16 @@ export function createExecutor(blocks, memory, options = {}) {
           result = fn(cpu);
         } catch (err) {
           termination = 'error';
-          return { steps, lastPc: pc, lastMode: mode, halted: cpu.halted, termination, error: err, loopsForced };
+          return {
+            steps,
+            lastPc: pc,
+            lastMode: mode,
+            halted: cpu.halted,
+            termination,
+            error: err,
+            loopsForced,
+            missingBlocks: [...missingBlocks],
+          };
         }
 
         steps++;
@@ -789,7 +819,15 @@ export function createExecutor(blocks, memory, options = {}) {
         pc = result;
       }
 
-      return { steps, lastPc: pc, lastMode: mode, halted: cpu.halted, termination, loopsForced };
+      return {
+        steps,
+        lastPc: pc,
+        lastMode: mode,
+        halted: cpu.halted,
+        termination,
+        loopsForced,
+        missingBlocks: [...missingBlocks],
+      };
     },
   };
 }
