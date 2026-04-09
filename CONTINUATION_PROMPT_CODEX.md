@@ -129,13 +129,48 @@ Added Test 5 to `test-harness.mjs` — 14 entry points tested without block trac
 
 **Results:** Stubs went 3 → 25 (new paths discovered) → 0 (all fixed). +105 blocks from newly reachable code.
 
+### Phase 12: Post-HALT Wake + Executor Wake Support (complete)
+
+**12A: Wake continuation tests in test-harness.mjs:**
+- Test 6: NMI wake from 0x0066 with post-boot state (50K steps)
+- Test 7: IM1 wake from 0x0038 with post-boot state
+- Finding: NMI handler re-enters startup/PLL sequence (no new code regions). IM1 re-halts in 4 steps.
+- Dynamic targets from wake: all already known (72 unique)
+
+**12B: Executor wake support in cpu-runtime.js:**
+- `wakeFromHalt` option in `runFrom()`: 'nmi' (0x0066), 'im1'/'true' (0x0038), or custom `{vector, returnPc, mode}`
+- Fires once then clears (prevents infinite HALT→wake loops)
+- `onWake(haltPc, wakePc, mode)` callback
+
+**12 Finding: Deep execution from 0x021000** — 100K steps, 75 dynamic targets, 0 missing blocks, 0 loops forced. Static frontier is completely saturated.
+
+### Phase 13A: Complete eZ80 Instruction Decoder (complete)
+
+**Created `TI-84_Plus_CE/ez80-decoder.js` (784 lines):**
+
+Table-driven decoder to replace the z80js npm dependency. Produces structured instruction objects with typed tags (no mnemonic text parsing needed).
+
+**Covered instruction groups:**
+- Unprefixed opcodes (256 entries): LD, ALU, INC/DEC, PUSH/POP, JP/JR/CALL/RET, RST, rotates, misc
+- CB prefix: BIT/SET/RES/rotate for all 8 registers + (HL)
+- DD/FD prefix: IX/IY indexed loads/stores/ALU, half-registers (IXH/IXL/IYH/IYL), indexed bit ops (DD CB d op), doubled-prefix consumption (FD DD → DD wins)
+- ED prefix: IN0/OUT0, IN/OUT (C), SBC/ADC HL, LD rr/(nn), NEG, RETN/RETI, IM, block transfer (LDI/LDIR/etc), eZ80-specific (LEA, TST, MLT, STMIX, RSMIX, SLP, OTIMR, LD IX/IY/(HL))
+- eZ80 mode prefixes: .SIS/.LIS/.SIL/.LIL affect immediate width
+- Undefined ED opcodes → 2-byte NOP
+
+**NOT YET INTEGRATED** — the decoder is built and tested but not wired into the transpiler. Phase 13B (next session) will:
+1. Add ~30 new tag handlers to the emitter
+2. Replace z80js decode calls with the new decoder
+3. Remove z80js npm dependency
+4. Regenerate and compare output
+
 ---
 
 ## Current Outputs
 
 ### `scripts/transpile-ti84-rom.mjs`
 
-Source of truth for generation. Current seed count: 125 (RST vectors + known anchors + gap seeds + 70 dynamic targets).
+Source of truth for generation. Current seed count: 125 (RST vectors + known anchors + gap seeds + 70 dynamic targets). Still uses z80js + manual decoders (Phase 13B will replace).
 
 ### `TI-84_Plus_CE/ROM.transpiled.js`
 
@@ -254,6 +289,9 @@ node TI-84_Plus_CE/coverage-analyzer.mjs
 ### Phase 10C: Feed-Forward Seeds — DONE ✓
 ### Phase 11A: Indirect Jump Instrumentation — DONE ✓
 ### Phase 11B: Stub Elimination (25→0) — DONE ✓
+### Phase 12: Post-HALT Wake + Executor Wake Support — DONE ✓
+### Phase 13A: Complete eZ80 Instruction Decoder — DONE ✓
+### Phase 13B: Integrate Decoder into Transpiler — TODO (next session)
 
 ---
 
@@ -261,7 +299,18 @@ node TI-84_Plus_CE/coverage-analyzer.mjs
 
 The static reachability frontier is exhausted at ~50K blocks. Further coverage requires dynamic techniques:
 
-### 1. Indirect Jump Resolution (highest impact)
+### 1. Integrate eZ80 Decoder (Phase 13B — immediate next step)
+
+The standalone decoder at `TI-84_Plus_CE/ez80-decoder.js` (784 lines) is built and tested. Integration requires:
+1. Import decoder into `scripts/transpile-ti84-rom.mjs`
+2. Add ~30 new tag handlers to `emitInstructionJs()` (ld-reg-reg, ld-reg-imm, alu-reg, alu-imm, inc-reg, dec-reg, add-pair, sbc-pair, adc-pair, push, pop, bit-test, bit-set, bit-res, rotate-reg, rotate-ind, in-reg, out-reg, out-imm, ld-special, ex-de-hl, ex-sp-pair, ex-af, exx, di, ei, scf, ccf, cpl, daa, neg, rlca, rrca, rla, rra, rrd, rld, ldi/ldir/ldd/lddr/cpi/cpir, retn, reti, im, ld-reg-ixd, ld-ixd-reg, ld-ixd-imm, alu-ixd, inc-ixd, dec-ixd, ld-sp-pair, ld-pair-ind, ld-ind-pair, ld-reg-ind, ld-ind-reg, ld-reg-mem, ld-mem-reg, ld-pair-imm, ld-pair-mem, ld-mem-pair, ld-ind-imm, in-imm)
+3. Replace `z80js` decode calls with new decoder
+4. Remove `z80js` npm dependency
+5. Regenerate and verify: block count should be ≥ 50488, stubs should be 0
+
+The decoder produces structured objects so the emitter can use direct tag dispatch — no more mnemonic regex matching. This eliminates the entire z80js→text→regex pipeline.
+
+### 2. Indirect Jump Resolution
 
 Many blocks end in `jp (hl)`, `jp (ix)`, or computed jumps. The transpiler can't follow these statically. Approach:
 - Instrument the executor to log all indirect jump targets during test runs
@@ -321,6 +370,7 @@ Compare against CEmu's real execution trace:
 - `TI-84_Plus_CE/peripherals.js` — I/O peripheral bus (PLL, GPIO, flash, timers)
 - `TI-84_Plus_CE/test-harness.mjs` — 5-test validation harness + multi-entry + discovery
 - `TI-84_Plus_CE/coverage-analyzer.mjs` — Gap analysis + heatmap + seed suggestions
+- `TI-84_Plus_CE/ez80-decoder.js` — Complete eZ80 instruction decoder (784 lines, NOT YET INTEGRATED)
 - `ti84-rom-disassembly-spec.md`
 - `codex-rom-disassembly-prompt.md`
 - `codex-rom-state-machine-prompt.md`
