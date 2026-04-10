@@ -1,12 +1,290 @@
 // Phase 5 test harness — validate transpiled ROM executor
 // Run: node TI-84_Plus_CE/test-harness.mjs
 
+import { execFileSync } from 'node:child_process';
+import { writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 import { TRANSPILATION_META, ENTRY_POINTS, PRELIFTED_BLOCKS, decodeEmbeddedRom } from './ROM.transpiled.js';
 import { CPU, createExecutor } from './cpu-runtime.js';
 import { createPeripheralBus } from './peripherals.js';
 
+const ROM_LIMIT = 0x400000;
+const PHASE24B_CALLBACK_PTR = 0xd02ad7;
+const PHASE24B_CALLBACK_TARGET = 0x0019be;
+const PHASE24B_EVENT_LOOP = 0x0019be;
+const PHASE24B_STACK = 0xd40000;
+const PHASE24B_KNOWN_SEEDS = [0x0019b6, 0x0032d1];
+const PHASE24B_SEEDS_URL = new URL('./phase24b-seeds.txt', import.meta.url);
+const PHASE24B_SEEDS_PATH = fileURLToPath(PHASE24B_SEEDS_URL);
+const COVERAGE_ANALYZER_PATH = fileURLToPath(new URL('./coverage-analyzer.mjs', import.meta.url));
+
 function hex(v, w = 6) {
   return '0x' + v.toString(16).padStart(w, '0');
+}
+
+function resetCpuState(targetCpu) {
+  targetCpu.a = 0; targetCpu.f = 0;
+  targetCpu.b = 0; targetCpu.c = 0;
+  targetCpu.d = 0; targetCpu.e = 0;
+  targetCpu.h = 0; targetCpu.l = 0;
+  targetCpu.sp = 0; targetCpu._ix = 0; targetCpu._iy = 0;
+  targetCpu.i = 0; targetCpu.im = 0;
+  targetCpu.iff1 = 0; targetCpu.iff2 = 0;
+  targetCpu.madl = 1;
+  targetCpu.halted = false;
+  targetCpu._callDepth = 0;
+}
+
+function formatBlockKey(pc, mode) {
+  return `${hex(pc)}:${mode}`;
+}
+
+function formatSeedAddress(value) {
+  return `0x${value.toString(16).padStart(6, '0')}`;
+}
+
+function printList(label, values, limit = 30, indent = '  ') {
+  console.log(`${indent}${label}: ${values.length}`);
+
+  if (values.length === 0) {
+    return;
+  }
+
+  for (const value of values.slice(0, limit)) {
+    console.log(`${indent}  ${value}`);
+  }
+
+  if (values.length > limit) {
+    console.log(`${indent}  ... and ${values.length - limit} more`);
+  }
+}
+
+function buildRegionCounts(blocksVisited) {
+  const regions = new Map();
+
+  for (const entry of blocksVisited) {
+    const regionStart = Math.floor(entry.pc / 0x10000) * 0x10000;
+
+    if (!regions.has(regionStart)) {
+      regions.set(regionStart, new Set());
+    }
+
+    regions.get(regionStart).add(formatBlockKey(entry.pc, entry.mode));
+  }
+
+  return [...regions.entries()]
+    .sort((left, right) => left[0] - right[0])
+    .map(([regionStart, keys]) => ({
+      regionStart,
+      count: keys.size,
+    }));
+}
+
+function printRegionCounts(regionCounts, indent = '  ') {
+  if (regionCounts.length === 0) {
+    console.log(`${indent}(none)`);
+    return;
+  }
+
+  for (const entry of regionCounts) {
+    console.log(
+      `${indent}${hex(entry.regionStart)}-${hex(entry.regionStart + 0xffff)}: ${entry.count} blocks`
+    );
+  }
+}
+
+function printIoSample(ioOps, mmioOps, limit = 30) {
+  const combined = [
+    ...ioOps.map((entry) => ({ ...entry, bus: 'port' })),
+    ...mmioOps.map((entry) => ({ ...entry, bus: 'mmio' })),
+  ].sort((left, right) => {
+    if (left.step !== right.step) {
+      return left.step - right.step;
+    }
+
+    if (left.bus !== right.bus) {
+      return left.bus.localeCompare(right.bus);
+    }
+
+    return left.target - right.target;
+  });
+
+  console.log(`  I/O operations: ${combined.length}`);
+
+  if (combined.length === 0) {
+    console.log('    (none)');
+    return;
+  }
+
+  for (const entry of combined.slice(0, limit)) {
+    const direction = entry.op === 'write' ? '<=' : '=>';
+    const targetLabel = entry.bus === 'mmio'
+      ? `MMIO ${hex(entry.target)}`
+      : `PORT ${hex(entry.target, 4)}`;
+    console.log(
+      `    [${String(entry.step).padStart(4)}] ${targetLabel} ${direction} ${hex(entry.value, 2)}`
+    );
+  }
+
+  if (combined.length > limit) {
+    console.log(`    ... and ${combined.length - limit} more`);
+  }
+}
+
+function collectSeedAddresses(...sources) {
+  const addresses = new Set();
+
+  for (const source of sources) {
+    if (!source) {
+      continue;
+    }
+
+    for (const entry of source) {
+      const address = typeof entry === 'number'
+        ? entry
+        : Number.parseInt(String(entry).split(':')[0], 16);
+
+      if (!Number.isInteger(address) || address <= 0 || address >= ROM_LIMIT) {
+        continue;
+      }
+
+      addresses.add(address);
+    }
+  }
+
+  return [...addresses].sort((left, right) => left - right);
+}
+
+function runCoverageAnalyzerSnapshot() {
+  try {
+    const output = execFileSync(process.execPath, [COVERAGE_ANALYZER_PATH], {
+      encoding: 'utf8',
+    }).trimEnd();
+    const match = output.match(/Coverage:\s+([0-9,]+)\s+\/\s+([0-9,]+)\s+bytes\s+\(([\d.]+)%\)/);
+
+    return {
+      ok: true,
+      output,
+      coveredBytes: match?.[1] ?? null,
+      totalBytes: match?.[2] ?? null,
+      percent: match ? Number(match[3]) : null,
+    };
+  } catch (error) {
+    const stdout = typeof error.stdout === 'string' ? error.stdout.trimEnd() : '';
+    const stderr = typeof error.stderr === 'string' ? error.stderr.trimEnd() : '';
+
+    return {
+      ok: false,
+      output: [stdout, stderr].filter(Boolean).join('\n'),
+      error: error.message,
+    };
+  }
+}
+
+function formatCoverageSummary(snapshot) {
+  if (!snapshot?.ok || snapshot.percent === null) {
+    return 'unavailable';
+  }
+
+  return `${snapshot.percent.toFixed(2)}% (${snapshot.coveredBytes} / ${snapshot.totalBytes} bytes)`;
+}
+
+function createFreshHarness(options = {}) {
+  const memory = new Uint8Array(pristineMemory);
+  const peripherals = createPeripheralBus({
+    trace: false,
+    pllDelay: 2,
+    ...(options.peripheralsOptions ?? {}),
+  });
+  const executor = createExecutor(PRELIFTED_BLOCKS, memory, {
+    peripherals,
+    trackMemoryMapped: options.trackMemoryMapped === true,
+  });
+
+  return {
+    memory,
+    peripherals,
+    executor,
+    cpu: executor.cpu,
+  };
+}
+
+function runExploration(executor, targetCpu, startAddr, startMode, options = {}) {
+  const blocksVisited = [];
+  const missingBlocksFound = [];
+  const dynamicTargets = [];
+  const ioOps = [];
+  const mmioOps = [];
+  const interrupts = [];
+  let currentStep = -1;
+
+  targetCpu.onIoRead = (port, value) => {
+    ioOps.push({ op: 'read', target: port, value, step: currentStep });
+  };
+
+  targetCpu.onIoWrite = (port, value) => {
+    ioOps.push({ op: 'write', target: port, value, step: currentStep });
+  };
+
+  targetCpu.onMmioRead = (addr, value) => {
+    mmioOps.push({ op: 'read', target: addr, value, step: currentStep });
+  };
+
+  targetCpu.onMmioWrite = (addr, value) => {
+    mmioOps.push({ op: 'write', target: addr, value, step: currentStep });
+  };
+
+  const result = executor.runFrom(startAddr, startMode, {
+    maxSteps: options.maxSteps ?? 100000,
+    maxLoopIterations: options.maxLoopIterations ?? 200,
+    wakeFromHalt: options.wakeFromHalt,
+    onWake: options.onWake,
+    onLoopBreak: options.onLoopBreak,
+    onBlock: (pc, mode, meta, step) => {
+      currentStep = step;
+      blocksVisited.push({ pc, mode, step });
+
+      if (options.onBlock) {
+        options.onBlock(pc, mode, meta, step);
+      }
+    },
+    onMissingBlock: (pc, mode, step) => {
+      missingBlocksFound.push({ pc, mode, step });
+
+      if (options.onMissingBlock) {
+        options.onMissingBlock(pc, mode, step);
+      }
+    },
+    onDynamicTarget: (targetPc, mode, fromPc, step) => {
+      dynamicTargets.push({ targetPc, mode, fromPc, step });
+
+      if (options.onDynamicTarget) {
+        options.onDynamicTarget(targetPc, mode, fromPc, step);
+      }
+    },
+    onInterrupt: (type, fromPc, vector, step) => {
+      interrupts.push({ type, fromPc, vector, step });
+
+      if (options.onInterrupt) {
+        options.onInterrupt(type, fromPc, vector, step);
+      }
+    },
+  });
+
+  return {
+    result,
+    blocksVisited,
+    uniqueBlocks: [...new Set(blocksVisited.map((entry) => formatBlockKey(entry.pc, entry.mode)))],
+    missingBlocksFound,
+    missingKeys: [...new Set(missingBlocksFound.map((entry) => formatBlockKey(entry.pc, entry.mode)))],
+    dynamicTargets,
+    dynamicKeys: [...new Set(dynamicTargets.map((entry) => formatBlockKey(entry.targetPc, entry.mode)))],
+    ioOps,
+    mmioOps,
+    interrupts,
+    regionCounts: buildRegionCounts(blocksVisited),
+  };
 }
 
 // --- Decode ROM ---
@@ -17,6 +295,7 @@ console.log(`Total blocks: ${Object.keys(PRELIFTED_BLOCKS).length}\n`);
 
 console.log('Decoding ROM...');
 const romBytes = decodeEmbeddedRom();
+const pristineMemory = new Uint8Array(romBytes);
 console.log(`ROM decoded: ${romBytes.length} bytes (${(romBytes.length / 1024 / 1024).toFixed(1)} MB)\n`);
 
 // --- Create executor ---
@@ -540,6 +819,236 @@ console.log('\n--- Test 10: ISR Dispatch Gate (Phase 24A) ---');
       console.log(`    ${hex(region)}-${hex(region + 0xFFFF)}: ${count} blocks`);
     }
     console.log(`  Total unique blocks visited: ${new Set(blocksVisited.map(b => `${hex(b.pc)}:${b.mode}`)).size}`);
+  }
+}
+
+// --- Test 11: Deep ISR exploration with callback table initialization ---
+console.log('\n--- Test 11: Deep ISR Exploration (Phase 24B) ---');
+const test11Seeds = new Set();
+{
+  // Create 16MB memory with ROM loaded (needed for D-space RAM access)
+  const mem11 = new Uint8Array(0x1000000);
+  mem11.set(romBytes);
+  const p11 = createPeripheralBus({ trace: false, pllDelay: 2 });
+  const ex11 = createExecutor(PRELIFTED_BLOCKS, mem11, { peripherals: p11 });
+  const cpu11 = ex11.cpu;
+
+  // Boot to HALT
+  resetCpuState(cpu11);
+  const boot11 = ex11.runFrom(0x000000, 'z80', { maxSteps: 5000, maxLoopIterations: 32 });
+  console.log(`  Boot: ${boot11.steps} steps → ${boot11.termination} at ${hex(boot11.lastPc)}`);
+
+  // Initialize callback table: write OS event loop address to 0xD02AD7
+  const cbTarget = PHASE24B_CALLBACK_TARGET;
+  mem11[0xD02AD7] = cbTarget & 0xFF;
+  mem11[0xD02AD8] = (cbTarget >> 8) & 0xFF;
+  mem11[0xD02AD9] = (cbTarget >> 16) & 0xFF;
+  console.log(`  Callback table: 0xD02AD7 = ${hex(cbTarget)}`);
+
+  // Wake with IM1 IRQ
+  cpu11.halted = false;
+  cpu11.iff1 = 1;
+  cpu11.iff2 = 1;
+  cpu11.push(boot11.lastPc + 1);
+
+  const blocks11 = [];
+  const missing11 = [];
+  const dynamic11 = [];
+
+  const isr11 = ex11.runFrom(0x000038, 'adl', {
+    maxSteps: 100000,
+    maxLoopIterations: 200,
+    onBlock: (pc, mode) => { blocks11.push({ pc, mode }); },
+    onMissingBlock: (pc, mode) => { missing11.push({ pc, mode }); },
+    onDynamicTarget: (targetPc, mode) => { dynamic11.push({ targetPc, mode }); },
+    onLoopBreak: (pc, mode, count) => {
+      console.log(`  [T11] Loop break at ${hex(pc)}:${mode} (${count} iterations)`);
+    },
+  });
+
+  const uniqueBlocks11 = new Set(blocks11.map(b => `${hex(b.pc)}:${b.mode}`));
+  const uniqueMissing11 = [...new Set(missing11.map(m => `${hex(m.pc)}:${m.mode}`))];
+  const uniqueDynamic11 = [...new Set(dynamic11.map(d => `${hex(d.targetPc)}:${d.mode}`))];
+
+  console.log(`\n  ISR dispatch: ${isr11.steps} steps → ${isr11.termination} at ${hex(isr11.lastPc)}:${isr11.lastMode}`);
+  console.log(`  Unique blocks visited: ${uniqueBlocks11.size}`);
+
+  // Code region distribution
+  const regions11 = new Map();
+  for (const b of blocks11) {
+    const region = Math.floor(b.pc / 0x10000) * 0x10000;
+    regions11.set(region, (regions11.get(region) || 0) + 1);
+  }
+  console.log(`  Code regions:`);
+  for (const [region, count] of [...regions11.entries()].sort((a, b) => a[0] - b[0])) {
+    console.log(`    ${hex(region)}-${hex(region + 0xFFFF)}: ${count} blocks`);
+  }
+
+  console.log(`\n  Missing blocks: ${uniqueMissing11.length}`);
+  for (const key of uniqueMissing11.slice(0, 30)) {
+    console.log(`    ${key}`);
+    const addr = parseInt(key.split(':')[0], 16);
+    if (addr > 0 && addr < ROM_LIMIT) test11Seeds.add(addr);
+  }
+
+  console.log(`\n  Dynamic targets: ${uniqueDynamic11.length}`);
+  for (const key of uniqueDynamic11.slice(0, 30)) {
+    console.log(`    ${key}`);
+    const addr = parseInt(key.split(':')[0], 16);
+    if (addr > 0 && addr < ROM_LIMIT) test11Seeds.add(addr);
+  }
+}
+
+// --- Test 12: OS event loop exploration ---
+console.log('\n--- Test 12: OS Event Loop (0x0019BE) ---');
+const test12Seeds = new Set();
+{
+  const mem12 = new Uint8Array(0x1000000);
+  mem12.set(romBytes);
+  const p12 = createPeripheralBus({ trace: false, pllDelay: 2 });
+  const ex12 = createExecutor(PRELIFTED_BLOCKS, mem12, { peripherals: p12 });
+  const cpu12 = ex12.cpu;
+
+  // Set up OS-like state without full boot
+  resetCpuState(cpu12);
+  cpu12._iy = 0xD00080;   // system vars base
+  cpu12.sp = 0xD40000;     // reasonable stack
+  cpu12.im = 1;
+  cpu12.iff1 = 0;
+  cpu12.madl = 1;          // ADL mode
+
+  // Set (IY+27) = 0x40 (bit 6 set, as SET 6,(IY+27) does in ISR)
+  mem12[0xD0009B] = 0x40;
+
+  const blocks12 = [];
+  const missing12 = [];
+  const dynamic12 = [];
+
+  const loop12 = ex12.runFrom(PHASE24B_EVENT_LOOP, 'adl', {
+    maxSteps: 100000,
+    maxLoopIterations: 200,
+    onBlock: (pc, mode) => { blocks12.push({ pc, mode }); },
+    onMissingBlock: (pc, mode) => { missing12.push({ pc, mode }); },
+    onDynamicTarget: (targetPc, mode) => { dynamic12.push({ targetPc, mode }); },
+    onLoopBreak: (pc, mode, count) => {
+      console.log(`  [T12] Loop break at ${hex(pc)}:${mode} (${count} iterations)`);
+    },
+  });
+
+  const uniqueBlocks12 = new Set(blocks12.map(b => `${hex(b.pc)}:${b.mode}`));
+  const uniqueMissing12 = [...new Set(missing12.map(m => `${hex(m.pc)}:${m.mode}`))];
+  const uniqueDynamic12 = [...new Set(dynamic12.map(d => `${hex(d.targetPc)}:${d.mode}`))];
+
+  console.log(`  Event loop: ${loop12.steps} steps → ${loop12.termination} at ${hex(loop12.lastPc)}:${loop12.lastMode}`);
+  console.log(`  Unique blocks visited: ${uniqueBlocks12.size}`);
+
+  const regions12 = new Map();
+  for (const b of blocks12) {
+    const region = Math.floor(b.pc / 0x10000) * 0x10000;
+    regions12.set(region, (regions12.get(region) || 0) + 1);
+  }
+  console.log(`  Code regions:`);
+  for (const [region, count] of [...regions12.entries()].sort((a, b) => a[0] - b[0])) {
+    console.log(`    ${hex(region)}-${hex(region + 0xFFFF)}: ${count} blocks`);
+  }
+
+  console.log(`\n  Missing blocks: ${uniqueMissing12.length}`);
+  for (const key of uniqueMissing12.slice(0, 30)) {
+    console.log(`    ${key}`);
+    const addr = parseInt(key.split(':')[0], 16);
+    if (addr > 0 && addr < ROM_LIMIT) test12Seeds.add(addr);
+  }
+
+  console.log(`\n  Dynamic targets: ${uniqueDynamic12.length}`);
+  for (const key of uniqueDynamic12.slice(0, 30)) {
+    console.log(`    ${key}`);
+    const addr = parseInt(key.split(':')[0], 16);
+    if (addr > 0 && addr < ROM_LIMIT) test12Seeds.add(addr);
+  }
+}
+
+// --- Test 13: ROM ISR handler table scan ---
+console.log('\n--- Test 13: ROM ISR Handler Table Scan ---');
+const test13Seeds = new Set();
+{
+  // Scan known TI-84 CE dispatch/handler table areas for 24-bit pointers
+  const tableRanges = [
+    { start: 0x000700, end: 0x000800, label: 'ISR handler area' },
+    { start: 0x020100, end: 0x020200, label: 'OS dispatch table' },
+    { start: 0x000038, end: 0x000070, label: 'RST vector area' },
+  ];
+
+  const validAddresses = [];
+  const newSeeds = [];
+
+  for (const range of tableRanges) {
+    console.log(`\n  Scanning ${range.label} (${hex(range.start)}-${hex(range.end)}):`);
+    for (let addr = range.start; addr < range.end; addr += 3) {
+      const ptr = romBytes[addr] | (romBytes[addr + 1] << 8) | (romBytes[addr + 2] << 16);
+      if (ptr === 0 || ptr >= ROM_LIMIT) continue;
+
+      const key = `${ptr.toString(16).padStart(6, '0')}:adl`;
+      const hasBlock = PRELIFTED_BLOCKS[key] !== undefined;
+
+      if (hasBlock) {
+        validAddresses.push({ addr, ptr, key });
+      } else {
+        newSeeds.push({ addr, ptr, key });
+        test13Seeds.add(ptr);
+      }
+    }
+    console.log(`    Valid blocks: ${validAddresses.length}, New seeds: ${newSeeds.length}`);
+  }
+
+  // Try running from each valid handler address (quick probe)
+  console.log(`\n  Probing ${Math.min(validAddresses.length, 20)} valid handler addresses:`);
+  const p13 = createPeripheralBus({ trace: false, pllDelay: 2 });
+  const ex13 = createExecutor(PRELIFTED_BLOCKS, romBytes, { peripherals: p13 });
+  const cpu13 = ex13.cpu;
+
+  for (const entry of validAddresses.slice(0, 20)) {
+    resetCpuState(cpu13);
+    cpu13._iy = 0xD00080;
+    cpu13.sp = 0xD40000;
+    cpu13.im = 1;
+    cpu13.madl = 1;
+
+    const probeMissing = [];
+    const probe = ex13.runFrom(entry.ptr, 'adl', {
+      maxSteps: 1000,
+      maxLoopIterations: 32,
+      onMissingBlock: (pc, mode) => {
+        probeMissing.push(pc);
+        if (pc > 0 && pc < ROM_LIMIT) test13Seeds.add(pc);
+      },
+    });
+    console.log(`    ${hex(entry.ptr)}: ${probe.steps} steps → ${probe.termination} at ${hex(probe.lastPc)}, missing: ${probeMissing.length}`);
+  }
+}
+
+// --- Write seeds file ---
+console.log('\n--- Phase 24B Seed Collection ---');
+{
+  const allSeeds = collectSeedAddresses(
+    [...test11Seeds],
+    [...test12Seeds],
+    [...test13Seeds],
+    PHASE24B_KNOWN_SEEDS,
+  );
+
+  console.log(`  Seeds from Test 11: ${test11Seeds.size}`);
+  console.log(`  Seeds from Test 12: ${test12Seeds.size}`);
+  console.log(`  Seeds from Test 13: ${test13Seeds.size}`);
+  console.log(`  Total unique seeds: ${allSeeds.length}`);
+
+  if (allSeeds.length > 0) {
+    const lines = [
+      '# Phase 24B seeds — ISR dispatch exploration',
+      '# Generated by test-harness.mjs Tests 11-13',
+      ...allSeeds.map(formatSeedAddress),
+    ];
+    writeFileSync(PHASE24B_SEEDS_PATH, lines.join('\n') + '\n');
+    console.log(`  Written to: ${PHASE24B_SEEDS_PATH}`);
   }
 }
 
