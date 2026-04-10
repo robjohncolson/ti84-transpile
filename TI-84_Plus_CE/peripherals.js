@@ -1,5 +1,5 @@
 function normalizePort(port) {
-  return Number(port) & 0xff;
+  return Number(port) & 0xffff;
 }
 
 function normalizeValue(value) {
@@ -247,6 +247,10 @@ export function createPeripheralBus(options = {}) {
       } else {
         interruptState.irqPending = true;
       }
+      // Set OS timer bit (bit 4) in interrupt controller raw status
+      if (state.intc) {
+        state.intc.rawStatus |= (1 << 4);
+      }
       interruptState.timerCounter = 0;
     }
   }
@@ -288,11 +292,70 @@ export function createPeripheralBus(options = {}) {
     write() {},
   });
 
+  // Interrupt controller (FTINTC010) at ports 0x5000-0x5014
+  // Bit mapping: 0=ON, 1-3=timers, 4=OS timer, 10=keyboard, 11=LCD, 12=RTC, 13=USB
+  const intcState = {
+    rawStatus: 0x00000000,    // port 0x5000: raw interrupt status
+    enableMask: 0x00000000,   // port 0x5004: interrupt enable mask
+    latchMode: 0x00000000,    // port 0x500C: latch mode control
+    inversion: 0x00000000,    // port 0x5010: signal inversion
+  };
+
+  // Expose intcState so tick() can set raw status bits
+  state.intc = intcState;
+
+  function createIntcHandler() {
+    return {
+      read(port) {
+        const reg = port & 0x1f;
+        if (reg === 0x00) return intcState.rawStatus & 0xff;        // raw status (low byte)
+        if (reg === 0x01) return (intcState.rawStatus >> 8) & 0xff;
+        if (reg === 0x02) return (intcState.rawStatus >> 16) & 0xff;
+        if (reg === 0x04) return intcState.enableMask & 0xff;       // enable mask (low byte)
+        if (reg === 0x05) return (intcState.enableMask >> 8) & 0xff;
+        if (reg === 0x06) return (intcState.enableMask >> 16) & 0xff;
+        if (reg === 0x14) return (intcState.rawStatus & intcState.enableMask) & 0xff;  // masked status
+        if (reg === 0x15) return ((intcState.rawStatus & intcState.enableMask) >> 8) & 0xff;
+        if (reg === 0x16) return ((intcState.rawStatus & intcState.enableMask) >> 16) & 0xff;
+        return 0x00;
+      },
+      write(port, value) {
+        const reg = port & 0x1f;
+        if (reg === 0x04) intcState.enableMask = (intcState.enableMask & 0xffff00) | value;
+        if (reg === 0x05) intcState.enableMask = (intcState.enableMask & 0xff00ff) | (value << 8);
+        if (reg === 0x06) intcState.enableMask = (intcState.enableMask & 0x00ffff) | (value << 16);
+        if (reg === 0x08) intcState.rawStatus &= ~value;             // acknowledge low byte
+        if (reg === 0x09) intcState.rawStatus &= ~(value << 8);
+        if (reg === 0x0a) intcState.rawStatus &= ~(value << 16);
+        if (reg === 0x0c) intcState.latchMode = (intcState.latchMode & 0xffff00) | value;
+        if (reg === 0x0d) intcState.latchMode = (intcState.latchMode & 0xff00ff) | (value << 8);
+        if (reg === 0x10) intcState.inversion = (intcState.inversion & 0xffff00) | value;
+        if (reg === 0x11) intcState.inversion = (intcState.inversion & 0xff00ff) | (value << 8);
+      },
+    };
+  }
+
   register(0x00, createCpuControlHandler(state));
   register(0x03, createGpioHandler(state));
   register(0x06, createFlashHandler(state));
   register([0x10, 0x18], createTimerHandler(state));
   register(0x28, createPllHandler(state));
+  // Memory controller / flash wait states (ports 0x1000-0x1005)
+  // Port 0x1005: flash wait states (OS default 0x04 → 9 wait states per flash read)
+  const memCtrlState = { waitStates: 0x04, bankCtrl: 0x00 };
+  register({ start: 0x1000, end: 0x1005 }, {
+    read(port) {
+      if ((port & 0xffff) === 0x1005) return memCtrlState.waitStates;
+      if ((port & 0xffff) === 0x1002) return memCtrlState.bankCtrl;
+      return 0x00;
+    },
+    write(port, value) {
+      if ((port & 0xffff) === 0x1005) memCtrlState.waitStates = value;
+      if ((port & 0xffff) === 0x1002) memCtrlState.bankCtrl = value;
+    },
+  });
+
+  register({ start: 0x5000, end: 0x501f }, createIntcHandler());
 
   return {
     read,

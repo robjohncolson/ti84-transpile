@@ -1,8 +1,8 @@
 # Continuation Prompt — TI-84 Plus CE ROM Transpilation
 
-**Last updated**: 2026-04-09T22:45Z
+**Last updated**: 2026-04-09T23:15Z
 **Focus**: Continue the TI-84 Plus CE ROM to JavaScript transpilation effort
-**Current phase**: Phases 1-20 complete. Coverage at 7.58% (50485 blocks, ~30% of OS area). Zero live stubs. Reset vector executes to HALT (60 steps). z80js dependency eliminated. Timer interrupt dispatch model active (NMI + IRQ). Interrupt status registers modeled (port 0x3D/0x3E). DD/FD prefix passthrough. Complete eZ80 ED-prefix instruction set (LEA, block I/O, word load/store).
+**Current phase**: Phases 1-21 complete. Coverage at 7.58% (50485 blocks, ~30% of OS area). Zero live stubs. Reset vector executes to HALT (60 steps). z80js dependency eliminated. Timer interrupt dispatch model active (NMI + IRQ). Interrupt status registers modeled (port 0x3D/0x3E). DD/FD prefix passthrough. Complete eZ80 ED-prefix instruction set (LEA, block I/O, word load/store).
 
 ---
 
@@ -398,6 +398,7 @@ node TI-84_Plus_CE/coverage-analyzer.mjs
 ### Phase 18: Flag Accuracy + Dead Code Cleanup — DONE ✓
 ### Phase 19: Peripheral Audit + OS Wake Analysis — DONE ✓
 ### Phase 20: ALU Tests + MMIO Tracking + Browser Shell — DONE ✓
+### Phase 21: 16-bit Port Fix + Interrupt Controller + Memory Controller — DONE ✓
 
 ---
 

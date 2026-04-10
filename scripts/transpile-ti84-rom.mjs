@@ -526,12 +526,12 @@ function emitInstructionJs(instruction) {
     return [`cpu.ioWritePage0(${hex(instruction.port)}, cpu.${instruction.reg});`];
   }
   if (tag === 'in-reg') {
-    if (instruction.reg === '(hl)') return ['cpu.ioRead(cpu.c);'];
-    return [`cpu.${instruction.reg} = cpu.ioRead(cpu.c);`];
+    if (instruction.reg === '(hl)') return ['cpu.ioRead(cpu.bc);'];
+    return [`cpu.${instruction.reg} = cpu.ioRead(cpu.bc);`];
   }
   if (tag === 'out-reg') {
-    if (instruction.reg === '(hl)') return ['cpu.ioWrite(cpu.c, 0);'];
-    return [`cpu.ioWrite(cpu.c, cpu.${instruction.reg});`];
+    if (instruction.reg === '(hl)') return ['cpu.ioWrite(cpu.bc, 0);'];
+    return [`cpu.ioWrite(cpu.bc, cpu.${instruction.reg});`];
   }
   if (tag === 'in-imm') return [`cpu.a = cpu.ioReadImmediate(cpu.a, ${hex(instruction.port)});`];
   if (tag === 'out-imm') return [`cpu.ioWrite(${hex(instruction.port)}, cpu.a);`];
