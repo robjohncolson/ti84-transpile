@@ -1,8 +1,8 @@
 # Continuation Prompt — TI-84 Plus CE ROM Transpilation
 
-**Last updated**: 2026-04-10T02:00Z
+**Last updated**: 2026-04-10T19:30Z
 **Focus**: Continue the TI-84 Plus CE ROM to JavaScript transpilation effort
-**Current phase**: Phases 1-22D complete (22D in-flight). Coverage at 7.58% (50485 blocks, ~30% of OS area). Zero live stubs. Reset vector executes to HALT (60 steps). z80js dependency eliminated. Timer interrupt dispatch model active (NMI + IRQ). Interrupt status registers modeled (port 0x3D/0x3E). DD/FD prefix passthrough. Complete eZ80 ED-prefix instruction set (LEA, block I/O, word load/store).
+**Current phase**: Phases 1-24B complete. Coverage at 16.5% (124327 blocks). Zero live stubs. Reset vector executes to HALT (62 steps). ISR dispatch gate UNLOCKED — IM1 handler reaches callback dispatch at 0x000710 for the first time. Function call harness working (FPAdd/Mult/Div/Sin). 24-bit CPU registers. Keyboard port 0x01 wired. 45 new seeds from ISR exploration.
 
 ---
 
@@ -20,7 +20,8 @@
 - **PLL Controller (port 0x28)**: Returns 0x00 until configured (first write), then returns 0x00 for `pllDelay` reads (default 2), then returns 0x04 (bit 2 set = PLL locked). Repeated writes of the same config value do NOT reset the delay counter.
 - **CPU Control Register (port 0x00)**: Read/write register, default 0x00
 - **GPIO Port (port 0x03)**: Configurable read value (default 0xFF = no buttons), stores writes
-- **Flash Controller (port 0x06)**: Returns 0x00 (ready), stores writes
+- **Flash Controller (port 0x06)**: Returns 0xD0 (hardware ready status — unlocks ISR gate at 0x000704), stores writes
+- **Keyboard Scan (port 0x01)**: Write selects key group (active low), read returns key status (0xFF = no keys pressed). 8-group matrix exposed via `peripherals.keyboard`
 - **Timer/Counter ports (0x10-0x18)**: Returns 0x00, stores writes
 
 **Modified `TI-84_Plus_CE/cpu-runtime.js`:**
@@ -237,16 +238,58 @@ Replaced `scripts/transpile-ti84-rom.mjs` (2128→830 lines):
 - Result: 68774 blocks → 110141 blocks (+41367), coverage 10.36% → 15.63%
 - OS area coverage: ~41% → ~62%
 
-**22D: Dense gap-fill seeding (IN FLIGHT):**
+**22D: Dense gap-fill seeding (COMPLETE):**
 - Added 18908 seeds at 32-byte intervals in ALL remaining uncovered gaps > 64 bytes
 - Block limit raised to 200000
-- Transpiler was still running at session end — check `ROM.transpiled.report.json` for results
-- If transpiler OOM'd or took too long: reduce seed count or run in batches
+- Result: 124327 blocks, 692278 bytes, 16.5% coverage
+- Seed count: 21229
 
-**Key finding — ROM.transpiled.js exceeded GitHub 100MB limit at 148MB.**
+**Key finding — ROM.transpiled.js exceeded GitHub 100MB limit at 175MB.**
 - File is now gitignored
 - Generate locally: `node scripts/transpile-ti84-rom.mjs`
 - All seeds are in the transpiler script; regeneration is deterministic
+
+### Phase 23: Function Call Harness (complete)
+
+**Created `TI-84_Plus_CE/ti84-math.mjs`:**
+- Clean API for calling OS math functions: `callFunction(addr, { op1, op2 })`
+- TI float format: 9 bytes, BCD encoded (sign, exponent, 7 mantissa pairs)
+- Calling convention: OP1 at 0xD005F8, OP2 at 0xD00601, result in OP1
+- 16MB memory (`new Uint8Array(0x1000000)`) with ROM loaded
+- 24-bit CPU registers (BC/DE/HL have full 24-bit backing stores)
+- Timer interrupts disabled for clean function execution
+- Working functions: FPAdd (0x07C77F), FPMult (0x07C8B7), FPDiv (0x07CAB9), Sin (0x07E57B)
+- Sentinel return address (0xFFFFFF) for clean function exit detection
+
+### Phase 24A: ISR Dispatch Gate Unlocked (complete)
+
+**The problem:** IM1 handler at 0x000038 reads port 0x06 (flash status) into A, then compares A with 0xD0 at block 0x000704. With port returning 0x00, the CP 0xD0 always failed → JP NZ to power-down. Block 0x000710 (callback dispatch) was unreachable.
+
+**The fix:** Flash port 0x06 returns 0xD0 (hardware ready status). Boot code reads port 0x06 but only to SET bit 2 and write back — never branches on the value. 0xD0 has bit 2 = 0, so the BIT 2 test gives Z=1 → JR Z taken → direct to CP gate → 0xD0 == 0xD0 → gate passes → falls through to 0x000710.
+
+**Key block analysis:**
+- Block 0x0006FA: `LD A, 0x03` / `OUT0 (0x06), A` / `CP 0x03` / `JR Z, 0x000704` — the "flash busy" path that kills A. Taken when bit 2 of port 0x06 is set.
+- Block 0x000710: `LD HL, (0xD02AD7)` / `PUSH HL` / `CALL 0x001713` — callback dispatch. Reads 24-bit callback address from RAM.
+
+**Added keyboard scan port 0x01:**
+- Write: selects key group (active low bit pattern)
+- Read: returns key status for selected groups (0xFF = no keys pressed)
+- 8-group matrix with AND logic for simultaneous group scanning
+- Exposed via `peripherals.keyboard` for test simulation
+
+**Test results:**
+- Test 9: Boot I/O trace confirms port 0x06 reads 0xD0 throughout
+- Test 10: ISR reaches 0x000710 (46 steps), visits 35 unique blocks across 3 code regions
+
+### Phase 24B: ISR Post-Dispatch Exploration (complete)
+
+**Test 11 (Deep ISR with callback table):** Initialized 0xD02AD7 → 0x0019BE (OS event loop). ISR dispatches through callback but still HALTs at power-down (46 steps, 35 blocks, 3 regions).
+
+**Test 12 (OS Event Loop at 0x0019BE):** Direct entry with OS-like state (IY=0xD00080, bit 6 set). 239 steps, 39 blocks, 2 regions. Event loop checks system flags and falls through to power-down.
+
+**Test 13 (ROM handler table scan):** Scanned ISR handler area (0x700-0x800), OS dispatch table (0x20100-0x20200), RST vector area (0x38-0x70) for 24-bit pointers. Handler 0x08C331 runs 1000+ steps into deep OS code. Handler 0x061DB6 reaches new block at 0x00586A.
+
+**Seeds:** 45 unique addresses written to `TI-84_Plus_CE/phase24b-seeds.txt`.
 
 ### Phase 19: Peripheral Audit + OS Wake Analysis (complete)
 
@@ -292,11 +335,11 @@ Replaced `scripts/transpile-ti84-rom.mjs` (2128→830 lines):
 
 ### `scripts/transpile-ti84-rom.mjs`
 
-Source of truth for generation. Current seed count: 125 (RST vectors + known anchors + gap seeds + 70 dynamic targets). Uses the table-driven eZ80 decoder with direct tag dispatch — no z80js dependency, no regex parsing.
+Source of truth for generation. Current seed count: 21229. Uses the table-driven eZ80 decoder with direct tag dispatch — no z80js dependency, no regex parsing.
 
 ### `TI-84_Plus_CE/ROM.transpiled.js`
 
-Generated module: 50485 blocks, 7.58% coverage.
+Generated module: 124327 blocks, 16.5% coverage. **Gitignored** (175MB). Generate locally.
 
 ### `TI-84_Plus_CE/cpu-runtime.js`
 
@@ -309,11 +352,11 @@ CPU runtime (~930 lines):
 
 ### `TI-84_Plus_CE/peripherals.js`
 
-I/O peripheral bus + interrupt controller (~290 lines): PLL, CPU control, GPIO, flash, timers, interrupt status (0x3D), interrupt ack (0x3E), timer-driven NMI/IRQ.
+I/O peripheral bus + interrupt controller (~370 lines): PLL, CPU control, GPIO, flash (returns 0xD0), keyboard (port 0x01, 8-group matrix), timers, interrupt status (0x3D), interrupt ack (0x3E), timer-driven NMI/IRQ. Keyboard state exposed via `peripherals.keyboard`.
 
 ### `TI-84_Plus_CE/test-harness.mjs`
 
-Validation harness (~400 lines): 8 tests, multi-entry exploration, missing block discovery, dynamic target discovery, hot block profiling, PLL validation, NMI/IM1 wake, timer interrupt dispatch.
+Validation harness (~1000 lines): 13 tests, multi-entry exploration, missing block discovery, dynamic target discovery, hot block profiling, PLL validation, NMI/IM1 wake, timer interrupt dispatch, flash port trace, ISR dispatch gate verification, deep ISR exploration, OS event loop probe, ROM handler table scan.
 
 ### `TI-84_Plus_CE/coverage-analyzer.mjs`
 
@@ -323,15 +366,17 @@ Standalone gap analysis: heatmap, gap ranking, seed suggestions.
 
 Current metrics:
 - ROM size: `4194304`
-- Block count: `110141` (Phase 22C, 22D may increase further)
-- Covered bytes: `655752`
-- Coverage percent: `15.63` (~62% OS area)
-- Seed count: `11593` (30501 with round 3)
+- Block count: `124327`
+- Covered bytes: `692278`
+- Coverage percent: `16.50`
+- Seed count: `21229`
 - Live stubs: `0`
 - OS jump table: `980/980` (100%)
-- ROM.transpiled.js: **gitignored** (148MB+, exceeds GitHub 100MB limit). Generate locally.
+- ISR dispatch gate: **UNLOCKED** (0x000710 reachable)
+- ROM.transpiled.js: **gitignored** (175MB). Generate locally.
 
 Historical baselines:
+- After Phase 24B: blocks=`124327`, bytes=`692278`, coverage=`16.50%`, ISR gate unlocked
 - After Phase 22C: blocks=`110141`, bytes=`655752`, coverage=`15.63%`, OS=`62%`
 - After Phase 22B: blocks=`68774`, bytes=`434426`, coverage=`10.36%`, OS=`41%`
 - After Phase 22A: blocks=`56928`, bytes=`355345`, coverage=`8.47%`, OS=`34%`
@@ -354,18 +399,23 @@ Historical baselines:
 1. `node --check scripts/transpile-ti84-rom.mjs` passes
 2. `node scripts/transpile-ti84-rom.mjs` generates 110141+ blocks at 15.6%+ coverage (no z80js needed, takes 10-30 min)
 3. All blocks compile successfully (0 failures). ROM.transpiled.js is gitignored (>100MB).
-4. `node TI-84_Plus_CE/test-harness.mjs` runs 8 tests:
-   - Tests 1-3: Reset vector → HALT in 60 steps (with peripherals + loop breaker)
-   - Test 4: Peripheral validation — PLL returns 0x04 correctly, 1 forced break (interrupt-driven loop)
-   - Test 5: 14 entry points — 8 reach HALT, 4 run deep, 2 hit missing blocks
-   - Test 6: NMI wake — 9 steps, halt (port 0x3D returns 0x00)
-   - Test 7: IM1 wake — 6 steps to halt
-   - Test 8: Timer NMI from reset — 110 steps, 1 interrupt fired, halt
-5. `node TI-84_Plus_CE/coverage-analyzer.mjs` — OS area ~30%, gap seeds identified
-6. Missing block discovery: 2 dynamic targets (0x7eedf3, 0xc202fe — wild jumps)
-7. Dynamic jump instrumentation: 72 targets discovered, all already statically reachable
-8. **Zero** `cpu.unimplemented()` live stubs
-9. **z80js dependency eliminated** — new table-driven eZ80 decoder (ez80-decoder.js) handles all decoding
+4. `node TI-84_Plus_CE/test-harness.mjs` runs 13 tests:
+   - Tests 1-3: Reset vector → HALT in 62 steps (with peripherals + loop breaker)
+   - Test 4: Peripheral validation — PLL returns 0x04 correctly, 1 forced break
+   - Test 5: 14 entry points — 10 reach HALT, 4 hit missing blocks
+   - Test 6: NMI wake — 5 steps, halt (port 0x3D returns 0x00)
+   - Test 7: IM1 wake — 63 steps, 9 dynamic targets, 2 missing blocks (ISR gate unlocked!)
+   - Test 8: Timer NMI from reset — 106 steps, 1 interrupt fired, halt
+   - Test 9: Flash port 0x06 boot trace — reads 0xD0 throughout boot
+   - Test 10: ISR dispatch gate — A=0xD0 at CP, reaches 0x000710, 35 unique blocks
+   - Test 11: Deep ISR with callback table init — 46 steps, 3 code regions
+   - Test 12: OS event loop (0x0019BE) — 239 steps, 39 blocks
+   - Test 13: ROM handler table scan — 45 seeds, handler 0x08C331 runs 1000+ steps
+5. `node TI-84_Plus_CE/coverage-analyzer.mjs` — coverage analysis with gap suggestions
+6. `node TI-84_Plus_CE/ti84-math.mjs` — FPAdd, FPMult, FPDiv, Sin all produce correct results
+7. **Zero** `cpu.unimplemented()` live stubs
+8. **z80js dependency eliminated** — new table-driven eZ80 decoder (ez80-decoder.js) handles all decoding
+9. **ISR dispatch gate unlocked** — IM1 handler reaches 0x000710 callback dispatch
 
 ---
 
@@ -435,46 +485,58 @@ node TI-84_Plus_CE/coverage-analyzer.mjs
 ### Phase 22A: Find OS jump table function addresses — DONE ✓
 ### Phase 22B: Seed all 170 missing jump table implementations — DONE ✓
 ### Phase 22C: Prologue-scan gap-fill seeds (2025 seeds) — DONE ✓
-### Phase 22D: Dense gap-fill seeds (18908 seeds, 32-byte intervals) — IN FLIGHT
+### Phase 22D: Dense gap-fill seeds (18908 seeds, 32-byte intervals) — DONE ✓
+### Phase 23: Function Call Harness (FPAdd/Mult/Div/Sin) — DONE ✓
+### Phase 24A: ISR Dispatch Gate Unlocked (flash=0xD0, keyboard port) — DONE ✓
+### Phase 24B: ISR Post-Dispatch Exploration (45 seeds) — DONE ✓
 
 ---
 
 ## What Is Still Missing / Next Frontiers
 
-The static reachability frontier is exhausted at ~50K blocks (30% OS area). The transpiler, decoder, emitter, and CPU are feature-complete. Peripheral model covers PLL, GPIO, flash, timers, interrupt controller (FTINTC010), and memory controller. All tests pass. The remaining frontiers are about making execution deeper and more realistic.
+Coverage at 124327 blocks (16.5%). ISR gate is unlocked. Function call harness works. The remaining frontiers are about making the OS event loop functional and rendering output.
 
-### 1. Function Call Harness (highest priority for AP Stats integration)
+### 1. Seed the 45 Phase 24B Addresses (immediate next step)
 
-Build `ti84-math.mjs` — a clean API that sets up TI float parameters in memory, executes a specific OS function, and reads the result back. Requires understanding:
-- TI float format: 9 bytes, BCD encoded (sign, exponent, 7 mantissa pairs)
-- Calling convention: FP operand 1 at OP1 (RAM 0xD005F8), operand 2 at OP2 (0xD00601)
-- Return value in OP1 after function execution
-- Target: `ti84.sin(x)`, `ti84.fpAdd(a, b)`, eventually `ti84.normalcdf(lower, upper, mu, sigma)`
+`TI-84_Plus_CE/phase24b-seeds.txt` has 45 addresses discovered via ISR exploration. Feed these into the transpiler as new seed entry points and regenerate ROM.transpiled.js. Some are noise (ROM bytes read as pointers), but the transpiler will filter invalid ones. Expected: modest block count increase in ISR handler regions.
 
-### 2. Keyboard Input Simulation
+### 2. OS Event Loop Deep Dive
 
-The OS boots, initializes hardware, and enters power-down HALT at 0x0019B5. On real hardware, a key press triggers interrupt controller bit 10 (keyboard), waking the CPU. The IM1 handler dispatches to the OS event loop. Modeling this requires:
-- Set interrupt controller raw status bit 10 (port 0x5000) on simulated key press
-- Configure GPIO port 0x03 to return key-down matrix values (currently returns 0xFF = no keys)
-- The browser-shell.html could map PC keyboard → TI-84 key matrix → GPIO port
+The ISR dispatches to 0x000710 which calls a callback at 0xD02AD7. Currently RAM is zeroed so the callback goes nowhere useful. To make the event loop functional:
+- Trace what the real OS boot writes to 0xD02AD7 and surrounding callback table
+- Initialize the callback table with proper OS handler addresses
+- The event loop at 0x0019BE checks system flags at (IY+offset) and dispatches handlers
+- With proper callback table + system flags, execution should reach keyboard scan, LCD refresh, etc.
 
-### 2. CEmu Trace Verification
+### 3. Keyboard Input → OS Response Chain
+
+Port 0x01 is wired (returns 0xFF = no keys). Next steps:
+- Simulate a key press by setting `peripherals.keyboard.keyMatrix[group]` bits
+- Trigger interrupt controller bit 10 (keyboard IRQ)
+- Trace the full chain: key press → IRQ → ISR → event loop → keyboard scan routine
+- Map PC keyboard to TI-84 key matrix (8 groups × 8 keys)
+- Wire into browser-shell.html for interactive input
+
+### 4. LCD Display Buffer
+
+The LCD controller is memory-mapped at 0xF00000+. The OS writes pixel data during boot (TI logo). The browser-shell.html has a 320x240 canvas ready. Modeling the LCD VRAM at the correct memory addresses would render the boot screen.
+
+### 5. CEmu Trace Verification
 
 Compare block-by-block register state against CEmu to find emitter correctness bugs:
 - Export CEmu execution trace for first ~100 blocks from reset
 - Compare A/F/BC/DE/HL/SP/IX/IY after each block
 - Flag mismatches reveal ALU/flag computation errors that silently take wrong branches
 
-### 3. LCD Display Buffer
+### Key Technical Findings
 
-The LCD controller is memory-mapped at 0xF00000+. The OS writes pixel data during boot (TI logo). The browser-shell.html has a 320x240 canvas ready. Modeling the LCD VRAM at the correct memory addresses would render the boot screen.
-
-### Key Technical Findings (for next session)
-
-- **Port I/O is 16-bit**: `IN r,(C)` / `OUT (C),r` use full BC register. The interrupt controller (0x5000+), memory controller (0x1000+), and LCD controller (0x4000+) are all accessed via 16-bit ports.
-- **Interrupt handler CP 0xD0 check**: At block 0x000704, the ISR compares A with 0xD0 to dispatch events. A comes from port 0x06 (flash, returns 0x00). The value 0xD0 is never reached through normal IRQ flow — the dispatch at 0x000710 may require a different entry path or a specific RAM state.
-- **Boot completes in 18 steps post-PLL**: DI → PLL init → hardware setup → RST 0x08 → init → power-down HALT. All ports are modeled. No missing handlers.
-- **MMIO at 0xF00000+**: Not accessed during current execution paths. LCD writes happen later in the OS main loop (after key press wake).
+- **ISR gate unlocked (Phase 24A)**: Flash port 0x06 returns 0xD0 (hardware ready status). Boot code reads port 0x06 but only SET bit 2 and write back — never branches on the value. 0xD0 has bit 2 = 0, passing the BIT 2 test, then CP 0xD0 matches.
+- **ISR dispatch path**: 0x38 → 0x6F3 (IN0 flash) → 0x704 (CP 0xD0 gate) → 0x710 (callback dispatch) → 0x1713 (call callback) → 0x719 → 0x19BE (event loop)
+- **Callback table at 0xD02AD7**: 24-bit pointer to ISR callback handler. Zeroed in our memory → calls 0x000000 (reset). Real OS sets this during init.
+- **Handler 0x08C331 runs deep**: 1000+ steps, reaches 0x06ACB2 — likely a major OS subsystem (display? app manager?).
+- **Port I/O is 16-bit**: `IN r,(C)` / `OUT (C),r` use full BC register. Interrupt controller (0x5000+), memory controller (0x1000+), LCD controller (0x4000+) all via 16-bit ports.
+- **Boot completes in 62 steps**: DI → PLL init → hardware setup → RST 0x08 → init → power-down HALT.
+- **MMIO at 0xF00000+**: Not accessed during current execution paths. LCD writes happen later (after key press wake).
 
 ---
 
@@ -496,13 +558,15 @@ The LCD controller is memory-mapped at 0xF00000+. The OS writes pixel data durin
 - `TI-84_Plus_CE/ROM.transpiled.js` — Generated module (50485 blocks)
 - `TI-84_Plus_CE/ROM.transpiled.report.json` — Coverage metrics
 - `TI-84_Plus_CE/cpu-runtime.js` — CPU class + createExecutor + missing block discovery
-- `TI-84_Plus_CE/peripherals.js` — I/O peripheral bus + interrupt controller (PLL, GPIO, flash, timers, FTINTC010 at 0x5000, memory ctrl at 0x1000, interrupt status 0x3D/0x3E)
-- `TI-84_Plus_CE/test-harness.mjs` — 8-test validation harness + multi-entry + discovery + interrupts
+- `TI-84_Plus_CE/peripherals.js` — I/O peripheral bus + interrupt controller (PLL, GPIO, flash=0xD0, keyboard port 0x01, timers, FTINTC010 at 0x5000, memory ctrl at 0x1000, interrupt status 0x3D/0x3E)
+- `TI-84_Plus_CE/test-harness.mjs` — 13-test validation harness + ISR dispatch + event loop + handler table scan
+- `TI-84_Plus_CE/ti84-math.mjs` — Function call harness (FPAdd, FPMult, FPDiv, Sin — 16MB memory, 24-bit regs)
 - `TI-84_Plus_CE/deep-profile.mjs` — Deep execution profiler (0x021000 analysis)
 - `TI-84_Plus_CE/coverage-analyzer.mjs` — Gap analysis + heatmap + seed suggestions
 - `TI-84_Plus_CE/ez80-decoder.js` — Complete eZ80 instruction decoder (~790 lines, integrated into transpiler)
 - `TI-84_Plus_CE/test-alu.mjs` — ALU unit tests (72 tests: inc8, dec8, add8, sub8, adc, sbc, flags)
 - `TI-84_Plus_CE/browser-shell.html` — Browser-based ROM executor (320x240 canvas, step/run controls, register display, block trace log)
+- `TI-84_Plus_CE/phase24b-seeds.txt` — 45 seed addresses from ISR exploration (Tests 11-13)
 - `ti84-rom-disassembly-spec.md`
 - `codex-rom-disassembly-prompt.md`
 - `codex-rom-state-machine-prompt.md`
