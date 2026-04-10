@@ -1511,6 +1511,255 @@ let test17Result = null;
   };
 }
 
+// --- Test 18: Pre-initialized callback table via OS init ---
+console.log('\n--- Test 18: Pre-initialized Callback Table ---');
+const test18Seeds = new Set();
+{
+  const mem18 = new Uint8Array(0x1000000);
+  mem18.set(romBytes);
+  const p18 = createPeripheralBus({ trace: false, pllDelay: 2 });
+  const ex18 = createExecutor(PRELIFTED_BLOCKS, mem18, { peripherals: p18 });
+  const cpu18 = ex18.cpu;
+
+  // Step A: Run OS init (0x08C331) to populate system RAM
+  resetCpuState(cpu18);
+  cpu18._iy = 0xD00080;
+  cpu18.sp = 0xD40000;
+  cpu18.im = 1;
+  cpu18.madl = 1;
+
+  const init18 = ex18.runFrom(0x08C331, 'adl', { maxSteps: 5000, maxLoopIterations: 200 });
+  const cbAfterInit = mem18[0xD02AD7] | (mem18[0xD02AD8] << 8) | (mem18[0xD02AD9] << 16);
+  console.log(`  OS init (0x08C331): ${init18.steps} steps → ${init18.termination}`);
+  console.log(`  Callback after init: 0xD02AD7 = ${hex(cbAfterInit)}`);
+
+  // Step B: Boot from reset (keep RAM state!)
+  resetCpuState(cpu18);
+  const boot18 = ex18.runFrom(0x000000, 'z80', { maxSteps: 5000, maxLoopIterations: 32 });
+  const cbAfterBoot = mem18[0xD02AD7] | (mem18[0xD02AD8] << 8) | (mem18[0xD02AD9] << 16);
+  console.log(`  Boot: ${boot18.steps} steps → ${boot18.termination} at ${hex(boot18.lastPc)}`);
+  console.log(`  Callback after boot: 0xD02AD7 = ${hex(cbAfterBoot)}`);
+
+  // Step C: ISR cycling (up to 20 cycles)
+  const allBlocks18 = new Set();
+  const allMissing18 = new Set();
+  const allDynamic18 = new Set();
+
+  console.log(`\n  Cycle  Steps  Termination           Last PC   Callback     New Blocks`);
+  for (let cycle = 0; cycle < 20; cycle++) {
+    if (cycle === 0) {
+      // Boot already ran, count those blocks
+      allBlocks18.add(`${hex(boot18.lastPc)}:adl`);
+    }
+
+    cpu18.halted = false;
+    cpu18.iff1 = 1;
+    cpu18.iff2 = 1;
+    const retAddr = cpu18.halted ? boot18.lastPc + 1 : boot18.lastPc + 1;
+    cpu18.push(retAddr);
+
+    const prevSize = allBlocks18.size;
+    const cycleMissing = [];
+
+    const cycleResult = ex18.runFrom(0x000038, 'adl', {
+      maxSteps: 100000,
+      maxLoopIterations: 200,
+      onBlock: (pc, mode) => { allBlocks18.add(`${hex(pc)}:${mode}`); },
+      onMissingBlock: (pc, mode) => {
+        cycleMissing.push(pc);
+        allMissing18.add(`${hex(pc)}:${mode}`);
+        if (pc > 0 && pc < ROM_LIMIT) test18Seeds.add(pc);
+      },
+      onDynamicTarget: (targetPc, mode) => {
+        allDynamic18.add(`${hex(targetPc)}:${mode}`);
+        if (targetPc > 0 && targetPc < ROM_LIMIT) test18Seeds.add(targetPc);
+      },
+      onLoopBreak: () => {},
+    });
+
+    const cb = mem18[0xD02AD7] | (mem18[0xD02AD8] << 8) | (mem18[0xD02AD9] << 16);
+    const newBlocks = allBlocks18.size - prevSize;
+    console.log(`  ${String(cycle).padStart(5)}  ${String(cycleResult.steps).padStart(5)}  ${cycleResult.termination.padEnd(20)} ${hex(cycleResult.lastPc)}  ${hex(cb)}  ${newBlocks}`);
+
+    // Stop if stuck at missing block
+    if (cycleResult.termination === 'missing_block' && cycleMissing.length > 0) {
+      // Try one more cycle
+      if (cycle > 0 && cycleResult.steps <= 1) break;
+    }
+  }
+
+  // Region breakdown
+  const regions18 = new Map();
+  for (const key of allBlocks18) {
+    const pc = parseInt(key.split(':')[0], 16);
+    const region = Math.floor(pc / 0x10000) * 0x10000;
+    regions18.set(region, (regions18.get(region) || 0) + 1);
+  }
+  console.log(`\n  Cumulative unique blocks: ${allBlocks18.size}`);
+  console.log(`  Code regions:`);
+  for (const [region, count] of [...regions18.entries()].sort((a, b) => a[0] - b[0])) {
+    console.log(`    ${hex(region)}-${hex(region + 0xFFFF)}: ${count} blocks`);
+  }
+  console.log(`  Missing blocks: ${allMissing18.size}`);
+  for (const key of [...allMissing18].slice(0, 20)) console.log(`    ${key}`);
+  console.log(`  Dynamic targets: ${allDynamic18.size}`);
+  for (const key of [...allDynamic18].slice(0, 20)) console.log(`    ${key}`);
+}
+
+// --- Test 19: Keyboard interrupt simulation ---
+console.log('\n--- Test 19: Keyboard Interrupt Simulation ---');
+const test19Seeds = new Set();
+{
+  const mem19 = new Uint8Array(0x1000000);
+  mem19.set(romBytes);
+  const p19 = createPeripheralBus({ trace: false, pllDelay: 2 });
+  const ex19 = createExecutor(PRELIFTED_BLOCKS, mem19, { peripherals: p19 });
+  const cpu19 = ex19.cpu;
+
+  // OS init
+  resetCpuState(cpu19);
+  cpu19._iy = 0xD00080; cpu19.sp = 0xD40000; cpu19.im = 1; cpu19.madl = 1;
+  ex19.runFrom(0x08C331, 'adl', { maxSteps: 5000, maxLoopIterations: 200 });
+
+  // Boot
+  resetCpuState(cpu19);
+  const boot19 = ex19.runFrom(0x000000, 'z80', { maxSteps: 5000, maxLoopIterations: 32 });
+  console.log(`  Boot: ${boot19.steps} steps → ${boot19.termination}`);
+
+  // ISR with NO key press (baseline)
+  cpu19.halted = false; cpu19.iff1 = 1; cpu19.iff2 = 1;
+  cpu19.push(boot19.lastPc + 1);
+
+  const noKeyIo = [];
+  const noKeyBlocks = new Set();
+  const noKey = ex19.runFrom(0x000038, 'adl', {
+    maxSteps: 100000, maxLoopIterations: 200,
+    onBlock: (pc, mode) => { noKeyBlocks.add(`${hex(pc)}:${mode}`); },
+    onMissingBlock: (pc, mode) => { if (pc > 0 && pc < ROM_LIMIT) test19Seeds.add(pc); },
+    onDynamicTarget: (tp, mode) => { if (tp > 0 && tp < ROM_LIMIT) test19Seeds.add(tp); },
+    onLoopBreak: () => {},
+  });
+  cpu19.onIoRead = (port, value) => { if ((port & 0xFF) === 0x01) noKeyIo.push({ op: 'read', port, value }); };
+  // (I/O hooks set after run won't capture — let's set before the key-press run)
+
+  console.log(`  No key: ${noKey.steps} steps, ${noKeyBlocks.size} blocks`);
+
+  // ISR with ENTER key pressed
+  p19.keyboard.keyMatrix[0] = 0xFE; // bit 0 = ENTER, active low
+  p19.triggerIRQ();
+
+  cpu19.halted = false; cpu19.iff1 = 1; cpu19.iff2 = 1;
+  cpu19.push(boot19.lastPc + 1);
+
+  const keyIo = [];
+  const keyBlocks = new Set();
+  cpu19.onIoRead = (port, value) => { if ((port & 0xFF) === 0x01) keyIo.push({ op: 'read', port, value }); };
+  cpu19.onIoWrite = (port, value) => { if ((port & 0xFF) === 0x01) keyIo.push({ op: 'write', port, value }); };
+
+  const withKey = ex19.runFrom(0x000038, 'adl', {
+    maxSteps: 100000, maxLoopIterations: 200,
+    onBlock: (pc, mode) => { keyBlocks.add(`${hex(pc)}:${mode}`); },
+    onMissingBlock: (pc, mode) => { if (pc > 0 && pc < ROM_LIMIT) test19Seeds.add(pc); },
+    onDynamicTarget: (tp, mode) => { if (tp > 0 && tp < ROM_LIMIT) test19Seeds.add(tp); },
+    onLoopBreak: () => {},
+  });
+
+  console.log(`  ENTER key: ${withKey.steps} steps, ${keyBlocks.size} blocks`);
+  console.log(`  Port 0x01 accesses during key-press ISR: ${keyIo.length}`);
+  for (const io of keyIo.slice(0, 10)) {
+    const dir = io.op === 'write' ? 'OUT' : 'IN ';
+    console.log(`    ${dir} port ${hex(io.port, 4)} = ${hex(io.value, 2)}`);
+  }
+  if (keyIo.length > 10) console.log(`    ... and ${keyIo.length - 10} more`);
+
+  // Diff
+  const onlyInKey = [...keyBlocks].filter(b => !noKeyBlocks.has(b));
+  const onlyInNoKey = [...noKeyBlocks].filter(b => !keyBlocks.has(b));
+  console.log(`  Blocks unique to key-press: ${onlyInKey.length}`);
+  for (const b of onlyInKey.slice(0, 10)) console.log(`    ${b}`);
+  console.log(`  Blocks unique to no-key: ${onlyInNoKey.length}`);
+
+  // Release key
+  p19.keyboard.keyMatrix[0] = 0xFF;
+}
+
+// --- Test 20: Handler 0x0040B2 deep dive ---
+console.log('\n--- Test 20: Handler 0x0040B2 Deep Dive ---');
+const test20Seeds = new Set();
+{
+  const mem20 = new Uint8Array(0x1000000);
+  mem20.set(romBytes);
+  const p20 = createPeripheralBus({ trace: false, pllDelay: 2 });
+  const ex20 = createExecutor(PRELIFTED_BLOCKS, mem20, { peripherals: p20 });
+  const cpu20 = ex20.cpu;
+
+  // OS init first
+  resetCpuState(cpu20);
+  cpu20._iy = 0xD00080; cpu20.sp = 0xD40000; cpu20.im = 1; cpu20.madl = 1;
+  ex20.runFrom(0x08C331, 'adl', { maxSteps: 5000, maxLoopIterations: 200 });
+
+  // Run handler directly
+  resetCpuState(cpu20);
+  cpu20._iy = 0xD00080; cpu20.sp = 0xD40000; cpu20.im = 1; cpu20.madl = 1;
+
+  const blocks20 = [];
+  const missing20 = [];
+  const dynamic20 = [];
+  const io20 = [];
+
+  cpu20.onIoRead = (port, value) => { io20.push({ op: 'read', port, value }); };
+  cpu20.onIoWrite = (port, value) => { io20.push({ op: 'write', port, value }); };
+
+  const run20 = ex20.runFrom(0x0040B2, 'adl', {
+    maxSteps: 100000, maxLoopIterations: 200,
+    onBlock: (pc, mode) => { blocks20.push({ pc, mode }); },
+    onMissingBlock: (pc, mode) => {
+      missing20.push({ pc, mode });
+      if (pc > 0 && pc < ROM_LIMIT) test20Seeds.add(pc);
+    },
+    onDynamicTarget: (tp, mode) => {
+      dynamic20.push({ tp, mode });
+      if (tp > 0 && tp < ROM_LIMIT) test20Seeds.add(tp);
+    },
+    onLoopBreak: () => {},
+  });
+
+  const uniqueBlocks20 = new Set(blocks20.map(b => `${hex(b.pc)}:${b.mode}`));
+  const uniqueMissing20 = [...new Set(missing20.map(m => `${hex(m.pc)}:${m.mode}`))];
+  const uniqueDynamic20 = [...new Set(dynamic20.map(d => `${hex(d.tp)}:${d.mode}`))];
+
+  console.log(`  Steps: ${run20.steps}, termination: ${run20.termination} at ${hex(run20.lastPc)}`);
+  console.log(`  Unique blocks: ${uniqueBlocks20.size}`);
+
+  const regions20 = new Map();
+  for (const b of blocks20) {
+    const region = Math.floor(b.pc / 0x10000) * 0x10000;
+    regions20.set(region, (regions20.get(region) || 0) + 1);
+  }
+  console.log(`  Code regions:`);
+  for (const [region, count] of [...regions20.entries()].sort((a, b) => a[0] - b[0])) {
+    console.log(`    ${hex(region)}-${hex(region + 0xFFFF)}: ${count} blocks`);
+  }
+
+  // Port 0x01 accesses
+  const port01 = io20.filter(io => (io.port & 0xFF) === 0x01);
+  console.log(`  Port 0x01 accesses: ${port01.length}`);
+  for (const io of port01.slice(0, 10)) {
+    const dir = io.op === 'write' ? 'OUT' : 'IN ';
+    console.log(`    ${dir} ${hex(io.port, 4)} = ${hex(io.value, 2)}`);
+  }
+
+  // Unique I/O ports
+  const uniquePorts = [...new Set(io20.map(io => io.port))].sort((a, b) => a - b);
+  console.log(`  Unique I/O ports: ${uniquePorts.length}`);
+  for (const port of uniquePorts.slice(0, 20)) console.log(`    ${hex(port, 4)}`);
+
+  console.log(`  Missing blocks: ${uniqueMissing20.length}`);
+  for (const key of uniqueMissing20.slice(0, 20)) console.log(`    ${key}`);
+  console.log(`  Dynamic targets: ${uniqueDynamic20.length}`);
+  for (const key of uniqueDynamic20.slice(0, 20)) console.log(`    ${key}`);
+}
+
 console.log('\n--- Phase 24 Seed Collection ---');
 {
   const phase24BSeeds = collectSeedAddresses(
@@ -1525,6 +1774,11 @@ console.log('\n--- Phase 24 Seed Collection ---');
     [...test16Seeds],
     [...test17Seeds],
   );
+  const phase24DSeeds = collectSeedAddresses(
+    [...test18Seeds],
+    [...test19Seeds],
+    [...test20Seeds],
+  );
 
   console.log(`  Seeds from Test 11: ${test11Seeds.size}`);
   console.log(`  Seeds from Test 12: ${test12Seeds.size}`);
@@ -1533,8 +1787,12 @@ console.log('\n--- Phase 24 Seed Collection ---');
   console.log(`  Seeds from Test 15: ${test15Seeds.size}`);
   console.log(`  Seeds from Test 16: ${test16Seeds.size}`);
   console.log(`  Seeds from Test 17: ${test17Seeds.size}`);
+  console.log(`  Seeds from Test 18: ${test18Seeds.size}`);
+  console.log(`  Seeds from Test 19: ${test19Seeds.size}`);
+  console.log(`  Seeds from Test 20: ${test20Seeds.size}`);
   console.log(`  Total unique Phase 24B seeds: ${phase24BSeeds.length}`);
   console.log(`  Total unique Phase 24C seeds: ${phase24CSeeds.length}`);
+  console.log(`  Total unique Phase 24D seeds: ${phase24DSeeds.length}`);
 
   let existingContents = '';
   try {
@@ -1573,6 +1831,26 @@ console.log('\n--- Phase 24 Seed Collection ---');
     console.log(`  Appended ${newPhase24CSeeds.length} Phase 24C seeds to: ${PHASE24B_SEEDS_PATH}`);
   } else {
     console.log('  No new Phase 24C seeds to append.');
+  }
+
+  // Append Phase 24D seeds
+  const updated24Contents = readFileSync(PHASE24B_SEEDS_PATH, 'utf8');
+  const updated24Existing = new Set(
+    updated24Contents.split(/\r?\n/)
+      .filter((line) => /^0x[0-9a-f]{6}$/i.test(line))
+      .map((line) => Number.parseInt(line, 16))
+  );
+  const newPhase24DSeeds = phase24DSeeds.filter((value) => !updated24Existing.has(value));
+  if (newPhase24DSeeds.length > 0) {
+    const lines = [
+      '# Phase 24D seeds — pre-initialized callback + keyboard chain',
+      '# Generated by test-harness.mjs Tests 18-20',
+      ...newPhase24DSeeds.map(formatSeedAddress),
+    ];
+    appendFileSync(PHASE24B_SEEDS_PATH, `\n${lines.join('\n')}\n`);
+    console.log(`  Appended ${newPhase24DSeeds.length} Phase 24D seeds to: ${PHASE24B_SEEDS_PATH}`);
+  } else {
+    console.log('  No new Phase 24D seeds to append.');
   }
 }
 
