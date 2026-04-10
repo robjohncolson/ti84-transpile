@@ -291,6 +291,27 @@ Replaced `scripts/transpile-ti84-rom.mjs` (2128→830 lines):
 
 **Seeds:** 45 unique addresses written to `TI-84_Plus_CE/phase24b-seeds.txt`.
 
+### Phase 24C: Deep Handler Exploration + Callback Table Research (complete)
+
+**Test 14 (Deep handler 0x08C331):** Major OS initialization routine. 691 steps, 162 unique blocks across 10 code regions (0x00-0x0A). Made 262,936 RAM writes. **Writes to callback pointer at 0xD02AD7** at step 690 (0xFF bytes). Accesses interrupt controller (port 0x5004/5005) and port 0x3114. Heavy activity in 0x0A0000 region (59 blocks — statistics/data area) and 0x050000 (32 blocks).
+
+**Test 15 (Handler probes):**
+- 0x06ACB2 (reached by 0x08C331): 256 steps, 56 blocks — deep OS subsystem
+- 0x07C897: 245 steps, 45 blocks — math library
+- 0x0019B6 (ISR missing block): 240 steps, 39 blocks — ISR continuation path
+- 0x00586A: still a missing block (needs seeding)
+
+**Test 16 (Boot memory trace):** Only 6 RAM writes during 62-step boot. Callback table NOT initialized during boot (0xD02AD7 = 0x000000). System vars and FP area all zeroed.
+
+**Test 17 (ISR cycling) — key discovery:** The callback pointer evolves across ISR cycles:
+- Cycle 0: boot → callback = 0x000000
+- Cycle 1: ISR → callback changes to 0x000010
+- Cycle 2: 271 steps → callback changes to **0x0040B2** (real OS handler address!)
+- Cycle 3: hits missing block at **0x00AFF7**, blocking further progress
+- The ISR is self-modifying its dispatch table — each interrupt cycle updates the callback pointer
+
+**Seeds:** 55 new Phase 24C seeds appended to phase24b-seeds.txt (100 total in file).
+
 ### Phase 19: Peripheral Audit + OS Wake Analysis (complete)
 
 **19A: Port I/O audit:**
@@ -411,6 +432,10 @@ Historical baselines:
    - Test 11: Deep ISR with callback table init — 46 steps, 3 code regions
    - Test 12: OS event loop (0x0019BE) — 239 steps, 39 blocks
    - Test 13: ROM handler table scan — 45 seeds, handler 0x08C331 runs 1000+ steps
+   - Test 14: Deep handler 0x08C331 — 691 steps, 162 blocks, 10 regions, 262K RAM writes
+   - Test 15: Handler probes — 9 handlers, 20 seeds
+   - Test 16: Boot memory trace — 6 RAM writes, callback table NOT initialized during boot
+   - Test 17: ISR cycling — callback evolves 0→0x10→0x40B2, blocked at 0x00AFF7
 5. `node TI-84_Plus_CE/coverage-analyzer.mjs` — coverage analysis with gap suggestions
 6. `node TI-84_Plus_CE/ti84-math.mjs` — FPAdd, FPMult, FPDiv, Sin all produce correct results
 7. **Zero** `cpu.unimplemented()` live stubs
@@ -489,6 +514,7 @@ node TI-84_Plus_CE/coverage-analyzer.mjs
 ### Phase 23: Function Call Harness (FPAdd/Mult/Div/Sin) — DONE ✓
 ### Phase 24A: ISR Dispatch Gate Unlocked (flash=0xD0, keyboard port) — DONE ✓
 ### Phase 24B: ISR Post-Dispatch Exploration (45 seeds) — DONE ✓
+### Phase 24C: Deep Handler + Callback Table Research (55 seeds) — DONE ✓
 
 ---
 
@@ -496,9 +522,11 @@ node TI-84_Plus_CE/coverage-analyzer.mjs
 
 Coverage at 124327 blocks (16.5%). ISR gate is unlocked. Function call harness works. The remaining frontiers are about making the OS event loop functional and rendering output.
 
-### 1. Seed the 45 Phase 24B Addresses (immediate next step)
+### 1. Seed the 100 Phase 24B+C Addresses (immediate next step)
 
-`TI-84_Plus_CE/phase24b-seeds.txt` has 45 addresses discovered via ISR exploration. Feed these into the transpiler as new seed entry points and regenerate ROM.transpiled.js. Some are noise (ROM bytes read as pointers), but the transpiler will filter invalid ones. Expected: modest block count increase in ISR handler regions.
+`TI-84_Plus_CE/phase24b-seeds.txt` has 100 addresses discovered via ISR exploration and deep handler analysis. Critical: **0x00AFF7** blocks ISR cycling at cycle 3 — seeding this address is the highest-priority unlock. Feed all seeds into the transpiler and regenerate ROM.transpiled.js. Some are noise (ROM bytes read as pointers), but the transpiler will filter invalid ones.
+
+**Key blocker:** Missing block at 0x00AFF7 stops ISR cycling from progressing beyond cycle 3. The callback pointer had evolved to 0x0040B2 (a real OS handler) before getting stuck.
 
 ### 2. OS Event Loop Deep Dive
 
@@ -533,7 +561,8 @@ Compare block-by-block register state against CEmu to find emitter correctness b
 - **ISR gate unlocked (Phase 24A)**: Flash port 0x06 returns 0xD0 (hardware ready status). Boot code reads port 0x06 but only SET bit 2 and write back — never branches on the value. 0xD0 has bit 2 = 0, passing the BIT 2 test, then CP 0xD0 matches.
 - **ISR dispatch path**: 0x38 → 0x6F3 (IN0 flash) → 0x704 (CP 0xD0 gate) → 0x710 (callback dispatch) → 0x1713 (call callback) → 0x719 → 0x19BE (event loop)
 - **Callback table at 0xD02AD7**: 24-bit pointer to ISR callback handler. Zeroed in our memory → calls 0x000000 (reset). Real OS sets this during init.
-- **Handler 0x08C331 runs deep**: 1000+ steps, reaches 0x06ACB2 — likely a major OS subsystem (display? app manager?).
+- **Handler 0x08C331 is OS init**: 691 steps, 162 blocks across 10 regions. Writes 262K bytes to system RAM, initializes callback table at 0xD02AD7. Heavy in 0x0A0000 (statistics) and 0x050000 regions.
+- **ISR cycling is self-modifying**: The callback pointer at 0xD02AD7 evolves across interrupt cycles (0→0x10→0x0040B2). The ISR dispatch system bootstraps itself through repeated interrupt handling. Blocked at missing block 0x00AFF7.
 - **Port I/O is 16-bit**: `IN r,(C)` / `OUT (C),r` use full BC register. Interrupt controller (0x5000+), memory controller (0x1000+), LCD controller (0x4000+) all via 16-bit ports.
 - **Boot completes in 62 steps**: DI → PLL init → hardware setup → RST 0x08 → init → power-down HALT.
 - **MMIO at 0xF00000+**: Not accessed during current execution paths. LCD writes happen later (after key press wake).
