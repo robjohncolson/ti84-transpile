@@ -108,7 +108,11 @@ function createGpioHandler(state) {
 function createFlashHandler(state) {
   return {
     read() {
-      return 0x00;
+      // Flash controller status register: reads return hardware status (0xD0 = ready).
+      // Boot code reads port 0x06 but only to SET bit 2 and write back — never branches
+      // on the value. The ISR gate at 0x000704 requires A=0xD0 from IN0 (0x06) for
+      // the CP 0xD0 comparison to pass and dispatch to the callback handler at 0x000710.
+      return 0xD0;
     },
 
     write(port, value) {
@@ -335,6 +339,26 @@ export function createPeripheralBus(options = {}) {
     };
   }
 
+  // Keyboard scan port 0x01
+  // Write: selects key group (active low bit pattern)
+  // Read: returns key status for selected group(s) (0xFF = no keys pressed)
+  const keyboardState = { groupSelect: 0xFF, keyMatrix: new Uint8Array(8).fill(0xFF) };
+
+  register(0x01, {
+    read() {
+      let result = 0xFF;
+      for (let g = 0; g < 8; g++) {
+        if (((keyboardState.groupSelect >> g) & 1) === 0) {
+          result &= keyboardState.keyMatrix[g];
+        }
+      }
+      return result;
+    },
+    write(port, value) {
+      keyboardState.groupSelect = value;
+    },
+  });
+
   register(0x00, createCpuControlHandler(state));
   register(0x03, createGpioHandler(state));
   register(0x06, createFlashHandler(state));
@@ -369,5 +393,6 @@ export function createPeripheralBus(options = {}) {
     acknowledgeNMI,
     triggerNMI,
     triggerIRQ,
+    keyboard: keyboardState,
   };
 }

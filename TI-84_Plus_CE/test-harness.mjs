@@ -400,6 +400,149 @@ if (intInterrupts.length > 10) {
   console.log(`      ... and ${intInterrupts.length - 10} more`);
 }
 
+// --- Test 9: Trace boot I/O writes to port 0x06 (Phase 24A diagnostic) ---
+console.log('\n--- Test 9: Flash Port 0x06 Boot Trace ---');
+{
+  const p9 = createPeripheralBus({ trace: false, pllDelay: 2 });
+  const ex9 = createExecutor(PRELIFTED_BLOCKS, romBytes, { peripherals: p9 });
+  const cpu9 = ex9.cpu;
+
+  cpu9.a = 0; cpu9.f = 0; cpu9.b = 0; cpu9.c = 0;
+  cpu9.d = 0; cpu9.e = 0; cpu9.h = 0; cpu9.l = 0;
+  cpu9.sp = 0; cpu9._ix = 0; cpu9._iy = 0;
+  cpu9.i = 0; cpu9.im = 0; cpu9.iff1 = 0; cpu9.iff2 = 0;
+  cpu9.madl = 1; cpu9.halted = false;
+
+  const port06Writes = [];
+  const port06Reads = [];
+  let stepCounter = 0;
+
+  cpu9.onIoWrite = (port, value) => {
+    if ((port & 0xFF) === 0x06) {
+      port06Writes.push({ step: stepCounter, port, value });
+    }
+  };
+  cpu9.onIoRead = (port, value) => {
+    if ((port & 0xFF) === 0x06) {
+      port06Reads.push({ step: stepCounter, port, value });
+    }
+  };
+
+  const test9 = ex9.runFrom(0x000000, 'z80', {
+    maxSteps: 5000,
+    maxLoopIterations: 32,
+    onBlock: (pc, mode, meta, step) => { stepCounter = step; },
+  });
+
+  console.log(`  Boot: ${test9.steps} steps, termination: ${test9.termination}`);
+  console.log(`  Last PC: ${hex(test9.lastPc)}:${test9.lastMode}`);
+  console.log(`  Flash port state after boot: lastWrite = ${hex(p9.getState().flash.lastWrite, 2)}`);
+  console.log(`\n  Port 0x06 WRITES during boot (${port06Writes.length}):`);
+  for (const w of port06Writes) {
+    console.log(`    step ${w.step}: OUT ${hex(w.port, 4)} = ${hex(w.value, 2)}`);
+  }
+  console.log(`\n  Port 0x06 READS during boot (${port06Reads.length}):`);
+  for (const r of port06Reads) {
+    console.log(`    step ${r.step}: IN  ${hex(r.port, 4)} = ${hex(r.value, 2)}`);
+  }
+
+  const wrote0xD0 = port06Writes.some(w => w.value === 0xD0);
+  console.log(`\n  Hypothesis check: boot writes 0xD0 to port 0x06? ${wrote0xD0 ? 'YES ✓' : 'NO ✗'}`);
+  if (!wrote0xD0 && port06Writes.length > 0) {
+    console.log(`  Values written: ${port06Writes.map(w => hex(w.value, 2)).join(', ')}`);
+  }
+}
+
+// --- Test 10: ISR dispatch — does execution reach 0x000710? ---
+console.log('\n--- Test 10: ISR Dispatch Gate (Phase 24A) ---');
+{
+  const p10 = createPeripheralBus({ trace: false, pllDelay: 2 });
+  const ex10 = createExecutor(PRELIFTED_BLOCKS, romBytes, { peripherals: p10 });
+  const cpu10 = ex10.cpu;
+
+  // Step A: Boot to HALT
+  cpu10.a = 0; cpu10.f = 0; cpu10.b = 0; cpu10.c = 0;
+  cpu10.d = 0; cpu10.e = 0; cpu10.h = 0; cpu10.l = 0;
+  cpu10.sp = 0; cpu10._ix = 0; cpu10._iy = 0;
+  cpu10.i = 0; cpu10.im = 0; cpu10.iff1 = 0; cpu10.iff2 = 0;
+  cpu10.madl = 1; cpu10.halted = false;
+
+  const bootResult = ex10.runFrom(0x000000, 'z80', {
+    maxSteps: 5000,
+    maxLoopIterations: 32,
+  });
+
+  console.log(`  Boot: ${bootResult.steps} steps → ${bootResult.termination} at ${hex(bootResult.lastPc)}`);
+  console.log(`  Flash lastWrite after boot: ${hex(p10.getState().flash.lastWrite, 2)}`);
+  console.log(`  CPU state: IM=${cpu10.im} IFF1=${cpu10.iff1} SP=${hex(cpu10.sp)}`);
+
+  // Step B: Simulate IM1 IRQ wake
+  cpu10.halted = false;
+  cpu10.iff1 = 1;
+  cpu10.iff2 = 1;
+  const haltPc = bootResult.lastPc;
+  cpu10.push(haltPc + 1);  // return address after HALT
+
+  const blocksVisited = [];
+  const isrMissing = [];
+  let reached0x710 = false;
+  let aAtCp = null;
+
+  const isrResult = ex10.runFrom(0x000038, 'adl', {
+    maxSteps: 50000,
+    maxLoopIterations: 200,
+    onBlock: (pc, mode, meta, step) => {
+      blocksVisited.push({ pc, mode, step });
+      if (pc === 0x000710) reached0x710 = true;
+      // Capture A register when entering the CP gate block
+      if (pc === 0x000704) aAtCp = cpu10.a;
+    },
+    onMissingBlock: (pc, mode, step) => {
+      isrMissing.push({ pc, mode, step });
+    },
+    onLoopBreak: (pc, mode, count) => {
+      console.log(`  [ISR] Loop break at ${hex(pc)}:${mode} (${count} iterations)`);
+    },
+  });
+
+  console.log(`\n  ISR dispatch: ${isrResult.steps} steps → ${isrResult.termination} at ${hex(isrResult.lastPc)}:${isrResult.lastMode}`);
+  console.log(`  A at CP 0xD0 gate (block 0x000704): ${aAtCp !== null ? hex(aAtCp, 2) : 'block not reached'}`);
+  console.log(`  Reached 0x000710 (callback dispatch): ${reached0x710 ? 'YES ✓ — GATE UNLOCKED!' : 'NO ✗ — still blocked'}`);
+
+  console.log(`\n  Block trace (first 30):`);
+  for (const b of blocksVisited.slice(0, 30)) {
+    console.log(`    [${String(b.step).padStart(4)}] ${hex(b.pc)}:${b.mode}`);
+  }
+  if (blocksVisited.length > 30) {
+    console.log(`    ... and ${blocksVisited.length - 30} more blocks`);
+  }
+
+  if (isrMissing.length > 0) {
+    const uniqueMissing = [...new Set(isrMissing.map(m => `${hex(m.pc)}:${m.mode}`))];
+    console.log(`\n  Missing blocks hit: ${uniqueMissing.length}`);
+    for (const key of uniqueMissing.slice(0, 15)) {
+      console.log(`    ${key}`);
+    }
+  }
+
+  // Step C: If gate unlocked, explore post-dispatch
+  if (reached0x710) {
+    console.log('\n  --- Post-Dispatch Exploration ---');
+
+    // Collect address ranges
+    const regions = new Map();
+    for (const b of blocksVisited) {
+      const region = Math.floor(b.pc / 0x10000) * 0x10000;
+      regions.set(region, (regions.get(region) || 0) + 1);
+    }
+    console.log(`  Code regions visited:`);
+    for (const [region, count] of [...regions.entries()].sort((a, b) => a[0] - b[0])) {
+      console.log(`    ${hex(region)}-${hex(region + 0xFFFF)}: ${count} blocks`);
+    }
+    console.log(`  Total unique blocks visited: ${new Set(blocksVisited.map(b => `${hex(b.pc)}:${b.mode}`)).size}`);
+  }
+}
+
 // --- Summary ---
 console.log(`\n${'='.repeat(60)}`);
 console.log('SUMMARY');
