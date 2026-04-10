@@ -312,6 +312,22 @@ Replaced `scripts/transpile-ti84-rom.mjs` (2128→830 lines):
 
 **Seeds:** 55 new Phase 24C seeds appended to phase24b-seeds.txt (100 total in file).
 
+### Phase 24D: Pre-initialized Callback + Keyboard Simulation (complete)
+
+**Test 18 (Pre-initialized callback):** OS init at 0x08C331 writes **0xFFFFFF** (sentinel) to 0xD02AD7 — not a useful callback target. Running OS init before boot corrupts RAM, causing boot to loop at PLL (5000 steps, max_steps). ISR cycling after corrupted boot hits missing block 0x000698 repeatedly.
+
+**Test 19 (Keyboard interrupt):** No keyboard port 0x01 accesses during ISR — the keyboard scan routine is not in the current execution path. Key press (ENTER) makes zero difference to ISR behavior. The keyboard scan code lives deeper in the OS event loop, which requires more blocks to be transpiled.
+
+**Test 20 (Handler 0x0040B2):** This address is itself a **missing block** — only 3 steps before hitting missing_block. It needs to be seeded and transpiled.
+
+**Critical missing blocks identified:**
+- **0x0040B2**: ISR cycling target (callback pointer evolved to this address) — NOT TRANSPILED
+- **0x000698**: PLL loop continuation block, adjacent to hot block 0x000697 — NOT TRANSPILED
+
+**Seeds:** 4 new Phase 24D seeds. 82 total Phase 24 seeds added to transpiler. Transpiler regeneration in progress.
+
+**Next step:** After transpiler finishes, re-run tests to see if 0x0040B2 and 0x000698 unlock deeper execution.
+
 ### Phase 19: Peripheral Audit + OS Wake Analysis (complete)
 
 **19A: Port I/O audit:**
@@ -377,7 +393,7 @@ I/O peripheral bus + interrupt controller (~370 lines): PLL, CPU control, GPIO, 
 
 ### `TI-84_Plus_CE/test-harness.mjs`
 
-Validation harness (~1000 lines): 13 tests, multi-entry exploration, missing block discovery, dynamic target discovery, hot block profiling, PLL validation, NMI/IM1 wake, timer interrupt dispatch, flash port trace, ISR dispatch gate verification, deep ISR exploration, OS event loop probe, ROM handler table scan.
+Validation harness (~2000 lines): 20 tests, multi-entry exploration, missing block discovery, dynamic target discovery, hot block profiling, PLL validation, NMI/IM1 wake, timer interrupt dispatch, flash port trace, ISR dispatch gate verification, deep ISR exploration, OS event loop probe, ROM handler table scan.
 
 ### `TI-84_Plus_CE/coverage-analyzer.mjs`
 
@@ -436,6 +452,9 @@ Historical baselines:
    - Test 15: Handler probes — 9 handlers, 20 seeds
    - Test 16: Boot memory trace — 6 RAM writes, callback table NOT initialized during boot
    - Test 17: ISR cycling — callback evolves 0→0x10→0x40B2, blocked at 0x00AFF7
+   - Test 18: Pre-init callback — OS init writes 0xFFFFFF (sentinel), corrupts boot
+   - Test 19: Keyboard sim — no port 0x01 accesses, key press makes no difference
+   - Test 20: Handler 0x0040B2 — missing block, needs transpiling
 5. `node TI-84_Plus_CE/coverage-analyzer.mjs` — coverage analysis with gap suggestions
 6. `node TI-84_Plus_CE/ti84-math.mjs` — FPAdd, FPMult, FPDiv, Sin all produce correct results
 7. **Zero** `cpu.unimplemented()` live stubs
@@ -515,6 +534,7 @@ node TI-84_Plus_CE/coverage-analyzer.mjs
 ### Phase 24A: ISR Dispatch Gate Unlocked (flash=0xD0, keyboard port) — DONE ✓
 ### Phase 24B: ISR Post-Dispatch Exploration (45 seeds) — DONE ✓
 ### Phase 24C: Deep Handler + Callback Table Research (55 seeds) — DONE ✓
+### Phase 24D: Pre-initialized Callback + Keyboard Sim (4 seeds) — DONE ✓
 
 ---
 
@@ -522,11 +542,14 @@ node TI-84_Plus_CE/coverage-analyzer.mjs
 
 Coverage at 124327 blocks (16.5%). ISR gate is unlocked. Function call harness works. The remaining frontiers are about making the OS event loop functional and rendering output.
 
-### 1. Seed the 100 Phase 24B+C Addresses (immediate next step)
+### 1. Re-transpile with Phase 24 Seeds (IN PROGRESS)
 
-`TI-84_Plus_CE/phase24b-seeds.txt` has 100 addresses discovered via ISR exploration and deep handler analysis. Critical: **0x00AFF7** blocks ISR cycling at cycle 3 — seeding this address is the highest-priority unlock. Feed all seeds into the transpiler and regenerate ROM.transpiled.js. Some are noise (ROM bytes read as pointers), but the transpiler will filter invalid ones.
+82 Phase 24 seeds added to `scripts/transpile-ti84-rom.mjs`. Transpiler regeneration in progress. Critical blocks to verify after regeneration:
+- **0x0040B2** — ISR cycling callback target, currently missing
+- **0x000698** — PLL loop continuation, adjacent to hot block 0x697
+- **0x00AFF7** — blocks ISR cycling at cycle 3
 
-**Key blocker:** Missing block at 0x00AFF7 stops ISR cycling from progressing beyond cycle 3. The callback pointer had evolved to 0x0040B2 (a real OS handler) before getting stuck.
+After regeneration, re-run test harness to verify these blocks are now available and test deeper ISR execution.
 
 ### 2. OS Event Loop Deep Dive
 
