@@ -21,26 +21,24 @@ function parity(value) {
 export class CPU {
   constructor(memory) {
     this.memory = memory || new Uint8Array(0x400000);
+    this._memMask = this.memory.length - 1;
 
-    // 8-bit registers
+    // 8-bit standalone registers
     this.a = 0;
     this.f = 0;
-    this.b = 0;
-    this.c = 0;
-    this.d = 0;
-    this.e = 0;
-    this.h = 0;
-    this.l = 0;
+
+    // 24-bit register pair backing stores (eZ80 ADL mode)
+    // 8-bit registers b,c,d,e,h,l are getters/setters into these
+    this._bc = 0;
+    this._de = 0;
+    this._hl = 0;
 
     // Alternate registers
     this._a2 = 0;
     this._f2 = 0;
-    this._b2 = 0;
-    this._c2 = 0;
-    this._d2 = 0;
-    this._e2 = 0;
-    this._h2 = 0;
-    this._l2 = 0;
+    this._bc2 = 0;
+    this._de2 = 0;
+    this._hl2 = 0;
 
     // 24-bit standalone registers
     this.sp = 0;
@@ -62,16 +60,33 @@ export class CPU {
     this._ioWrite = () => {};
   }
 
-  // --- Register pair getters/setters ---
+  // --- 8-bit register accessors (derived from 24-bit backing stores) ---
 
-  get bc() { return (this.b << 8) | this.c; }
-  set bc(v) { this.b = (v >> 8) & 0xff; this.c = v & 0xff; }
+  get b() { return (this._bc >> 8) & 0xff; }
+  set b(v) { this._bc = (this._bc & 0xff00ff) | ((v & 0xff) << 8); }
+  get c() { return this._bc & 0xff; }
+  set c(v) { this._bc = (this._bc & 0xffff00) | (v & 0xff); }
 
-  get de() { return (this.d << 8) | this.e; }
-  set de(v) { this.d = (v >> 8) & 0xff; this.e = v & 0xff; }
+  get d() { return (this._de >> 8) & 0xff; }
+  set d(v) { this._de = (this._de & 0xff00ff) | ((v & 0xff) << 8); }
+  get e() { return this._de & 0xff; }
+  set e(v) { this._de = (this._de & 0xffff00) | (v & 0xff); }
 
-  get hl() { return (this.h << 8) | this.l; }
-  set hl(v) { this.h = (v >> 8) & 0xff; this.l = v & 0xff; }
+  get h() { return (this._hl >> 8) & 0xff; }
+  set h(v) { this._hl = (this._hl & 0xff00ff) | ((v & 0xff) << 8); }
+  get l() { return this._hl & 0xff; }
+  set l(v) { this._hl = (this._hl & 0xffff00) | (v & 0xff); }
+
+  // --- 24-bit register pair accessors ---
+
+  get bc() { return this._bc; }
+  set bc(v) { this._bc = v & 0xffffff; }
+
+  get de() { return this._de; }
+  set de(v) { this._de = v & 0xffffff; }
+
+  get hl() { return this._hl; }
+  set hl(v) { this._hl = v & 0xffffff; }
 
   get af() { return (this.a << 8) | this.f; }
   set af(v) { this.a = (v >> 8) & 0xff; this.f = v & 0xff; }
@@ -99,31 +114,31 @@ export class CPU {
   // --- Memory ---
 
   read8(addr) {
-    return this.memory[addr & 0x3fffff] ?? 0;
+    return this.memory[addr & this._memMask] ?? 0;
   }
 
   write8(addr, value) {
-    this.memory[addr & 0x3fffff] = value & 0xff;
+    this.memory[addr & this._memMask] = value & 0xff;
   }
 
   read16(addr) {
-    const a = addr & 0x3fffff;
+    const a = addr & this._memMask;
     return this.memory[a] | (this.memory[a + 1] << 8);
   }
 
   write16(addr, value) {
-    const a = addr & 0x3fffff;
+    const a = addr & this._memMask;
     this.memory[a] = value & 0xff;
     this.memory[a + 1] = (value >> 8) & 0xff;
   }
 
   read24(addr) {
-    const a = addr & 0x3fffff;
+    const a = addr & this._memMask;
     return this.memory[a] | (this.memory[a + 1] << 8) | (this.memory[a + 2] << 16);
   }
 
   write24(addr, value) {
-    const a = addr & 0x3fffff;
+    const a = addr & this._memMask;
     this.memory[a] = value & 0xff;
     this.memory[a + 1] = (value >> 8) & 0xff;
     this.memory[a + 2] = (value >> 16) & 0xff;
@@ -708,12 +723,9 @@ export class CPU {
 
   swapMainAlternate() {
     let tmp;
-    tmp = this.b; this.b = this._b2; this._b2 = tmp;
-    tmp = this.c; this.c = this._c2; this._c2 = tmp;
-    tmp = this.d; this.d = this._d2; this._d2 = tmp;
-    tmp = this.e; this.e = this._e2; this._e2 = tmp;
-    tmp = this.h; this.h = this._h2; this._h2 = tmp;
-    tmp = this.l; this.l = this._l2; this._l2 = tmp;
+    tmp = this._bc; this._bc = this._bc2; this._bc2 = tmp;
+    tmp = this._de; this._de = this._de2; this._de2 = tmp;
+    tmp = this._hl; this._hl = this._hl2; this._hl2 = tmp;
   }
 
   swapAf() {
