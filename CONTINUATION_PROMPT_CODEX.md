@@ -1,8 +1,8 @@
 # Continuation Prompt — TI-84 Plus CE ROM Transpilation
 
-**Last updated**: 2026-04-09T23:15Z
+**Last updated**: 2026-04-10T02:00Z
 **Focus**: Continue the TI-84 Plus CE ROM to JavaScript transpilation effort
-**Current phase**: Phases 1-21 complete. Coverage at 7.58% (50485 blocks, ~30% of OS area). Zero live stubs. Reset vector executes to HALT (60 steps). z80js dependency eliminated. Timer interrupt dispatch model active (NMI + IRQ). Interrupt status registers modeled (port 0x3D/0x3E). DD/FD prefix passthrough. Complete eZ80 ED-prefix instruction set (LEA, block I/O, word load/store).
+**Current phase**: Phases 1-22D complete (22D in-flight). Coverage at 7.58% (50485 blocks, ~30% of OS area). Zero live stubs. Reset vector executes to HALT (60 steps). z80js dependency eliminated. Timer interrupt dispatch model active (NMI + IRQ). Interrupt status registers modeled (port 0x3D/0x3E). DD/FD prefix passthrough. Complete eZ80 ED-prefix instruction set (LEA, block I/O, word load/store).
 
 ---
 
@@ -219,6 +219,35 @@ Replaced `scripts/transpile-ti84-rom.mjs` (2128→830 lines):
 - CPU: ini(), ind(), outi(), outd(), inir(), indr(), otir(), otdr()
 - Emitter: direct tag handlers for all 8 block I/O tags
 
+### Phase 22: OS Jump Table + Mass Seeding (complete/in-flight)
+
+**22A: OS jump table discovery:**
+- Jump table at 0x020104+: 980 entries, each a JP instruction to the actual implementation
+- ALL core math transpiled: FPAdd (0x07C77F), FPMult (0x07C8B7), FPDiv (0x07CAB9), SqRoot (0x07DF66), Sin (0x07E57B), Cos (0x07E5B5), Tan (0x07E5D8), ASin, ACos, ATan, EToX, LnX, LogX, TenX, Round
+- Statistics: OneVar (0x0A9325), OrdStat (0x0AAAB8), InitStatAns (0x0AB21B)
+- Math implementations live at 0x07C000-0x07F000, statistics at 0x0A9000-0x0AB000
+
+**22B: OS jump table seed expansion:**
+- Added 170 seeds for missing jump table implementations → 56928 blocks, 100% jump table coverage
+- +6443 blocks, +37539 bytes
+
+**22C: Prologue-scan seeding:**
+- Scanned uncovered OS regions for function prologue patterns (PUSH IX/IY, PUSH AF+BC, etc.)
+- Added 2025 seeds + 256-byte interval seeds in large gaps (0x0C0000-0x0FFFFF, 0x016000-0x01FFFF)
+- Result: 68774 blocks → 110141 blocks (+41367), coverage 10.36% → 15.63%
+- OS area coverage: ~41% → ~62%
+
+**22D: Dense gap-fill seeding (IN FLIGHT):**
+- Added 18908 seeds at 32-byte intervals in ALL remaining uncovered gaps > 64 bytes
+- Block limit raised to 200000
+- Transpiler was still running at session end — check `ROM.transpiled.report.json` for results
+- If transpiler OOM'd or took too long: reduce seed count or run in batches
+
+**Key finding — ROM.transpiled.js exceeded GitHub 100MB limit at 148MB.**
+- File is now gitignored
+- Generate locally: `node scripts/transpile-ti84-rom.mjs`
+- All seeds are in the transpiler script; regeneration is deterministic
+
 ### Phase 19: Peripheral Audit + OS Wake Analysis (complete)
 
 **19A: Port I/O audit:**
@@ -294,16 +323,20 @@ Standalone gap analysis: heatmap, gap ranking, seed suggestions.
 
 Current metrics:
 - ROM size: `4194304`
-- Block count: `50485`
-- Covered bytes: `317806`
-- Coverage percent: `7.5771`
-- Seed count: `125`
+- Block count: `110141` (Phase 22C, 22D may increase further)
+- Covered bytes: `655752`
+- Coverage percent: `15.63` (~62% OS area)
+- Seed count: `11593` (30501 with round 3)
 - Live stubs: `0`
+- OS jump table: `980/980` (100%)
+- ROM.transpiled.js: **gitignored** (148MB+, exceeds GitHub 100MB limit). Generate locally.
 
 Historical baselines:
-- After Phase 17: blocks=`50485`, bytes=`317806`, coverage=`7.58%`, stubs=`0`, complete ED instruction set
-- After Phase 15: blocks=`50369`, bytes=`316523`, coverage=`7.55%`, stubs=`0`, DD/FD passthrough
-- After Phase 13B: blocks=`50533`, bytes=`316782`, coverage=`7.55%`, stubs=`0`, z80js removed
+- After Phase 22C: blocks=`110141`, bytes=`655752`, coverage=`15.63%`, OS=`62%`
+- After Phase 22B: blocks=`68774`, bytes=`434426`, coverage=`10.36%`, OS=`41%`
+- After Phase 22A: blocks=`56928`, bytes=`355345`, coverage=`8.47%`, OS=`34%`
+- After Phase 17: blocks=`50485`, bytes=`317806`, coverage=`7.58%`, stubs=`0`
+- After Phase 13B: blocks=`50533`, bytes=`316782`, coverage=`7.55%`, z80js removed
 - After Phase 11B: blocks=`50488`, bytes=`317806`, coverage=`7.58%`, stubs=`0`
 - After Phase 11A: blocks=`50407`, bytes=`317118`, coverage=`7.56%`, stubs=`25`
 - After Phase 10C: blocks=`50383`, bytes=`316860`, coverage=`7.55%`, OS=`30.22%`
@@ -319,8 +352,8 @@ Historical baselines:
 ## Verified State
 
 1. `node --check scripts/transpile-ti84-rom.mjs` passes
-2. `node scripts/transpile-ti84-rom.mjs` generates 50485 blocks at 7.58% coverage (no z80js needed)
-3. All 50485 blocks compile successfully (0 failures)
+2. `node scripts/transpile-ti84-rom.mjs` generates 110141+ blocks at 15.6%+ coverage (no z80js needed, takes 10-30 min)
+3. All blocks compile successfully (0 failures). ROM.transpiled.js is gitignored (>100MB).
 4. `node TI-84_Plus_CE/test-harness.mjs` runs 8 tests:
    - Tests 1-3: Reset vector → HALT in 60 steps (with peripherals + loop breaker)
    - Test 4: Peripheral validation — PLL returns 0x04 correctly, 1 forced break (interrupt-driven loop)
@@ -399,6 +432,10 @@ node TI-84_Plus_CE/coverage-analyzer.mjs
 ### Phase 19: Peripheral Audit + OS Wake Analysis — DONE ✓
 ### Phase 20: ALU Tests + MMIO Tracking + Browser Shell — DONE ✓
 ### Phase 21: 16-bit Port Fix + Interrupt Controller + Memory Controller — DONE ✓
+### Phase 22A: Find OS jump table function addresses — DONE ✓
+### Phase 22B: Seed all 170 missing jump table implementations — DONE ✓
+### Phase 22C: Prologue-scan gap-fill seeds (2025 seeds) — DONE ✓
+### Phase 22D: Dense gap-fill seeds (18908 seeds, 32-byte intervals) — IN FLIGHT
 
 ---
 
@@ -406,7 +443,15 @@ node TI-84_Plus_CE/coverage-analyzer.mjs
 
 The static reachability frontier is exhausted at ~50K blocks (30% OS area). The transpiler, decoder, emitter, and CPU are feature-complete. Peripheral model covers PLL, GPIO, flash, timers, interrupt controller (FTINTC010), and memory controller. All tests pass. The remaining frontiers are about making execution deeper and more realistic.
 
-### 1. Keyboard Input Simulation
+### 1. Function Call Harness (highest priority for AP Stats integration)
+
+Build `ti84-math.mjs` — a clean API that sets up TI float parameters in memory, executes a specific OS function, and reads the result back. Requires understanding:
+- TI float format: 9 bytes, BCD encoded (sign, exponent, 7 mantissa pairs)
+- Calling convention: FP operand 1 at OP1 (RAM 0xD005F8), operand 2 at OP2 (0xD00601)
+- Return value in OP1 after function execution
+- Target: `ti84.sin(x)`, `ti84.fpAdd(a, b)`, eventually `ti84.normalcdf(lower, upper, mu, sigma)`
+
+### 2. Keyboard Input Simulation
 
 The OS boots, initializes hardware, and enters power-down HALT at 0x0019B5. On real hardware, a key press triggers interrupt controller bit 10 (keyboard), waking the CPU. The IM1 handler dispatches to the OS event loop. Modeling this requires:
 - Set interrupt controller raw status bit 10 (port 0x5000) on simulated key press
