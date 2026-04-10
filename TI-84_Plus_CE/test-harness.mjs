@@ -2,7 +2,7 @@
 // Run: node TI-84_Plus_CE/test-harness.mjs
 
 import { execFileSync } from 'node:child_process';
-import { writeFileSync } from 'node:fs';
+import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import { TRANSPILATION_META, ENTRY_POINTS, PRELIFTED_BLOCKS, decodeEmbeddedRom } from './ROM.transpiled.js';
@@ -285,6 +285,226 @@ function runExploration(executor, targetCpu, startAddr, startMode, options = {})
     interrupts,
     regionCounts: buildRegionCounts(blocksVisited),
   };
+}
+
+function createFullMemoryHarness(options = {}) {
+  const memory = new Uint8Array(options.memorySize ?? 0x1000000);
+  memory.set(romBytes);
+
+  const peripherals = createPeripheralBus({
+    trace: false,
+    pllDelay: 2,
+    timerInterrupt: false,
+    ...(options.peripheralsOptions ?? {}),
+  });
+  const executor = createExecutor(PRELIFTED_BLOCKS, memory, {
+    peripherals,
+    trackMemoryMapped: options.trackMemoryMapped === true,
+  });
+
+  return {
+    memory,
+    peripherals,
+    executor,
+    cpu: executor.cpu,
+  };
+}
+
+function configureOsLikeState(targetCpu, options = {}) {
+  resetCpuState(targetCpu);
+  targetCpu._iy = options.iy ?? 0xd00080;
+  targetCpu.sp = options.sp ?? PHASE24B_STACK;
+  targetCpu.im = options.im ?? 1;
+  targetCpu.madl = options.madl ?? 1;
+  targetCpu.iff1 = options.iff1 ?? 0;
+  targetCpu.iff2 = options.iff2 ?? targetCpu.iff1;
+}
+
+function addSeeds(targetSet, ...sources) {
+  for (const value of collectSeedAddresses(...sources)) {
+    targetSet.add(value);
+  }
+}
+
+function read24Value(memory, addr) {
+  const a = addr & 0xffffff;
+  return memory[a] | (memory[(a + 1) & 0xffffff] << 8) | (memory[(a + 2) & 0xffffff] << 16);
+}
+
+function collectNonZeroBytes(memory, start, end) {
+  const result = [];
+
+  for (let addr = start; addr < end; addr++) {
+    const value = memory[addr & 0xffffff];
+    if (value !== 0) {
+      result.push({ addr, value });
+    }
+  }
+
+  return result;
+}
+
+function printByteDump(label, entries, indent = '  ') {
+  console.log(`${indent}${label}: ${entries.length}`);
+
+  if (entries.length === 0) {
+    console.log(`${indent}  (none)`);
+    return;
+  }
+
+  for (const entry of entries) {
+    console.log(`${indent}  ${hex(entry.addr)} = ${hex(entry.value, 2)}`);
+  }
+}
+
+function printWriteSample(label, count, entries, limit = 20, indent = '  ') {
+  console.log(`${indent}${label}: ${count}`);
+
+  if (count === 0) {
+    console.log(`${indent}  (none)`);
+    return;
+  }
+
+  for (const entry of entries.slice(0, limit)) {
+    const stepLabel = entry.step >= 0 ? String(entry.step).padStart(6) : 'manual';
+    console.log(`${indent}  [${stepLabel}] ${hex(entry.addr)} <= ${hex(entry.value, 2)}`);
+  }
+
+  if (count > limit) {
+    console.log(`${indent}  ... and ${count - limit} more`);
+  }
+}
+
+function collectUniqueIoOps(ioOps) {
+  const result = [];
+  const seen = new Set();
+
+  for (const entry of ioOps) {
+    const key = `${entry.op}:${entry.target}:${entry.value}`;
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    result.push(entry);
+  }
+
+  return result;
+}
+
+function printUniqueIoOps(ioOps, limit = 20) {
+  const uniqueOps = collectUniqueIoOps(ioOps);
+  console.log(`  I/O operations: ${ioOps.length}`);
+
+  if (uniqueOps.length === 0) {
+    console.log('    (none)');
+    return;
+  }
+
+  for (const entry of uniqueOps.slice(0, limit)) {
+    const direction = entry.op === 'write' ? '<=' : '=>';
+    console.log(`    PORT ${hex(entry.target, 4)} ${direction} ${hex(entry.value, 2)}`);
+  }
+
+  if (uniqueOps.length > limit) {
+    console.log(`    ... and ${uniqueOps.length - limit} more unique accesses`);
+  }
+}
+
+function createSystemRamWriteTracker(targetCpu, options = {}) {
+  const captureAll = options.captureAll === true;
+  const sampleLimit = options.sampleLimit ?? 20;
+  const tracker = {
+    step: -1,
+    totalWrites: 0,
+    writes: [],
+    callbackWriteCount: 0,
+    callbackWrites: [],
+    tableWriteCount: 0,
+    tableWrites: [],
+    iyWriteCount: 0,
+    iyWrites: [],
+    fpWriteCount: 0,
+    fpWrites: [],
+    setStep(step) {
+      this.step = step;
+    },
+    restore() {},
+  };
+
+  function pushSample(list, entry) {
+    if (list.length < sampleLimit) {
+      list.push(entry);
+    }
+  }
+
+  function recordWrite(addr, value) {
+    const normalizedAddr = addr & targetCpu._memMask;
+    if (normalizedAddr < 0xd00000 || normalizedAddr >= 0xd40000) {
+      return;
+    }
+
+    const entry = {
+      step: tracker.step,
+      addr: normalizedAddr,
+      value: value & 0xff,
+    };
+
+    tracker.totalWrites++;
+    if (captureAll) {
+      tracker.writes.push(entry);
+    }
+
+    if (normalizedAddr >= PHASE24B_CALLBACK_PTR && normalizedAddr < PHASE24B_CALLBACK_PTR + 3) {
+      tracker.callbackWriteCount++;
+      pushSample(tracker.callbackWrites, entry);
+    }
+
+    if (normalizedAddr >= 0xd02000 && normalizedAddr < 0xd03000) {
+      tracker.tableWriteCount++;
+      pushSample(tracker.tableWrites, entry);
+    }
+
+    if (normalizedAddr >= 0xd00080 && normalizedAddr < 0xd00100) {
+      tracker.iyWriteCount++;
+      pushSample(tracker.iyWrites, entry);
+    }
+
+    if (normalizedAddr >= 0xd005f8 && normalizedAddr < 0xd00640) {
+      tracker.fpWriteCount++;
+      pushSample(tracker.fpWrites, entry);
+    }
+  }
+
+  const origWrite8 = targetCpu.write8.bind(targetCpu);
+  const origWrite16 = targetCpu.write16.bind(targetCpu);
+  const origWrite24 = targetCpu.write24.bind(targetCpu);
+
+  targetCpu.write8 = (addr, value) => {
+    origWrite8(addr, value);
+    recordWrite(addr, value);
+  };
+
+  targetCpu.write16 = (addr, value) => {
+    origWrite16(addr, value);
+    recordWrite(addr, value);
+    recordWrite(addr + 1, value >> 8);
+  };
+
+  targetCpu.write24 = (addr, value) => {
+    origWrite24(addr, value);
+    recordWrite(addr, value);
+    recordWrite(addr + 1, value >> 8);
+    recordWrite(addr + 2, value >> 16);
+  };
+
+  tracker.restore = () => {
+    targetCpu.write8 = origWrite8;
+    targetCpu.write16 = origWrite16;
+    targetCpu.write24 = origWrite24;
+  };
+
+  return tracker;
 }
 
 // --- Decode ROM ---
@@ -1027,28 +1247,332 @@ const test13Seeds = new Set();
 }
 
 // --- Write seeds file ---
-console.log('\n--- Phase 24B Seed Collection ---');
+console.log('\n--- Test 14: Deep Handler 0x08C331 ---');
+const test14Seeds = new Set();
+let test14Result = null;
 {
-  const allSeeds = collectSeedAddresses(
+  const { memory, executor: ex14, cpu: cpu14 } = createFullMemoryHarness();
+  configureOsLikeState(cpu14);
+
+  const ramTracker = createSystemRamWriteTracker(cpu14);
+  const deep14 = runExploration(ex14, cpu14, 0x08c331, 'adl', {
+    maxSteps: 500000,
+    maxLoopIterations: 200,
+    onBlock: (pc, mode, meta, step) => {
+      ramTracker.setStep(step);
+    },
+  });
+  ramTracker.restore();
+
+  addSeeds(test14Seeds, deep14.missingKeys, deep14.dynamicKeys);
+
+  console.log('Test 14: Deep Handler 0x08C331');
+  console.log('================================');
+  console.log(`Steps: ${deep14.result.steps}`);
+  console.log(`Termination: ${deep14.result.termination} at ${hex(deep14.result.lastPc)}:${deep14.result.lastMode}`);
+  console.log(`Unique blocks visited: ${deep14.uniqueBlocks.length}`);
+  console.log('Code regions:');
+  printRegionCounts(deep14.regionCounts, '  ');
+  printList('Missing blocks', deep14.missingKeys, 30, '  ');
+  printList('Dynamic targets', deep14.dynamicKeys, 30, '  ');
+  printUniqueIoOps(deep14.ioOps, 20);
+  console.log(`Memory writes to system RAM (0xD00000-0xD40000): ${ramTracker.totalWrites}`);
+  printWriteSample('Writes to 0xD02AD7 (callback ptr)', ramTracker.callbackWriteCount, ramTracker.callbackWrites, 20, '  ');
+  printWriteSample('Writes to 0xD02000-0xD03000 range', ramTracker.tableWriteCount, ramTracker.tableWrites, 20, '  ');
+  printWriteSample('Writes to 0xD00080-0xD00100 range', ramTracker.iyWriteCount, ramTracker.iyWrites, 20, '  ');
+  console.log(`  Callback pointer after run: ${hex(read24Value(memory, PHASE24B_CALLBACK_PTR))}`);
+
+  test14Result = {
+    result: deep14.result,
+    uniqueBlocks: deep14.uniqueBlocks,
+    missingKeys: deep14.missingKeys,
+    dynamicKeys: deep14.dynamicKeys,
+    ramTracker,
+  };
+}
+
+console.log('\n--- Test 15: Promising Handler Probe Table ---');
+const test15Seeds = new Set();
+const test15Results = [];
+{
+  const handlers = [
+    { addr: 0x061db6, label: 'OS subsystem (109→0x586A)' },
+    { addr: 0x07c897, label: 'Math deep (270 steps)' },
+    { addr: 0x04c952, label: 'OS handler (33 steps)' },
+    { addr: 0x08c509, label: 'OS handler area' },
+    { addr: 0x08c67c, label: 'OS handler area' },
+    { addr: 0x06acb2, label: 'Reached by 0x08C331' },
+    { addr: 0x00586a, label: 'Reached by 0x061DB6' },
+    { addr: 0x0019b6, label: 'Missing block from ISR' },
+    { addr: 0x0032d1, label: 'Missing block from ISR' },
+  ];
+
+  for (const handler of handlers) {
+    const { executor: ex15, cpu: cpu15 } = createFullMemoryHarness();
+    configureOsLikeState(cpu15);
+
+    const probe15 = runExploration(ex15, cpu15, handler.addr, 'adl', {
+      maxSteps: 10000,
+      maxLoopIterations: 200,
+    });
+
+    addSeeds(test15Seeds, probe15.missingKeys, probe15.dynamicKeys);
+    test15Results.push({
+      ...handler,
+      steps: probe15.result.steps,
+      termination: probe15.result.termination,
+      lastPc: probe15.result.lastPc,
+      lastMode: probe15.result.lastMode,
+      blocks: probe15.uniqueBlocks.length,
+      missing: probe15.missingKeys.length,
+      dynamic: probe15.dynamicKeys.length,
+      missingKeys: probe15.missingKeys,
+      dynamicKeys: probe15.dynamicKeys,
+    });
+  }
+
+  console.log('  ' + '-'.repeat(130));
+  console.log('  ' + 'Address'.padEnd(12) + 'Label'.padEnd(30) + 'Steps'.padEnd(8) + 'Termination'.padEnd(16) + 'Last PC'.padEnd(12) + 'Blocks'.padEnd(8) + 'Missing'.padEnd(9) + 'Dynamic');
+  console.log('  ' + '-'.repeat(130));
+  for (const entry of test15Results) {
+    console.log(
+      '  ' +
+      hex(entry.addr).padEnd(12) +
+      entry.label.padEnd(30) +
+      String(entry.steps).padEnd(8) +
+      entry.termination.padEnd(16) +
+      hex(entry.lastPc).padEnd(12) +
+      String(entry.blocks).padEnd(8) +
+      String(entry.missing).padEnd(9) +
+      String(entry.dynamic)
+    );
+  }
+  console.log('  ' + '-'.repeat(130));
+}
+
+console.log('\n--- Test 16: Boot Memory Trace ---');
+const test16Seeds = new Set();
+let test16Result = null;
+{
+  const { memory, executor: ex16, cpu: cpu16 } = createFullMemoryHarness();
+  resetCpuState(cpu16);
+
+  const ramTracker = createSystemRamWriteTracker(cpu16, { captureAll: true });
+  const boot16 = runExploration(ex16, cpu16, 0x000000, 'z80', {
+    maxSteps: 5000,
+    maxLoopIterations: 32,
+    onBlock: (pc, mode, meta, step) => {
+      ramTracker.setStep(step);
+    },
+  });
+  ramTracker.restore();
+
+  addSeeds(test16Seeds, boot16.missingKeys, boot16.dynamicKeys);
+
+  console.log('Test 16: Boot Memory Trace');
+  console.log('==========================');
+  console.log(`Boot: ${boot16.result.steps} steps`);
+  console.log(`Termination: ${boot16.result.termination} at ${hex(boot16.result.lastPc)}:${boot16.result.lastMode}`);
+  console.log(`System RAM writes (0xD00000-0xD40000): ${ramTracker.totalWrites}`);
+  printByteDump('All non-zero bytes in 0xD00080-0xD00100', collectNonZeroBytes(memory, 0xd00080, 0xd00100), '  ');
+  printByteDump('All non-zero bytes in 0xD02000-0xD03000', collectNonZeroBytes(memory, 0xd02000, 0xd03000), '  ');
+  console.log(`  Value at 0xD02AD7 (callback pointer): ${hex(read24Value(memory, PHASE24B_CALLBACK_PTR))}`);
+  printWriteSample('Writes to 0xD005F8-0xD00640 (FP operand area)', ramTracker.fpWriteCount, ramTracker.fpWrites, 40, '  ');
+
+  test16Result = {
+    result: boot16.result,
+    uniqueBlocks: boot16.uniqueBlocks,
+    missingKeys: boot16.missingKeys,
+    dynamicKeys: boot16.dynamicKeys,
+    ramTracker,
+  };
+}
+
+console.log('\n--- Test 17: Extended Boot with ISR Cycling (10 wake cycles) ---');
+const test17Seeds = new Set();
+let test17Result = null;
+{
+  const { memory, executor: ex17, cpu: cpu17 } = createFullMemoryHarness();
+  const cycleRows = [];
+  const totalBlocks17 = new Set();
+  const totalMissing17 = new Set();
+  const totalDynamic17 = new Set();
+  const totalRegions17 = new Set();
+  const baselineRegions17 = new Set([0x000000, 0x020000, 0x040000]);
+
+  function absorbCycle(exploration) {
+    const newBlocks = exploration.uniqueBlocks.filter((key) => !totalBlocks17.has(key));
+
+    for (const key of newBlocks) {
+      totalBlocks17.add(key);
+    }
+
+    for (const key of exploration.missingKeys) {
+      totalMissing17.add(key);
+    }
+
+    for (const key of exploration.dynamicKeys) {
+      totalDynamic17.add(key);
+    }
+
+    for (const entry of exploration.regionCounts) {
+      totalRegions17.add(entry.regionStart);
+    }
+
+    addSeeds(test17Seeds, exploration.missingKeys, exploration.dynamicKeys);
+    return newBlocks.length;
+  }
+
+  resetCpuState(cpu17);
+
+  const boot17 = runExploration(ex17, cpu17, 0x000000, 'z80', {
+    maxSteps: 5000,
+    maxLoopIterations: 32,
+  });
+  cycleRows.push({
+    cycle: 0,
+    steps: boot17.result.steps,
+    termination: boot17.result.termination,
+    lastPc: boot17.result.lastPc,
+    newBlocks: absorbCycle(boot17),
+    callback: read24Value(memory, PHASE24B_CALLBACK_PTR),
+  });
+
+  let lastPc17 = boot17.result.lastPc;
+  let lastTermination17 = boot17.result.termination;
+
+  for (let cycle = 1; cycle <= 10; cycle++) {
+    if (lastTermination17 !== 'halt') {
+      cycleRows.push({
+        cycle,
+        steps: 0,
+        termination: `stopped_after_${lastTermination17}`,
+        lastPc: lastPc17,
+        newBlocks: 0,
+        callback: read24Value(memory, PHASE24B_CALLBACK_PTR),
+      });
+      break;
+    }
+
+    cpu17.halted = false;
+    cpu17.im = 1;
+    cpu17.iff1 = 1;
+    cpu17.iff2 = 1;
+    cpu17.push(lastPc17 + 1);
+
+    const wake17 = runExploration(ex17, cpu17, 0x000038, 'adl', {
+      maxSteps: 50000,
+      maxLoopIterations: 200,
+    });
+    cycleRows.push({
+      cycle,
+      steps: wake17.result.steps,
+      termination: wake17.result.termination,
+      lastPc: wake17.result.lastPc,
+      newBlocks: absorbCycle(wake17),
+      callback: read24Value(memory, PHASE24B_CALLBACK_PTR),
+    });
+
+    lastPc17 = wake17.result.lastPc;
+    lastTermination17 = wake17.result.termination;
+  }
+
+  const discoveredRegions17 = [...totalRegions17]
+    .sort((left, right) => left - right)
+    .filter((region) => !baselineRegions17.has(region));
+
+  console.log('Test 17: Extended Boot with ISR Cycling (10 wake cycles)');
+  console.log('=========================================================');
+  console.log('Cycle  Steps  Termination           Last PC   New Blocks  Callback (0xD02AD7)');
+  for (const row of cycleRows) {
+    console.log(
+      `${String(row.cycle).padStart(5)}  ` +
+      `${String(row.steps).padEnd(5)}  ` +
+      `${String(row.termination).padEnd(20)} ` +
+      `${hex(row.lastPc).padEnd(8)}  ` +
+      `${String(row.newBlocks).padEnd(10)} ` +
+      `${hex(row.callback)}`
+    );
+  }
+  console.log(`Total unique blocks: ${totalBlocks17.size}`);
+  console.log(`Total missing blocks: ${totalMissing17.size}`);
+  console.log(`Total dynamic targets: ${totalDynamic17.size}`);
+  console.log(
+    `New code regions discovered: ${discoveredRegions17.length > 0
+      ? discoveredRegions17.map((region) => hex(region)).join(', ')
+      : '(none beyond 0x00xxxx, 0x02xxxx, 0x04xxxx)'}`
+  );
+
+  test17Result = {
+    cycleRows,
+    uniqueBlocks: [...totalBlocks17],
+    missingKeys: [...totalMissing17],
+    dynamicKeys: [...totalDynamic17],
+  };
+}
+
+console.log('\n--- Phase 24 Seed Collection ---');
+{
+  const phase24BSeeds = collectSeedAddresses(
     [...test11Seeds],
     [...test12Seeds],
     [...test13Seeds],
     PHASE24B_KNOWN_SEEDS,
   );
+  const phase24CSeeds = collectSeedAddresses(
+    [...test14Seeds],
+    [...test15Seeds],
+    [...test16Seeds],
+    [...test17Seeds],
+  );
 
   console.log(`  Seeds from Test 11: ${test11Seeds.size}`);
   console.log(`  Seeds from Test 12: ${test12Seeds.size}`);
   console.log(`  Seeds from Test 13: ${test13Seeds.size}`);
-  console.log(`  Total unique seeds: ${allSeeds.length}`);
+  console.log(`  Seeds from Test 14: ${test14Seeds.size}`);
+  console.log(`  Seeds from Test 15: ${test15Seeds.size}`);
+  console.log(`  Seeds from Test 16: ${test16Seeds.size}`);
+  console.log(`  Seeds from Test 17: ${test17Seeds.size}`);
+  console.log(`  Total unique Phase 24B seeds: ${phase24BSeeds.length}`);
+  console.log(`  Total unique Phase 24C seeds: ${phase24CSeeds.length}`);
 
-  if (allSeeds.length > 0) {
+  let existingContents = '';
+  try {
+    existingContents = readFileSync(PHASE24B_SEEDS_PATH, 'utf8');
+  } catch {
+    existingContents = '';
+  }
+
+  if (existingContents.trim().length === 0 && phase24BSeeds.length > 0) {
     const lines = [
       '# Phase 24B seeds — ISR dispatch exploration',
       '# Generated by test-harness.mjs Tests 11-13',
-      ...allSeeds.map(formatSeedAddress),
+      ...phase24BSeeds.map(formatSeedAddress),
     ];
     writeFileSync(PHASE24B_SEEDS_PATH, lines.join('\n') + '\n');
-    console.log(`  Written to: ${PHASE24B_SEEDS_PATH}`);
+    existingContents = readFileSync(PHASE24B_SEEDS_PATH, 'utf8');
+    console.log(`  Wrote baseline Phase 24B seeds: ${PHASE24B_SEEDS_PATH}`);
+  }
+
+  const existingSeeds = new Set(
+    existingContents
+      .split(/\r?\n/)
+      .filter((line) => /^0x[0-9a-f]{6}$/i.test(line))
+      .map((line) => Number.parseInt(line, 16))
+  );
+  const newPhase24CSeeds = phase24CSeeds.filter((value) => !existingSeeds.has(value));
+
+  if (newPhase24CSeeds.length > 0) {
+    const prefix = existingContents.trim().length > 0 ? '\n' : '';
+    const lines = [
+      '# Phase 24C seeds - deep handler exploration + boot trace',
+      '# Generated by test-harness.mjs Tests 14-17',
+      ...newPhase24CSeeds.map(formatSeedAddress),
+    ];
+    appendFileSync(PHASE24B_SEEDS_PATH, `${prefix}${lines.join('\n')}\n`);
+    console.log(`  Appended ${newPhase24CSeeds.length} Phase 24C seeds to: ${PHASE24B_SEEDS_PATH}`);
+  } else {
+    console.log('  No new Phase 24C seeds to append.');
   }
 }
 
@@ -1064,6 +1588,10 @@ console.log(`  Test 5 (multi-entry):  ${multiResults.length} entry points tested
 console.log(`  Test 6 (NMI wake):     ${test6.steps} steps, terminated: ${test6.termination}, dynamic: ${nmiDynamic.length}`);
 console.log(`  Test 7 (IM1 wake):     ${test7.steps} steps, terminated: ${test7.termination}, dynamic: ${im1Dynamic.length}`);
 console.log(`  Test 8 (timer NMI):    ${test8.steps} steps, terminated: ${test8.termination}, interrupts: ${intInterrupts.length}`);
+console.log(`  Test 14 (deep OS):     ${test14Result.result.steps} steps, terminated: ${test14Result.result.termination}, blocks: ${test14Result.uniqueBlocks.length}`);
+console.log(`  Test 15 (probes):      ${test15Results.length} handlers tested, seeds: ${test15Seeds.size}`);
+console.log(`  Test 16 (boot trace):  ${test16Result.result.steps} steps, terminated: ${test16Result.result.termination}, RAM writes: ${test16Result.ramTracker.totalWrites}`);
+console.log(`  Test 17 (ISR cycles):  ${test17Result.cycleRows.length - 1} wake cycles, blocks: ${test17Result.uniqueBlocks.length}, missing: ${test17Result.missingKeys.length}`);
 
 // --- Compilation stats ---
 const totalBlocks = Object.keys(PRELIFTED_BLOCKS).length;
@@ -1131,6 +1659,22 @@ if (test6.missingBlocks) {
 }
 if (test7.missingBlocks) {
   for (const key of test7.missingBlocks) allMissing.add(key);
+}
+if (test14Result) {
+  for (const key of test14Result.missingKeys) allMissing.add(key);
+  for (const key of test14Result.dynamicKeys) allDynamic.add(key);
+}
+for (const entry of test15Results) {
+  for (const key of entry.missingKeys) allMissing.add(key);
+  for (const key of entry.dynamicKeys) allDynamic.add(key);
+}
+if (test16Result) {
+  for (const key of test16Result.missingKeys) allMissing.add(key);
+  for (const key of test16Result.dynamicKeys) allDynamic.add(key);
+}
+if (test17Result) {
+  for (const key of test17Result.missingKeys) allMissing.add(key);
+  for (const key of test17Result.dynamicKeys) allDynamic.add(key);
 }
 
 if (allDynamic.size > 0) {
