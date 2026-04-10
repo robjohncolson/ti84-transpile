@@ -404,22 +404,32 @@ node TI-84_Plus_CE/coverage-analyzer.mjs
 
 ## What Is Still Missing / Next Frontiers
 
-The static reachability frontier is exhausted at ~50K blocks. Further coverage requires dynamic techniques:
+The static reachability frontier is exhausted at ~50K blocks (30% OS area). The transpiler, decoder, emitter, and CPU are feature-complete. Peripheral model covers PLL, GPIO, flash, timers, interrupt controller (FTINTC010), and memory controller. All tests pass. The remaining frontiers are about making execution deeper and more realistic.
 
-### 1. Hardware Interrupt Source Modeling
+### 1. Keyboard Input Simulation
 
-The OS interrupt handler at 0x000704 checks if A=0xD0 to dispatch to a callback table. This value comes from a hardware status register. Modeling the correct interrupt source register (likely a timer or keyboard controller) would allow the interrupt handler to dispatch to the OS event loop at 0x000710.
+The OS boots, initializes hardware, and enters power-down HALT at 0x0019B5. On real hardware, a key press triggers interrupt controller bit 10 (keyboard), waking the CPU. The IM1 handler dispatches to the OS event loop. Modeling this requires:
+- Set interrupt controller raw status bit 10 (port 0x5000) on simulated key press
+- Configure GPIO port 0x03 to return key-down matrix values (currently returns 0xFF = no keys)
+- The browser-shell.html could map PC keyboard → TI-84 key matrix → GPIO port
 
-### 2. Execution Trace Verification
+### 2. CEmu Trace Verification
 
-Compare against CEmu's real execution trace:
-- CEmu logging of first N blocks from reset
-- Block-by-block comparison of register/flag state
-- Identify emitter correctness bugs (flag computation, edge cases)
+Compare block-by-block register state against CEmu to find emitter correctness bugs:
+- Export CEmu execution trace for first ~100 blocks from reset
+- Compare A/F/BC/DE/HL/SP/IX/IY after each block
+- Flag mismatches reveal ALU/flag computation errors that silently take wrong branches
 
-### 3. Browser-Based Runtime
+### 3. LCD Display Buffer
 
-Wire the transpiled blocks + CPU + peripherals into an HTML canvas. The LCD controller is memory-mapped at 0xF00000+. Modeling the display buffer would show what the ROM renders during boot (TI logo, homescreen).
+The LCD controller is memory-mapped at 0xF00000+. The OS writes pixel data during boot (TI logo). The browser-shell.html has a 320x240 canvas ready. Modeling the LCD VRAM at the correct memory addresses would render the boot screen.
+
+### Key Technical Findings (for next session)
+
+- **Port I/O is 16-bit**: `IN r,(C)` / `OUT (C),r` use full BC register. The interrupt controller (0x5000+), memory controller (0x1000+), and LCD controller (0x4000+) are all accessed via 16-bit ports.
+- **Interrupt handler CP 0xD0 check**: At block 0x000704, the ISR compares A with 0xD0 to dispatch events. A comes from port 0x06 (flash, returns 0x00). The value 0xD0 is never reached through normal IRQ flow — the dispatch at 0x000710 may require a different entry path or a specific RAM state.
+- **Boot completes in 18 steps post-PLL**: DI → PLL init → hardware setup → RST 0x08 → init → power-down HALT. All ports are modeled. No missing handlers.
+- **MMIO at 0xF00000+**: Not accessed during current execution paths. LCD writes happen later in the OS main loop (after key press wake).
 
 ---
 
@@ -441,7 +451,7 @@ Wire the transpiled blocks + CPU + peripherals into an HTML canvas. The LCD cont
 - `TI-84_Plus_CE/ROM.transpiled.js` — Generated module (50485 blocks)
 - `TI-84_Plus_CE/ROM.transpiled.report.json` — Coverage metrics
 - `TI-84_Plus_CE/cpu-runtime.js` — CPU class + createExecutor + missing block discovery
-- `TI-84_Plus_CE/peripherals.js` — I/O peripheral bus (PLL, GPIO, flash, timers)
+- `TI-84_Plus_CE/peripherals.js` — I/O peripheral bus + interrupt controller (PLL, GPIO, flash, timers, FTINTC010 at 0x5000, memory ctrl at 0x1000, interrupt status 0x3D/0x3E)
 - `TI-84_Plus_CE/test-harness.mjs` — 8-test validation harness + multi-entry + discovery + interrupts
 - `TI-84_Plus_CE/deep-profile.mjs` — Deep execution profiler (0x021000 analysis)
 - `TI-84_Plus_CE/coverage-analyzer.mjs` — Gap analysis + heatmap + seed suggestions
