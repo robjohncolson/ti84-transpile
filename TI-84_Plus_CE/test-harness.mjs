@@ -2073,5 +2073,240 @@ console.log('\n--- Test 22: VRAM Write -> Read Verification ---');
   console.log(`  ${VRAM_BASE + VRAM_SIZE <= 0x1000000 ? 'PASS' : 'FAIL'}: VRAM fits in 16MB address space`);
 }
 
+// ---------------------------------------------------------------------------
+// Test 23: OS Event Loop — Pre-initialized callback + system flags
+// Goal: Does the ISR reach deeper OS code (keyboard scan, LCD write) when
+//       we set up the callback table and system flags before triggering?
+// ---------------------------------------------------------------------------
+console.log('\n--- Test 23: OS Event Loop — Pre-initialized Callback ---');
+{
+  const p23 = createPeripheralBus({ trace: false, pllDelay: 2 });
+  const mem23 = new Uint8Array(0x1000000);
+  mem23.set(romBytes);
+  const ex23 = createExecutor(PRELIFTED_BLOCKS, mem23, { peripherals: p23 });
+  const cpu23 = ex23.cpu;
+
+  // Step A: Boot to HALT
+  resetCpuState(cpu23);
+  const boot23 = ex23.runFrom(0x000000, 'z80', { maxSteps: 5000, maxLoopIterations: 32 });
+  console.log(`  Boot: ${boot23.steps} steps → ${boot23.termination} at ${hex(boot23.lastPc)}`);
+
+  // Step B: Initialize callback table → OS event loop
+  const cbTarget = PHASE24B_CALLBACK_TARGET; // 0x0019BE
+  mem23[0xD02AD7] = cbTarget & 0xFF;
+  mem23[0xD02AD8] = (cbTarget >> 8) & 0xFF;
+  mem23[0xD02AD9] = (cbTarget >> 16) & 0xFF;
+
+  // Set system flags: (IY+27) bit 6 = ISR dispatch ready
+  // IY = 0xD00080 (set during boot at step 77), so IY+27 = 0xD0009B
+  mem23[0xD0009B] |= 0x40;
+
+  // Set keyboard IRQ: press ENTER (group 6, bit 0 — Phase 24F verified)
+  p23.keyboard.keyMatrix[6] = 0xFE;
+  p23.setKeyboardIRQ(true);
+  // Enable keyboard in interrupt controller
+  p23.write(0x5006, 0x08); // enable mask byte 2, bit 3 = bit 19
+
+  console.log(`  Callback: 0xD02AD7 = ${hex(cbTarget)}`);
+  console.log(`  System flag (IY+27): 0x${hex(mem23[0xD0009B], 2)}`);
+  console.log(`  Keyboard: ENTER pressed, IRQ bit 19 set`);
+
+  // Step C: Wake CPU and run ISR
+  cpu23.halted = false;
+  cpu23.iff1 = 1;
+  cpu23.iff2 = 1;
+  cpu23.sp = 0xD1A87E;
+  cpu23.push(boot23.lastPc + 1);
+
+  const blocks23 = new Set();
+  const regions23 = new Map(); // region → block count
+  const ioAccesses23 = [];
+  const missing23 = new Set();
+  const vramWrites23 = [];
+
+  const isr23 = ex23.runFrom(0x000038, 'adl', {
+    maxSteps: 100000,
+    maxLoopIterations: 200,
+    onBlock: (pc, mode) => {
+      blocks23.add(`${hex(pc)}:${mode}`);
+      const region = (pc >> 16) & 0xFF;
+      regions23.set(region, (regions23.get(region) || 0) + 1);
+    },
+    onMissingBlock: (pc, mode) => { if (pc > 0 && pc < 0x100000) missing23.add(hex(pc)); },
+  });
+
+  // Check VRAM for any pixel writes
+  let vramNonZero = 0;
+  for (let i = 0xD40000; i < 0xD40000 + 320 * 240 * 2; i++) {
+    if (mem23[i] !== 0) vramNonZero++;
+  }
+
+  // Check if callback pointer changed
+  const cbAfter = read24Value(mem23, PHASE24B_CALLBACK_PTR);
+
+  console.log(`\n  ISR: ${isr23.steps} steps → ${isr23.termination} at ${hex(isr23.lastPc)}`);
+  console.log(`  Unique blocks: ${blocks23.size}`);
+  console.log(`  Code regions:`);
+  for (const [region, count] of [...regions23.entries()].sort((a, b) => b[1] - a[1])) {
+    console.log(`    0x${hex(region, 2)}xxxx: ${count} blocks`);
+  }
+  console.log(`  Missing blocks: ${missing23.size}${missing23.size > 0 ? ' → ' + [...missing23].slice(0, 10).join(', ') : ''}`);
+  console.log(`  Callback after: ${hex(cbAfter)}${cbAfter !== cbTarget ? ' (CHANGED!)' : ''}`);
+  console.log(`  VRAM non-zero bytes: ${vramNonZero}${vramNonZero > 0 ? ' ← LCD ACTIVITY!' : ''}`);
+  console.log(`  A=${hex(cpu23.a, 2)} F=${hex(cpu23.f, 2)} PC=${hex(isr23.lastPc)}`);
+
+  // Step D: Run multiple ISR cycles to let the event loop evolve
+  console.log(`\n  --- ISR Cycling (5 rounds) ---`);
+  for (let cycle = 0; cycle < 5; cycle++) {
+    cpu23.halted = false;
+    cpu23.iff1 = 1;
+    cpu23.iff2 = 1;
+    cpu23.sp = 0xD1A87E;
+    cpu23.sp -= 3;
+    mem23[cpu23.sp] = 0xFF; mem23[cpu23.sp + 1] = 0xFF; mem23[cpu23.sp + 2] = 0xFF;
+
+    const cycleMissing = [];
+    const cycleResult = ex23.runFrom(0x000038, 'adl', {
+      maxSteps: 50000,
+      maxLoopIterations: 200,
+      onMissingBlock: (pc, mode) => { cycleMissing.push(hex(pc)); },
+    });
+
+    const cb = read24Value(mem23, PHASE24B_CALLBACK_PTR);
+    let vramNow = 0;
+    for (let i = 0xD40000; i < 0xD40000 + 64; i++) { if (mem23[i] !== 0) vramNow++; }
+
+    const missInfo = cycleMissing.length > 0 ? ` missing=[${[...new Set(cycleMissing)].join(',')}]` : '';
+    console.log(`  Cycle ${cycle}: ${cycleResult.steps} steps → ${cycleResult.termination} | cb=${hex(cb)} | vram=${vramNow > 0 ? vramNow + ' non-zero' : 'empty'}${missInfo}`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Test 24: _GetCSC Scan Code Mapping — Trace execution + multi-key test
+// Goal: Build the _GetCSC scan code table by testing multiple keys and
+//       tracing the handler's execution path block-by-block.
+// ---------------------------------------------------------------------------
+console.log('\n--- Test 24: _GetCSC Scan Code Mapping ---');
+{
+  // Timer disabled — _GetCSC must run without IRQ interference
+  const p24 = createPeripheralBus({ trace: false, pllDelay: 2, timerInterrupt: false });
+  const mem24 = new Uint8Array(0x1000000);
+  mem24.set(romBytes);
+  const ex24 = createExecutor(PRELIFTED_BLOCKS, mem24, { peripherals: p24 });
+  const cpu24 = ex24.cpu;
+
+  // Boot (timer off = no interrupt wake, just run to HALT)
+  ex24.runFrom(0x000000, 'z80', { maxSteps: 5000, maxLoopIterations: 32 });
+
+  // Enable keyboard in interrupt controller
+  p24.write(0x5006, 0x08);
+
+  function callGetCSC() {
+    cpu24.sp = 0xD1A87E;
+    cpu24._iy = 0xD00080;
+    cpu24.halted = false;
+    cpu24.iff1 = 0;  // Disable IRQs — _GetCSC polls the intc register directly
+    cpu24.iff2 = 0;
+    cpu24.madl = 1;
+    cpu24.sp -= 3;
+    mem24[cpu24.sp] = 0xFF; mem24[cpu24.sp + 1] = 0xFF; mem24[cpu24.sp + 2] = 0xFF;
+
+    // Re-set interrupt controller right before call (boot may have cleared it)
+    p24.write(0x5006, 0x08); // enable mask byte 2, bit 3 = keyboard IRQ bit 19
+
+    return ex24.runFrom(0x03CF7D, 'adl', {
+      maxSteps: 500,
+      maxLoopIterations: 64,
+    });
+  }
+
+  // Diagnostic: verify port 0x5016 returns expected value
+  p24.setKeyboardIRQ(true);
+  p24.write(0x5006, 0x08);
+  const port5016 = p24.read(0x5016);
+  console.log(`  Port 0x5016 diagnostic: 0x${hex(port5016, 2)} (expect 0x08 if keyboard IRQ set)`);
+  p24.setKeyboardIRQ(false);
+
+  // Phase 24F verified keys: group, bit, expected raw MMIO code
+  const testKeys = [
+    { name: 'ENTER',  group: 6, bit: 0, rawMmio: 0x60 },
+    { name: 'CLEAR',  group: 6, bit: 1, rawMmio: 0x61 },
+    { name: '2ND',    group: 6, bit: 5, rawMmio: 0x65 },
+    { name: 'RIGHT',  group: 0, bit: 2, rawMmio: 0x02 },
+    { name: 'Y=',     group: 5, bit: 4, rawMmio: 0x54 },
+    { name: 'GRAPH',  group: 4, bit: 0, rawMmio: 0x40 },
+    { name: '+',      group: 1, bit: 1, rawMmio: 0x11 },
+    { name: '0',      group: 3, bit: 0, rawMmio: 0x30 },
+    { name: 'no key', group: -1, bit: -1, rawMmio: 0x00 },
+  ];
+
+  console.log('  Key          Group  Bit  Raw(MMIO)  _GetCSC(A)  Steps  Term');
+  console.log('  ' + '-'.repeat(70));
+
+  const scanCodeMap = [];
+
+  for (const key of testKeys) {
+    // Reset keyboard
+    p24.keyboard.keyMatrix.fill(0xFF);
+
+    if (key.group >= 0) {
+      p24.keyboard.keyMatrix[key.group] &= ~(1 << key.bit);
+      p24.setKeyboardIRQ(true);
+    } else {
+      p24.setKeyboardIRQ(false);
+    }
+
+    const result = callGetCSC();
+    const getCscCode = cpu24.a;
+
+    scanCodeMap.push({ ...key, getCscCode });
+
+    const rawStr = `0x${hex(key.rawMmio, 2)}`;
+    const getCscStr = `0x${hex(getCscCode, 2)}`;
+    console.log(`  ${key.name.padEnd(12)} ${key.group >= 0 ? key.group : '-'}      ${key.bit >= 0 ? key.bit : '-'}    ${rawStr.padEnd(10)} ${getCscStr.padEnd(11)} ${result.steps.toString().padEnd(6)} ${result.termination}`);
+  }
+
+  // Detailed trace of ENTER key through _GetCSC
+  console.log('\n  --- Detailed Trace: ENTER key through _GetCSC ---');
+  p24.keyboard.keyMatrix.fill(0xFF);
+  p24.keyboard.keyMatrix[6] = 0xFE; // ENTER
+  p24.setKeyboardIRQ(true);
+
+  cpu24.sp = 0xD1A87E;
+  cpu24._iy = 0xD00080;
+  cpu24.halted = false;
+  cpu24.iff1 = 0;
+  cpu24.iff2 = 0;
+  cpu24.madl = 1;
+  cpu24.sp -= 3;
+  mem24[cpu24.sp] = 0xFF; mem24[cpu24.sp + 1] = 0xFF; mem24[cpu24.sp + 2] = 0xFF;
+
+  const traceBlocks = [];
+  const traceResult = ex24.runFrom(0x03CF7D, 'adl', {
+    maxSteps: 500,
+    maxLoopIterations: 64,
+    onBlock: (pc, mode, meta, step) => {
+      const dasm = meta?.instructions?.[0]?.dasm ?? '???';
+      traceBlocks.push({ step, pc: hex(pc), mode, dasm, a: cpu24.a });
+    },
+  });
+
+  for (const b of traceBlocks) {
+    console.log(`    [${b.step}] ${b.pc}:${b.mode} A=${hex(b.a, 2)} ${b.dasm}`);
+  }
+  console.log(`  Final: A=0x${hex(cpu24.a, 2)} (${traceResult.steps} steps, ${traceResult.termination})`);
+
+  // Summary: does _GetCSC use a different encoding than raw MMIO?
+  const mismatches = scanCodeMap.filter(k => k.group >= 0 && k.getCscCode !== k.rawMmio && k.getCscCode !== 0);
+  if (mismatches.length > 0) {
+    console.log(`\n  _GetCSC uses DIFFERENT encoding than raw MMIO for ${mismatches.length} key(s):`);
+    for (const m of mismatches) {
+      console.log(`    ${m.name}: MMIO=0x${hex(m.rawMmio, 2)} vs _GetCSC=0x${hex(m.getCscCode, 2)}`);
+    }
+  } else {
+    console.log('\n  _GetCSC encoding matches raw MMIO for all tested keys.');
+  }
+}
+
 console.log('\nDone.');
 process.exit(0);
