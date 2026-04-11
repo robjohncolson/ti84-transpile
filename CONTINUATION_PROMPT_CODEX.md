@@ -392,20 +392,42 @@ Generated module: 124327 blocks, 16.5% coverage. **Gitignored** (175MB). Generat
 
 ### `TI-84_Plus_CE/cpu-runtime.js`
 
-CPU runtime (~930 lines):
+CPU runtime (~1170 lines):
 - Full `CPU` class (registers, ALU, I/O, stack, block transfer, rotate/shift)
 - `createExecutor(blocks, memory, options)` with peripheral bus support
+- MMIO intercepts: keyboard at 0xE00800-0xE00920, LCD controller at 0xE00000-0xE0002F
 - Missing block skip-ahead + discovery collection
 - Block visit counting + dynamic target detection (indirect jump instrumentation)
 - Mode-aware execution, loop detection, I/O tracing
+- `lcdMmio` exposed on executor return (upbase, control)
 
 ### `TI-84_Plus_CE/peripherals.js`
 
-I/O peripheral bus + interrupt controller (~370 lines): PLL, CPU control, GPIO, flash (returns 0xD0), keyboard (port 0x01, 8-group matrix), timers, interrupt status (0x3D), interrupt ack (0x3E), timer-driven NMI/IRQ. Keyboard state exposed via `peripherals.keyboard`.
+I/O peripheral bus + interrupt controller (~400 lines): PLL, CPU control, GPIO, flash (returns 0xD0), keyboard (port 0x01, 8-group matrix), timers, interrupt status (0x3D), interrupt ack (0x3E), timer-driven NMI/IRQ, FTINTC010 at 0x5000, memory controller at 0x1000. `setKeyboardIRQ(active)` sets/clears intc bit 19. Keyboard state exposed via `peripherals.keyboard`.
+
+### `TI-84_Plus_CE/ti84-keyboard.js`
+
+Keyboard mapping module (~75 lines): 54 PC-to-TI84 key mappings using SDK-authoritative reversed group ordering. `createKeyboardManager(peripherals)` returns `{ handleKeyDown, handleKeyUp, getKeyState }`. KEY_MAP exported as frozen object.
+
+### `TI-84_Plus_CE/ti84-lcd.js`
+
+LCD renderer module (~44 lines): `createLCDRenderer(canvas, memory, options)` decodes BGR565 from VRAM at configurable base (default 0xD40000). Tight pixel loop with reusable ImageData.
+
+### `TI-84_Plus_CE/browser-shell.html`
+
+Browser-based interactive emulator (~381 lines): Boot from compressed .gz, AutoRun mode with NMI timer, visual keyboard overlay (36 keys), key state display, LCD canvas (320×240), register display, execution log. Auto-initializes OS event loop callback after boot.
 
 ### `TI-84_Plus_CE/test-harness.mjs`
 
-Validation harness (~2000 lines): 20 tests, multi-entry exploration, missing block discovery, dynamic target discovery, hot block profiling, PLL validation, NMI/IM1 wake, timer interrupt dispatch, flash port trace, ISR dispatch gate verification, deep ISR exploration, OS event loop probe, ROM handler table scan.
+Validation harness (~2400 lines): 25 tests. Tests 1-20 from Phases 7-24. Test 21: _GetCSC interrupt path. Test 22: VRAM BGR565 codec. Test 23: OS event loop with pre-initialized callback. Test 24: _GetCSC trace + scan code mapping. Test 25: direct keyboard scan at 0x0159C0 (9/9 PASS).
+
+### `TI-84_Plus_CE/keyboard-matrix.md`
+
+Full 54-key matrix documentation with SDK-authoritative group mapping, scan code table, and architecture notes.
+
+### `TI-84_Plus_CE/PHASE25_SPEC.md` / `PHASE25G_SPEC.md`
+
+Implementation specs and investigation findings for Phase 25 (browser shell) and 25G (event loop + keyboard scan).
 
 ### `TI-84_Plus_CE/coverage-analyzer.mjs`
 
@@ -413,15 +435,17 @@ Standalone gap analysis: heatmap, gap ranking, seed suggestions.
 
 ### `TI-84_Plus_CE/ROM.transpiled.report.json`
 
-Current metrics:
+Current metrics (retranspile in progress — will update):
 - ROM size: `4194304`
-- Block count: `124327`
-- Covered bytes: `692278`
-- Coverage percent: `16.50`
-- Seed count: `21229`
+- Block count: `124367` (will increase after retranspile)
+- Covered bytes: `692348`
+- Coverage percent: `16.51`
+- Seed count: `21317`
 - Live stubs: `0`
 - OS jump table: `980/980` (100%)
 - ISR dispatch gate: **UNLOCKED** (0x000710 reachable)
+- Keyboard scan: **WORKING** (0x0159C0, 9/9 PASS)
+- Browser shell: **DEPLOYED** (GitHub Pages)
 - ROM.transpiled.js: **gitignored** (175MB). Generate locally.
 
 Historical baselines:
@@ -598,114 +622,81 @@ ROM disassembly of handler at 0x03D184-0x03D1BB revealed:
 - Must capture B at block 0x015AD2 (before exit path corrupts registers)
 - Timer must be disabled (`timerInterrupt: false`), IFF1=0
 
-### OS Event Loop — Blocked at 0x00B608
+### OS Event Loop — Blocked at 0x00B608 (retranspile in progress)
 - Pre-initialized callback (0xD02AD7 = 0x0019BE) + system flags works
 - ISR reaches event loop at 0x0019BE (18 steps)
-- Cycling hits missing block 0x00B608 every cycle
+- Event loop walks a ROM table at 0x001C33-0x001C48 (bytecode interpreter?)
+- Cycling hits missing block 0x00B608 on the NORMAL (non-keyboard) path
+- The keyboard handler clears IRQ + enable mask after handling, so subsequent cycles take the non-keyboard path
 - Seeds 0xB608/B610/B620/B640 added, retranspile in progress
+- 0xB608 contains valid code (0xE5 = PUSH HL) — just wasn't reachable by static analysis
+
+### Browser Shell Features (browser-shell.html, 381 lines)
+- ROM.transpiled.js.gz (15MB) committed to repo, decompressed via DecompressionStream on Boot
+- Visual TI-84 keyboard overlay (36 keys, active-key highlighting)
+- 54 PC-to-TI84 key mappings: digits, operators, arrows, function keys, trig (S/C/T), LN/LOG (L/G), etc.
+- LCD rendering: ti84-lcd.js decodes BGR565 from VRAM at 0xD40000 via ImageData
+- Auto-init: after boot, sets callback table (0xD02AD7=0x0019BE) + system flag (IY+27 bit 6)
+- AutoRun mode: requestAnimationFrame loop, NMI timer wakes from HALT
+- Key state display: shows pressed key labels + computed scan codes
+
+### Keyboard Hardware Architecture
+**Two MMIO interfaces, reversed group ordering:**
+- **0xE00810-0xE00817** (used by ROM scan function 0x0159C0): our `keyMatrix[0-7]`
+- **0xF50010+** (used by SDK `kb_Data[1-7]`): different address space, same hardware
+- Mapping: `keyMatrix[N]` = SDK `kb_Data[7-N]` (REVERSED)
+
+**SDK-authoritative group mapping (from ce-programming/toolchain keypadc.h):**
+- keyMatrix[0] = SDK G7: DOWN(B0) LEFT(B1) RIGHT(B2) UP(B3)
+- keyMatrix[1] = SDK G6: ENTER(B0) +(B1) -(B2) ×(B3) ÷(B4) ^(B5) CLEAR(B6)
+- keyMatrix[2] = SDK G5: (-)(B0) 3(B1) 6(B2) 9(B3) )(B4) TAN(B5) VARS(B6)
+- keyMatrix[3] = SDK G4: .(B0) 2(B1) 5(B2) 8(B3) ((B4) COS(B5) PRGM(B6) STAT(B7)
+- keyMatrix[4] = SDK G3: 0(B0) 1(B1) 4(B2) 7(B3) ,(B4) SIN(B5) APPS(B6) XTθn(B7)
+- keyMatrix[5] = SDK G2: STO(B1) LN(B2) LOG(B3) x²(B4) x⁻¹(B5) MATH(B6) ALPHA(B7)
+- keyMatrix[6] = SDK G1: GRAPH(B0) TRACE(B1) ZOOM(B2) WINDOW(B3) Y=(B4) 2ND(B5) MODE(B6) DEL(B7)
+
+Scan code = `(keyMatrix_index << 4) | bit`. 63/64 active (DOWN=0x00 collides with no-key).
+
+**Phase 24F key labels were WRONG.** Scan codes were correct but physical key names were guessed. SDK is authoritative. Example: Phase 24F labeled G6:B0 as "ENTER" — it's actually GRAPH.
+
+### _GetCSC (0x03CF7D) — ISR Exit Code, NOT a Scanner
+ROM disassembly of handler at 0x03D184-0x03D1BB:
+```asm
+PUSH AF
+LD A, 0x08 / OUT (C), A     ; port 0x500A — acknowledge keyboard IRQ
+LD C, 0x06 / IN A, (C)      ; port 0x5006 — read enable mask
+RES 3, A / OUT (C), A       ; disable keyboard IRQ in mask
+; ... ISR cleanup: POP AF, POP HL, LD (0xD02AD7),HL, RES 6,(IY+27) ...
+POP IY / POP IX / POP AF / RETI
+```
+**Never reads keyboard MMIO.** A=0x10 was stale register. Returns via RETI (expects ISR stack frame). Do NOT call directly — use 0x0159C0 instead.
+
+### Direct Keyboard Scan (0x0159C0) — WORKING, 9/9 PASS
+- Sets IY=0xE00800, reads MMIO scan result at 0xE00900
+- Returns scan code in **B register** (NOT A)
+- Must capture B at block 0x015AD2 (exit path at 0x000DB6 corrupts registers)
+- Timer must be disabled (`timerInterrupt: false`), IFF1=0
+- Test 25 verified all 8 SDK-mapped keys + no-key = 9/9 PASS
 
 ---
 
 ## What Is Still Missing / Next Frontiers
 
-Coverage at 124327 blocks (16.5%). ISR gate is unlocked. Function call harness works. The remaining frontiers are about making the OS event loop functional and rendering output.
+Coverage at ~124370 blocks (16.5%). ISR gate unlocked. Keyboard scan working. Browser shell deployed. Remaining frontiers:
 
-### 1. Wire Keyboard MMIO at 0xF50000 (highest priority — Phase 24F)
+### 1. OS Event Loop Unblock (waiting on retranspile)
+- Missing block 0x00B608 seeded, transpiler running
+- Once transpiled: rerun Test 23, see if event loop goes deeper
+- The event loop at 0x001C33 walks a ROM table — need to understand what it dispatches
+- May discover more missing blocks that need seeding (iterative process)
 
-**DISCOVERY: The TI-84 CE keyboard is memory-mapped, NOT port I/O.**
+### 2. LCD Display
+- LCD MMIO intercept at 0xE00000 is wired (LCDUPBASE at 0x10, LCDControl at 0x18)
+- VRAM renderer at 0xD40000 (BGR565, 320×240, 153KB) is working
+- LCD stays black because OS boot path doesn't write VRAM
+- Need the event loop to reach display init code (depends on frontier #1)
 
-Port 0x01 is irrelevant for keyboard reads. The keyboard uses MMIO at:
-- `0xF50000` — keyboard data register (4 ROM references)
-- `0xF50007` — keyboard control
-- `0xF5000E` — keyboard config (2 references)
-- `0xF50018` — keyboard status
-
-ROM functions that access keyboard MMIO (ALL already transpiled):
-- `0x0061C2` — keyboard data read (0xF50000)
-- `0x0061E9` — keyboard data read (0xF50000)
-- `0x000791` — keyboard config (0xF5000E)
-- `0x00142C` — keyboard control (0xF50007)
-- `0x0016C3` — keyboard config (0xF5000E)
-- `0x028116` — keyboard data (0xF50000)
-- `0x049F25` — keyboard data (0xF50000)
-- `0x07B241` — keyboard status (0xF50018)
-
-The blocks exist but aren't reached during execution because the ISR call chain breaks at missing blocks before reaching the keyboard scan code.
-
-**BREAKTHROUGH: _GetCSC keyboard handler found and working:**
-- `_GetCSC` is jump table entry 2 → 0x03CF7D
-- It reads port 0x5016 (interrupt controller masked status byte 2)
-- If bit 3 set (= bit 19 of full status), it jumps to 0x03D184 (keyboard handler)
-- The handler runs through 0x03D184 → 0x03D197 → 0x03D19C → 0x03D1BB
-- Returns scan code in A register (A=0x10 when tested)
-- The keyboard handler reads port 0x5006 (intc enable mask) and port 0x0003 (GPIO) — NOT the keyboard matrix directly
-- To trigger: set bit 3 of port 0x5016 response (inject via _ioRead hook, or set rawStatus bit 19 + enableMask bit 19)
-
-### Phase 24F: Keyboard MMIO Handler (MILESTONE)
-
-**DISCOVERY: Keyboard hardware is at 0xE00800, not 0xF50000.**
-
-The TI-84 CE keyboard controller is memory-mapped at 0xE00800-0xE00920:
-- `0xE00803` — scan mode register
-- `0xE00807` — scan enable
-- `0xE00808` — scan column
-- `0xE0080F` — scan interval
-- `0xE00810-0xE00817` — key data per group (8 groups × 8 keys, active low)
-- `0xE00818` — status (bit 1 = scan complete)
-- `0xE00824` — ready flag (bit 0 = result available)
-- `0xE00900` — scan result byte (computed from key matrix)
-
-**Keyboard scan function at 0x0159C0:**
-- Initializes scan hardware (IY=0xE00800)
-- Reads scan result from 0xE00900
-- Waits for ready flag at 0xE00824 bit 0
-- Returns scan code in B register
-
-**Verified scan codes:**
-| Key | Group | Bit | Scan Code |
-|-----|-------|-----|-----------|
-| No key | — | — | 0x00 |
-| ENTER | 6 | 0 | 0x60 |
-| CLEAR | 6 | 1 | 0x61 |
-| 2nd | 6 | 5 | 0x65 |
-| RIGHT | 0 | 2 | 0x02 |
-| Y= | 5 | 4 | 0x54 |
-| GRAPH | 4 | 0 | 0x40 |
-| + | 1 | 1 | 0x11 |
-| 0 | 3 | 0 | 0x30 |
-
-Format: `(group << 4) | key_bit`
-
-**Implementation:** Added to `cpu-runtime.js createExecutor()` — wraps `cpu.read8`/`cpu.write8` to intercept MMIO at 0xE00800-0xE00920 when peripherals include keyboard state. Uses existing `peripherals.keyboard.keyMatrix` for key data.
-
-**Next steps:**
-1. Wire keyboard MMIO into browser-shell.html — map PC keyboard → TI-84 key matrix → scan codes
-2. Connect _GetCSC (0x03CF7D) to the interrupt controller so the full ISR→scan→result chain works
-3. LCD VRAM rendering at 0xE30000+ (LCD controller likely also at 0xE3xxxx, not 0xF0xxxx)
-
-### 2. OS Event Loop Deep Dive
-
-The ISR dispatches to 0x000710 which calls a callback at 0xD02AD7. Currently RAM is zeroed so the callback goes nowhere useful. To make the event loop functional:
-- Trace what the real OS boot writes to 0xD02AD7 and surrounding callback table
-- Initialize the callback table with proper OS handler addresses
-- The event loop at 0x0019BE checks system flags at (IY+offset) and dispatches handlers
-- With proper callback table + system flags, execution should reach keyboard scan, LCD refresh, etc.
-
-### 3. Keyboard Input → OS Response Chain
-
-Port 0x01 is wired (returns 0xFF = no keys). Next steps:
-- Simulate a key press by setting `peripherals.keyboard.keyMatrix[group]` bits
-- Trigger interrupt controller bit 10 (keyboard IRQ)
-- Trace the full chain: key press → IRQ → ISR → event loop → keyboard scan routine
-- Map PC keyboard to TI-84 key matrix (8 groups × 8 keys)
-- Wire into browser-shell.html for interactive input
-
-### 4. LCD Display Buffer
-
-The LCD controller is memory-mapped at 0xF00000+. The OS writes pixel data during boot (TI logo). The browser-shell.html has a 320x240 canvas ready. Modeling the LCD VRAM at the correct memory addresses would render the boot screen.
-
-### 5. CEmu Trace Verification
-
+### 3. CEmu Trace Verification
 Compare block-by-block register state against CEmu to find emitter correctness bugs:
 - Export CEmu execution trace for first ~100 blocks from reset
 - Compare A/F/BC/DE/HL/SP/IX/IY after each block
