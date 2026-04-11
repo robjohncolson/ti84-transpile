@@ -2308,5 +2308,66 @@ console.log('\n--- Test 24: _GetCSC Scan Code Mapping ---');
   }
 }
 
+console.log('\n--- Test 25: Direct Keyboard Scan (0x0159C0) ---');
+{
+  const p25 = createPeripheralBus({ trace: false, pllDelay: 2, timerInterrupt: false });
+  const mem25 = new Uint8Array(0x1000000);
+  mem25.set(romBytes);
+  const ex25 = createExecutor(PRELIFTED_BLOCKS, mem25, { peripherals: p25 });
+  const cpu25 = ex25.cpu;
+
+  // Boot
+  ex25.runFrom(0x000000, 'z80', { maxSteps: 5000, maxLoopIterations: 32 });
+
+  function callKbdScan() {
+    cpu25.sp = 0xD1A87E;
+    cpu25._iy = 0xE00800; // Keyboard controller base (function expects this)
+    cpu25.halted = false;
+    cpu25.iff1 = 0;
+    cpu25.iff2 = 0;
+    cpu25.madl = 1;
+    // Push sentinel return
+    cpu25.sp -= 3;
+    mem25[cpu25.sp] = 0xFF; mem25[cpu25.sp + 1] = 0xFF; mem25[cpu25.sp + 2] = 0xFF;
+
+    return ex25.runFrom(0x0159C0, 'adl', {
+      maxSteps: 500,
+      maxLoopIterations: 64,
+    });
+  }
+
+  // Phase 24F verified keys
+  const testKeys = [
+    { name: 'ENTER', group: 6, bit: 0, expectedScan: 0x60 },
+    { name: 'CLEAR', group: 6, bit: 1, expectedScan: 0x61 },
+    { name: '2ND', group: 6, bit: 5, expectedScan: 0x65 },
+    { name: 'RIGHT', group: 0, bit: 2, expectedScan: 0x02 },
+    { name: 'Y=', group: 5, bit: 4, expectedScan: 0x54 },
+    { name: 'GRAPH', group: 4, bit: 0, expectedScan: 0x40 },
+    { name: '+', group: 1, bit: 1, expectedScan: 0x11 },
+    { name: '0', group: 3, bit: 0, expectedScan: 0x30 },
+    { name: 'no key', group: -1, bit: -1, expectedScan: 0x00 },
+  ];
+
+  const hex = (v, w) => v.toString(16).padStart(w, '0');
+
+  console.log('  Key          Group  Bit  Expected  B(scan)  A       Steps  Term');
+  console.log('  ' + '-'.repeat(72));
+
+  for (const key of testKeys) {
+    p25.keyboard.keyMatrix.fill(0xFF);
+    if (key.group >= 0) {
+      p25.keyboard.keyMatrix[key.group] &= ~(1 << key.bit);
+    }
+
+    const result = callKbdScan();
+    const scanB = cpu25.b;
+    const regA = cpu25.a;
+    const pass = scanB === key.expectedScan ? 'PASS' : (scanB !== 0 ? 'DIFF' : 'FAIL');
+
+    console.log(`  ${key.name.padEnd(12)} ${key.group >= 0 ? key.group : '-'}      ${key.bit >= 0 ? key.bit : '-'}    0x${hex(key.expectedScan, 2)}      0x${hex(scanB, 2)}    0x${hex(regA, 2)}    ${result.steps.toString().padEnd(6)} ${result.termination} ${pass}`);
+  }
+}
+
 console.log('\nDone.');
 process.exit(0);
