@@ -549,6 +549,7 @@ node TI-84_Plus_CE/coverage-analyzer.mjs
 ### Phase 24C: Deep Handler + Callback Table Research (55 seeds) — DONE ✓
 ### Phase 24D: Pre-initialized Callback + Keyboard Sim (4 seeds) — DONE ✓
 ### Phase 24E: Re-transpile with critical seeds (0x0040B2, 0x000698) — DONE ✓
+### Phase 24F: Keyboard MMIO handler + scan codes working — DONE ✓
 
 ---
 
@@ -587,11 +588,47 @@ The blocks exist but aren't reached during execution because the ISR call chain 
 - The keyboard handler reads port 0x5006 (intc enable mask) and port 0x0003 (GPIO) — NOT the keyboard matrix directly
 - To trigger: set bit 3 of port 0x5016 response (inject via _ioRead hook, or set rawStatus bit 19 + enableMask bit 19)
 
+### Phase 24F: Keyboard MMIO Handler (MILESTONE)
+
+**DISCOVERY: Keyboard hardware is at 0xE00800, not 0xF50000.**
+
+The TI-84 CE keyboard controller is memory-mapped at 0xE00800-0xE00920:
+- `0xE00803` — scan mode register
+- `0xE00807` — scan enable
+- `0xE00808` — scan column
+- `0xE0080F` — scan interval
+- `0xE00810-0xE00817` — key data per group (8 groups × 8 keys, active low)
+- `0xE00818` — status (bit 1 = scan complete)
+- `0xE00824` — ready flag (bit 0 = result available)
+- `0xE00900` — scan result byte (computed from key matrix)
+
+**Keyboard scan function at 0x0159C0:**
+- Initializes scan hardware (IY=0xE00800)
+- Reads scan result from 0xE00900
+- Waits for ready flag at 0xE00824 bit 0
+- Returns scan code in B register
+
+**Verified scan codes:**
+| Key | Group | Bit | Scan Code |
+|-----|-------|-----|-----------|
+| No key | — | — | 0x00 |
+| ENTER | 6 | 0 | 0x60 |
+| CLEAR | 6 | 1 | 0x61 |
+| 2nd | 6 | 5 | 0x65 |
+| RIGHT | 0 | 2 | 0x02 |
+| Y= | 5 | 4 | 0x54 |
+| GRAPH | 4 | 0 | 0x40 |
+| + | 1 | 1 | 0x11 |
+| 0 | 3 | 0 | 0x30 |
+
+Format: `(group << 4) | key_bit`
+
+**Implementation:** Added to `cpu-runtime.js createExecutor()` — wraps `cpu.read8`/`cpu.write8` to intercept MMIO at 0xE00800-0xE00920 when peripherals include keyboard state. Uses existing `peripherals.keyboard.keyMatrix` for key data.
+
 **Next steps:**
-1. Expose intcState.rawStatus for direct manipulation (add to peripherals.js return value or getState)
-2. Test _GetCSC with different GPIO/RAM states to see if scan code changes
-3. Find where the actual key matrix is read — likely in the ISR keyboard handler (a different function from _GetCSC)
-4. Wire keyboard MMIO at 0xF50000 for the ISR-based keyboard scan path
+1. Wire keyboard MMIO into browser-shell.html — map PC keyboard → TI-84 key matrix → scan codes
+2. Connect _GetCSC (0x03CF7D) to the interrupt controller so the full ISR→scan→result chain works
+3. LCD VRAM rendering at 0xE30000+ (LCD controller likely also at 0xE3xxxx, not 0xF0xxxx)
 
 ### 2. OS Event Loop Deep Dive
 
