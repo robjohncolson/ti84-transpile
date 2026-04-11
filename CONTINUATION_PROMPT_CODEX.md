@@ -556,14 +556,19 @@ node TI-84_Plus_CE/coverage-analyzer.mjs
 
 Coverage at 124327 blocks (16.5%). ISR gate is unlocked. Function call harness works. The remaining frontiers are about making the OS event loop functional and rendering output.
 
-### 1. Keyboard Read Path Investigation (highest priority)
+### 1. Keyboard Scan Routine Discovery (highest priority)
 
-Test 19 shows 452 keyboard port 0x01 WRITES but 0 READS. The OS is scanning key groups but reads aren't being captured. Likely causes:
-- Keyboard reads use `IN r,(C)` with full 16-bit BC register (port 0x0001 or similar) — the peripheral bus may be matching on different port numbers
-- Reads go through memory-mapped I/O instead of port I/O
-- The onIoRead hook in the test might not be set up correctly for the key-press run
+Full I/O trace of 100K-step ISR with key press shows the ISR only accesses:
+- Port 0x0006 (flash status): 9 reads
+- Port 0x5015 (interrupt controller status): 8 reads
+- Port 0x5009 (interrupt controller ack): 8 writes
+- **NO keyboard port (0x01) reads or writes**
 
-**Next step:** Add I/O tracing for ALL port reads/writes during the key-press ISR run (not just port 0x01), identify which port the keyboard reads actually go to, and fix the peripheral bus port matching if needed.
+The ISR dispatches through the interrupt controller but never reaches the keyboard scan routine. The 452 port 0x01 writes from Test 19 came from the corrupted boot (OS init before boot causes PLL loop, which writes to port 0x01 as part of hardware config).
+
+**Root cause:** The keyboard scan routine is called by the OS event loop, which dispatches based on the callback pointer at 0xD02AD7. The callback currently points to 0x0040B2, but that block only runs 3 steps before hitting missing_block 0xFFFFFF. The keyboard scan is behind more missing blocks.
+
+**Next step:** Trace what 0x0040B2 does, find which blocks it needs, and seed them. Or find the keyboard scan function address directly from the OS jump table and call it.
 
 ### 2. OS Event Loop Deep Dive
 
