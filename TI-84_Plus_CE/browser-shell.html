@@ -113,6 +113,8 @@ let totalSteps = 0;
 let lastPc = 0;
 let lastMode = 'z80';
 let kbd = null;
+let kbdDown = null;
+let kbdUp = null;
 let lcd = null;
 let autoRunning = false;
 const STEPS_PER_FRAME = 500;
@@ -225,12 +227,14 @@ $('btnBoot').addEventListener('click', async () => {
   log(`<span class="info">--- Decoding ROM (${TRANSPILATION_META.blockCount} blocks, ${TRANSPILATION_META.coveragePercent}% coverage) ---</span>`);
 
   const romBytes = decodeEmbeddedRom();
-  const peripherals = createPeripheralBus({ pllDelay: 2 });
+  const peripherals = createPeripheralBus({ pllDelay: 2, timerMode: 'nmi', timerInterval: 100 });
   executor = createExecutor(PRELIFTED_BLOCKS, romBytes, { peripherals });
   cpu = executor.cpu;
   kbd = createKeyboardManager(peripherals);
-  document.addEventListener('keydown', kbd.handleKeyDown);
-  document.addEventListener('keyup', kbd.handleKeyUp);
+  kbdDown = (e) => { kbd.handleKeyDown(e); updateKeyStateDisplay(); };
+  kbdUp = (e) => { kbd.handleKeyUp(e); updateKeyStateDisplay(); };
+  document.addEventListener('keydown', kbdDown);
+  document.addEventListener('keyup', kbdUp);
   lcd = createLCDRenderer($('lcd'), romBytes);
   totalSteps = 0;
   lastPc = 0x000000;
@@ -258,9 +262,9 @@ $('btnAutoRun').addEventListener('click', () => {
 
 $('btnReset').addEventListener('click', () => {
   if (kbd) {
-    document.removeEventListener('keydown', kbd.handleKeyDown);
-    document.removeEventListener('keyup', kbd.handleKeyUp);
-    kbd = null;
+    document.removeEventListener('keydown', kbdDown);
+    document.removeEventListener('keyup', kbdUp);
+    kbd = null; kbdDown = null; kbdUp = null;
   }
   if (lcd) {
     lcd.destroy();
