@@ -71,7 +71,6 @@ button.active { background: #2a5a2a; border-color: #4a8a4a; }
 </div>
 
 <script type="module">
-import { PRELIFTED_BLOCKS, TRANSPILATION_META, decodeEmbeddedRom } from './ROM.transpiled.js';
 import { createExecutor } from './cpu-runtime.js';
 import { createPeripheralBus } from './peripherals.js';
 import { createKeyboardManager } from './ti84-keyboard.js';
@@ -82,6 +81,31 @@ const $ = id => document.getElementById(id);
 
 const logEl = $('log');
 const statusEl = $('status');
+
+// ROM module — loaded dynamically from .gz (repo) or .js (local dev)
+let PRELIFTED_BLOCKS = null;
+let TRANSPILATION_META = null;
+let decodeEmbeddedRom = null;
+
+async function loadROM() {
+  try {
+    setStatus('Loading compressed ROM (~15 MB)...');
+    const resp = await fetch('./ROM.transpiled.js.gz');
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    setStatus('Decompressing ROM...');
+    const ds = new DecompressionStream('gzip');
+    const jsText = await new Response(resp.body.pipeThrough(ds)).text();
+    setStatus('Parsing ROM module...');
+    const blob = new Blob([jsText], { type: 'text/javascript' });
+    const url = URL.createObjectURL(blob);
+    const mod = await import(url);
+    URL.revokeObjectURL(url);
+    return mod;
+  } catch (_gz) {
+    setStatus('Compressed ROM not found, trying local .js...');
+    return await import('./ROM.transpiled.js');
+  }
+}
 
 let executor = null;
 let cpu = null;
@@ -182,7 +206,22 @@ function runSteps(n) {
 }
 
 // Boot
-$('btnBoot').addEventListener('click', () => {
+$('btnBoot').addEventListener('click', async () => {
+  $('btnBoot').disabled = true;
+
+  if (!PRELIFTED_BLOCKS) {
+    try {
+      const mod = await loadROM();
+      PRELIFTED_BLOCKS = mod.PRELIFTED_BLOCKS;
+      TRANSPILATION_META = mod.TRANSPILATION_META;
+      decodeEmbeddedRom = mod.decodeEmbeddedRom;
+    } catch (e) {
+      setStatus(`Failed to load ROM: ${e.message}`, true);
+      $('btnBoot').disabled = false;
+      return;
+    }
+  }
+
   log(`<span class="info">--- Decoding ROM (${TRANSPILATION_META.blockCount} blocks, ${TRANSPILATION_META.coveragePercent}% coverage) ---</span>`);
 
   const romBytes = decodeEmbeddedRom();
@@ -243,7 +282,7 @@ $('btnReset').addEventListener('click', () => {
   setStatus('Ready. Click Boot to start.');
 });
 
-log(`<span class="info">ROM: ${TRANSPILATION_META.blockCount} blocks, ${TRANSPILATION_META.coveredBytes} bytes, ${TRANSPILATION_META.coveragePercent}% coverage</span>`);
+log(`<span class="info">Click Boot to load ROM (~15 MB compressed)</span>`);
 </script>
 </body>
 </html>
