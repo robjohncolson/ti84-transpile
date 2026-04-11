@@ -550,6 +550,59 @@ node TI-84_Plus_CE/coverage-analyzer.mjs
 ### Phase 24D: Pre-initialized Callback + Keyboard Sim (4 seeds) — DONE ✓
 ### Phase 24E: Re-transpile with critical seeds (0x0040B2, 0x000698) — DONE ✓
 ### Phase 24F: Keyboard MMIO handler + scan codes working — DONE ✓
+### Phase 25: Interactive Browser Shell — DONE ✓
+### Phase 25G: OS Event Loop + Keyboard Scan Investigation — DONE ✓
+
+---
+
+## Phase 25 Summary (2026-04-11)
+
+### Browser Shell (browser-shell.html)
+- ROM.transpiled.js.gz (15MB) committed to repo, decompressed via DecompressionStream on Boot
+- Keyboard input: ti84-keyboard.js maps PC keys → TI-84 matrix (SDK keypadc.h authoritative)
+- LCD rendering: ti84-lcd.js decodes BGR565 from VRAM at 0xD40000 via ImageData
+- AutoRun mode with requestAnimationFrame loop
+- NMI timer required (`timerMode: 'nmi'`) — boot ends with IFF=0, only NMI can wake CPU
+
+### Keyboard Mapping (CRITICAL CORRECTION)
+**MMIO at 0xE00810 uses REVERSED group ordering vs SDK kb_Data at 0xF50010:**
+```
+keyMatrix[N] = SDK Group(7-N)
+```
+Full verified mapping:
+- keyMatrix[0] = SDK G7: DOWN(B0) LEFT(B1) RIGHT(B2) UP(B3)
+- keyMatrix[1] = SDK G6: ENTER(B0) +(B1) -(B2) ×(B3) ÷(B4) ^(B5) CLEAR(B6)
+- keyMatrix[2] = SDK G5: (-)(B0) 3(B1) 6(B2) 9(B3) )(B4) TAN(B5) VARS(B6)
+- keyMatrix[3] = SDK G4: .(B0) 2(B1) 5(B2) 8(B3) ((B4) COS(B5) PRGM(B6) STAT(B7)
+- keyMatrix[4] = SDK G3: 0(B0) 1(B1) 4(B2) 7(B3) ,(B4) SIN(B5) APPS(B6) XTθn(B7)
+- keyMatrix[5] = SDK G2: STO(B1) LN(B2) LOG(B3) x²(B4) x⁻¹(B5) MATH(B6) ALPHA(B7)
+- keyMatrix[6] = SDK G1: GRAPH(B0) TRACE(B1) ZOOM(B2) WINDOW(B3) Y=(B4) 2ND(B5) MODE(B6) DEL(B7)
+
+Scan code = `(keyMatrix_index << 4) | bit`. 63/64 positions active. DOWN(G0:B0) = 0x00 (indistinguishable from no-key).
+
+**Phase 24F labels were WRONG** — scan codes were correct but key names were guessed. The SDK from ce-programming/toolchain is the authoritative source.
+
+### _GetCSC (0x03CF7D) — ISR Exit Code, NOT a Scanner
+ROM disassembly of handler at 0x03D184-0x03D1BB revealed:
+1. Acknowledges keyboard IRQ (OUT to port 0x500A)
+2. Disables keyboard IRQ in enable mask (port 0x5006)
+3. Overwrites callback pointer at 0xD02AD7
+4. Clears (IY+27) bit 6 system flag
+5. Returns via RETI (expects ISR stack frame)
+**Never reads keyboard MMIO.** A=0x10 return was stale register, not a scan code.
+
+### Direct Keyboard Scan (0x0159C0) — WORKING
+- Sets IY=0xE00800, reads MMIO scan result at 0xE00900
+- Returns scan code in B register (NOT A)
+- Test 25: 9/9 PASS for all tested keys
+- Must capture B at block 0x015AD2 (before exit path corrupts registers)
+- Timer must be disabled (`timerInterrupt: false`), IFF1=0
+
+### OS Event Loop — Blocked at 0x00B608
+- Pre-initialized callback (0xD02AD7 = 0x0019BE) + system flags works
+- ISR reaches event loop at 0x0019BE (18 steps)
+- Cycling hits missing block 0x00B608 every cycle
+- Seeds 0xB608/B610/B620/B640 added, retranspile in progress
 
 ---
 
