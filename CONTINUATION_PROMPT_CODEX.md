@@ -21,7 +21,7 @@
 - **CPU Control Register (port 0x00)**: Read/write register, default 0x00
 - **GPIO Port (port 0x03)**: Configurable read value (default 0xFF = no buttons), stores writes
 - **Flash Controller (port 0x06)**: Returns 0xD0 (hardware ready status — unlocks ISR gate at 0x000704), stores writes
-- **Keyboard Scan (port 0x01)**: Write selects key group (active low), read returns key status (0xFF = no keys pressed). 8-group matrix exposed via `peripherals.keyboard`
+- **Keyboard Scan (port 0x01)**: Write selects key group (active low), read returns key status. **NOTE: Port 0x01 is NOT used for keyboard reads on the CE — keyboard is MMIO at 0xF50000+. Port 0x01 writes are only used during boot/shutdown config.**
 - **Timer/Counter ports (0x10-0x18)**: Returns 0x00, stores writes
 
 **Modified `TI-84_Plus_CE/cpu-runtime.js`:**
@@ -556,19 +556,33 @@ node TI-84_Plus_CE/coverage-analyzer.mjs
 
 Coverage at 124327 blocks (16.5%). ISR gate is unlocked. Function call harness works. The remaining frontiers are about making the OS event loop functional and rendering output.
 
-### 1. Keyboard Scan Routine Discovery (highest priority)
+### 1. Wire Keyboard MMIO at 0xF50000 (highest priority — Phase 24F)
 
-Full I/O trace of 100K-step ISR with key press shows the ISR only accesses:
-- Port 0x0006 (flash status): 9 reads
-- Port 0x5015 (interrupt controller status): 8 reads
-- Port 0x5009 (interrupt controller ack): 8 writes
-- **NO keyboard port (0x01) reads or writes**
+**DISCOVERY: The TI-84 CE keyboard is memory-mapped, NOT port I/O.**
 
-The ISR dispatches through the interrupt controller but never reaches the keyboard scan routine. The 452 port 0x01 writes from Test 19 came from the corrupted boot (OS init before boot causes PLL loop, which writes to port 0x01 as part of hardware config).
+Port 0x01 is irrelevant for keyboard reads. The keyboard uses MMIO at:
+- `0xF50000` — keyboard data register (4 ROM references)
+- `0xF50007` — keyboard control
+- `0xF5000E` — keyboard config (2 references)
+- `0xF50018` — keyboard status
 
-**Root cause:** The keyboard scan routine is called by the OS event loop, which dispatches based on the callback pointer at 0xD02AD7. The callback currently points to 0x0040B2, but that block only runs 3 steps before hitting missing_block 0xFFFFFF. The keyboard scan is behind more missing blocks.
+ROM functions that access keyboard MMIO (ALL already transpiled):
+- `0x0061C2` — keyboard data read (0xF50000)
+- `0x0061E9` — keyboard data read (0xF50000)
+- `0x000791` — keyboard config (0xF5000E)
+- `0x00142C` — keyboard control (0xF50007)
+- `0x0016C3` — keyboard config (0xF5000E)
+- `0x028116` — keyboard data (0xF50000)
+- `0x049F25` — keyboard data (0xF50000)
+- `0x07B241` — keyboard status (0xF50018)
 
-**Next step:** Trace what 0x0040B2 does, find which blocks it needs, and seed them. Or find the keyboard scan function address directly from the OS jump table and call it.
+The blocks exist but aren't reached during execution because the ISR call chain breaks at missing blocks before reaching the keyboard scan code.
+
+**Next steps:**
+1. Add MMIO handler for 0xF50000-0xF50020 region in peripherals.js (or cpu-runtime.js memory hooks)
+2. Model keyboard data register (return key matrix state) and control registers
+3. Try calling keyboard scan functions directly (0x0061C2, 0x028116) with key state set in MMIO
+4. The event loop at 0x0019BE reads port 0x5015 (interrupt controller) — it checks interrupt status before dispatching to keyboard handler. Need to set keyboard interrupt bit (bit 10) in the interrupt controller.
 
 ### 2. OS Event Loop Deep Dive
 
