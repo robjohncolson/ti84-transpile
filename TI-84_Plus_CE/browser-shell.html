@@ -23,6 +23,12 @@ button.active { background: #2a5a2a; border-color: #4a8a4a; }
 .key-state .label { color: #888; }
 .key-state .val { color: #6cb4ee; }
 .key-state .pressed { color: #7ddf7d; }
+.ti84-kbd { background: #0d0d1a; border: 1px solid #333; padding: 8px; border-radius: 4px; margin-bottom: 12px; }
+.kbd-row { display: flex; gap: 2px; margin-bottom: 2px; justify-content: center; }
+.kbd-key { background: #2a2a4a; color: #888; border: 1px solid #444; padding: 2px 4px; font-size: 9px; border-radius: 2px; min-width: 28px; text-align: center; cursor: default; user-select: none; }
+.kbd-key.active { background: #2a5a2a; color: #7ddf7d; border-color: #4a8a4a; }
+.kbd-key.fn { background: #1a1a3a; }
+.kbd-key.wide { min-width: 48px; }
 .log { background: #0d0d1a; border: 1px solid #333; padding: 8px; height: 500px; overflow-y: auto; font-size: 11px; line-height: 1.4; border-radius: 4px; }
 .log .step { color: #555; }
 .log .addr { color: #6cb4ee; }
@@ -63,6 +69,53 @@ button.active { background: #2a5a2a; border-color: #4a8a4a; }
     <div class="key-state" id="keyState">
       <span class="label">Keys: </span><span id="activeKeys">none</span><br>
       <span class="label">Scan: </span><span class="val" id="scanCode">0x00</span>
+    </div>
+    <div class="ti84-kbd" id="ti84Kbd">
+      <div class="kbd-row">
+        <span class="kbd-key fn" data-group="6" data-bit="4">Y=</span>
+        <span class="kbd-key fn" data-group="6" data-bit="3">WINDOW</span>
+        <span class="kbd-key fn" data-group="6" data-bit="2">ZOOM</span>
+        <span class="kbd-key fn" data-group="6" data-bit="1">TRACE</span>
+        <span class="kbd-key fn" data-group="6" data-bit="0">GRAPH</span>
+      </div>
+      <div class="kbd-row">
+        <span class="kbd-key fn" data-group="6" data-bit="5">2ND</span>
+        <span class="kbd-key fn" data-group="6" data-bit="6">MODE</span>
+        <span class="kbd-key fn" data-group="6" data-bit="7">DEL</span>
+        <span class="kbd-key wide" data-group="1" data-bit="6">CLEAR</span>
+      </div>
+      <div class="kbd-row">
+        <span class="kbd-key" data-group="4" data-bit="3">7</span>
+        <span class="kbd-key" data-group="3" data-bit="3">8</span>
+        <span class="kbd-key" data-group="2" data-bit="3">9</span>
+        <span class="kbd-key" data-group="1" data-bit="3">&times;</span>
+        <span class="kbd-key" data-group="1" data-bit="4">&divide;</span>
+      </div>
+      <div class="kbd-row">
+        <span class="kbd-key" data-group="4" data-bit="2">4</span>
+        <span class="kbd-key" data-group="3" data-bit="2">5</span>
+        <span class="kbd-key" data-group="2" data-bit="2">6</span>
+        <span class="kbd-key" data-group="1" data-bit="2">-</span>
+        <span class="kbd-key" data-group="1" data-bit="5">^</span>
+      </div>
+      <div class="kbd-row">
+        <span class="kbd-key" data-group="4" data-bit="1">1</span>
+        <span class="kbd-key" data-group="3" data-bit="1">2</span>
+        <span class="kbd-key" data-group="2" data-bit="1">3</span>
+        <span class="kbd-key" data-group="1" data-bit="1">+</span>
+      </div>
+      <div class="kbd-row">
+        <span class="kbd-key" data-group="4" data-bit="0">0</span>
+        <span class="kbd-key" data-group="3" data-bit="0">.</span>
+        <span class="kbd-key" data-group="2" data-bit="0">(-)</span>
+        <span class="kbd-key wide" data-group="1" data-bit="0">ENTER</span>
+      </div>
+      <div class="kbd-row">
+        <span class="kbd-key" data-group="0" data-bit="1">&#x25C4;</span>
+        <span class="kbd-key" data-group="0" data-bit="0">&#x25BC;</span>
+        <span class="kbd-key" data-group="0" data-bit="2">&#x25BA;</span>
+        <span class="kbd-key" data-group="0" data-bit="3">&#x25B2;</span>
+      </div>
     </div>
   </div>
   <div class="right">
@@ -109,6 +162,7 @@ async function loadROM() {
 
 let executor = null;
 let cpu = null;
+let peripherals = null;
 let totalSteps = 0;
 let lastPc = 0;
 let lastMode = 'z80';
@@ -178,6 +232,24 @@ function updateKeyStateDisplay() {
   $('scanCode').textContent = `0x${((key.group << 4) | key.bit).toString(16).padStart(2, '0')}`;
 }
 
+function updateKeyboardOverlay() {
+  const keyEls = document.querySelectorAll('#ti84Kbd .kbd-key');
+  if (keyEls.length === 0) return;
+
+  if (!peripherals?.keyboard?.keyMatrix) {
+    keyEls.forEach((keyEl) => keyEl.classList.remove('active'));
+    return;
+  }
+
+  keyEls.forEach((keyEl) => {
+    const group = Number(keyEl.dataset.group);
+    const bit = Number(keyEl.dataset.bit);
+    const groupState = peripherals.keyboard.keyMatrix[group];
+    const isPressed = typeof groupState === 'number' && (groupState & (1 << bit)) === 0;
+    keyEl.classList.toggle('active', isPressed);
+  });
+}
+
 function autoRunFrame() {
   if (!autoRunning || !executor) return;
   runSteps(STEPS_PER_FRAME);
@@ -227,12 +299,20 @@ $('btnBoot').addEventListener('click', async () => {
   log(`<span class="info">--- Decoding ROM (${TRANSPILATION_META.blockCount} blocks, ${TRANSPILATION_META.coveragePercent}% coverage) ---</span>`);
 
   const romBytes = decodeEmbeddedRom();
-  const peripherals = createPeripheralBus({ pllDelay: 2, timerMode: 'nmi', timerInterval: 100 });
+  peripherals = createPeripheralBus({ pllDelay: 2, timerMode: 'nmi', timerInterval: 100 });
   executor = createExecutor(PRELIFTED_BLOCKS, romBytes, { peripherals });
   cpu = executor.cpu;
   kbd = createKeyboardManager(peripherals);
-  kbdDown = (e) => { kbd.handleKeyDown(e); updateKeyStateDisplay(); };
-  kbdUp = (e) => { kbd.handleKeyUp(e); updateKeyStateDisplay(); };
+  kbdDown = (e) => {
+    kbd.handleKeyDown(e);
+    updateKeyStateDisplay();
+    updateKeyboardOverlay();
+  };
+  kbdUp = (e) => {
+    kbd.handleKeyUp(e);
+    updateKeyStateDisplay();
+    updateKeyboardOverlay();
+  };
   document.addEventListener('keydown', kbdDown);
   document.addEventListener('keyup', kbdUp);
   lcd = createLCDRenderer($('lcd'), romBytes);
@@ -244,10 +324,17 @@ $('btnBoot').addEventListener('click', async () => {
   $('btnAutoRun').classList.remove('active');
   $('activeKeys').textContent = 'none';
   $('scanCode').textContent = '0x00';
+  updateKeyboardOverlay();
 
   log(`<span class="info">--- Boot from 0x000000:z80 ---</span>`);
   enableButtons(true);
   runSteps(200);
+
+  // Initialize OS event loop: set callback table + system flags after boot
+  // This allows the ISR dispatch to reach the event loop at 0x0019BE
+  romBytes[0xD02AD7] = 0xBE; romBytes[0xD02AD8] = 0x19; romBytes[0xD02AD9] = 0x00;
+  romBytes[0xD0009B] |= 0x40; // (IY+27) bit 6 = dispatch-ready
+  log(`<span class="info">--- Event loop initialized (callback=0x0019BE) ---</span>`);
 });
 
 $('btnStep').addEventListener('click', () => runSteps(1));
@@ -275,6 +362,8 @@ $('btnReset').addEventListener('click', () => {
   $('btnAutoRun').classList.remove('active');
   $('activeKeys').textContent = 'none';
   $('scanCode').textContent = '0x00';
+  peripherals = null;
+  updateKeyboardOverlay();
   executor = null;
   cpu = null;
   totalSteps = 0;
