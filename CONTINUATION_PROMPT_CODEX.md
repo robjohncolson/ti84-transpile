@@ -578,11 +578,20 @@ ROM functions that access keyboard MMIO (ALL already transpiled):
 
 The blocks exist but aren't reached during execution because the ISR call chain breaks at missing blocks before reaching the keyboard scan code.
 
+**BREAKTHROUGH: _GetCSC keyboard handler found and working:**
+- `_GetCSC` is jump table entry 2 → 0x03CF7D
+- It reads port 0x5016 (interrupt controller masked status byte 2)
+- If bit 3 set (= bit 19 of full status), it jumps to 0x03D184 (keyboard handler)
+- The handler runs through 0x03D184 → 0x03D197 → 0x03D19C → 0x03D1BB
+- Returns scan code in A register (A=0x10 when tested)
+- The keyboard handler reads port 0x5006 (intc enable mask) and port 0x0003 (GPIO) — NOT the keyboard matrix directly
+- To trigger: set bit 3 of port 0x5016 response (inject via _ioRead hook, or set rawStatus bit 19 + enableMask bit 19)
+
 **Next steps:**
-1. Add MMIO handler for 0xF50000-0xF50020 region in peripherals.js (or cpu-runtime.js memory hooks)
-2. Model keyboard data register (return key matrix state) and control registers
-3. Try calling keyboard scan functions directly (0x0061C2, 0x028116) with key state set in MMIO
-4. The event loop at 0x0019BE reads port 0x5015 (interrupt controller) — it checks interrupt status before dispatching to keyboard handler. Need to set keyboard interrupt bit (bit 10) in the interrupt controller.
+1. Expose intcState.rawStatus for direct manipulation (add to peripherals.js return value or getState)
+2. Test _GetCSC with different GPIO/RAM states to see if scan code changes
+3. Find where the actual key matrix is read — likely in the ISR keyboard handler (a different function from _GetCSC)
+4. Wire keyboard MMIO at 0xF50000 for the ISR-based keyboard scan path
 
 ### 2. OS Event Loop Deep Dive
 
