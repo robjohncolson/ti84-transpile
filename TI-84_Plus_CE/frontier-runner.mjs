@@ -5,8 +5,19 @@
  * Automates the TI-84 CE ROM transpiler development cycle:
  *   run tests → find missing blocks → seed → retranspile → repeat
  *
+ * Phase A (algorithmic): seed missing blocks → retranspile → repeat
+ * Phase B (LLM-assisted): when seeds stall, escalate to Codex for investigation
+ *
  * Usage:
- *   node TI-84_Plus_CE/frontier-runner.mjs [--max-iterations 10] [--dry-run] [--no-commit] [--no-gz]
+ *   node TI-84_Plus_CE/frontier-runner.mjs [options]
+ *
+ * Options:
+ *   --max-iterations N   Max loop iterations (default 10)
+ *   --escalate           Enable Codex escalation when seed loop stalls
+ *   --max-stalls N       Max stalls before giving up (default 3)
+ *   --dry-run            Parse tests + show seeds, don't transpile
+ *   --no-commit          Skip git commits
+ *   --no-gz              Skip .gz regeneration
  */
 
 import fs from 'fs';
@@ -24,8 +35,12 @@ const MAX_ITER = parseInt(param('--max-iterations', '10'));
 const DRY_RUN = flag('--dry-run');
 const NO_COMMIT = flag('--no-commit');
 const NO_GZ = flag('--no-gz');
+const ESCALATE = flag('--escalate');
+const MAX_STALLS = parseInt(param('--max-stalls', '3'));
 
 const TRANSPILER = 'scripts/transpile-ti84-rom.mjs';
+const CROSS_AGENT = '../Agent/runner/cross-agent.py';
+const WORKING_DIR = process.cwd();
 const HARNESS = 'TI-84_Plus_CE/test-harness.mjs';
 const ROM_JS = 'TI-84_Plus_CE/ROM.transpiled.js';
 const ROM_GZ = 'TI-84_Plus_CE/ROM.transpiled.js.gz';
@@ -194,26 +209,211 @@ function commitChanges(iteration, seedCount, report) {
   log(`Committed: ${msg}`);
 }
 
+// --- Step 7: Collect execution trace for investigation ---
+function collectTrace() {
+  log('Collecting execution trace for investigation...');
+  const traceScript = `
+    const { createExecutor } = require('./TI-84_Plus_CE/cpu-runtime.js');
+    const { createPeripheralBus } = require('./TI-84_Plus_CE/peripherals.js');
+    const { PRELIFTED_BLOCKS } = require('./TI-84_Plus_CE/ROM.transpiled.js');
+    const rom = require('fs').readFileSync('TI-84_Plus_CE/ROM.rom');
+    const p = createPeripheralBus({ pllDelay: 2, timerMode: 'nmi', timerInterval: 100 });
+    const mem = new Uint8Array(0x1000000);
+    mem.set(rom);
+    const ex = createExecutor(PRELIFTED_BLOCKS, mem, { peripherals: p });
+    const cpu = ex.cpu;
+    const hex = (v,w) => '0x' + v.toString(16).padStart(w||6,'0');
+    ex.runFrom(0x000000, 'z80', { maxSteps: 5000, maxLoopIterations: 32 });
+    mem[0xD02AD7]=0xBE; mem[0xD02AD8]=0x19; mem[0xD02AD9]=0x00;
+    mem[0xD0009B]|=0x40;
+    cpu.halted=false; cpu.iff1=1; cpu.iff2=1; cpu.sp=0xD1A87E;
+    cpu.sp-=3; mem[cpu.sp]=0xFF; mem[cpu.sp+1]=0xFF; mem[cpu.sp+2]=0xFF;
+    const blocks=[];
+    const missing=[];
+    const ports=[];
+    const r = ex.runFrom(0x000038, 'adl', {
+      maxSteps: 200,
+      maxLoopIterations: 200,
+      onBlock: (pc,mode,meta,step) => {
+        const d = meta?.instructions?.[0]?.dasm || '?';
+        blocks.push(hex(pc)+':'+mode+' A='+hex(cpu.a,2)+' '+d);
+      },
+      onMissingBlock: (pc,mode) => missing.push(hex(pc)+':'+mode),
+    });
+    const out = {
+      steps: r.steps,
+      termination: r.termination,
+      lastPc: hex(r.lastPc),
+      blocks: blocks,
+      missing: missing,
+      regs: { a:hex(cpu.a,2), f:hex(cpu.f,2), bc:hex(cpu.bc,4), de:hex(cpu.de,4),
+              hl:hex(cpu.hl,4), sp:hex(cpu.sp), ix:hex(cpu._ix), iy:hex(cpu._iy),
+              iff1:cpu.iff1, im:cpu.im },
+    };
+    console.log(JSON.stringify(out));
+  `.replace(/\n/g, ' ');
+
+  try {
+    const result = execSync(`node -e "${traceScript}"`, {
+      encoding: 'utf8',
+      timeout: 120000,
+    });
+    return JSON.parse(result.trim());
+  } catch (e) {
+    log(`Trace collection failed: ${e.message}`);
+    return null;
+  }
+}
+
+// --- Step 8: Escalate to Claude Code for investigation ---
+function escalateToClaude(trace, stallCount) {
+  log(`Escalating to Claude Code (stall #${stallCount})...`);
+
+  const traceStr = trace
+    ? `Execution trace (${trace.steps} steps, ${trace.termination} at ${trace.lastPc}):\n` +
+      trace.blocks.map(b => '  ' + b).join('\n') +
+      (trace.missing.length > 0 ? '\nMissing blocks: ' + trace.missing.join(', ') : '') +
+      '\nRegisters: ' + JSON.stringify(trace.regs)
+    : 'Trace collection failed.';
+
+  let report = {};
+  try { report = JSON.parse(fs.readFileSync(REPORT, 'utf8')); } catch {}
+
+  const prompt = [
+    '# Autonomous Frontier Runner — Investigation Needed',
+    '',
+    '## Situation',
+    'The seed discovery loop has stalled. No new missing blocks in OS range,',
+    'but the OS event loop is not yet writing to LCD VRAM.',
+    `Current coverage: ${report.blockCount || '?'} blocks, ${report.coveragePercent || '?'}%.`,
+    `Stall count: ${stallCount}/${MAX_STALLS}`,
+    '',
+    '## Execution Trace',
+    'ISR dispatch from 0x000038 with callback=0x0019BE, system flags set:',
+    traceStr,
+    '',
+    '## What to Investigate',
+    '1. Why does execution terminate at the last PC? Is it a wrong port value,',
+    '   missing peripheral model, or incorrect flag/register state?',
+    '2. Disassemble ROM bytes at the termination point to understand the code.',
+    '3. Check if any port reads return unexpected values.',
+    '4. Fix the root cause in peripherals.js, cpu-runtime.js, or the emitter.',
+    '',
+    '## Files You Can Modify',
+    '- TI-84_Plus_CE/peripherals.js — add/fix peripheral handlers',
+    '- TI-84_Plus_CE/cpu-runtime.js — fix MMIO intercepts or executor logic',
+    '- scripts/transpile-ti84-rom.mjs — fix emitter code generation',
+    '',
+    '## Files for Context (read-only)',
+    '- TI-84_Plus_CE/CONTINUATION_PROMPT_CODEX.md — full project history',
+    '- TI-84_Plus_CE/PHASE25G_SPEC.md — current investigation findings',
+    '- TI-84_Plus_CE/keyboard-matrix.md — keyboard mapping reference',
+    '- TI-84_Plus_CE/AUTO_FRONTIER_SPEC.md — automation spec',
+    '',
+    '## Constraints',
+    '- Run node --check on any file you modify',
+    '- Do NOT run the transpiler (takes 50+ min)',
+    '- Do NOT modify test-harness.mjs',
+    '- Commit your changes when done',
+  ].join('\n');
+
+  // Write prompt to file to avoid shell quoting issues
+  const promptFile = 'state/frontier-escalation-prompt.txt';
+  fs.mkdirSync('state', { recursive: true });
+  fs.writeFileSync(promptFile, prompt);
+
+  try {
+    const result = execSync(
+      `python "${CROSS_AGENT}" ` +
+      `--direction cc-to-codex ` +
+      `--task-type investigate ` +
+      `--prompt "$(cat ${promptFile})" ` +
+      `--working-dir "${WORKING_DIR}" ` +
+      `--owned-paths "TI-84_Plus_CE/peripherals.js" "TI-84_Plus_CE/cpu-runtime.js" "scripts/transpile-ti84-rom.mjs" ` +
+      `--timeout 600`,
+      {
+        encoding: 'utf8',
+        maxBuffer: 10 * 1024 * 1024,
+        timeout: 660000,
+      }
+    );
+
+    let parsed;
+    try { parsed = JSON.parse(result); } catch { parsed = { status: 'unknown' }; }
+
+    log(`Claude Code returned: ${parsed.status || 'unknown'}`);
+    if (parsed.result?.files_changed?.length > 0) {
+      log(`Files changed: ${parsed.result.files_changed.join(', ')}`);
+    }
+    if (parsed.result?.summary) {
+      log(`Summary: ${typeof parsed.result.summary === 'string' ? parsed.result.summary : JSON.stringify(parsed.result.summary)}`);
+    }
+
+    return parsed.status === 'completed';
+  } catch (e) {
+    log(`Escalation failed: ${e.message}`);
+    return false;
+  }
+}
+
 // --- Main loop ---
 log('=== Autonomous Frontier Expansion Runner ===');
-log(`Max iterations: ${MAX_ITER}, Dry run: ${DRY_RUN}, No commit: ${NO_COMMIT}`);
+log(`Max iterations: ${MAX_ITER}, Dry run: ${DRY_RUN}, Escalate: ${ESCALATE}`);
+
+let stallCount = 0;
 
 for (let i = 0; i < MAX_ITER; i++) {
   log(`\n--- Iteration ${i} ---`);
 
   // Step 1: Find missing blocks
   const missing = runTestsAndCollectMissing();
-  if (missing.length === 0) {
-    log('No missing blocks in OS range. Frontier saturated!');
+
+  // Step 2: Try to inject seeds
+  let newSeeds = 0;
+  if (missing.length > 0) {
+    newSeeds = injectSeeds(missing);
+  }
+
+  // Handle stall: no new seeds to inject
+  if (newSeeds === 0) {
+    stallCount++;
+    log(`Stall detected (#${stallCount}/${MAX_STALLS}). No new seeds available.`);
+
+    if (!ESCALATE) {
+      log('Escalation disabled. Use --escalate to invoke Claude Code for investigation.');
+      break;
+    }
+
+    if (stallCount > MAX_STALLS) {
+      log(`Max stalls (${MAX_STALLS}) exceeded. Stopping.`);
+      break;
+    }
+
+    // Collect trace and escalate to Claude Code
+    const trace = collectTrace();
+    const fixed = escalateToClaude(trace, stallCount);
+
+    if (fixed) {
+      log('Claude Code made changes. Checking if retranspile needed...');
+      // Check if transpiler was modified
+      const gitDiff = execSync(`git diff --name-only ${TRANSPILER}`, { encoding: 'utf8' });
+      if (gitDiff.trim()) {
+        log('Transpiler modified — retranspiling...');
+        if (!DRY_RUN) {
+          transpile();
+          if (!NO_GZ) regenerateGz();
+        }
+      }
+      // Re-run tests to see if the fix helped
+      continue;
+    }
+
+    log('Claude Code could not resolve the stall. Stopping.');
     break;
   }
 
-  // Step 2: Inject seeds
-  const newSeeds = injectSeeds(missing);
-  if (newSeeds === 0) {
-    log('No new seeds to inject. Done.');
-    break;
-  }
+  // Reset stall counter on successful seed injection
+  stallCount = 0;
 
   if (DRY_RUN) {
     log('Dry run — skipping transpile/commit.');
