@@ -2110,7 +2110,7 @@ console.log('\n--- Test 23: OS Event Loop — Pre-initialized Callback ---');
   p23.write(0x5006, 0x08); // enable mask byte 2, bit 3 = bit 19
 
   console.log(`  Callback: 0xD02AD7 = ${hex(cbTarget)}`);
-  console.log(`  System flag (IY+27): 0x${hex(mem23[0xD0009B], 2)}`);
+  console.log(`  System flag (IY+27): ${hex(mem23[0xD0009B], 2)}`);
   console.log(`  Keyboard: ENTER pressed, IRQ bit 19 set`);
 
   // Step C: Wake CPU and run ISR
@@ -2150,7 +2150,7 @@ console.log('\n--- Test 23: OS Event Loop — Pre-initialized Callback ---');
   console.log(`  Unique blocks: ${blocks23.size}`);
   console.log(`  Code regions:`);
   for (const [region, count] of [...regions23.entries()].sort((a, b) => b[1] - a[1])) {
-    console.log(`    0x${hex(region, 2)}xxxx: ${count} blocks`);
+    console.log(`    ${hex(region, 2)}xxxx: ${count} blocks`);
   }
   console.log(`  Missing blocks: ${missing23.size}${missing23.size > 0 ? ' → ' + [...missing23].slice(0, 10).join(', ') : ''}`);
   console.log(`  Callback after: ${hex(cbAfter)}${cbAfter !== cbTarget ? ' (CHANGED!)' : ''}`);
@@ -2226,7 +2226,7 @@ console.log('\n--- Test 24: _GetCSC Scan Code Mapping ---');
   p24.setKeyboardIRQ(true);
   p24.write(0x5006, 0x08);
   const port5016 = p24.read(0x5016);
-  console.log(`  Port 0x5016 diagnostic: 0x${hex(port5016, 2)} (expect 0x08 if keyboard IRQ set)`);
+  console.log(`  Port 0x5016 diagnostic: ${hex(port5016, 2)} (expect 0x08 if keyboard IRQ set)`);
   p24.setKeyboardIRQ(false);
 
   // Phase 24F verified keys: group, bit, expected raw MMIO code
@@ -2264,8 +2264,8 @@ console.log('\n--- Test 24: _GetCSC Scan Code Mapping ---');
 
     scanCodeMap.push({ ...key, getCscCode });
 
-    const rawStr = `0x${hex(key.rawMmio, 2)}`;
-    const getCscStr = `0x${hex(getCscCode, 2)}`;
+    const rawStr = hex(key.rawMmio, 2);
+    const getCscStr = hex(getCscCode, 2);
     console.log(`  ${key.name.padEnd(12)} ${key.group >= 0 ? key.group : '-'}      ${key.bit >= 0 ? key.bit : '-'}    ${rawStr.padEnd(10)} ${getCscStr.padEnd(11)} ${result.steps.toString().padEnd(6)} ${result.termination}`);
   }
 
@@ -2297,14 +2297,14 @@ console.log('\n--- Test 24: _GetCSC Scan Code Mapping ---');
   for (const b of traceBlocks) {
     console.log(`    [${b.step}] ${b.pc}:${b.mode} A=${hex(b.a, 2)} ${b.dasm}`);
   }
-  console.log(`  Final: A=0x${hex(cpu24.a, 2)} (${traceResult.steps} steps, ${traceResult.termination})`);
+  console.log(`  Final: A=${hex(cpu24.a, 2)} (${traceResult.steps} steps, ${traceResult.termination})`);
 
   // Summary: does _GetCSC use a different encoding than raw MMIO?
   const mismatches = scanCodeMap.filter(k => k.group >= 0 && k.getCscCode !== k.rawMmio && k.getCscCode !== 0);
   if (mismatches.length > 0) {
     console.log(`\n  _GetCSC uses DIFFERENT encoding than raw MMIO for ${mismatches.length} key(s):`);
     for (const m of mismatches) {
-      console.log(`    ${m.name}: MMIO=0x${hex(m.rawMmio, 2)} vs _GetCSC=0x${hex(m.getCscCode, 2)}`);
+      console.log(`    ${m.name}: MMIO=${hex(m.rawMmio, 2)} vs _GetCSC=${hex(m.getCscCode, 2)}`);
     }
   } else {
     console.log('\n  _GetCSC encoding matches raw MMIO for all tested keys.');
@@ -2378,7 +2378,7 @@ console.log('\n--- Test 25: Direct Keyboard Scan (0x0159C0) ---');
     const regA = cpu25.a;
     const pass = scanB === key.expectedScan ? 'PASS' : (scanB !== 0 ? 'DIFF' : 'FAIL');
 
-    console.log(`  ${key.name.padEnd(12)} ${key.group >= 0 ? key.group : '-'}      ${key.bit >= 0 ? key.bit : '-'}    0x${hex(key.expectedScan, 2)}      0x${hex(scanB, 2)}    0x${hex(regA, 2)}    ${result.steps.toString().padEnd(6)} ${result.termination} ${pass}`);
+    console.log(`  ${key.name.padEnd(12)} ${key.group >= 0 ? key.group : '-'}      ${key.bit >= 0 ? key.bit : '-'}    ${hex(key.expectedScan, 2).padEnd(9)} ${hex(scanB, 2).padEnd(8)} ${hex(regA, 2).padEnd(7)} ${result.steps.toString().padEnd(6)} ${result.termination} ${pass}`);
   }
 }
 
