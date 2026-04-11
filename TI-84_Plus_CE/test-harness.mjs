@@ -2319,21 +2319,30 @@ console.log('\n--- Test 25: Direct Keyboard Scan (0x0159C0) ---');
   // Boot
   ex25.runFrom(0x000000, 'z80', { maxSteps: 5000, maxLoopIterations: 32 });
 
+  // Capture B register when the scan result block (0x0159FB) executes.
+  // The exit path at 0x000DB6 corrupts B, so we grab it mid-execution.
+  let capturedB = -1;
+
   function callKbdScan() {
     cpu25.sp = 0xD1A87E;
-    cpu25._iy = 0xE00800; // Keyboard controller base (function expects this)
+    cpu25._iy = 0xE00800;
     cpu25.halted = false;
     cpu25.iff1 = 0;
     cpu25.iff2 = 0;
     cpu25.madl = 1;
-    // Push sentinel return
     cpu25.sp -= 3;
     mem25[cpu25.sp] = 0xFF; mem25[cpu25.sp + 1] = 0xFF; mem25[cpu25.sp + 2] = 0xFF;
 
-    return ex25.runFrom(0x0159C0, 'adl', {
-      maxSteps: 500,
+    capturedB = -1;
+    const result = ex25.runFrom(0x0159C0, 'adl', {
+      maxSteps: 200,
       maxLoopIterations: 64,
+      onBlock: (pc) => {
+        // 0x015AD2 = POP IY (last block before exit). B holds scan code here.
+        if (pc === 0x015AD2 && capturedB === -1) capturedB = cpu25.b;
+      },
     });
+    return result;
   }
 
   // Phase 24F verified keys
@@ -2361,7 +2370,7 @@ console.log('\n--- Test 25: Direct Keyboard Scan (0x0159C0) ---');
     }
 
     const result = callKbdScan();
-    const scanB = cpu25.b;
+    const scanB = capturedB >= 0 ? capturedB : cpu25.b;
     const regA = cpu25.a;
     const pass = scanB === key.expectedScan ? 'PASS' : (scanB !== 0 ? 'DIFF' : 'FAIL');
 
