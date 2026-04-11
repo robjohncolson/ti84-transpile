@@ -112,7 +112,36 @@ const KBD_IRQ_BIT = 19;              // Keyboard IRQ in FTINTC010
 
 ### Finding 5: Event Loop Blocked at 0x00B608
 - OS event loop at 0x0019BE runs 17 steps then hits missing block
-- 0x00B608 is in the OS area — seeding it should unblock further execution
+- 0x00B608 is on the NORMAL (non-keyboard) event loop path
+- After ISR handles keyboard IRQ, handler clears IRQ + disables enable mask
+- Next ISR cycle takes the no-keyboard path → hits 0x00B608
+- This is the path the OS uses MOST of the time — seeding is critical
+
+### Finding 7: SDK Keyboard Mapping — Reversed Groups (AUTHORITATIVE)
+Source: CE C SDK keypadc.h from ce-programming/toolchain (GitHub)
+
+MMIO at 0xE00810 uses reversed group ordering vs SDK kb_Data at 0xF50010:
+```
+keyMatrix[N] = SDK Group(7-N)
+```
+
+Verified: keyMatrix[0]:B2=RIGHT (SDK G7), keyMatrix[1]:B1=+ (SDK G6).
+Phase 24F key labels were GUESSED (not verified against physical keys).
+SDK is authoritative — full 54-key mapping now in keyboard-matrix.md.
+
+Key corrections:
+- ENTER: keyMatrix[1]:B0 (scan 0x10), NOT keyMatrix[6]:B0
+- CLEAR: keyMatrix[1]:B6 (scan 0x16), NOT keyMatrix[6]:B1
+- 0: keyMatrix[4]:B0 (scan 0x40), NOT keyMatrix[3]:B0
+- GRAPH: keyMatrix[6]:B0 (scan 0x60), NOT keyMatrix[4]:B0
+
+### Finding 8: ISR Handler Clears Keyboard State
+The _GetCSC handler at 0x03D184:
+1. Acknowledges keyboard IRQ (port 0x500A, bit 3)
+2. Disables keyboard IRQ in enable mask (port 0x5006, RES bit 3)
+3. Writes to callback pointer at 0xD02AD7
+Both rawStatus and enableMask are zeroed after handler runs.
+Must re-enable between ISR cycles to simulate continued key press.
 
 ### Finding 6: _GetCSC Handler is ISR EXIT CODE, Not a Keyboard Scanner (CRITICAL)
 **ROM disassembly of 0x03D184-0x03D1BB reveals:**
