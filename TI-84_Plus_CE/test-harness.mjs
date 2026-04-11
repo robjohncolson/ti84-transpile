@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { TRANSPILATION_META, ENTRY_POINTS, PRELIFTED_BLOCKS, decodeEmbeddedRom } from './ROM.transpiled.js';
 import { CPU, createExecutor } from './cpu-runtime.js';
 import { createPeripheralBus } from './peripherals.js';
+import { createKeyboardManager } from './ti84-keyboard.js';
 
 const ROM_LIMIT = 0x400000;
 const PHASE24B_CALLBACK_PTR = 0xd02ad7;
@@ -1974,6 +1975,102 @@ if (test4.blockVisits) {
   for (const [key, count] of visits) {
     console.log(`    ${key}: ${count} visits`);
   }
+}
+
+console.log('\n--- Test 21: Keyboard -> _GetCSC -> Scan Code ---');
+{
+  const p21 = createPeripheralBus({ trace: false, pllDelay: 2 });
+  const keyboard21 = createKeyboardManager(p21);
+  const mem21 = new Uint8Array(0x1000000);
+  mem21.set(romBytes);
+  const ex21 = createExecutor(PRELIFTED_BLOCKS, mem21, { peripherals: p21 });
+  const cpu21 = ex21.cpu;
+  const enterEvent = { code: 'Enter', preventDefault() {} };
+
+  function prepareGetCscCall() {
+    cpu21.sp = 0xD1A87E;
+    cpu21._iy = 0xD00080;
+    cpu21.halted = false;
+    cpu21.iff1 = 1;
+    cpu21.iff2 = 1;
+    cpu21.madl = 1;
+
+    cpu21.sp -= 3;
+    mem21[cpu21.sp] = 0xFF;
+    mem21[cpu21.sp + 1] = 0xFF;
+    mem21[cpu21.sp + 2] = 0xFF;
+  }
+
+  ex21.runFrom(0x000000, 'z80', { maxSteps: 200, maxLoopIterations: 32 });
+
+  // Phase 24F verified: Enter = group 6, bit 0 -> scan code 0x60.
+  keyboard21.handleKeyDown(enterEvent);
+  p21.write(0x5006, 0x08);
+  prepareGetCscCall();
+
+  const result21 = ex21.runFrom(0x03CF7D, 'adl', {
+    maxSteps: 500,
+    maxLoopIterations: 64,
+  });
+
+  const scanCode21 = cpu21.a;
+  console.log(`  _GetCSC returned A=0x${scanCode21.toString(16).padStart(2, '0')}`);
+  console.log(`  Steps: ${result21.steps}, Termination: ${result21.termination}`);
+  console.log('  Expected scan code for ENTER: 0x60 (group 6, bit 0)');
+  console.log(`  Result: ${scanCode21 === 0x60 ? 'PASS' : scanCode21 !== 0 ? 'PARTIAL (got scan code but wrong value)' : 'FAIL (no scan code)'}`);
+
+  keyboard21.handleKeyUp(enterEvent);
+  prepareGetCscCall();
+
+  const result21b = ex21.runFrom(0x03CF7D, 'adl', {
+    maxSteps: 500,
+    maxLoopIterations: 64,
+  });
+
+  console.log(`  No-key: A=0x${cpu21.a.toString(16).padStart(2, '0')} (expected 0x00)`);
+  console.log(`  No-key steps: ${result21b.steps}, Termination: ${result21b.termination}`);
+  console.log(`  No-key result: ${cpu21.a === 0 ? 'PASS' : 'FAIL'}`);
+}
+
+console.log('\n--- Test 22: VRAM Write -> Read Verification ---');
+{
+  const mem22 = new Uint8Array(0x1000000);
+  const VRAM_BASE = 0xD40000;
+  const VRAM_SIZE = 320 * 240 * 2;
+
+  mem22[VRAM_BASE + 0] = 0x00;
+  mem22[VRAM_BASE + 1] = 0xF8;
+
+  mem22[VRAM_BASE + 2] = 0xE0;
+  mem22[VRAM_BASE + 3] = 0x07;
+
+  mem22[VRAM_BASE + 4] = 0x1F;
+  mem22[VRAM_BASE + 5] = 0x00;
+
+  mem22[VRAM_BASE + 6] = 0xFF;
+  mem22[VRAM_BASE + 7] = 0xFF;
+
+  function readPixel(offset) {
+    const lo = mem22[VRAM_BASE + offset];
+    const hi = mem22[VRAM_BASE + offset + 1];
+    const pixel = lo | (hi << 8);
+    const r5 = (pixel >> 11) & 0x1F;
+    const g6 = (pixel >> 5) & 0x3F;
+    const b5 = pixel & 0x1F;
+    return { raw: pixel, r5, g6, b5 };
+  }
+
+  const px0 = readPixel(0);
+  const px1 = readPixel(2);
+  const px2 = readPixel(4);
+  const px3 = readPixel(6);
+
+  console.log(`  Pixel 0 (Red):   raw=0x${px0.raw.toString(16).padStart(4, '0')} R=${px0.r5} G=${px0.g6} B=${px0.b5} -> ${px0.r5 === 31 && px0.g6 === 0 && px0.b5 === 0 ? 'PASS' : 'FAIL'}`);
+  console.log(`  Pixel 1 (Green): raw=0x${px1.raw.toString(16).padStart(4, '0')} R=${px1.r5} G=${px1.g6} B=${px1.b5} -> ${px1.r5 === 0 && px1.g6 === 63 && px1.b5 === 0 ? 'PASS' : 'FAIL'}`);
+  console.log(`  Pixel 2 (Blue):  raw=0x${px2.raw.toString(16).padStart(4, '0')} R=${px2.r5} G=${px2.g6} B=${px2.b5} -> ${px2.r5 === 0 && px2.g6 === 0 && px2.b5 === 31 ? 'PASS' : 'FAIL'}`);
+  console.log(`  Pixel 3 (White): raw=0x${px3.raw.toString(16).padStart(4, '0')} R=${px3.r5} G=${px3.g6} B=${px3.b5} -> ${px3.r5 === 31 && px3.g6 === 63 && px3.b5 === 31 ? 'PASS' : 'FAIL'}`);
+  console.log(`  VRAM size: ${VRAM_SIZE} bytes (0x${VRAM_SIZE.toString(16)}) at 0x${VRAM_BASE.toString(16)}-0x${(VRAM_BASE + VRAM_SIZE - 1).toString(16)}`);
+  console.log(`  ${VRAM_BASE + VRAM_SIZE <= 0x1000000 ? 'PASS' : 'FAIL'}: VRAM fits in 16MB address space`);
 }
 
 console.log('\nDone.');

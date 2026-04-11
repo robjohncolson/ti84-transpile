@@ -15,9 +15,14 @@ canvas { border: 2px solid #444; background: #000; display: block; margin-bottom
 button { background: #2a2a4a; color: #e0e0e0; border: 1px solid #555; padding: 6px 14px; cursor: pointer; font-family: inherit; font-size: 12px; border-radius: 3px; }
 button:hover { background: #3a3a6a; }
 button:disabled { opacity: 0.4; cursor: not-allowed; }
+button.active { background: #2a5a2a; border-color: #4a8a4a; }
 .regs { background: #0d0d1a; border: 1px solid #333; padding: 10px; margin-bottom: 12px; font-size: 12px; line-height: 1.6; border-radius: 4px; }
 .regs .label { color: #888; }
 .regs .val { color: #6cb4ee; }
+.key-state { background: #0d0d1a; border: 1px solid #333; padding: 10px; margin-bottom: 12px; font-size: 12px; line-height: 1.6; border-radius: 4px; }
+.key-state .label { color: #888; }
+.key-state .val { color: #6cb4ee; }
+.key-state .pressed { color: #7ddf7d; }
 .log { background: #0d0d1a; border: 1px solid #333; padding: 8px; height: 500px; overflow-y: auto; font-size: 11px; line-height: 1.4; border-radius: 4px; }
 .log .step { color: #555; }
 .log .addr { color: #6cb4ee; }
@@ -37,6 +42,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
       <button id="btnStep" disabled>Step</button>
       <button id="btnRun100" disabled>Run 100</button>
       <button id="btnRun1K" disabled>Run 1K</button>
+      <button id="btnAutoRun" disabled>AutoRun</button>
       <button id="btnReset">Reset</button>
     </div>
     <div id="status" class="status">Ready. Click Boot to start.</div>
@@ -54,6 +60,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
       <span class="label"> IFF=</span><span class="val" id="rIFF">0</span>
       <span class="label"> Steps=</span><span class="val" id="rSteps">0</span>
     </div>
+    <div class="key-state" id="keyState">
+      <span class="label">Keys: </span><span id="activeKeys">none</span><br>
+      <span class="label">Scan: </span><span class="val" id="scanCode">0x00</span>
+    </div>
   </div>
   <div class="right">
     <div class="log" id="log"></div>
@@ -64,6 +74,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 import { PRELIFTED_BLOCKS, TRANSPILATION_META, decodeEmbeddedRom } from './ROM.transpiled.js';
 import { createExecutor } from './cpu-runtime.js';
 import { createPeripheralBus } from './peripherals.js';
+import { createKeyboardManager } from './ti84-keyboard.js';
+import { createLCDRenderer } from './ti84-lcd.js';
 
 const hex = (v, w) => v.toString(16).padStart(w, '0');
 const $ = id => document.getElementById(id);
@@ -76,6 +88,10 @@ let cpu = null;
 let totalSteps = 0;
 let lastPc = 0;
 let lastMode = 'z80';
+let kbd = null;
+let lcd = null;
+let autoRunning = false;
+const STEPS_PER_FRAME = 500;
 
 function log(html) {
   const line = document.createElement('div');
@@ -110,6 +126,36 @@ function enableButtons(booted) {
   $('btnStep').disabled = !booted;
   $('btnRun100').disabled = !booted;
   $('btnRun1K').disabled = !booted;
+  $('btnAutoRun').disabled = !booted;
+}
+
+function syncLCDState() {
+  if (!lcd || !executor?.lcdMmio) return;
+  lcd.setVRAMBase(executor.lcdMmio.upbase);
+}
+
+function updateKeyStateDisplay() {
+  if (!kbd) return;
+  const state = kbd.getKeyState();
+  const hasKeys = state.tiKeys.length > 0;
+  $('activeKeys').textContent = hasKeys
+    ? state.tiKeys.map(key => key.label).join(', ')
+    : 'none';
+  $('activeKeys').className = hasKeys ? 'pressed' : '';
+
+  if (!hasKeys) {
+    $('scanCode').textContent = '0x00';
+    return;
+  }
+
+  const key = state.tiKeys[0];
+  $('scanCode').textContent = `0x${((key.group << 4) | key.bit).toString(16).padStart(2, '0')}`;
+}
+
+function autoRunFrame() {
+  if (!autoRunning || !executor) return;
+  runSteps(STEPS_PER_FRAME);
+  requestAnimationFrame(autoRunFrame);
 }
 
 function runSteps(n) {
@@ -126,6 +172,9 @@ function runSteps(n) {
   lastPc = result.lastPc;
   lastMode = result.lastMode;
   updateRegs();
+  syncLCDState();
+  if (lcd) lcd.renderFrame();
+  updateKeyStateDisplay();
   setStatus(`${result.steps} steps, ${result.termination} | Total: ${totalSteps}`);
   if (result.termination === 'halt') {
     log(`<span class="info">--- HALT at ${hex(result.lastPc, 6)} ---</span>`);
@@ -140,9 +189,18 @@ $('btnBoot').addEventListener('click', () => {
   const peripherals = createPeripheralBus({ pllDelay: 2 });
   executor = createExecutor(PRELIFTED_BLOCKS, romBytes, { peripherals });
   cpu = executor.cpu;
+  kbd = createKeyboardManager(peripherals);
+  document.addEventListener('keydown', kbd.handleKeyDown);
+  document.addEventListener('keyup', kbd.handleKeyUp);
+  lcd = createLCDRenderer($('lcd'), romBytes);
   totalSteps = 0;
   lastPc = 0x000000;
   lastMode = 'z80';
+  autoRunning = false;
+  $('btnAutoRun').textContent = 'AutoRun';
+  $('btnAutoRun').classList.remove('active');
+  $('activeKeys').textContent = 'none';
+  $('scanCode').textContent = '0x00';
 
   log(`<span class="info">--- Boot from 0x000000:z80 ---</span>`);
   enableButtons(true);
@@ -152,12 +210,33 @@ $('btnBoot').addEventListener('click', () => {
 $('btnStep').addEventListener('click', () => runSteps(1));
 $('btnRun100').addEventListener('click', () => runSteps(100));
 $('btnRun1K').addEventListener('click', () => runSteps(1000));
+$('btnAutoRun').addEventListener('click', () => {
+  autoRunning = !autoRunning;
+  $('btnAutoRun').textContent = autoRunning ? 'Stop' : 'AutoRun';
+  $('btnAutoRun').classList.toggle('active', autoRunning);
+  if (autoRunning) requestAnimationFrame(autoRunFrame);
+});
 
 $('btnReset').addEventListener('click', () => {
+  if (kbd) {
+    document.removeEventListener('keydown', kbd.handleKeyDown);
+    document.removeEventListener('keyup', kbd.handleKeyUp);
+    kbd = null;
+  }
+  if (lcd) {
+    lcd.destroy();
+    lcd = null;
+  }
+  autoRunning = false;
+  $('btnAutoRun').textContent = 'AutoRun';
+  $('btnAutoRun').classList.remove('active');
+  $('activeKeys').textContent = 'none';
+  $('scanCode').textContent = '0x00';
   executor = null;
   cpu = null;
   totalSteps = 0;
   lastPc = 0;
+  lastMode = 'z80';
   logEl.innerHTML = '';
   enableButtons(false);
   updateRegs();

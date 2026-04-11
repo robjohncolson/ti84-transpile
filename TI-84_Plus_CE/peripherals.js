@@ -305,6 +305,14 @@ export function createPeripheralBus(options = {}) {
     inversion: 0x00000000,    // port 0x5010: signal inversion
   };
 
+  function setKeyboardIRQ(active) {
+    if (active) {
+      intcState.rawStatus |= (1 << 19);
+    } else {
+      intcState.rawStatus &= ~(1 << 19);
+    }
+  }
+
   // Expose intcState so tick() can set raw status bits
   state.intc = intcState;
 
@@ -393,6 +401,7 @@ export function createPeripheralBus(options = {}) {
     acknowledgeNMI,
     triggerNMI,
     triggerIRQ,
+    setKeyboardIRQ,
     keyboard: keyboardState,
   };
 }

@@ -779,7 +779,12 @@ export function createExecutor(blocks, memory, options = {}) {
 
   // Keyboard controller MMIO at 0xE00800-0xE0081F
   // The TI-84 CE keyboard hardware is memory-mapped, accessed via LD (IY+d) with IY=0xE00800
+  let lcdMmio = null;
   if (options.peripherals && options.peripherals.keyboard) {
+    lcdMmio = {
+      upbase: 0xD40000,
+      control: 0x00,
+    };
     const kbdMmio = {
       mode: 0x00,        // 0xE00803: scan mode
       enable: 0x00,      // 0xE00807: scan enable
@@ -794,6 +799,14 @@ export function createExecutor(blocks, memory, options = {}) {
     const origWrite8 = cpu.write8.bind(cpu);
 
     cpu.read8 = (addr) => {
+      if (addr >= 0xE00000 && addr < 0xE00030) {
+        const reg = addr - 0xE00000;
+        if (reg === 0x10) return lcdMmio.upbase & 0xFF;
+        if (reg === 0x11) return (lcdMmio.upbase >> 8) & 0xFF;
+        if (reg === 0x12) return (lcdMmio.upbase >> 16) & 0xFF;
+        if (reg === 0x18) return lcdMmio.control & 0xFF;
+        return 0x00;
+      }
       if (addr >= 0xE00800 && addr < 0xE00920) {
         const reg = addr - 0xE00800;
         if (reg >= 0x10 && reg < 0x18) return kbd.keyMatrix[reg - 0x10]; // key data per group
@@ -825,6 +838,14 @@ export function createExecutor(blocks, memory, options = {}) {
     };
 
     cpu.write8 = (addr, value) => {
+      if (addr >= 0xE00000 && addr < 0xE00030) {
+        const reg = addr - 0xE00000;
+        if (reg === 0x10) lcdMmio.upbase = (lcdMmio.upbase & 0xFFFF00) | value;
+        if (reg === 0x11) lcdMmio.upbase = (lcdMmio.upbase & 0xFF00FF) | (value << 8);
+        if (reg === 0x12) lcdMmio.upbase = (lcdMmio.upbase & 0x00FFFF) | (value << 16);
+        if (reg === 0x18) lcdMmio.control = value;
+        return;
+      }
       if (addr >= 0xE00800 && addr < 0xE00920) {
         const reg = addr - 0xE00800;
         if (reg === 0x03) kbdMmio.mode = value;
@@ -886,6 +907,7 @@ export function createExecutor(blocks, memory, options = {}) {
 
   return {
     cpu,
+    lcdMmio,
     compiledBlocks,
     blockMeta,
 
