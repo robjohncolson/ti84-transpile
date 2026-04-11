@@ -326,7 +326,19 @@ Replaced `scripts/transpile-ti84-rom.mjs` (2128→830 lines):
 
 **Seeds:** 4 new Phase 24D seeds. 82 total Phase 24 seeds added to transpiler. Transpiler regeneration in progress.
 
-**Next step:** After transpiler finishes, re-run tests to see if 0x0040B2 and 0x000698 unlock deeper execution.
+### Phase 24E: Re-transpile + Keyboard Breakthrough (complete)
+
+Re-transpiled with 0x0040B2 + 0x000698 seeds: 124367 blocks (+2).
+
+**Test 19 breakthrough:** With new blocks, keyboard interrupt simulation now runs **100,000 steps** with **452 keyboard port 0x01 accesses**! All accesses are OUTs (group select writes with value 0x00). No INs (reads) captured yet — the keyboard read path may use a different mechanism or the reads happen through memory-mapped I/O.
+
+**Test 15 improvement:** Handler 0x00586A (previously missing block) now runs 232 steps to HALT.
+
+**Test 17 unchanged:** ISR cycling still reaches callback 0x0040B2 at cycle 4, runs 293 steps at cycle 6.
+
+**Test 18 still blocked:** 0x000698 shows in missing blocks list despite being seeded — the seed may have produced an empty/invalid block.
+
+**Key insight:** The OS keyboard scan code IS executing (452 port writes). The next step is understanding why reads aren't being captured — likely a port width issue (keyboard reads may use 16-bit port addressing) or the reads go through IN r,(C) which uses BC as the port address.
 
 ### Phase 19: Peripheral Audit + OS Wake Analysis (complete)
 
@@ -413,6 +425,7 @@ Current metrics:
 - ROM.transpiled.js: **gitignored** (175MB). Generate locally.
 
 Historical baselines:
+- After Phase 24E: blocks=`124367`, bytes=`692348`, coverage=`16.51%`, keyboard port active (452 accesses)
 - After Phase 24B: blocks=`124327`, bytes=`692278`, coverage=`16.50%`, ISR gate unlocked
 - After Phase 22C: blocks=`110141`, bytes=`655752`, coverage=`15.63%`, OS=`62%`
 - After Phase 22B: blocks=`68774`, bytes=`434426`, coverage=`10.36%`, OS=`41%`
@@ -535,6 +548,7 @@ node TI-84_Plus_CE/coverage-analyzer.mjs
 ### Phase 24B: ISR Post-Dispatch Exploration (45 seeds) — DONE ✓
 ### Phase 24C: Deep Handler + Callback Table Research (55 seeds) — DONE ✓
 ### Phase 24D: Pre-initialized Callback + Keyboard Sim (4 seeds) — DONE ✓
+### Phase 24E: Re-transpile with critical seeds (0x0040B2, 0x000698) — DONE ✓
 
 ---
 
@@ -542,14 +556,14 @@ node TI-84_Plus_CE/coverage-analyzer.mjs
 
 Coverage at 124327 blocks (16.5%). ISR gate is unlocked. Function call harness works. The remaining frontiers are about making the OS event loop functional and rendering output.
 
-### 1. Re-transpile with Phase 24 Seeds (IN PROGRESS)
+### 1. Keyboard Read Path Investigation (highest priority)
 
-82 Phase 24 seeds added to `scripts/transpile-ti84-rom.mjs`. Transpiler regeneration in progress. Critical blocks to verify after regeneration:
-- **0x0040B2** — ISR cycling callback target, currently missing
-- **0x000698** — PLL loop continuation, adjacent to hot block 0x697
-- **0x00AFF7** — blocks ISR cycling at cycle 3
+Test 19 shows 452 keyboard port 0x01 WRITES but 0 READS. The OS is scanning key groups but reads aren't being captured. Likely causes:
+- Keyboard reads use `IN r,(C)` with full 16-bit BC register (port 0x0001 or similar) — the peripheral bus may be matching on different port numbers
+- Reads go through memory-mapped I/O instead of port I/O
+- The onIoRead hook in the test might not be set up correctly for the key-press run
 
-After regeneration, re-run test harness to verify these blocks are now available and test deeper ISR execution.
+**Next step:** Add I/O tracing for ALL port reads/writes during the key-press ISR run (not just port 0x01), identify which port the keyboard reads actually go to, and fix the peripheral bus port matching if needed.
 
 ### 2. OS Event Loop Deep Dive
 
