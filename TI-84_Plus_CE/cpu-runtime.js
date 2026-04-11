@@ -777,8 +777,66 @@ export function createExecutor(blocks, memory, options = {}) {
     cpu.onIoWrite(port, value);
   };
 
-  // Optional: wrap memory reads/writes for memory-mapped I/O tracking (0xE00000+)
-  if (options.trackMemoryMapped) {
+  // Keyboard controller MMIO at 0xE00800-0xE0081F
+  // The TI-84 CE keyboard hardware is memory-mapped, accessed via LD (IY+d) with IY=0xE00800
+  if (options.peripherals && options.peripherals.keyboard) {
+    const kbdMmio = {
+      mode: 0x00,        // 0xE00803: scan mode
+      enable: 0x00,      // 0xE00807: scan enable
+      column: 0x00,      // 0xE00808: current scan column
+      interval: 0x00,    // 0xE0080F: scan interval
+      status: 0x02,      // 0xE00818: status (bit 1 = scan complete, always ready)
+      data: new Uint8Array(8).fill(0xFF), // 0xE00810-0xE00817: key data per group
+    };
+    const kbd = options.peripherals.keyboard;
+
+    const origRead8 = cpu.read8.bind(cpu);
+    const origWrite8 = cpu.write8.bind(cpu);
+
+    cpu.read8 = (addr) => {
+      if (addr >= 0xE00800 && addr < 0xE00920) {
+        const reg = addr - 0xE00800;
+        if (reg >= 0x10 && reg < 0x18) return kbd.keyMatrix[reg - 0x10]; // key data per group
+        if (reg === 0x18) return kbdMmio.status; // scan complete (bit 1)
+        if (reg === 0x24) return 0x01; // ready flag (bit 0) — keyboard result available
+        if (reg === 0x03) return kbdMmio.mode;
+        if (reg === 0x07) return kbdMmio.enable;
+        if (reg === 0x08) return kbdMmio.column;
+        if (reg === 0x0F) return kbdMmio.interval;
+        // 0xE00900 = keyboard scan result byte
+        if (reg === 0x100) {
+          // Compute scan code from key matrix: find first pressed key
+          for (let g = 0; g < 8; g++) {
+            if (kbd.keyMatrix[g] !== 0xFF) {
+              for (let k = 0; k < 8; k++) {
+                if (((kbd.keyMatrix[g] >> k) & 1) === 0) {
+                  return (g << 4) | k; // group in high nibble, key in low nibble
+                }
+              }
+            }
+          }
+          return 0x00; // no key pressed
+        }
+        return 0x00;
+      }
+      const value = origRead8(addr);
+      if (addr >= 0xe00000 && options.trackMemoryMapped) cpu.onMmioRead(addr, value);
+      return value;
+    };
+
+    cpu.write8 = (addr, value) => {
+      if (addr >= 0xE00800 && addr < 0xE00920) {
+        const reg = addr - 0xE00800;
+        if (reg === 0x03) kbdMmio.mode = value;
+        if (reg === 0x07) kbdMmio.enable = value;
+        if (reg === 0x08) kbdMmio.column = value;
+        if (reg === 0x0F) kbdMmio.interval = value;
+        return;
+      }
+      origWrite8(addr, value);
+      if (addr >= 0xe00000 && options.trackMemoryMapped) cpu.onMmioWrite(addr, value);
+    };
+  } else if (options.trackMemoryMapped) {
     const origRead8 = cpu.read8.bind(cpu);
     const origWrite8 = cpu.write8.bind(cpu);
     cpu.read8 = (addr) => {
