@@ -1,8 +1,10 @@
 # Continuation Prompt — TI-84 Plus CE ROM Transpilation
 
-**Last updated**: 2026-04-10T19:30Z
-**Focus**: Continue the TI-84 Plus CE ROM to JavaScript transpilation effort
-**Current phase**: Phases 1-24B complete. Coverage at 16.5% (124327 blocks). Zero live stubs. Reset vector executes to HALT (62 steps). ISR dispatch gate UNLOCKED — IM1 handler reaches callback dispatch at 0x000710 for the first time. Function call harness working (FPAdd/Mult/Div/Sin). 24-bit CPU registers. Keyboard port 0x01 wired. 45 new seeds from ISR exploration.
+**Last updated**: 2026-04-11T20:00Z
+**Focus**: TI-84 ROM transpilation + TI-84 Procedural Trainer V3 (student-facing app)
+**Current phase**: Phases 1-25G complete. ROM transpiler at 16.5% coverage (~124370 blocks). Browser shell deployed on GitHub Pages. Event loop runs 50K steps after 0xB608 seeds landed (commit 1836e80). QR-code share button added to trainer (commit 2302536). **Pivot in progress (Phase 26)**: Physical Calculator Mode — student follows text instructions on their real TI-84, bypassing WASM/Supabase/network entirely. Reason: school networks block Supabase + WASM fails, but all procedure narration/key/highlight/commonErrors data already exists in `ti84-trainer-v2/generated/data-procedures.js`.
+
+**Note on stalled retranspile**: A ~53-minute transpiler run on 2026-04-11 died silently (PID 14700, no report.json update, files still stamped 15:23). Root cause not yet diagnosed — transpile.log in TI-84_Plus_CE/ may help. Current ROM.transpiled.js is from the successful 0xB608 run (commit 1836e80), which is fine.
 
 ---
 
@@ -576,6 +578,17 @@ node TI-84_Plus_CE/coverage-analyzer.mjs
 ### Phase 24F: Keyboard MMIO handler + scan codes working — DONE ✓
 ### Phase 25: Interactive Browser Shell — DONE ✓
 ### Phase 25G: OS Event Loop + Keyboard Scan Investigation — DONE ✓
+### Phase 26: Physical Calculator Mode (trainer) — IN PROGRESS
+
+**Why**: Edgar reported the WASM emulator fails on school networks (Supabase blocked + WASM boot errors). Insight: `ti84-trainer-v2/generated/data-procedures.js` already contains human-readable `narration`, `key`, `highlight`, and `commonErrors` for all 27 procedures. We can render instruction cards and have the student follow along on their real TI-84.
+
+**Scope**:
+- Mode toggle (localStorage-persisted) on the calculator column
+- Physical step card renderer: big key label, narration, "you should see", tips, "Back" / "I did it" actions
+- Advance bypasses `pressButton` validation — just calls `nextRouteState(step)` directly
+- Data-setup and result-review phases get analogous physical cards
+- Zero new dependencies; everything offline-capable
+- Edit `ti84-trainer-v2/app.js` and `ti84-trainer-v2/style.css`, then `node ti84-trainer-v2/build.mjs` to regenerate `standalone.html`
 
 ---
 
