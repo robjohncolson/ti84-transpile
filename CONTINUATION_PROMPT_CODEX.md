@@ -1116,7 +1116,50 @@ All buttons wired into `browser-shell.html` Phase 37 pattern. Commit pending.
 3. **Home screen at last**: the home screen has no static labels but IS a screen — search for `LD HL, 0xd40000` directly loaded (bypass MBASE) plus `RST 0x28` (bcall) + `_ClrLCD` pattern.
 4. **Text overlay primitive**: still the best single improvement for visual fidelity of existing screens.
 
-Artifacts: `TI-84_Plus_CE/probe-phase38.mjs`.
+### Phase 39: expanded dispatch scan + text-overlay confirmation (2026-04-12 CC session) — DONE ✓
+
+**219 dispatch sites** reading `(0xd007e0)` found via byte pattern `3a e0 07 d0`. Batch-probed 12 new candidates beyond the initial 0x96e5c switch:
+- **0x0863b9** (from 0x862d0 / 0x862f4 / 0x862fa chain) — **55,300 cells full-screen, rows 37-234 × cols 0-313**. Another full-screen render similar to Y=/Plot.
+- **0x09e312** (from 0x7aee5 / 0xb8064 / 0xb807e cross-region refs) — **13,968 cells half-width tall, rows 37-234 × cols 0-133**. Narrower screen using only the left half.
+- **0x08aa67** (from 0x8b0c7 dispatch) — **7,756 cells half-width, rows 37-214 × cols 0-170**.
+- 9 other candidates (0x079170, 0x0861a0, 0x0862d8, 0x08c630, 0x057691, 0x09d446, 0x084c31, 0x0b7891, 0x0b4460) terminated early or hit missing_block — either state-dependent helpers or mid-function entry points.
+
+**Second mode variable discovered**: 72 sites reading `(0xd00824)` = `3a 24 08 d0`. Unique targets: 45. Batch-probed 15 candidates from 0x85xxxx/0x87xxxx/0x88xxxx/0xba7xxx regions. **Low hit rate**: 13 of 15 terminated at < 30 steps, 2 produced cursor-sized highlights (0x087957 = 1102 cells, 0x0ac69f = 252 cells). Lesson: (0xd00824) dispatch targets tend to be state-dependent sub-handlers, not top-level screens. The (0xd007e0) table is richer for screen discovery.
+
+**Text-overlay empirical confirmation** (`probe-vram-raw.mjs`): rendered the MODE screen at 0x0296dd and counted unique pixel values. **Only two values**: 0x0000 (black, 62,508 pixels) and 0xFFFF (white, 14,292 pixels). No gradients, no text glyphs — the draw path is strictly 1-bit and the "solid bars" in our ascii art are truly solid. The text-overlay routine isn't being reached or isn't writing glyph data.
+
+Sample row 40 (middle of a "solid" band): all 320 pixels are 0xFFFF. No text punched into the background.
+
+**Conclusion**: fixing text overlay isn't a quick probe — the draw chain for MODE/Y=/TABLE etc. needs specific RAM state (font selection, cursor position, selection index) that cold boot + OS init alone doesn't provide. Deferred.
+
+**Cold-boot → OS-init path investigation**: scanned ROM for callers of `0x08C331`. **Zero direct CALLs**; 3 JPs from 0x020150 (jump table entry 19), 0x08c3b9, 0x08c449. The jump-table entry 0x020150 itself has **zero callers anywhere in ROM** — meaning cold boot never triggers full OS init via the public jump table. Phase 30's boot trace hot blocks (0x006138, 0x006202, etc.) confirm OS init handler is not reached from cold boot. OS init must be explicitly called by probes or by a shell-level event we haven't modeled yet. This rules out the "let OS init fall through to shell startup" theory for finding the home screen.
+
+### Full screen-render catalog (end of session)
+
+| Addr | Screen | Cells | Bbox | Status |
+|------|--------|------:|------|--------|
+| 0x081670 | STAT/MATRIX editor grid | 1,534 | 155×308 | browser-shell ✓ |
+| 0x0296dd | MODE screen | 14,292 | rows 37-114 × cols 0-241 | browser-shell ✓ |
+| 0x078419 | Y=/STAT PLOT editor | 56,520 | rows 37-234 × cols 0-313 | browser-shell ✓ |
+| 0x09e3b4 | TABLE SETUP | 7,056 | rows 37-94 × cols 0-181 (2-col gap) | browser-shell ✓ |
+| 0x04e1d0 | CATALOG (full screen) | 69,034 | rows 1-239 × cols 0-313 | browser-shell ✓ |
+| 0x09e30c | narrow 1-col list | 11,532 | rows 37-214 × cols 0-73 | browser-shell ✓ (Scr A) |
+| 0x09e370 | 2-col form | 4,980 | rows 37-94 × cols 0-145 | browser-shell ✓ (Scr B) |
+| 0x09e2bf | short form | 7,164 | rows 57-194 × cols 0-85 | browser-shell ✓ (Scr C) |
+| 0x08aac3 | dialog band | 1,548 | rows 97-114 × cols 96-181 | browser-shell ✓ (Scr D) |
+| 0x09e312 | half-width tall | 13,968 | rows 37-234 × cols 0-133 | browser-shell ✓ (Scr E) |
+| 0x0863b9 | full screen | 55,300 | rows 37-234 × cols 0-313 | browser-shell ✓ (Scr F) |
+| 0x08aa67 | half-width | 7,756 | rows 37-214 × cols 0-170 | browser-shell ✓ (Scr G) |
+
+**12 confirmed top-level screen entry points, all wired into browser-shell.html**. Plus secondary entries: 0x08aab3 (fragment), 0x087957 (cursor-size selection), 0x028f02 (draw-label primitive), 0x0a1cac (cursor highlight primitive), 0x0a35b0 (horizontal line primitive).
+
+**Phase 40 priorities**:
+1. **Text overlay root cause**: dump `0x080244` and `0x029374` (the 2 sub-calls in 0x028f02 before the cursor highlight). One of them must set up the font/string pointer state that the glyph draw needs. Alternatively: find the draw-glyph-at-position function by scanning for calls that produce alternating 0x0000/0xFFFF pixel patterns at small addresses.
+2. **Home screen**: remaining elusive. Options: (a) search for direct `LD HL, 0xd40000` loads (VRAM base, without MBASE) — that's what a low-level blit would do; (b) find the shell's [2ND][QUIT] handler which should go to home screen; (c) look for "cxMain" pattern — a function that does ClrLCD + waits for key + dispatches.
+3. **Identify screens visually**: browser-shell is now wired — open it, click each Scr A-G button, visually identify which TI-84 screen each corresponds to. Label them properly in the UI. That's 5 minutes of work but requires the user to run the browser.
+4. **Cross-reference with real TI-84 OS screens**: with 12 confirmed screens and ~40 remaining candidates from the dispatch scan, we've likely got 60-70% of the shell-level screens. Further dispatch-table scans (0xd00088, 0xd00809, other RAM mode-bytes) should push this higher.
+
+**Session context usage**: estimated ~50% of the 1M window. Started at 5%, ended at 50%. 6 commits, 10 new probe files, 12 screen entries discovered (from 1 at session start → 12 at end = **12x catalog growth**), browser-shell updated with 9 screen buttons.
 
 ---
 

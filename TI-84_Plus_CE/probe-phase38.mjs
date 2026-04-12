@@ -67,20 +67,23 @@ function freshRun(entry, mode, maxSteps = 500000) {
   return { r, blocks, vramWrites, nz, minR, maxR, minC, maxC, topR, mem };
 }
 
-// Phase 39: more candidates from the 219 dispatch sites reading (0xd007e0)
+// Phase 39b: candidates from (0xd00824) dispatch table (72 sites, 45 targets)
 const candidates = [
-  { addr: 0x079170, name: 'Y= sub-screen (79170)' },
-  { addr: 0x09e312, name: 'Cross-region screen (9e312)' },
-  { addr: 0x0861a0, name: '86xxx dispatch target (861a0)' },
-  { addr: 0x0862d8, name: '86xxx dispatch target (862d8)' },
-  { addr: 0x0863b9, name: '86xxx dispatch target (863b9)' },
-  { addr: 0x08aa67, name: '8b0c7 alt target (8aa67)' },
-  { addr: 0x08c630, name: '8aff6 target (8c630)' },
-  { addr: 0x057691, name: '8b062 target (57691)' },
-  { addr: 0x09d446, name: '608a3 target (9d446)' },
-  { addr: 0x084c31, name: '84b50 target (84c31)' },
-  { addr: 0x0b7891, name: 'b78e0 target (b7891)' },
-  { addr: 0x0b4460, name: 'ad080 target (b4460)' },
+  { addr: 0x085707, name: '85707' },
+  { addr: 0x08574b, name: '8574b' },
+  { addr: 0x0857ea, name: '857ea' },
+  { addr: 0x08582a, name: '8582a' },
+  { addr: 0x085954, name: '85954' },
+  { addr: 0x087508, name: '87508' },
+  { addr: 0x087560, name: '87560' },
+  { addr: 0x087957, name: '87957' },
+  { addr: 0x087b89, name: '87b89' },
+  { addr: 0x0885ff, name: '885ff' },
+  { addr: 0x088805, name: '88805' },
+  { addr: 0x0ba71f, name: 'ba71f' },
+  { addr: 0x0ba82a, name: 'ba82a' },
+  { addr: 0x0ac69f, name: 'ac69f' },
+  { addr: 0x074dff, name: '74dff' },
 ];
 
 for (const c of candidates) {
