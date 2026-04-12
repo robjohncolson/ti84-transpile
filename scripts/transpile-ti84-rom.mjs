@@ -21997,6 +21997,19 @@ function walkBlocks() {
     // Boot reaches 0x001afa → 0x0158a6 → 0x00e6d1 → 0x014e3f → 0x00218a → ... → NMI dispatch
     { pc: 0x00e6d1, mode: 'adl' },
     { pc: 0x014d18, mode: 'adl' },
+    // Phase 34/35: MODE screen call tree (climbing from RADIAN string xref at 0x0296f8).
+    // 0x0296dd already works (renders 14292 cells). These are the parent frames that
+    // the call-graph walker didn't pick up as entry candidates, so runFrom(addr) failed
+    // with missing_block on block 1. Seeding them lets us try them as direct entries.
+    { pc: 0x0296dd, mode: 'adl' }, // MODE helper (confirmed renderer)
+    { pc: 0x029610, mode: 'adl' }, // MODE field-row renderer (caller of 0x0296dd)
+    { pc: 0x0293ea, mode: 'adl' }, // MODE body (caller of 0x029610)
+    { pc: 0x04082f, mode: 'adl' }, // MODE shell coroutine top
+    { pc: 0x040b16, mode: 'adl' }, // CALL site of 0x0293ea inside 0x04082f
+    { pc: 0x028f02, mode: 'adl' }, // draw-label primitive (confirmed)
+    { pc: 0x029441, mode: 'adl' }, // CALL site of 0x029610 inside 0x0293ea
+    { pc: 0x029683, mode: 'adl' }, // CALL site of 0x0296dd inside 0x029610
+    { pc: 0x0296ad, mode: 'adl' }, // second CALL site of 0x0296dd inside 0x029610
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {

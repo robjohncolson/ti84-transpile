@@ -1,5 +1,8 @@
 # Continuation Prompt — TI-84 Plus CE ROM Transpilation
 
+**Session context log**:
+- 2026-04-12 (CC session resume): ~5% of 1M-context window after reading this file. Budget is green; continuing Phase 32 work (home-screen hunt via 0x081670 callers).
+
 **Last updated**: 2026-04-12T02:40Z
 **Focus**: TI-84 Plus CE ROM transpilation (CC-led this session, Codex continues). The trainer app pivoted to Physical Calculator Mode on 2026-04-11 evening — see `CONTINUATION_PROMPT.md` for trainer work, this file is the ROM-side source of truth.
 
@@ -894,6 +897,106 @@ Investigated the small-VRAM-writer candidates from Survey v2. Found two real UI 
 - 0x07fae7, 0x07fd3a, 0x0a2854, 0x0976ed, 0x08a850 — survey numbers came from input variants we didn't test in the catalog. Need wider register fuzzing.
 
 Commits `aa609af` (horizontal-line primitive), `9bb0c83` (STAT editor grid).
+
+### Phase 32: Home-screen hunt — 0x081670 caller map + boot-trace tail (2026-04-12 CC session, in progress)
+
+Context budget: entered session at ~5% of 1M window after reading continuation prompt. Investigation proceeded without needing additional file reads.
+
+**Caller map for `0x081670` (STAT editor grid)** — scanned raw ROM bytes for 24-bit refs:
+- Only **2** references total in the entire 4MB ROM.
+- `0x020cb4`: `JP 0x081670` — jump-table[748] entry (public bcall API). **Zero** callers of the jump-table entry itself — `CALL 0x020cb4` appears nowhere in ROM. This means the public entry is only ever invoked by user programs (ASM/C apps), never by the OS kernel.
+- `0x080dab`: `CALL 0x081670` — inside an OS function in the statistics region. Surrounding byte sequence at 0x080da2..0x080db5 shows a chain of calls: `CALL 0x0a2854; CALL 0x081670; CALL 0x07ff8d; CALL 0x05e39e; CALL 0x05e820` — classic "editor setup" sequence.
+
+**Candidate function start** for the caller at 0x080dab — scanning back for preceding RET + plausible prologue opcode:
+- `0x080d85` (prologue `cd 2d 34 02 3e ...`) — called from exactly **one** site: `0x080ecb`. Deep internal helper.
+- `0x080d78` (prologue `21 01 01 00 40 ...`) — called from 2 sites: `0x080d6b` (neighbor) and **`0x081660`** (16 bytes before the STAT grid entry itself). Strongly suggests the real STAT editor routine starts near 0x081660 and 0x081670 is its inner "draw grid" body.
+- `0x080c98` (prologue `cd 48 03 08 e5 ...`) — called from `0x080605`, `0x080d7d` — another helper layer.
+
+**Conclusion — no path from the OS main loop to 0x081670.** The STAT editor is invoked exclusively via the bcall jump table by user code (the shell presumably issues `bcall _StatEditor` when the user presses [STAT]). Tracing callers of 0x081670 will NOT find the home screen. Home-screen hunt must pivot to: (a) find the shell dispatch that translates scan codes to bcall invocations, or (b) locate the _DispHome equivalent via a different signature.
+
+**Real boot tail trace** (`probe-boot-trace.mjs`, timer disabled): 8804 steps, 261 unique blocks, halt at 0x0019b5 (power-down). MBASE set to 0xD0 at step 43 via block `0x0158de:adl`. Hot blocks (tight wait loops): `0x006138`/`0x00613f` = 2871 hits each, `0x006202` = 990 hits — likely a hardware poll.
+
+**Last 20 blocks before power-down halt** (tail of boot trail):
+```
+... 0x0060e5 → 0x0060ea → 0x0060f6 → 0x00190f → 0x001915 → 0x0013e8 → 0x0013f8
+→ 0x0028d1 → 0x0013fc → 0x015930 → 0x015937 → 0x015944 → 0x015953 → 0x015956
+→ 0x01597a → 0x015987 → 0x000d7e → 0x000dc2 → 0x000dca → 0x000d82 → 0x0019b5 (HALT)
+```
+
+The path passes through `0x01593x` — same 0x0159xx region as the direct keyboard scan routine at `0x0159C0` — and ends in power-down halt. **Interpretation**: with timer IRQ disabled, the cold-boot OS finishes hardware init, runs a setup routine around 0x01593x (plausibly keyboard init / IRQ arm), then executes `DI; HALT` to sleep waiting for NMI wake. **Nothing renders the home screen during this path**. The shell's render-home-screen code must run in response to the first post-boot IRQ, which is suppressed when timer is off.
+
+**Implication for Phase 33**: To reach the home screen naturally, re-enable the timer IRQ (or fire one NMI manually) after boot completes, and trace where the ISR dispatch goes from the new post-boot RAM state. The 0xD177BA post-init flag should now be set correctly, so the ISR at 0x19BE should take the "real" event-loop path instead of the trampoline dead-end. Worth a `probe-boot-then-irq.mjs`.
+
+**Alternative approach**: search ROM for calls through the jump table near likely _DispHome / _HomeUp slots. If we can find a slot whose JP target matches the "draws menu bar + cursor + clock" signature (medium number of VRAM writes, multi-region activity), we can invoke it directly like we did with 0x081670.
+
+### Phase 33: boot-then-irq probe + negative result on wake-to-render (2026-04-12 CC session) — DONE ✓
+
+Added `probe-boot-then-irq.mjs`. Three scenarios, each boot → OS init (691 steps, 0xD177BA=0xFF) → a different wake path, fresh executor each scenario.
+
+**Scenario A — NMI at 0x000066**: 9 steps. Path `0x66 → 0x47 → 0x8bb → 0x4d → 0x53 → 0x220a8 → 0x4ab71 → 0x3ac → 0x19b5 (halt)`. Zero VRAM activity. **Empirically confirms Phase 27 finding**: NMI is a no-op trampoline in our ROM state.
+
+**Scenario B — IRQ at 0x000038 with post-init state**: 15 steps. **The real ISR path**, validated end-to-end: `0x38 → 0x6f3 → 0x704 → 0x710 → 0x1713 → 0x8bb → 0x1717 → 0x1718 → 0x719 → 0x19BE → 0x19ef → 0x1a17 → 0x1a23 → 0x1a2d → 0x1a32 → RETI→sentinel`. With 0xD177BA=0xFF, the ret-nz at 0x1718 falls through and jumps to the event loop at 0x19BE; dispatcher reads ports 0x5014/5015/5016 (interrupt-controller masked status), picks the keyboard IRQ branch, acks it, and returns. **Zero VRAM writes**. The ISR does exactly what Phase 27 predicted: ack + exit. No render, no shell dispatch.
+
+**Scenario C — runFrom(0x001794) (event-wait function)**: 32 steps, hits new 0x003cxx region (OS utility code not seen in prior traces), ultimately exits through sentinel. Still **zero VRAM writes**. This is probably a buffer-management or timer-poll helper, not a main loop.
+
+**Phase 33 verdict**: no wake path — NMI, IRQ, or direct call to the event-wait helper — causes the OS to render anything. The TI-OS architecture really doesn't have an "on each tick, redraw" main loop; rendering is explicit in shell/app code that runs outside the ISR. **Trying to reach the home screen by "waking and waiting" is a dead end.**
+
+**Phase 34 direction**: find the shell's render-home-screen composition function directly. Options:
+1. **String-anchor search**: scan ROM for literal status-bar strings (`"Err:"`, `"MEM"`, `"NORMAL"`, `"FULL"`, `"REAL"`, `"RADIAN"`, etc.). The xrefs to those strings will be inside the home-screen render function.
+2. **Survey post-OS-init with ClrLCD-first pattern**: call ClrLCD (find it in the jump table) then call each jump-table entry — a "true" home-screen render will fill the screen with a characteristic mix of blacks, whites, and menu-bar pixels rather than the solid fills or diagnostics we've already catalogued.
+3. **Trace from 0x08C331 exit**: OS init returns through a sentinel at step 691. The REAL OS would not hit a sentinel — it would fall through to shell startup code. Find what ROM location is 1-2 frames up the call stack at step 690 of OS init. That's the "post-init dispatch" address that the real boot flow would return to.
+
+Option 1 is the highest-leverage next step: string search is cheap, anchors the search in real UI text, and doesn't require any runtime instrumentation. Phase 34 should start there.
+
+Artifact: `TI-84_Plus_CE/probe-boot-then-irq.mjs`.
+
+### Phase 34: MODE screen renderer via string-anchor search (2026-04-12 CC session) — DONE ✓
+
+**String-anchor results** from scanning ROM for mode/status-bar literals:
+- `0x029132`: MODE option-label table — `ESC, OK, DEGREE, RADIAN, ON, OFF, YES, NO, APP, ...` (NUL-separated 6-byte labels).
+- `0x062xxx`: error-text region (`"ARCHIVE FULL"`, `"NONREAL ANSWERS"`, `"Ex: RADIAN MODE tan(π/2)"` help text) — useful for error screen, not home.
+- `0x0a147a..0x0a1485`: catalog tokens for `MATHPRINT` / `CLASSIC` — token-prefixed, different region.
+
+**Xref chain from the RADIAN/DEGREE labels** — `LD HL, 0x029139` at 0x0296f8 and `LD HL, 0x029132` at 0x029704, 12 bytes apart, inside a clear "draw row of MODE options" loop:
+
+```
+0x0296dd  <- MODE helper (RADIAN/DEGREE row + continuation)  [FUNCTION START]
+0x029610  <- called by 0x029683 / 0x0296ad inside
+0x0293ea  <- called by 0x029441 inside
+0x04082f  <- called by 0x040b16 inside  [TOP-LEVEL SHELL COROUTINE]
+```
+
+**0x04082f characteristics** (verified by disassembly of 0x04082f..0x040870):
+- Opens with `LD HL, 0xd00088; SET 3, (HL); CALL 0x040ce6; CALL 0x056bdc`.
+- Then `POP DE; POP HL; LD (0xD02AD7), HL` — the **shell coroutine pattern**: the caller pushes a callback address, CALL pushes a return address, the function discards the return addr and installs the callback pointer so that the next IRQ wake jumps to the caller's designated resume point.
+- `LD IY, 0xD00080; RES 6, (IY+27); POP IY; POP IX` — clears the event-pending flag and unwinds prior register frames.
+- Zero direct CALL/JP callers in the entire ROM. The only reference is `JP NZ, 0x04082f` at 0x409ba — a backward loop branch inside the function's own body (screen-redraw loop). Dispatched from a runtime-computed pointer table we haven't located yet.
+
+**probe-mode-screen.mjs results** (fresh executor + boot + OS init per entry, sentinel stack):
+
+| Entry | Steps | VRAM writes | Non-zero cells | Region |
+|-------|------:|------------:|--------------:|--------|
+| **0x0296dd** — MODE helper | **49,858** | **29,016** | **14,292** | **rows 37-114 × cols 0-241** |
+| 0x04082f — shell coroutine top | 26,372 | 0 | 0 | — |
+| 0x0293ea — MODE body depth 0 | 1 | 0 | 0 | — (missing block at entry — likely unseeded) |
+| 0x029610 — field-row renderer | 408 | 0 | 0 | — (missing block early) |
+| 0x028f02 — draw-label primitive | 859 | 504 | 252 | rows 18-35 × cols 180-193 |
+
+**0x0296dd is the biggest UI render in the project so far** — 14K cells across an 78-row × 242-col region. ASCII art shows multiple horizontal highlighted bars (the classic TI-84 MODE screen layout where each selected option is drawn as an inverse-video rectangle). This is **the MODE screen drawing multiple rows of options**, not just a single row — the function body continues past the RADIAN/DEGREE load and sequentially draws all mode rows (FUNC/PAR/POL/SEQ, REAL/a+bi, CONNECTED/DOT, SEQUENTIAL/SIMUL, etc.).
+
+**0x028f02 is a confirmed draw-highlighted-label primitive** — takes HL=string pointer, A=position/attr code, writes 504 bytes to VRAM forming a single 14×18 highlighted rectangle. With `HL=0x029139` ("RADIAN"), A=0x92, it draws a label box at screen position (180, 18). This is reusable — any ROM string can be drawn at any position by calling this with HL/A set appropriately.
+
+**Why the higher layers (0x04082f, 0x0293ea, 0x029610) didn't render**:
+- **0x04082f** ran 26K steps with zero VRAM activity. It terminated via missing_block at 0xFFFFFF (sentinel). Most likely: the shell coroutine installs a callback from our stack-sentinel junk (0xFFFFFF), then walks through its setup logic and hits a branch that decides "don't draw — no event pending or wrong mode state". Needs more careful IY/callback state setup, or a different invocation pattern.
+- **0x0293ea** and **0x029610** terminated at step 1 / step 408 respectively via missing_block. Probably because these mid-function addresses are not block-entry points in our transpiled output — the transpiler only seeds discovered entry points, and the call-graph reachability check didn't flag 0x0293ea or 0x029610 as entry candidates. Fix: add both as Phase 34 seeds and regenerate.
+
+**Phase 35 suggestions**:
+1. **Seed 0x0293ea and 0x029610 as entry points**, retranspile, rerun the probe. 0x029610 especially — if it renders more than 0x0296dd, we've found a larger parent function.
+2. **Fix 0x04082f invocation**: the shell coroutine needs a valid prior screen state. One approach — invoke it with a specific RAM setup mimicking what would exist after a [MODE] key press (install 0xD02AD7 to point back to the halt, push a return addr/HL pair that unwinds cleanly, seed IY+27 bit 6 so the event-pending check passes).
+3. **Find callers of 0x04082f via the OS dispatch table**: scan ROM for 24-bit pointer tables containing 0x04082f. We ran one direct-ref search which found only a backward JP inside its own body. A more exhaustive search should look for `2f 08 04` as a 3-byte sequence at aligned table positions (every 3 or 4 bytes) in the data regions.
+4. **Apply the same string-anchor technique to home-screen strings**: we already have `"Done"` hits at 0x07bf05, 0x0920a0, 0x0a2ea4 with zero direct LD-HL refs. That's because `"Done"` is returned by expression evaluators, not loaded at a fixed address. Try different anchors: `"Y="` (function editor title) at ... no hits yet tested, or scan for `">Frac"` (MATH menu header), or search for the status-bar formatting string if one exists.
+
+Artifacts: `TI-84_Plus_CE/probe-mode-screen.mjs`, plus the string-search findings in this document.
 
 ---
 
