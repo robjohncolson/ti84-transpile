@@ -518,8 +518,8 @@ function emitInstructionJs(instruction) {
 
   // --- I/O ---
   if (tag === 'in0') {
-    if (instruction.reg === '(hl)') return [`cpu.ioReadPage0(${hex(instruction.port)});`];
-    return [`cpu.${instruction.reg} = cpu.ioReadPage0(${hex(instruction.port)});`];
+    if (instruction.reg === '(hl)') return [`cpu.ioReadPage0AndUpdateFlags(${hex(instruction.port)});`];
+    return [`cpu.${instruction.reg} = cpu.ioReadPage0AndUpdateFlags(${hex(instruction.port)});`];
   }
   if (tag === 'out0') {
     if (instruction.reg === '(hl)') return [`cpu.ioWritePage0(${hex(instruction.port)}, cpu.readIndirect8('hl'));`];

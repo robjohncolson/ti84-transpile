@@ -471,9 +471,22 @@ export class CPU {
 
   testBit(value, bit) {
     const result = value & (1 << bit);
-    this._setFlag(FLAG_Z, result === 0);
+    const zero = result === 0;
+    this._setFlag(FLAG_Z, zero);
+    this._setFlag(FLAG_PV, zero); // PV mirrors Z for bit test
+    this._setFlag(FLAG_S, bit === 7 && !zero);
     this._setFlag(FLAG_H, true);
     this._setFlag(FLAG_N, false);
+  }
+
+  ioReadPage0AndUpdateFlags(port) {
+    const value = this._ioRead(port & 0xff) & 0xff;
+    this._setFlag(FLAG_S, value & 0x80);
+    this._setFlag(FLAG_Z, value === 0);
+    this._setFlag(FLAG_H, false);
+    this._setFlag(FLAG_PV, parity(value));
+    this._setFlag(FLAG_N, false);
+    return value;
   }
 
   complementCarryFlag() {
