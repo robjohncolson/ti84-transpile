@@ -648,6 +648,20 @@ function buildBlock(startPc, mode, options) {
       break;
     }
 
+    if (instruction.kind === 'mode-switch') {
+      // stmix/rsmix — terminate the block so the next instruction is
+      // decoded in the new mode. The block still executes the stmix/rsmix
+      // instruction (which sets cpu.madl); control then falls through to
+      // the next PC in the new mode.
+      const fallthrough = wrap24(instruction.pc + instruction.length);
+      exits.push({
+        type: 'fallthrough',
+        target: fallthrough,
+        targetMode: instruction.nextMode,
+      });
+      break;
+    }
+
     currentPc = wrap24(currentPc + instruction.length);
     currentMode = instruction.nextMode;
   }
@@ -664,7 +678,11 @@ function buildBlock(startPc, mode, options) {
 
   const lastInstruction = instructions.at(-1);
 
-  if (lastInstruction && !lastInstruction.terminates && lastInstruction.kind !== 'call' && lastInstruction.tag !== 'unsupported') {
+  if (lastInstruction && lastInstruction.kind === 'mode-switch') {
+    // stmix/rsmix — emit return with fallthrough target (exit already pushed)
+    const fallthrough = wrap24(lastInstruction.pc + lastInstruction.length);
+    sourceLines.push(`  return ${hex(fallthrough, 6)};`);
+  } else if (lastInstruction && !lastInstruction.terminates && lastInstruction.kind !== 'call' && lastInstruction.tag !== 'unsupported') {
     const fallthrough = wrap24(lastInstruction.pc + lastInstruction.length);
     sourceLines.push(`  return ${hex(fallthrough, 6)};`);
     exits.push({
