@@ -52,9 +52,17 @@ button.active { background: #2a5a2a; border-color: #4a8a4a; }
       <button id="btnReset">Reset</button>
     </div>
     <div class="controls">
-      <button id="btnShowMode" disabled>Show MODE</button>
-      <button id="btnShowPlot" disabled>Show Y=/Plot</button>
-      <button id="btnShowStat" disabled>Show STAT Grid</button>
+      <button id="btnShowMode" disabled>MODE</button>
+      <button id="btnShowPlot" disabled>Y=/Plot</button>
+      <button id="btnShowStat" disabled>STAT Grid</button>
+      <button id="btnShowTable" disabled>TBL SETUP</button>
+      <button id="btnShowCatalog" disabled>CATALOG</button>
+    </div>
+    <div class="controls">
+      <button id="btnShowA" disabled>Scr A (1-col)</button>
+      <button id="btnShowB" disabled>Scr B (2-col)</button>
+      <button id="btnShowC" disabled>Scr C (short)</button>
+      <button id="btnShowD" disabled>Scr D (dialog)</button>
     </div>
     <div id="status" class="status">Ready. Click Boot to start.</div>
     <div class="regs" id="regs">
@@ -215,6 +223,12 @@ function enableButtons(booted) {
   $('btnShowMode').disabled = !booted;
   $('btnShowPlot').disabled = !booted;
   $('btnShowStat').disabled = !booted;
+  $('btnShowTable').disabled = !booted;
+  $('btnShowCatalog').disabled = !booted;
+  $('btnShowA').disabled = !booted;
+  $('btnShowB').disabled = !booted;
+  $('btnShowC').disabled = !booted;
+  $('btnShowD').disabled = !booted;
 }
 
 // Phase 37: freshly boot → run OS init → runFrom(screen entry) and swap the
@@ -420,6 +434,13 @@ $('btnRun1K').addEventListener('click', () => runSteps(1000));
 $('btnShowMode').addEventListener('click', () => showScreen(0x0296dd, 'adl', 'MODE'));
 $('btnShowPlot').addEventListener('click', () => showScreen(0x078419, 'adl', 'Y=/STAT PLOT', 2000000));
 $('btnShowStat').addEventListener('click', () => showScreen(0x081670, 'adl', 'STAT grid'));
+$('btnShowTable').addEventListener('click', () => showScreen(0x09e3b4, 'adl', 'TABLE SETUP'));
+$('btnShowCatalog').addEventListener('click', () => showScreen(0x04e1d0, 'adl', 'CATALOG', 500000));
+// Phase 38: screens found via dispatch-table scan at 0x96e5c (switch on (0xd007e0))
+$('btnShowA').addEventListener('click', () => showScreen(0x09e30c, 'adl', 'Screen A', 400000));
+$('btnShowB').addEventListener('click', () => showScreen(0x09e370, 'adl', 'Screen B', 400000));
+$('btnShowC').addEventListener('click', () => showScreen(0x09e2bf, 'adl', 'Screen C', 400000));
+$('btnShowD').addEventListener('click', () => showScreen(0x08aac3, 'adl', 'Screen D', 100000));
 $('btnAutoRun').addEventListener('click', () => {
   autoRunning = !autoRunning;
   $('btnAutoRun').textContent = autoRunning ? 'Stop' : 'AutoRun';

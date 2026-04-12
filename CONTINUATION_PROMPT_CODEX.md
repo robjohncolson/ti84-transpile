@@ -1054,6 +1054,70 @@ Artifacts: `TI-84_Plus_CE/probe-more-screens.mjs`, `TI-84_Plus_CE/probe-78419-fu
 3. Get 0x04082f (MODE shell coroutine top) to render properly: needs HL pushed before the CALL as a valid resume-callback pointer (e.g., 0x0019BE). Then the coroutine-install at 0x04083f will store a sensible pointer and the subsequent screen-draw logic should proceed.
 4. Browser-shell integration: wire one of the working screen renderers (0x0296dd or 0x078419) into browser-shell.html so a [MODE] or [STAT-PLOT] button actually produces a visible screen. This is the user-visible payoff of Phases 31/34/36.
 
+### Phase 37: browser-shell screen-render buttons (2026-04-12 CC session) — DONE ✓
+
+Added 3 buttons to `TI-84_Plus_CE/browser-shell.html` for the screens found in Phases 31/34/36: MODE (0x0296dd), Y=/STAT PLOT (0x078419), STAT grid (0x081670). Each click freshly boots + OS-inits a clean executor, clears VRAM, sets cpu.f=0x40 / IY=0xD00080 / sentinel stack, runs the screen function, then swaps the new executor+memory into place so the existing LCD renderer picks up the result. `timerInterrupt: false` is explicit for these runs because the 200-tick timer hijacks mid-OS-init.
+
+Commit `9e3a206`. Test plan: open browser-shell.html on GitHub Pages → Boot → click each screen button → verify LCD canvas shows the structural render. (Can't test from CC session directly — relies on user to confirm.)
+
+### Phase 38: screen-dispatch-table discovery (2026-04-12 CC session) — DONE ✓
+
+**New anchor technique**: instead of climbing callers of strings, search for CALL/JP targets *from known dispatch code*. Found a major dispatch table at **0x096e5c**:
+
+```
+0x96e59: call 0x975ae                ; get keycode in A
+0x96e5c: ld a, (0xd007e0)             ; read current menu-mode byte
+0x96e60: fe 48 / jp z, 0x9e30c        ; key 0x48 → screen A (narrow 1-col)
+0x96e66: fe 51 / jp z, 0x9e370        ; key 0x51 → screen B (2-col form)
+0x96e6c: fe 4b / jp z, 0x9e3b4        ; key 0x4b → TABLE SETUP ✓
+0x96e72: fe 53 / jp z, 0x9e2bf        ; key 0x53 → screen C (short form)
+...
+0x96eb4: fe 4b / jp z, 0x8aac3        ; alt key 0x4b → screen D (dialog)
+0x96eba: fe 53 / jp   0x8aab3         ; alt key 0x53 → small dialog
+```
+
+This is a keyed switch inside a function with 5 callers — the **[2nd] + screen-key dispatch logic**. The jump targets are top-level screen render entry points, invocable directly with runFrom.
+
+**Probe results** (probe-phase38.mjs, boot + OS init + cpu.f=0x40 + IY=0xD00080 + sentinel stack):
+
+| Entry | Steps | VRAM writes | Cells | Bbox | Interpretation |
+|-------|------:|------------:|-----:|------|----------------|
+| **0x09e3b4** TABLE SETUP | 64,030 | 16,128 | **7,056** | rows 37-94 × cols 0-181 | 2-column form with visible column gap at cols 87-105 |
+| **0x04e1d0** CATALOG | 300,000 (max) | 178,434 | **69,034** | rows 1-239 × cols 0-313 | **Full screen** — biggest render yet |
+| **0x09e30c** Screen A | 300,000 (max) | 26,152 | **11,532** | rows 37-214 × cols 0-73 | Narrow 1-column tall list, 74 cols wide |
+| **0x09e370** Screen B | 300,000 (max) | 11,368 | **4,980** | rows 37-94 × cols 0-145 | 2-column form, 146 cols wide |
+| **0x09e2bf** Screen C | 300,000 (max) | 18,144 | **7,164** | rows 57-194 × cols 0-85 | Narrower form, rows shifted down |
+| **0x08aac3** Screen D | 10,747 | 3,528 | **1,548** | rows 97-114 × cols 96-181 | Single 18×86 highlighted dialog band |
+
+All 6 new entries render distinct structural layouts. Combined with Phases 31/34/36, the screen-render catalog now has **8 confirmed entries**:
+
+| Addr | Screen | Cells |
+|------|--------|------:|
+| 0x081670 | STAT/MATRIX editor grid | 1,534 |
+| 0x0296dd | MODE screen (RADIAN/DEGREE etc.) | 14,292 |
+| 0x078419 | Y= / STAT PLOT editor | 56,520 |
+| 0x09e3b4 | TABLE SETUP (Indpnt/Depend/TblStart) | 7,056 |
+| 0x04e1d0 | CATALOG (full-screen) | 69,034 |
+| 0x09e30c | narrow 1-col list (possibly VARS or NAMES menu) | 11,532 |
+| 0x09e370 | 2-col form | 4,980 |
+| 0x09e2bf | short form | 7,164 |
+| 0x08aac3 | single dialog band | 1,548 |
+| 0x08aab3 | smaller dialog fragment | 468 |
+
+(0x0a35b0 horizontal-line and 0x028f02 draw-label primitive are shared building blocks, not top-level screens.)
+
+All buttons wired into `browser-shell.html` Phase 37 pattern. Commit pending.
+
+**Phase 38 architectural finding**: the TI-OS screen dispatcher reads `(0xd007e0)` as a menu-mode byte and branches to the appropriate render function. Setting `mem[0xd007e0]` to different values before a keypress would let a user program switch screens. The `0x96e5c` dispatch is one of many — there are likely more dispatch tables in 0x96xxxx and 0x9exxxx that we haven't scanned yet.
+
+**Phase 39 suggestions**:
+1. **Scan more dispatch tables**: find other `ld a, (0xd007e0)` or similar reads, check for adjacent `cp n / jp z / jp nz` switch patterns pointing to screen renderers.
+2. **Identify the specific screens**: visually confirm which TI-OS screen each of 0x09e30c/0x09e370/0x09e2bf corresponds to by rendering them in the browser shell and comparing to a real TI-84 CE.
+3. **Home screen at last**: the home screen has no static labels but IS a screen — search for `LD HL, 0xd40000` directly loaded (bypass MBASE) plus `RST 0x28` (bcall) + `_ClrLCD` pattern.
+4. **Text overlay primitive**: still the best single improvement for visual fidelity of existing screens.
+
+Artifacts: `TI-84_Plus_CE/probe-phase38.mjs`.
+
 ---
 
 - `ba6ae75` — Add Physical Calculator Mode (step card renderer, `physicalAdvance` / `physicalBack`, `physicalMode` persisted flag, renderer replaces WASM panel when active)
