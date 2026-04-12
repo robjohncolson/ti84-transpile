@@ -1116,7 +1116,90 @@ All buttons wired into `browser-shell.html` Phase 37 pattern. Commit pending.
 3. **Home screen at last**: the home screen has no static labels but IS a screen — search for `LD HL, 0xd40000` directly loaded (bypass MBASE) plus `RST 0x28` (bcall) + `_ClrLCD` pattern.
 4. **Text overlay primitive**: still the best single improvement for visual fidelity of existing screens.
 
-### Phase 40: text-glyph chain decoded, 0x0a1799 isolated, font helper bug suspected (2026-04-12 CC session) — IN PROGRESS
+### Phase 40: REAL TEXT RENDERING UNLOCKED — fg/bg color vars at 0xD02688 / 0xD0268A (2026-04-12 CC session) — DONE ✓
+
+**MILESTONE**: After 4 iterations of probe-text-glyph.mjs, found the missing piece: the rasterizer at 0x0a1a3b reads its fg/bg colors from RAM at **(0xd02688)** (fg, set bits) and **(0xd0268a)** (bg, clear bits). Both default to 0xFFFF in our post-OS-init state, making all glyph pixels uniformly white and invisible.
+
+**Decoded inner pixel-write loop at 0x0a1a3b**:
+```
+0a1a3b: cb 7f          BIT 7, A
+0a1a3d: 20 19          JR NZ, +0x19
+0a1a3f: 40             LD B, B           ; (NOP marker)
+0a1a40: ed 5b 8a 26    LD DE, (0x00268a) ; bg color (MBASE=0xd0 → reads 0xd0268a)
+0a1a44: cb 27          SLA A             ; shift glyph byte left, capture bit in carry
+0a1a46: 38 20          JR C, +0x20       ; if bit was 1, jump to fg path at 0x0a1a68
+0a1a48: 73 23 72 23    LD (HL),E; INC HL; LD (HL),D; INC HL  ; write bg
+0a1a4c: 10 f6          DJNZ -10
+0a1a4e: c9             RET
+...
+0a1a68: 40             LD B, B
+0a1a69: ed 5b 88 26    LD DE, (0x002688) ; fg color (MBASE=0xd0 → reads 0xd02688)
+0a1a6d: c3 61 1a 0a    JP 0x0a1a61       ; write fg via the same shared write
+```
+
+So the bitmap convention is **0 = fg, 1 = bg** (or vice versa) with two distinct 16-bit BGR565 colors per call.
+
+**The fix**: in any probe that calls 0x028f02 / 0x0a1799, set:
+- `mem[0xd02688]=0x00; mem[0xd02689]=0x00` (fg = 0x0000 black)
+- `mem[0xd0268a]=0xff; mem[0xd0268b]=0xff` (bg = 0xffff white)
+
+before invoking the draw routine. After this, "RADIAN" renders as actual letter shapes:
+```
+ 39 .########......######....#######.......######......######....##......##.
+ 40 .#########....########...########......######.....########...###.....##.
+ 41 .##.....###..##......##..##....###.......##......##......##..###.....##.
+ 42 .##......##..##......##..##.....##.......##......##......##..####....##.
+ 43 .##......##..##......##..##......##......##......##......##..##.##...##.
+ 44 .##......##..##......##..##......##......##......##......##..##.##...##.
+ 45 .##.....###..##......##..##......##......##......##......##..##..##..##.
+ 46 .#########...##########..##......##......##......##########..##..##..##.
+ 47 .########....##########..##......##......##......##########..##...##.##.
+ 48 .##..###.....##......##..##......##......##......##......##..##...##.##.
+ 49 .##...###....##......##..##.....##.......##......##......##..##....####.
+ 50 .##....###...##......##..##....###.......##......##......##..##.....###.
+ 51 .##.....###..##......##..########......######....##......##..##.....###.
+ 52 .##......##..##......##..#######.......######....##......##..##......##.
+```
+
+**R-A-D-I-A-N — all six characters fully legible.** Each digit 0-9 now produces a unique non-zero count (47, 65, 67, 61, 73, 70, 44, 78, 69) instead of the previous identical 252 — confirming the rasterizer is now char-input-dependent.
+
+**Investigation history**:
+
+1. **probe-trace-mode.mjs (Codex Task B)**: traced 0x0296dd MODE render → confirmed 0x028f02 (label-draw) called 4× and 0x0a1799 (glyph draw) called 66× per render. So the routine WAS executing all along.
+2. **probe-text-glyph.mjs scenario 1 v1**: directly called 0x0a1799 with A='R'; got 252 cells of solid white. Same for digits 0-9.
+3. **probe-text-glyph.mjs scenario 1 v2**: dumped staging buffer at 0xd005a5 — found EXACT match to ROM[0x003d6e + 0x52*0x1c]. Font lookup verified working.
+4. **Manual decode of 0x0a1a3b** (the per-byte writer hot-called 2376× = 66 chars × 36 bytes per char): found `LD DE, (0x00268a)` and `LD DE, (0x002688)` reads. With MBASE=0xd0 these are 0xD0268A and 0xD02688 — the fg/bg color RAM vars.
+5. **probe-text-glyph.mjs v3** with mem[0xd02688]=0x0000 and mem[0xd0268a]=0xffff: real text. ✅
+
+**Decoded chain of the text-overlay primitive**:
+```
+0x028f02 (label-draw entry)
+ → CALL 0x080244  (state stub)
+ → CALL 0x029374  (string-stage to 0xD026EA via LDI)
+ → PUSH DE
+ → CALL 0x0a1cac  (text loop)
+       → CALL 0x0a1b5b  (per-char dispatch)
+            → CALL 0x0a1799  (glyph draw)
+                  → CALL 0x07bf3e  (font lookup → returns IX=staging buf 0xd005a1)
+                       → CALL 0x000380  (jump table)
+                            → JP 0x003d85: LD HL, 0x003d6e; RET
+                  → CALL 0x0a2d4c  (column-to-VRAM-stride)
+                  → CALL 0x00038c  (jump table for row offset)
+                  → rasterizer loop with CALL 0x0a1a3b per-byte
+                       → reads fg @ 0xD02688, bg @ 0xD0268A
+                       → writes 16-bit pixels to VRAM
+```
+
+**Phase 41 next steps**:
+1. **Wire the fg/bg fix into all the existing screen-render probes and browser-shell.html buttons** so MODE / Y= / TABLE SETUP / CATALOG show actual text. This is the user-visible payoff.
+2. **Find the OS init step that SHOULD set 0xD02688 / 0xD0268A** — they're not random, they're a runtime "current text color" that some routine sets. Probably set when the OS enters a specific mode (e.g. ClrLCD / DispHome / SetTextColor). Search ROM for `LD HL, 0x002688` or `LD (0x002688), HL` patterns.
+3. **Apply the same diagnostic technique to other "render produces solid bars" cases** — the same fg/bg RAM convention probably applies to large-font and inverse-video renderers too.
+4. **Check MODE screen specifically**: MODE render highlights selected option as inverse video (white on black). With fg=0x0000 / bg=0xffff, the selected row should now show black text on white. Without the fix the selected and non-selected rows are indistinguishable. Worth a re-render to confirm.
+
+Artifacts: `TI-84_Plus_CE/probe-trace-mode.mjs` (Codex Task B), `TI-84_Plus_CE/probe-text-glyph.mjs` (CC, after Codex Task A timed out).
+
+### Phase 40 (older notes superseded by milestone above) — preserved for reference
+**Working hypothesis** (now SUPERSEDED by Phase 40 milestone above): 0x0a1799 isolated
 
 CC analysis decoded the full text-overlay chain by hand from ROM bytes:
 

@@ -90,11 +90,14 @@ function setupDrawState(cpu, mem) {
   cpu.sp = 0xd1a87e - 9;
   for (let i = 0; i < 9; i++) mem[cpu.sp + i] = 0xff;
   cpu.f = 0x40;
-  // Plausible cursor / limits (TI-OS small-font defaults)
   mem[0xd00595] = 0;     // cursor col (in char cells)
   mem[0xd00596] = 0;     // cursor row
   mem[0xd02505] = 0x1a;  // text limit (26 cols)
-  // Color/mode flags at IY+offsets — leave OS-init defaults
+  // Phase 40 fix: text fg/bg colors at 0xd02688 / 0xd0268a (both 16-bit BGR565)
+  // Default post-OS-init state has both = 0xffff (white) → all glyphs invisible.
+  // Set fg = 0x0000 (black), bg = 0xffff (white).
+  mem[0xd02688] = 0x00; mem[0xd02689] = 0x00;  // fg = 0x0000 black
+  mem[0xd0268a] = 0xff; mem[0xd0268b] = 0xff;  // bg = 0xffff white
 }
 
 console.log('=== SCENARIO 1: 0x0a1799 direct, A=0x52 (R) ===');
