@@ -1,10 +1,26 @@
 # Continuation Prompt — TI-84 Plus CE ROM Transpilation
 
-**Last updated**: 2026-04-11T20:00Z
-**Focus**: TI-84 ROM transpilation + TI-84 Procedural Trainer V3 (student-facing app)
-**Current phase**: Phases 1-25G complete. ROM transpiler at 16.5% coverage (~124370 blocks). Browser shell deployed on GitHub Pages. Event loop runs 50K steps after 0xB608 seeds landed (commit 1836e80). QR-code share button added to trainer (commit 2302536). **Pivot in progress (Phase 26)**: Physical Calculator Mode — student follows text instructions on their real TI-84, bypassing WASM/Supabase/network entirely. Reason: school networks block Supabase + WASM fails, but all procedure narration/key/highlight/commonErrors data already exists in `ti84-trainer-v2/generated/data-procedures.js`.
+**Last updated**: 2026-04-11T22:30Z
+**Focus**: TI-84 Plus CE ROM transpilation (Codex-led). The trainer app has pivoted to Physical Calculator Mode and is primary as of 2026-04-11 evening — see `CONTINUATION_PROMPT.md` for trainer work, this file is the ROM-side source of truth.
 
-**Note on stalled retranspile**: A ~53-minute transpiler run on 2026-04-11 died silently (PID 14700, no report.json update, files still stamped 15:23). Root cause not yet diagnosed — transpile.log in TI-84_Plus_CE/ may help. Current ROM.transpiled.js is from the successful 0xB608 run (commit 1836e80), which is fine.
+**ROM transpiler current state (unchanged since morning of 2026-04-11)**:
+- Coverage: **16.5%** (~124370 blocks, 692348 bytes)
+- Live stubs: **0**
+- OS jump table: **980/980** (100%)
+- ISR dispatch gate: **UNLOCKED** (0x000710 reachable)
+- Keyboard scan: **WORKING** (0x0159C0, 9/9 PASS)
+- OS event loop: **runs 50K steps** (after 0xB608 seeds — commit `1836e80`)
+- Browser shell: **deployed** on GitHub Pages
+- Current `ROM.transpiled.js` built from commit `1836e80` — known-good, gitignored (175MB)
+
+**Known incident — stalled retranspile on 2026-04-11 ~19:06–20:00**: The autonomous frontier runner kicked off a transpile (PID 14700, `node --max-old-space-size=4096 scripts/transpile-ti84-rom.mjs zj6hd.sh`). It ran ~53 minutes with full CPU and then **died silently** — no `report.json` update, no new `ROM.transpiled.js`, both files still stamped 2026-04-11 15:23. Root cause **not yet diagnosed**. Artifacts to inspect:
+- `TI-84_Plus_CE/transpile.log`
+- `TI-84_Plus_CE/new-seeds.txt`, `new-seeds-round2.txt`, `new-seeds-round3.txt` (seeds the frontier runner was about to feed in)
+- `state/cross-agent-log.json`, `state/cross-agent/` (agent dispatch records)
+
+Possible causes to check first: OOM despite the 4GB heap cap, unhandled exception swallowed by async code, seeds that expanded to zero blocks so nothing got written, or the process getting killed by Windows. The current `ROM.transpiled.js` is fine — no rollback needed.
+
+**Trainer pivot note**: Phase 26 (Physical Calculator Mode) shipped end-to-end on 2026-04-11 evening across four commits (`ba6ae75`, `a976af6`, `48b5605`, `7a97232`). This is orthogonal to the ROM transpiler — trainer source is `ti84-trainer-v2/app.js`, not `scripts/transpile-ti84-rom.mjs`. No ROM blocks changed.
 
 ---
 
@@ -578,17 +594,14 @@ node TI-84_Plus_CE/coverage-analyzer.mjs
 ### Phase 24F: Keyboard MMIO handler + scan codes working — DONE ✓
 ### Phase 25: Interactive Browser Shell — DONE ✓
 ### Phase 25G: OS Event Loop + Keyboard Scan Investigation — DONE ✓
-### Phase 26: Physical Calculator Mode (trainer) — IN PROGRESS
+### Phase 26: Physical Calculator Mode (trainer) — DONE ✓
 
-**Why**: Edgar reported the WASM emulator fails on school networks (Supabase blocked + WASM boot errors). Insight: `ti84-trainer-v2/generated/data-procedures.js` already contains human-readable `narration`, `key`, `highlight`, and `commonErrors` for all 27 procedures. We can render instruction cards and have the student follow along on their real TI-84.
+Trainer-side work, orthogonal to the ROM transpiler. Summary for cross-reference only; full history in `CONTINUATION_PROMPT.md` entries 66–69.
 
-**Scope**:
-- Mode toggle (localStorage-persisted) on the calculator column
-- Physical step card renderer: big key label, narration, "you should see", tips, "Back" / "I did it" actions
-- Advance bypasses `pressButton` validation — just calls `nextRouteState(step)` directly
-- Data-setup and result-review phases get analogous physical cards
-- Zero new dependencies; everything offline-capable
-- Edit `ti84-trainer-v2/app.js` and `ti84-trainer-v2/style.css`, then `node ti84-trainer-v2/build.mjs` to regenerate `standalone.html`
+- `ba6ae75` — Add Physical Calculator Mode (step card renderer, `physicalAdvance` / `physicalBack`, `physicalMode` persisted flag, renderer replaces WASM panel when active)
+- `a976af6` — Default flipped to physical (`parsed.physicalMode !== false`); legacy users grandfathered in, explicit opt-outs respected
+- `48b5605` — Options dialog: titlebar "Firmware" → "Options", tucks Firmware + mode-toggle inside, bottom toggle strip removed
+- `7a97232` — Choice-button flash feedback: Track 1 buttons shade green/red for 650ms before panel transitions
 
 ---
 
@@ -697,11 +710,11 @@ POP IY / POP IX / POP AF / RETI
 
 Coverage at ~124370 blocks (16.5%). ISR gate unlocked. Keyboard scan working. Browser shell deployed. Remaining frontiers:
 
-### 1. OS Event Loop Unblock (waiting on retranspile)
-- Missing block 0x00B608 seeded, transpiler running
-- Once transpiled: rerun Test 23, see if event loop goes deeper
+### 1. OS Event Loop Unblock
+- 0xB608 seeds already landed in commit `1836e80`; event loop runs 50K steps
+- Next step: rerun Test 23 on current `ROM.transpiled.js` (the one from `1836e80`) and see where it hangs now
 - The event loop at 0x001C33 walks a ROM table — need to understand what it dispatches
-- May discover more missing blocks that need seeding (iterative process)
+- The stalled 19:06 retranspile on 2026-04-11 was going to feed in `new-seeds.txt` / `new-seeds-round2.txt` / `new-seeds-round3.txt` from the frontier runner. **That run died silently; diagnose first or bypass by manually running `node scripts/transpile-ti84-rom.mjs` with a small seed batch**
 
 ### 2. LCD Display
 - LCD MMIO intercept at 0xE00000 is wired (LCDUPBASE at 0x10, LCDControl at 0x18)
