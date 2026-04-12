@@ -3,9 +3,9 @@
 **Last updated**: 2026-04-12T02:40Z
 **Focus**: TI-84 Plus CE ROM transpilation (CC-led this session, Codex continues). The trainer app pivoted to Physical Calculator Mode on 2026-04-11 evening — see `CONTINUATION_PROMPT.md` for trainer work, this file is the ROM-side source of truth.
 
-**ROM transpiler current state** (after 2026-04-12 Phase 29):
-- Coverage: **16.5076%** (124543 blocks, 692377 bytes — +163 new mode-switched blocks from Phase 29)
-- Seed count: **21333** (+2 Phase 29 boot-path seeds: 0x00e6d1, 0x014d18)
+**ROM transpiler current state** (after 2026-04-12 Phase 30):
+- Coverage: **16.5076%** (124543 blocks, 692377 bytes)
+- Seed count: **21333**
 - Live stubs: **0**
 - OS jump table: **980/980** (100%)
 - ISR dispatch gate: **UNLOCKED** (0x000710 reachable)
@@ -14,12 +14,14 @@
 - **VRAM pipeline**: **PROVEN** end-to-end (0x005B96 fills 153600 bytes in one step)
 - **Full OS init**: **WORKING** end-to-end (handler 0x08C331, 691 steps, 1M RAM writes, matches Phase 24C predictions)
 - **Multi-character rendering**: **WORKING** (Phase 29 — 5-char HELLO renders at 5 distinct positions, 1336 non-zero cells spanning rows 37-52 cols 2-61)
+- **Real boot path**: **WORKING** end-to-end (Phase 30 — boot runs 8804 steps to halt, naturally reaches 0x0013c9 and sets MBASE=0xD0 via `ld mb, a` — no manual register override needed for character rendering)
 - **ROM write-protect**: implemented in cpu-runtime.js write8/write16/write24 — flash region 0x000000-0x3FFFFF is now read-only
 - **MBASE register**: implemented (Phase 29) — cpu.mbase composes `(mbase << 16) | addr16` for Z80-mode and .SIS/.LIS memory accesses
+- **OTIMR (eZ80 Output Increment Modify Repeat)**: Phase 30 — fixed to actually loop until B=0 AND increment C each iteration (was running one iteration with no C++)
 - **Per-iteration madl sync**: Phase 29 — executor syncs cpu.madl with block mode every loop iteration (not just at runFrom entry)
 - **Mode-switch block boundaries**: Phase 29 — stmix/rsmix terminate the current block so next block is decoded in the new mode
 - Browser shell: **deployed** on GitHub Pages
-- Current `ROM.transpiled.js` built from commit `1012f48` (2026-04-12), gitignored (175MB), **.gz committed**
+- Current `ROM.transpiled.js` built from commit `fb8cdc7` (2026-04-12), gitignored (175MB), **.gz committed**
 
 **Resolved incident — stalled retranspile on 2026-04-11 ~19:06–20:00**: Root cause was a **perf bug, not a crash**. The walker at `scripts/transpile-ti84-rom.mjs:21977` used `Object.keys(blocks).length` in its `while` condition plus `queue.shift()` — both O(n²) over ~124K blocks. That's ~15 billion string allocations during the walk, pinning a CPU core for 53+ minutes with GC churn. It probably OOM'd at the final `JSON.stringify(walk.blocks)` after the walker finally finished, but since the script never wrote to stdout before the final `writeFileSync`, any crash was invisible. Fixed in commit `206f375` — walker now runs in **1.9s** (1600x speedup). Stale `new-seeds*.txt` files (Apr 9) were never actually consumed by the frontier runner.
 
@@ -780,10 +782,89 @@ Fix:
 
 Test 25 still 9/9 PASS throughout all changes (step count now 105).
 
-**What's NOT done**:
-- `cpu.mbase = 0xD0` currently has to be set **manually** in probes after OS init. The real OS sets it via `LD MB, A` at `0x0013c9`, which is reached through a boot path we don't hit in cold init. Phase 30 should find what triggers that code path — or simpler, seed 0x0013c9 area and run OS init from there.
-- Boot naturally halts at `0x0019b5` power-down and NMI wake is a no-op trampoline back to the halt. We never reach the home screen naturally. Need to find what triggers the real OS main loop.
-- Multi-char rendering is working but the glyph shapes still look slightly off — they're recognizable as 5 distinct character cells but the rendered patterns don't obviously spell HELLO. Might be a font-lookup issue or cell width mismatch.
+**What's NOT done** (resolved by Phase 30):
+- ~~`cpu.mbase = 0xD0` set manually~~ — fixed by Phase 30 OTIMR
+- Boot naturally halts at `0x0019b5` power-down — Phase 30 changed this to halt after 8804 steps with full hardware init complete
+- Multi-char rendering glyph shapes still look slightly off — open Phase 31 question
+
+### Phase 30: OTIMR fix unlocks the real boot path (2026-04-12 CC session) — DONE ✓
+
+While building probe-overnight-survey-v2.mjs (Step 3), I added `probe-boot-trace.mjs` to trace the boot path from reset. Cold boot ran 68 steps then halted at 0x0019b5 — far short of the OS init handler at 0x08C331. Investigation revealed the boot decision tree at 0x0012ea: it loads BC from a ROM constant table, runs `OTIMR` to output 9 hardware-config bytes to ports 0x1d-0x25, then checks `cp c` against byte 0x00131a.
+
+Our `cpu.otimr()` was buggy:
+```javascript
+otimr() {
+  // Output, increment, repeat (eZ80-specific)
+  const value = this.read8(this.hl);
+  this.ioWrite(this.c, value);
+  this.hl = (this.hl + 1) & this.addressMask;
+  this.b = (this.b - 1) & 0xff;
+}
+```
+
+It ran ONE iteration and DID NOT increment C. eZ80 OTIMR is "Output, Increment, Modify, **Repeat**" — it loops until B=0 and increments BOTH HL and C each iteration (the "Modify" is the C++).
+
+After fix:
+```javascript
+otimr() {
+  while (this.b !== 0) {
+    const value = this.read8(this.hl);
+    this.ioWrite(this.c, value);
+    this.hl = (this.hl + 1) & this.addressMask;
+    this.b = (this.b - 1) & 0xff;
+    this.c = (this.c + 1) & 0xff;
+  }
+}
+```
+
+After 9 iterations, C = 0x1d + 9 = 0x26, matching byte at 0x00131a (also 0x26). The `cp c` test passes, `jr nz` not taken, fall through to `0x001305 → sbc hl, bc → jr z → 0x00131b → ... → 0x0013c7-c9 → ld a, 0xd0; ld mb, a`. **MBASE is now naturally set to 0xD0 via the real boot path.**
+
+**Impact** (from `probe-boot-trace.mjs` with `timerInterrupt: false`):
+
+| Metric | Before OTIMR fix | After OTIMR fix |
+|--------|------------------|-----------------|
+| Boot steps | 68 | **8804** |
+| Unique blocks | 33 | **261** |
+| Final cpu.mbase | 0x00 (never set) | **0xd0 (set at step 43)** |
+| Reached 0x0013c9 | no | **yes** |
+| Multi-char HELLO | required manual mbase=0xD0 | **works with zero overrides** |
+
+Removed the manual `cpu.mbase = 0xD0` workaround from `probe-os-init-draw.mjs`. Test 25 still 9/9 PASS (now 200 steps / max_steps — deeper paths exercised).
+
+Commit `fb8cdc7`. The OTIMR fix is the final piece in the multi-instruction-bug chain (madl per-iter, stmix/rsmix block termination, MBASE register, OTIMR loop) that makes real boot work end-to-end.
+
+### Phase 30b: Improved survey v2 (2026-04-12 CC session) — DONE ✓
+
+Step 3 from the user's todo list. `probe-overnight-survey-v2.mjs` rewrite of the v1 survey with 6 perf improvements:
+
+1. **Reuse executor across calls** — build once, snapshot post-OS-init state. Restore via `mem.set(snapRam, RAM_BASE)` per call. Only the 1MB RAM region is restored, not the full 16MB memory array.
+2. **No closure wrapping** — v1 wrapped `cpu.write8` in a closure for VRAM tracking, causing GC pressure. v2 diffs VRAM against the snapshot after each call.
+3. **Slow-target skip** — if first variant takes >150ms, skip remaining 9 variants. The LDIR-based VRAM fillers in 0x082xxx each take ~400ms (BC=153,599 inner iterations inside one block step), so skipping their remaining variants shaves ~3.5s per slow target.
+4. **MBASE pre-set in snapshot** — Phase 30's natural boot path sets MBASE=0xD0 during boot. The survey calls now have correct MBASE state automatically.
+5. **Variant matrix per target** — 10 register variants (zero, char, space, digit, pointer, vram, high, small, text, row1col1) tested for each target before moving on. Better cache locality.
+6. **Expanded target list** — 980 jump-table + 32 vram-load sites (from grep for `LD {HL,DE,BC,IX,IY}, 0xd40000`) + 4 known-internal addresses = 1016 targets total.
+
+**Performance**: v1 took 12 passes × 30-45 min each = 5-6 hours total. v2 takes **52 seconds** for full coverage. Throughput improvement: ~400x.
+
+**Results**: 84 VRAM writers cataloged in `os-survey-v2.json` (vs v1's 81), with NEW small-VRAM writers visible thanks to Phase 29's MBASE fix unlocking the .SIS short-addressed reads:
+
+Top 20 (already-known full-screen fillers in 0x082xxx and 0x05dcxx region):
+- 0x0a31ad (vram-load-site, 153600 writes)
+- 0x0822c6, 0x082301, 0x08234e (jump-table fillers, 152466 each)
+- 0x045d26 (76800 — checkerboard diagnostic from Phase 28.5)
+- 0x045d4e, 0x045d5c (65278 each)
+
+NEW small-VRAM writers (Phase 31 candidates — these were hidden by the pre-Phase-29 MBASE bug):
+- 0x09173e (vram-load, 3552 writes)
+- 0x09f031 (vram-load, 1180 writes)
+- 0x097ac8, 0x0a2854, 0x0976ed, 0x08a850 (jump-table, 816 writes each — possibly multi-char draws)
+- 0x081670 (jump-table[748], 408 writes — possibly single character)
+- 0x06f274 (jump-table[715], 278 writes)
+- 0x0ac2cb, 0x05da51, 0x05db12, 0x05db2e (jump-table, 264-272 writes — small icons or partial draws)
+
+Includes diagnostic probes `probe-09a3bd.mjs` and `probe-find-slow.mjs`.
+
+Commit `118a120`.
 
 ---
 
@@ -897,17 +978,19 @@ POP IY / POP IX / POP AF / RETI
 
 ## What Is Still Missing / Next Frontiers
 
-Coverage at 124543 blocks (16.5076%). ISR gate unlocked. Keyboard scan working. Browser shell deployed. **OS init + multi-character draw pipeline working end-to-end** (Phase 28+29). ROM write-protected. MBASE implemented. Remaining frontiers:
+Coverage at 124543 blocks (16.5076%). ISR gate unlocked. Keyboard scan working. Browser shell deployed. **OS init + multi-character draw pipeline working end-to-end** (Phase 28+29). **Real boot path runs 8804 steps through hardware init to halt** (Phase 30). ROM write-protected. MBASE implemented + auto-set. Remaining frontiers:
 
-### 1. Find the real boot path that sets MBASE and reaches the home screen
+### 1. Phase 31: Investigate small-VRAM-writer candidates from Survey v2
 
-Phase 29 proved that with `cpu.mbase = 0xD0` set manually after OS init, multi-character rendering works. But cold boot doesn't naturally reach the `LD MB, A` instruction at `0x0013c9` — our boot path goes `RST 8 → 0x000008 → 0x00000b (.LIL JP 0x001afa) → 0x0158a6 → 0x00e6d1 → ...` and skips the 0x0013cx region entirely.
+Survey v2 (Phase 30b) found 84 VRAM writers. The interesting NEW finds are the small-VRAM writers (272-816 bytes) that were previously hidden by the MBASE bug:
 
-Two sub-questions:
-- Who normally calls into `0x0013c9`? Is there a different reset path, a RST vector, or a conditional branch earlier in boot that we're taking the wrong fork on?
-- Is `0x0013c9` even the *right* MBASE setter? There are 3 other `LD MB, A` sites (0x076d42, 0x076d58, 0x076d68) — maybe OS init reaches one of those.
+- **0x097ac8, 0x0a2854, 0x0976ed, 0x08a850** — jump-table entries, all writing exactly 816 bytes. Could be multi-character draws or small icons.
+- **0x081670** (jump-table[748]) — 408 writes. 408 / 2 = 204 pixels. Maybe a single character with metadata.
+- **0x06f274** (jump-table[715]) — 278 writes
+- **0x0ac2cb, 0x05da51, 0x05db12, 0x05db2e** — 264-272 writes each. Small icons?
+- **0x09173e** (vram-load-site) — 3552 writes. Several characters worth.
 
-Tool: extend `probe-boot-trace.mjs` to watch for `cpu.mbase` changing and report which block wrote it. Alternatively: seed 0x0013c9 and nearby, call it directly after boot, and see if it reaches the home screen.
+Approach: deep-dive each via a probe similar to `probe-097ac8.mjs`. Test with various register inputs. Render the resulting VRAM as ASCII art to identify what they draw.
 
 ### 2. LCD controller enable
 
@@ -992,7 +1075,7 @@ A better survey with the Phase 29 fixes (MBASE + per-iter madl) would find many 
 - `TI-84_Plus_CE/ROM.transpiled.js` — Generated module, 124543 blocks, 16.5076% coverage. Gitignored (175MB).
 - `TI-84_Plus_CE/ROM.transpiled.js.gz` — Compressed module, committed for browser shell (~15MB).
 - `TI-84_Plus_CE/ROM.transpiled.report.json` — Coverage metrics
-- `TI-84_Plus_CE/cpu-runtime.js` — CPU class + createExecutor. Phase 28-29 state: **ROM write-protect** (writes to 0x000000-0x3FFFFF silently dropped), **cpu.mbase register** (eZ80 MBASE), `runFrom` syncs `cpu.madl` with startMode **every iteration** (Phase 29, not just at entry). `in r,(c)` / `in0 r,(n)` update flags via `ioReadAndUpdateFlags` / `ioReadPage0AndUpdateFlags`. `testBit` updates S/Z/PV/H/N.
+- `TI-84_Plus_CE/cpu-runtime.js` — CPU class + createExecutor. Phase 28-30 state: **ROM write-protect** (writes to 0x000000-0x3FFFFF silently dropped), **cpu.mbase register** (eZ80 MBASE), `runFrom` syncs `cpu.madl` with startMode **every iteration** (Phase 29, not just at entry). `in r,(c)` / `in0 r,(n)` update flags via `ioReadAndUpdateFlags` / `ioReadPage0AndUpdateFlags`. `testBit` updates S/Z/PV/H/N. **`otimr()` correctly loops until B=0 AND increments C** (Phase 30 fix — was running one iteration with no C++).
 - `TI-84_Plus_CE/ez80-decoder.js` — Complete eZ80 instruction decoder (~790 lines). Phase 29: `stmix`/`rsmix` marked `kind: 'mode-switch'` so blocks terminate cleanly at mode changes. `LD MB, A` (ED 6D) and `LD A, MB` (ED 6E) decoded.
 - `TI-84_Plus_CE/peripherals.js` — I/O peripheral bus + interrupt controller (PLL, GPIO, flash=0xD0, keyboard port 0x01, timers, FTINTC010 at 0x5000, memory ctrl at 0x1000, interrupt status 0x3D/0x3E). `setKeyboardIRQ(active)` sets bit 19 in rawStatus.
 
@@ -1014,12 +1097,16 @@ A better survey with the Phase 29 fixes (MBASE + per-iter madl) would find many 
 - `TI-84_Plus_CE/probe-overnight-survey.mjs` — Phase 28.5 long-running loop survey. Ran 12 passes × 988 targets = ~11,800 calls over 7.5 hours, cataloged 81 VRAM writers.
 - `TI-84_Plus_CE/probe-097ac8.mjs` — Phase 28.5 deep-dive of `0x097ac8` (2× VRAM writer). Turned out to be a diagonal scan LCD diagnostic.
 - `TI-84_Plus_CE/probe-045d26.mjs` — Phase 28.5 deep-dive of `0x045d26` (9-region deep executor). Turned out to be a 16×12 checkerboard LCD diagnostic.
-- `TI-84_Plus_CE/probe-boot-trace.mjs` — **Phase 29 star probe**. Block-by-block trace from reset vector with register state per block. Found the stmix/rsmix block termination bug and proved the per-iter madl sync was needed. Supports NMI wake via `timerMode: 'nmi'` for exploring post-halt behavior.
+- `TI-84_Plus_CE/probe-boot-trace.mjs` — **Phase 29-30 star probe**. Block-by-block trace from reset vector with register state per block. Phase 29: found the stmix/rsmix block termination bug and proved per-iter madl sync was needed. Phase 30: revealed that boot was hitting the wrong branch at 0x0012ea due to broken OTIMR. Tracks `cpu.mbase` changes and reports them.
+- `TI-84_Plus_CE/probe-overnight-survey-v2.mjs` — **Phase 30b star probe**. Improved OS function survey: 1016 targets, 10-variant register matrix, ~52 second runtime. Reuses executor + 1MB RAM-only snapshot. Slow-target skip after 150ms first variant. Output: `os-survey-v2.json`.
+- `TI-84_Plus_CE/probe-09a3bd.mjs` — Phase 30b diagnostic for jump-table[250].
+- `TI-84_Plus_CE/probe-find-slow.mjs` — Phase 30b diagnostic that times jump-table[245-279] to identify which targets are slow (the 0x082xxx VRAM fillers).
 
-### Survey outputs (Phase 28.5)
-- `TI-84_Plus_CE/os-survey-summary.json` — Top-50 VRAM writers + top-50 deep executors. 81 VRAM writers total.
-- `TI-84_Plus_CE/os-survey.jsonl` — 12 per-pass records (interesting-only: non-zero VRAM writes, >50 blocks, or errors).
-- `TI-84_Plus_CE/os-survey-progress.log` — Gitignored progress log from the overnight run.
+### Survey outputs (Phase 28.5 + 30b)
+- `TI-84_Plus_CE/os-survey-summary.json` — Phase 28.5 v1 results. Top-50 VRAM writers + top-50 deep executors. 81 VRAM writers total.
+- `TI-84_Plus_CE/os-survey.jsonl` — Phase 28.5 v1 per-pass records (interesting-only).
+- `TI-84_Plus_CE/os-survey-progress.log` — Gitignored progress log from the v1 overnight run.
+- `TI-84_Plus_CE/os-survey-v2.json` — **Phase 30b v2 results**. 1016 targets in 52 seconds. 84 VRAM writers, 338 deep executors. Includes per-target maxVramWrites, maxBlocks, terminationVariety.
 
 ### Browser + automation
 - `TI-84_Plus_CE/browser-shell.html` — Browser-based ROM executor (320x240 canvas, keyboard overlay, LCD intercept, block trace log). Deployed to GitHub Pages.
