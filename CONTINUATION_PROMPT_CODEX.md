@@ -1,24 +1,21 @@
 # Continuation Prompt — TI-84 Plus CE ROM Transpilation
 
-**Last updated**: 2026-04-11T22:30Z
-**Focus**: TI-84 Plus CE ROM transpilation (Codex-led). The trainer app has pivoted to Physical Calculator Mode and is primary as of 2026-04-11 evening — see `CONTINUATION_PROMPT.md` for trainer work, this file is the ROM-side source of truth.
+**Last updated**: 2026-04-12T02:40Z
+**Focus**: TI-84 Plus CE ROM transpilation (CC-led this session, Codex continues). The trainer app pivoted to Physical Calculator Mode on 2026-04-11 evening — see `CONTINUATION_PROMPT.md` for trainer work, this file is the ROM-side source of truth.
 
-**ROM transpiler current state (unchanged since morning of 2026-04-11)**:
-- Coverage: **16.5%** (~124370 blocks, 692348 bytes)
+**ROM transpiler current state** (after 2026-04-12 CC session):
+- Coverage: **16.5076%** (124378 blocks, 692377 bytes)
+- Seed count: **21331** (+14 Phase 24D seeds landed)
 - Live stubs: **0**
 - OS jump table: **980/980** (100%)
 - ISR dispatch gate: **UNLOCKED** (0x000710 reachable)
 - Keyboard scan: **WORKING** (0x0159C0, 9/9 PASS)
-- OS event loop: **runs 50K steps** (after 0xB608 seeds — commit `1836e80`)
+- **ISR event-loop dispatch**: **WORKING** end-to-end (16 blocks, 0x38 → 0x19BE → 0x1A5D keyboard handler → RETI)
+- **VRAM pipeline**: **PROVEN** end-to-end (0x005B96 fills 153600 bytes in one step)
 - Browser shell: **deployed** on GitHub Pages
-- Current `ROM.transpiled.js` built from commit `1836e80` — known-good, gitignored (175MB)
+- Current `ROM.transpiled.js` built from commit `def3da8` (2026-04-12), gitignored (175MB), **.gz committed**
 
-**Known incident — stalled retranspile on 2026-04-11 ~19:06–20:00**: The autonomous frontier runner kicked off a transpile (PID 14700, `node --max-old-space-size=4096 scripts/transpile-ti84-rom.mjs zj6hd.sh`). It ran ~53 minutes with full CPU and then **died silently** — no `report.json` update, no new `ROM.transpiled.js`, both files still stamped 2026-04-11 15:23. Root cause **not yet diagnosed**. Artifacts to inspect:
-- `TI-84_Plus_CE/transpile.log`
-- `TI-84_Plus_CE/new-seeds.txt`, `new-seeds-round2.txt`, `new-seeds-round3.txt` (seeds the frontier runner was about to feed in)
-- `state/cross-agent-log.json`, `state/cross-agent/` (agent dispatch records)
-
-Possible causes to check first: OOM despite the 4GB heap cap, unhandled exception swallowed by async code, seeds that expanded to zero blocks so nothing got written, or the process getting killed by Windows. The current `ROM.transpiled.js` is fine — no rollback needed.
+**Resolved incident — stalled retranspile on 2026-04-11 ~19:06–20:00**: Root cause was a **perf bug, not a crash**. The walker at `scripts/transpile-ti84-rom.mjs:21977` used `Object.keys(blocks).length` in its `while` condition plus `queue.shift()` — both O(n²) over ~124K blocks. That's ~15 billion string allocations during the walk, pinning a CPU core for 53+ minutes with GC churn. It probably OOM'd at the final `JSON.stringify(walk.blocks)` after the walker finally finished, but since the script never wrote to stdout before the final `writeFileSync`, any crash was invisible. Fixed in commit `206f375` — walker now runs in **1.9s** (1600x speedup). Stale `new-seeds*.txt` files (Apr 9) were never actually consumed by the frontier runner.
 
 **Trainer pivot note**: Phase 26 (Physical Calculator Mode) shipped end-to-end on 2026-04-11 evening across four commits (`ba6ae75`, `a976af6`, `48b5605`, `7a97232`). This is orthogonal to the ROM transpiler — trainer source is `ti84-trainer-v2/app.js`, not `scripts/transpile-ti84-rom.mjs`. No ROM blocks changed.
 
@@ -489,7 +486,7 @@ Historical baselines:
 ## Verified State
 
 1. `node --check scripts/transpile-ti84-rom.mjs` passes
-2. `node scripts/transpile-ti84-rom.mjs` generates 110141+ blocks at 15.6%+ coverage (no z80js needed, takes 10-30 min)
+2. `node scripts/transpile-ti84-rom.mjs` generates 124378 blocks at 16.5076% coverage (no z80js needed, **takes ~2 seconds** after Phase 27 walker fix — was 50+ min)
 3. All blocks compile successfully (0 failures). ROM.transpiled.js is gitignored (>100MB).
 4. `node TI-84_Plus_CE/test-harness.mjs` runs 13 tests:
    - Tests 1-3: Reset vector → HALT in 62 steps (with peripherals + loop breaker)
@@ -597,6 +594,62 @@ node TI-84_Plus_CE/coverage-analyzer.mjs
 ### Phase 26: Physical Calculator Mode (trainer) — DONE ✓
 
 Trainer-side work, orthogonal to the ROM transpiler. Summary for cross-reference only; full history in `CONTINUATION_PROMPT.md` entries 66–69.
+
+### Phase 27: Transpiler perf fix + correctness bugs + ISR breakthrough (2026-04-12 CC session) — DONE ✓
+
+Diagnosed and fixed the 2026-04-11 stalled-retranspile incident, then chased the ISR dispatch path to a clean exit and proved the VRAM pipeline end-to-end. **5 bugs fixed across 7 commits**.
+
+**Commit `206f375` — eliminate O(n²) walker (53min → 1.9s)**
+
+Root cause of the stalled retranspile. `walkBlocks()` in `scripts/transpile-ti84-rom.mjs` used `Object.keys(blocks).length` in the `while` condition and `queue.shift()` — both quadratic over ~124K blocks. That's ~15B string allocations + GC churn pinning a core for 53+ minutes before probably OOM-ing at the final `JSON.stringify(walk.blocks)`. The script had *zero* stdout output before the final `writeFileSync`, so any crash was invisible.
+
+Fix: track block count in a counter, use an index-head BFS queue (O(1) pop), stream progress + uncaught-exception reporting to stderr. Walker now runs in 1.9s. ~1600x speedup.
+
+**Commit `fbf0397` — runFrom madl sync + in r,(c) flag updates**
+
+Two independent correctness bugs found while tracing why ISR dispatch at 0x0019BE was stuck in a 50K-step loop at 0x001c33.
+
+1. `runFrom(pc, mode, ...)` took a `startMode` argument but **never set `cpu.madl`**. Boot leaves `madl=0`, so every subsequent `runFrom(..., 'adl')` ran ADL block variants with `addressMask=0xFFFF` — silently stripping the upper byte of 24-bit register math. The sequence `ld hl, (0x020100); sbc hl, bc` at 0x0008BB truncated HL from 0xFFA55A to 0x0000, breaking every downstream magic/validation check. Fix: `cpu.madl = startMode === 'adl' ? 1 : 0` at runFrom entry.
+2. The emitter generated `cpu.a = cpu.ioRead(cpu.bc)` for `in r, (C)` **without updating flags**. Z80/eZ80 documents this instruction as setting S/Z/H/PV/N from the read value, so every `in a, (c); jr z/nz` was following the wrong branch — mis-routing the entire interrupt dispatcher at 0x0019BE. Added `cpu.ioReadAndUpdateFlags(port)` helper and wired it in the emitter.
+
+After both fixes, the ISR runs the correct path: `0x38 → 0x6F3 → 0x704 → 0x710 → 0x1713 → 0x8BB → 0x1717 → 0x1718 → 0x719 → 0x19BE → 0x19EF → 0x1A17 → 0x1A5D (keyboard handler) → 0x1A70 → 0x1A75 → 0x1A32 → reti`. **16 blocks, clean exit.** Test 25 still 9/9 PASS.
+
+**Commit `f4b027d` — investigation probes**
+
+Three diagnostic tools that drove the debugging:
+- `TI-84_Plus_CE/probe-ld-hl.mjs` — isolated 0x0008bb block test across modes, proved the runFrom madl bug.
+- `TI-84_Plus_CE/probe-event-loop.mjs` — traces ISR dispatch from 0x000038 with predecessor tracking and per-block register state. Found the `in r,(c)` flag bug AND the 0xD177BA uninitialized RAM issue.
+- `TI-84_Plus_CE/probe-main-loop.mjs` — simulates post-HALT wake via `wakeFromHalt` option. Found that the NMI handler at 0x000066 is just a trampoline chain (0x000053 → 0x0220a8 → 0x04ab71 → 0x0003ac → 0x0019b5) that leads straight back to the halt block — a no-op.
+
+**Commit `3d90a31` — VRAM fill proof (Option A)**
+
+`probe-vram-fill.mjs` calls `0x005b96` directly. That block is a bare VRAM fill: `ld hl, 0xd40000; ld (hl), 0xff; ld de, 0xd40001; ld bc, 0x0257ff; ldir`. The lifted block writes all **153,600 bytes** of VRAM in **one step** via the `ldir` helper. Before: 0 non-zero. After: 153,600 bytes of 0xff. Pipeline proven end-to-end. LCD controller enable (LCDControl bit 0 at 0xE00018) is a separate concern not tested.
+
+**Commit `def3da8` — testBit S/PV + in0 r,(n) flag fixes**
+
+Two more flag bugs found during a systematic emitter audit:
+1. `testBit(value, bit)` only set Z/H/N. Z80's `bit n,r` also updates S (set if bit 7 tested and bit 7 is 1) and PV (mirrors Z, undocumented but widely implemented). Any code using `bit 7, r; jp m/p` or `bit n, r; jp pe/po` was taking the wrong branch.
+2. `in0 r, (n)` (eZ80 port-page-0 read) had the same emitter flaw as `in r, (c)`: used `ioReadPage0` which didn't update flags. Added `ioReadPage0AndUpdateFlags` helper and wired it.
+
+Test 25 still 9/9 PASS. Event-loop probe unchanged (the common `bit n, r; jr z/nz` path was already working).
+
+**Commit `bae53bd` — print-char probe marker**
+
+`probe-print-char.mjs` tries to call the OS character-print entry at `0x0059c6` directly with `A='H'`. **Didn't complete** — the call chain descends into the table-scan helper at 0x001c33 with wrong inputs (different failure mode than the earlier ISR path that we unblocked). The print pipeline depends on OS-initialized RAM state (cursor, font table, display mode, charset pointer) that cold boot doesn't provide. Leaving the probe as a starting point for Phase 28 Option B work.
+
+**Key architectural findings from this session**:
+
+- **`0x0019BE` is the IRQ dispatcher, NOT a main loop.** It reads masked intc status bytes (0x5014/5015/5016), dispatches on bits, acks the IRQ, and returns via RETI. The keyboard IRQ path ends at 0x001a32 which pops the callback pointer off the stack, restores registers, and RETIs.
+- **`0x0019b5` is the power-down halt**, not an idle halt: `di; ld a, 0x10; out0 (0x00), a; nop; nop; halt`. Only NMI can wake it. The `di` blocks IRQ-based wake.
+- **There's a separate `ei; halt` at `0x001783`** (true IRQ-waiting halt), but it's only called from `0x0017b0`, part of an event-wait subroutine, not the main loop itself.
+- **The NMI handler `0x000066` is a no-op trampoline** for our ROM: it reads port 0x3D (returns 0x00 → zero branch), validates magic at 0x0008bb, then jumps through a redirect chain back to the halt. In real hardware 0x0220a8 probably does something but in our state it's a passthrough.
+- **The TI-OS architecture insight**: the OS doesn't have a single "render every tick" main loop. The shell, apps, and programs run in user context and call OS routines (`_GetCSC`, `_PutC`, etc.) explicitly. The ISR just acks interrupts — it doesn't render. To reach LCD activity we need to either (a) run user-context code that calls draw routines, (b) run OS init handler 0x08C331 first to establish RAM state then call specific functions, or (c) find a simpler VRAM blit routine and call it directly.
+
+**Current frontier for Phase 28 (Option B — Full OS Main Loop)**:
+
+The 2026-04-12 session proved the pipeline works end-to-end for direct function calls. The remaining question is: **how do we reach a state where the OS is running user-context code that draws to VRAM?**
+
+Recommended approach: **run OS init handler 0x08C331 BEFORE calling draw functions**. From Phase 24C, 0x08C331 is major OS init — 691 steps, 162 blocks, writes 262K bytes to system RAM including the callback pointer at 0xD02AD7 and flags at 0xD0009B/0xD177BA. Running it first should establish the RAM state that `_PutC`-style calls need. The risk from Phase 24D ("Running OS init before boot corrupts RAM, causing boot to loop at PLL") is real — the fix is to run boot FIRST (to cold-state), THEN run OS init, THEN call the draw function.
 
 - `ba6ae75` — Add Physical Calculator Mode (step card renderer, `physicalAdvance` / `physicalBack`, `physicalMode` persisted flag, renderer replaces WASM panel when active)
 - `a976af6` — Default flipped to physical (`parsed.physicalMode !== false`); legacy users grandfathered in, explicit opt-outs respected
