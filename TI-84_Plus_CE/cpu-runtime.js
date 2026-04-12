@@ -639,11 +639,25 @@ export class CPU {
   }
 
   otimr() {
-    // Output, increment, repeat (eZ80-specific)
-    const value = this.read8(this.hl);
-    this.ioWrite(this.c, value);
-    this.hl = (this.hl + 1) & this.addressMask;
-    this.b = (this.b - 1) & 0xff;
+    // OTIMR: Output, Increment, Modify, Repeat (eZ80-specific)
+    // Per Zilog eZ80 user manual:
+    //   do {
+    //     (C) ← (HL)
+    //     HL  ← HL + 1
+    //     B   ← B - 1
+    //     C   ← C + 1    ← the "Modify" part — increment port number
+    //   } while (B != 0)
+    // Used by boot at 0x0012fc to output a 9-byte config block to sequential
+    // ports. Our previous impl ran one iteration and didn't increment C,
+    // which made the subsequent `cp c` test fail and took boot down the
+    // non-MBASE path (missing the LD MB, A at 0x0013c9).
+    while (this.b !== 0) {
+      const value = this.read8(this.hl);
+      this.ioWrite(this.c, value);
+      this.hl = (this.hl + 1) & this.addressMask;
+      this.b = (this.b - 1) & 0xff;
+      this.c = (this.c + 1) & 0xff;
+    }
   }
 
   ini() {

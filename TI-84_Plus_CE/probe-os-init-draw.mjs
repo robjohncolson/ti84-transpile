@@ -30,7 +30,7 @@ const cpu = ex.cpu;
 // Stage 1: Cold boot
 // ============================================================================
 console.log('=== Stage 1: Boot ===');
-const bootResult = ex.runFrom(0x000000, 'z80', { maxSteps: 5000, maxLoopIterations: 32 });
+const bootResult = ex.runFrom(0x000000, 'z80', { maxSteps: 20000, maxLoopIterations: 32 });
 console.log(`Boot: ${bootResult.steps} steps → ${bootResult.termination} at ${hex(bootResult.lastPc)}`);
 console.log(`  SP=${hex(cpu.sp)} IY=${hex(cpu._iy)} madl=${cpu.madl} halted=${cpu.halted}`);
 
@@ -141,10 +141,8 @@ for (let i = 0xD40000; i < 0xD40000 + 320 * 240 * 2; i++) mem[i] = 0x00;
 // Reset cursor position to (0, 0)
 mem[0xD00595] = 0;
 mem[0xD00596] = 0;
-// MBASE: Phase 29 — real TI-OS sets this to 0xD0 so .SIS short addresses
-// like (0x059c) resolve to RAM at 0xD0059c. Our cold OS init doesn't
-// execute `LD MB, A` (reached via different boot path), so set it manually.
-cpu.mbase = 0xD0;
+// Phase 30: with the OTIMR fix, boot now naturally reaches 0x0013c9 and
+// sets MBASE=0xD0 via `ld mb, a`. No manual override needed.
 console.log(`After clear: cursor=(${mem[0xD00595]}, ${mem[0xD00596]}), mbase=0x${cpu.mbase.toString(16)}`);
 
 // Snapshot VRAM state right before the draw call

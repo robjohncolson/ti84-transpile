@@ -16,13 +16,11 @@ const romBytes = fs.readFileSync(path.join(__dirname, 'ROM.rom'));
 
 const hex = (v, w = 6) => '0x' + (v >>> 0).toString(16).padStart(w, '0');
 
-// Enable NMI timer so the power-down halt can wake and continue
+// Timer off for clean boot tracing — we want to see the natural path
 const p = createPeripheralBus({
   trace: false,
   pllDelay: 2,
-  timerInterrupt: true,
-  timerMode: 'nmi',
-  timerInterval: 50,
+  timerInterrupt: false,
 });
 const mem = new Uint8Array(0x1000000);
 mem.set(romBytes);
@@ -31,6 +29,10 @@ const cpu = ex.cpu;
 
 const trail = [];
 const blockCounts = new Map();
+let prevMbase = 0;
+const mbaseEvents = [];
+let reached0013c9 = false;
+
 const r = ex.runFrom(0x000000, 'z80', {
   maxSteps: 50000,
   maxLoopIterations: 32,
@@ -38,7 +40,14 @@ const r = ex.runFrom(0x000000, 'z80', {
     const key = `${hex(pc)}:${mode}`;
     blockCounts.set(key, (blockCounts.get(key) || 0) + 1);
     if (trail.length < 200 || blockCounts.get(key) <= 2) {
-      trail.push(`${key} A=${hex(cpu.a, 2)} HL=${hex(cpu.hl)} DE=${hex(cpu.de)} BC=${hex(cpu.bc)} SP=${hex(cpu.sp)} madl=${cpu.madl}`);
+      trail.push(`${key} A=${hex(cpu.a, 2)} HL=${hex(cpu.hl)} DE=${hex(cpu.de)} BC=${hex(cpu.bc)} SP=${hex(cpu.sp)} madl=${cpu.madl} mbase=${hex(cpu.mbase, 2)}`);
+    }
+    if (cpu.mbase !== prevMbase) {
+      mbaseEvents.push(`step=${blockCounts.size}: mbase ${hex(prevMbase, 2)} → ${hex(cpu.mbase, 2)} at block ${key}`);
+      prevMbase = cpu.mbase;
+    }
+    if (pc === 0x0013c9 || pc === 0x0013c7) {
+      reached0013c9 = true;
     }
   },
   onInterrupt: (type, fromPc, vector, step) => {
@@ -48,6 +57,10 @@ const r = ex.runFrom(0x000000, 'z80', {
 
 console.log(`Boot: ${r.steps} steps → ${r.termination} at ${hex(r.lastPc)}`);
 console.log(`Unique blocks visited: ${blockCounts.size}`);
+console.log(`Final cpu.mbase: ${hex(cpu.mbase, 2)}`);
+console.log(`Reached 0x0013c9 (MBASE setter)? ${reached0013c9}`);
+console.log(`MBASE change events:`);
+for (const e of mbaseEvents) console.log(`  ${e}`);
 console.log(`\nTop 15 most-visited blocks:`);
 const hot = [...blockCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15);
 for (const [key, count] of hot) console.log(`  ${key}: ${count}`);
