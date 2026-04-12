@@ -1044,6 +1044,16 @@ Add them both to the shell-screen catalog. Next screens to locate via the same s
 
 Artifacts: `TI-84_Plus_CE/probe-more-screens.mjs`, `TI-84_Plus_CE/probe-78419-full.mjs`.
 
+**Subnote — 0x0a1cac is not the text-draw primitive** (probe-a1cac.mjs): 0x028f02's body delegates to `CALL 0x0a1cac` after two setup calls (0x080244, 0x029374) and a PUSH DE. Calling 0x0a1cac directly with HL="RADIAN" produced the exact same 14×18 solid-filled box at rows 18-35 × cols 180-193 — identical to 0x028f02's output. So 0x0a1cac IS the main work of 0x028f02, but it's producing a solid rectangle regardless of the string pointer — meaning this function is a fixed-size cursor/selection-highlight draw, not a text-draw. The actual glyph overlay routine for MODE/Y= screens is somewhere else; candidates are 0x080244 (called first by 0x028f02) or 0x029374 (called second). That investigation is Phase 37 territory.
+
+**Session context log**: 2026-04-12 CC session completed Phases 32-36 (6 phases) with 3 commits. Started at ~5% context usage, finished estimated ~15% — still comfortably within the 70% ceiling. Major wins: two new full-screen render entry points catalogued (0x0296dd MODE, 0x078419 Y=/STAT PLOT), confirmed TI-OS has no main loop (Phase 33 dead end), established string-anchor-climb as the repeatable technique for finding screen render functions.
+
+**Remaining for Phase 37+**:
+1. Find the real text-overlay primitive (not 0x0a1cac) — probably 0x080244 or 0x029374 called BEFORE the cursor-highlight. Dump their bodies and trace.
+2. Screen catalog expansion: TABLE editor (anchor: search near the TABLE string xrefs at 0x7b9ae / 0x8a49a), MATH menu (length-prefixed table at 0x8a220+ — needs different search than LD-HL), CATALOG screen, MEM MGMT, error screen ("ERR:" + "SYNTAX" anchors).
+3. Get 0x04082f (MODE shell coroutine top) to render properly: needs HL pushed before the CALL as a valid resume-callback pointer (e.g., 0x0019BE). Then the coroutine-install at 0x04083f will store a sensible pointer and the subsequent screen-draw logic should proceed.
+4. Browser-shell integration: wire one of the working screen renderers (0x0296dd or 0x078419) into browser-shell.html so a [MODE] or [STAT-PLOT] button actually produces a visible screen. This is the user-visible payoff of Phases 31/34/36.
+
 ---
 
 - `ba6ae75` — Add Physical Calculator Mode (step card renderer, `physicalAdvance` / `physicalBack`, `physicalMode` persisted flag, renderer replaces WASM panel when active)
