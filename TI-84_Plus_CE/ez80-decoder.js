@@ -734,6 +734,9 @@ function decodeED(romBytes, startPc, edPc, mode, modePrefix, immW) {
   // adds a fallthrough exit with targetMode set to the new mode.
   if (op === 0x7d) return emit(0, { tag: 'stmix', kind: 'mode-switch', nextMode: 'adl' });
   if (op === 0x7e) return emit(0, { tag: 'rsmix', kind: 'mode-switch', nextMode: 'z80' });
+  // LD MB, A / LD A, MB — eZ80 MBASE register access
+  if (op === 0x6d) return emit(0, { tag: 'ld-mb-a' });
+  if (op === 0x6e) return emit(0, { tag: 'ld-a-mb' });
   // SLP
   if (op === 0x76) return emit(0, { tag: 'slp', terminates: true });
   // OTIMR

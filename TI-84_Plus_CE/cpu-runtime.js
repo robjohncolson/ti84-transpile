@@ -51,6 +51,11 @@ export class CPU {
     this.iff1 = 0;
     this.iff2 = 0;
     this.madl = 1; // ADL mode by default for eZ80
+    // MBASE: upper 8 bits of 24-bit address for Z80-mode (.SIS/.SIL)
+    // instructions with 16-bit immediate addresses. Real TI-OS sets this
+    // to 0xD0 during boot so that short-addressed RAM vars like (0x059c)
+    // resolve to RAM at 0xD0059c instead of ROM at 0x00059c.
+    this.mbase = 0;
 
     this.halted = false;
     this.cycles = 0;

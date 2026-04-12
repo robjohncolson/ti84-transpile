@@ -45,6 +45,23 @@ function getWordWriteAccessor(instruction) {
   return getWordByteWidth(instruction) === 2 ? 'write16' : 'write24';
 }
 
+// Whether a memory-access instruction's immediate address should be composed
+// with MBASE. This applies when the immediate is 16-bit (Z80 mode or .SIS/.LIS
+// prefix in ADL mode). On eZ80, MBASE is the upper 8 bits of the effective
+// 24-bit address for Z80-mode memory accesses.
+function usesMbase(instruction) {
+  if (instruction.prefix === 'SIS' || instruction.prefix === 'LIS') return true;
+  if (instruction.prefix === 'SIL' || instruction.prefix === 'LIL') return false;
+  return instruction.mode === 'z80';
+}
+
+function memAddrExpr(instruction) {
+  if (usesMbase(instruction)) {
+    return `((cpu.mbase << 16) | ${hex(instruction.addr & 0xffff, 4)})`;
+  }
+  return hex(instruction.addr, 6);
+}
+
 // --- Disassembly string builder (for source comments) ---
 
 function buildDasm(d) {
@@ -344,20 +361,20 @@ function emitInstructionJs(instruction) {
   if (tag === 'ld-reg-imm') return [`cpu.${instruction.dest} = ${hex(instruction.value)};`];
   if (tag === 'ld-reg-ind') return [`cpu.${instruction.dest} = cpu.readIndirect8('${instruction.src}');`];
   if (tag === 'ld-ind-reg') return [`cpu.writeIndirect8('${instruction.dest}', cpu.${instruction.src});`];
-  if (tag === 'ld-reg-mem') return [`cpu.${instruction.dest} = cpu.read8(${hex(instruction.addr, 6)});`];
-  if (tag === 'ld-mem-reg') return [`cpu.write8(${hex(instruction.addr, 6)}, cpu.${instruction.src});`];
+  if (tag === 'ld-reg-mem') return [`cpu.${instruction.dest} = cpu.read8(${memAddrExpr(instruction)});`];
+  if (tag === 'ld-mem-reg') return [`cpu.write8(${memAddrExpr(instruction)}, cpu.${instruction.src});`];
   if (tag === 'ld-ind-imm') return [`cpu.writeIndirect8('hl', ${hex(instruction.value)});`];
 
   // --- LD pair ---
   if (tag === 'ld-pair-imm') return [`cpu.${instruction.pair} = ${hex(instruction.value, 6)};`];
   if (tag === 'ld-pair-mem') {
     if (instruction.direction === 'to-mem') {
-      return [`cpu.${getWordWriteAccessor(instruction)}(${hex(instruction.addr, 6)}, cpu.${instruction.pair});`];
+      return [`cpu.${getWordWriteAccessor(instruction)}(${memAddrExpr(instruction)}, cpu.${instruction.pair});`];
     }
-    return [`cpu.${instruction.pair} = cpu.${getWordReadAccessor(instruction)}(${hex(instruction.addr, 6)});`];
+    return [`cpu.${instruction.pair} = cpu.${getWordReadAccessor(instruction)}(${memAddrExpr(instruction)});`];
   }
   if (tag === 'ld-mem-pair') {
-    return [`cpu.${getWordWriteAccessor(instruction)}(${hex(instruction.addr, 6)}, cpu.${instruction.pair});`];
+    return [`cpu.${getWordWriteAccessor(instruction)}(${memAddrExpr(instruction)}, cpu.${instruction.pair});`];
   }
   if (tag === 'ld-sp-hl') return ['cpu.sp = cpu.hl;'];
   if (tag === 'ld-sp-pair') return [`cpu.sp = cpu.${instruction.pair};`];
@@ -539,6 +556,8 @@ function emitInstructionJs(instruction) {
   // --- eZ80 specific ---
   if (tag === 'stmix') return ['cpu.madl = 1;'];
   if (tag === 'rsmix') return ['cpu.madl = 0;'];
+  if (tag === 'ld-mb-a') return ['cpu.mbase = cpu.a & 0xff;'];
+  if (tag === 'ld-a-mb') return ['cpu.a = cpu.mbase & 0xff;'];
   if (tag === 'mlt') return [`cpu.${instruction.reg} = cpu.multiplyBytes(cpu.${instruction.reg});`];
   if (tag === 'tst-reg') return [`cpu.test(cpu.a, cpu.${instruction.reg});`];
   if (tag === 'tst-ind') return ["cpu.test(cpu.a, cpu.readIndirect8('hl'));"];

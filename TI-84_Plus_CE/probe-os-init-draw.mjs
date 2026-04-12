@@ -141,7 +141,11 @@ for (let i = 0xD40000; i < 0xD40000 + 320 * 240 * 2; i++) mem[i] = 0x00;
 // Reset cursor position to (0, 0)
 mem[0xD00595] = 0;
 mem[0xD00596] = 0;
-console.log(`After clear: cursor=(${mem[0xD00595]}, ${mem[0xD00596]})`);
+// MBASE: Phase 29 — real TI-OS sets this to 0xD0 so .SIS short addresses
+// like (0x059c) resolve to RAM at 0xD0059c. Our cold OS init doesn't
+// execute `LD MB, A` (reached via different boot path), so set it manually.
+cpu.mbase = 0xD0;
+console.log(`After clear: cursor=(${mem[0xD00595]}, ${mem[0xD00596]}), mbase=0x${cpu.mbase.toString(16)}`);
 
 // Snapshot VRAM state right before the draw call
 const vramBeforeDraw = new Uint8Array(mem.slice(0xD40000, 0xD40000 + 320 * 240 * 2));
