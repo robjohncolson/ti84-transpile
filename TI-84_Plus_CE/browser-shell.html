@@ -51,6 +51,11 @@ button.active { background: #2a5a2a; border-color: #4a8a4a; }
       <button id="btnAutoRun" disabled>AutoRun</button>
       <button id="btnReset">Reset</button>
     </div>
+    <div class="controls">
+      <button id="btnShowMode" disabled>Show MODE</button>
+      <button id="btnShowPlot" disabled>Show Y=/Plot</button>
+      <button id="btnShowStat" disabled>Show STAT Grid</button>
+    </div>
     <div id="status" class="status">Ready. Click Boot to start.</div>
     <div class="regs" id="regs">
       <span class="label">A=</span><span class="val" id="rA">00</span>
@@ -207,6 +212,78 @@ function enableButtons(booted) {
   $('btnRun100').disabled = !booted;
   $('btnRun1K').disabled = !booted;
   $('btnAutoRun').disabled = !booted;
+  $('btnShowMode').disabled = !booted;
+  $('btnShowPlot').disabled = !booted;
+  $('btnShowStat').disabled = !booted;
+}
+
+// Phase 37: freshly boot → run OS init → runFrom(screen entry) and swap the
+// executor/cpu/memory in place so the LCD renderer picks up the new VRAM.
+// Each click is a self-contained render — no state carried from prior runs.
+//
+// Known screen entries (see CONTINUATION_PROMPT_CODEX.md Phases 31/34/36):
+//   0x081670  STAT/MATRIX editor grid  (Phase 31)
+//   0x0296dd  MODE screen              (Phase 34, 14292 cells)
+//   0x078419  Y= / STAT PLOT editor    (Phase 36, 56520 cells)
+function showScreen(entryAddr, entryMode, name, maxSteps = 300000) {
+  if (!PRELIFTED_BLOCKS) {
+    setStatus('Boot first so the ROM module is loaded.', true);
+    return;
+  }
+  autoRunning = false;
+  $('btnAutoRun').textContent = 'AutoRun';
+  $('btnAutoRun').classList.remove('active');
+
+  setStatus(`${name}: booting + OS init (this can take a second)...`);
+
+  const romBytes = decodeEmbeddedRom();
+  // Screen render paths need timer IRQ disabled — the default 200-tick timer
+  // hijacks execution mid-OS-init and corrupts state (Phase 28 / Phase 33).
+  const p2 = createPeripheralBus({ pllDelay: 2, timerInterrupt: false });
+  const ex2 = createExecutor(PRELIFTED_BLOCKS, romBytes, { peripherals: p2 });
+  const cpu2 = ex2.cpu;
+
+  // Stage 1: cold boot (reaches 0x0019b5 halt after ~8800 steps)
+  ex2.runFrom(0x000000, 'z80', { maxSteps: 20000, maxLoopIterations: 32 });
+
+  // Stage 2: OS init handler with sentinel return frame
+  cpu2.halted = false; cpu2.iff1 = 0; cpu2.iff2 = 0;
+  cpu2.sp = 0xD1A87E - 3;
+  romBytes[cpu2.sp] = 0xFF; romBytes[cpu2.sp + 1] = 0xFF; romBytes[cpu2.sp + 2] = 0xFF;
+  ex2.runFrom(0x08C331, 'adl', { maxSteps: 100000, maxLoopIterations: 500 });
+
+  // Clear VRAM so the render is visible on a black background
+  for (let i = 0xD40000; i < 0xD40000 + 320 * 240 * 2; i++) romBytes[i] = 0x00;
+
+  // Stage 3: prep stack + flags + IY for the screen-render call
+  cpu2.halted = false; cpu2.iff1 = 0; cpu2.iff2 = 0;
+  cpu2._iy = 0xD00080;
+  cpu2.sp = 0xD1A87E - 12;
+  for (let i = 0; i < 12; i++) romBytes[cpu2.sp + i] = 0xFF;
+  cpu2.f = 0x40; // Z flag set — avoids taking RET NZ at function entry
+
+  const t0 = performance.now();
+  const r = ex2.runFrom(entryAddr, entryMode, { maxSteps, maxLoopIterations: 2000 });
+  const dt = Math.round(performance.now() - t0);
+
+  // Swap globals so the existing UI hooks keep working
+  executor = ex2;
+  cpu = cpu2;
+  peripherals = p2;
+  totalSteps = r.steps;
+  lastPc = r.lastPc;
+  lastMode = r.lastMode;
+
+  if (lcd) lcd.destroy();
+  lcd = createLCDRenderer($('lcd'), romBytes);
+  syncLCDState();
+  lcd.renderFrame();
+
+  updateRegs();
+  updateKeyStateDisplay();
+  updateKeyboardOverlay();
+  setStatus(`${name}: ${r.steps} steps → ${r.termination} at ${hex(r.lastPc, 6)} (${dt} ms)`);
+  log(`<span class="info">--- ${name} rendered (${r.steps} steps, ${dt} ms) ---</span>`);
 }
 
 function syncLCDState() {
@@ -340,6 +417,9 @@ $('btnBoot').addEventListener('click', async () => {
 $('btnStep').addEventListener('click', () => runSteps(1));
 $('btnRun100').addEventListener('click', () => runSteps(100));
 $('btnRun1K').addEventListener('click', () => runSteps(1000));
+$('btnShowMode').addEventListener('click', () => showScreen(0x0296dd, 'adl', 'MODE'));
+$('btnShowPlot').addEventListener('click', () => showScreen(0x078419, 'adl', 'Y=/STAT PLOT', 2000000));
+$('btnShowStat').addEventListener('click', () => showScreen(0x081670, 'adl', 'STAT grid'));
 $('btnAutoRun').addEventListener('click', () => {
   autoRunning = !autoRunning;
   $('btnAutoRun').textContent = autoRunning ? 'Stop' : 'AutoRun';
