@@ -3,7 +3,7 @@
 **Last updated**: 2026-04-12T02:40Z
 **Focus**: TI-84 Plus CE ROM transpilation (CC-led this session, Codex continues). The trainer app pivoted to Physical Calculator Mode on 2026-04-11 evening — see `CONTINUATION_PROMPT.md` for trainer work, this file is the ROM-side source of truth.
 
-**ROM transpiler current state** (after 2026-04-12 Phase 30):
+**ROM transpiler current state** (after 2026-04-12 Phase 31):
 - Coverage: **16.5076%** (124543 blocks, 692377 bytes)
 - Seed count: **21333**
 - Live stubs: **0**
@@ -15,6 +15,7 @@
 - **Full OS init**: **WORKING** end-to-end (handler 0x08C331, 691 steps, 1M RAM writes, matches Phase 24C predictions)
 - **Multi-character rendering**: **WORKING** (Phase 29 — 5-char HELLO renders at 5 distinct positions, 1336 non-zero cells spanning rows 37-52 cols 2-61)
 - **Real boot path**: **WORKING** end-to-end (Phase 30 — boot runs 8804 steps to halt, naturally reaches 0x0013c9 and sets MBASE=0xD0 via `ld mb, a` — no manual register override needed for character rendering)
+- **Real OS UI rendered**: **WORKING** (Phase 31 — `0x081670` jump-table[748] draws the TI-84 STAT/MATRIX editor grid with 1534 pixels, 5 column dividers, 155-row × 308-col bounding box. First real OS UI element rendered end-to-end through lifted blocks.)
 - **ROM write-protect**: implemented in cpu-runtime.js write8/write16/write24 — flash region 0x000000-0x3FFFFF is now read-only
 - **MBASE register**: implemented (Phase 29) — cpu.mbase composes `(mbase << 16) | addr16` for Z80-mode and .SIS/.LIS memory accesses
 - **OTIMR (eZ80 Output Increment Modify Repeat)**: Phase 30 — fixed to actually loop until B=0 AND increment C each iteration (was running one iteration with no C++)
@@ -866,6 +867,34 @@ Includes diagnostic probes `probe-09a3bd.mjs` and `probe-find-slow.mjs`.
 
 Commit `118a120`.
 
+### Phase 31: First real OS UI rendered (2026-04-12 CC session) — DONE ✓
+
+Investigated the small-VRAM-writer candidates from Survey v2. Found two real UI primitives and the first complete OS UI element rendered through lifted blocks.
+
+**Primitive #1: `0x0a35b0` — horizontal line at HL** (`probe-0a35b0.mjs`):
+- Takes HL as destination VRAM address
+- Writes 119 pixels (238 bytes) of color 0x1CE7 (gray)
+- 11 blocks, clean exit
+- Calling convention: `ld hl, 0xd40000; call 0x0a35b0`
+
+**UI Element: `0x081670` (jump-table[748]) — STAT/MATRIX editor grid** (`probe-081670.mjs`):
+- 20000 steps, max_steps at 0x082be2 in 72ms
+- 1534 non-zero pixels in single color 0x1CE7
+- Bounding box: rows 55-209 (155 tall), cols 12-319 (308 wide)
+- Renders the classic TI-84 STAT/MATRIX editor with:
+  - Top header bar
+  - 5 vertical column dividers + outer borders
+  - Header separator line
+  - ~40 data rows
+- **First piece of real OS-rendered TI-84 UI drawn to VRAM end-to-end through lifted ROM blocks.**
+
+**Catalog probe** (`probe-phase31-catalog.mjs`): tests 9 small-VRAM-writer candidates with 6 calling conventions each (no args, HL=VRAM, A=H, A=H+HL=VRAM, IX=VRAM, IY=VRAM). Discovered:
+- 0x097ac8 (jump-table[805]) is the LCD diagnostic from Phase 28.5 — 76,775 px diagonal scan
+- 0x06f274 (jump-table[715]) draws 490 px in rows 46-48 cols 4-188 — a 3-row × 184-col horizontal band, color 0xAA52. Possibly a divider or progress bar.
+- 0x07fae7, 0x07fd3a, 0x0a2854, 0x0976ed, 0x08a850 — survey numbers came from input variants we didn't test in the catalog. Need wider register fuzzing.
+
+Commits `aa609af` (horizontal-line primitive), `9bb0c83` (STAT editor grid).
+
 ---
 
 - `ba6ae75` — Add Physical Calculator Mode (step card renderer, `physicalAdvance` / `physicalBack`, `physicalMode` persisted flag, renderer replaces WASM panel when active)
@@ -980,17 +1009,24 @@ POP IY / POP IX / POP AF / RETI
 
 Coverage at 124543 blocks (16.5076%). ISR gate unlocked. Keyboard scan working. Browser shell deployed. **OS init + multi-character draw pipeline working end-to-end** (Phase 28+29). **Real boot path runs 8804 steps through hardware init to halt** (Phase 30). ROM write-protected. MBASE implemented + auto-set. Remaining frontiers:
 
-### 1. Phase 31: Investigate small-VRAM-writer candidates from Survey v2
+### 1. Reach the home screen / find higher-level UI render functions
 
-Survey v2 (Phase 30b) found 84 VRAM writers. The interesting NEW finds are the small-VRAM writers (272-816 bytes) that were previously hidden by the MBASE bug:
+Phase 31 found that **`0x081670` renders the TI-84 STAT/MATRIX editor grid** (1534 px, 5 column dividers, color 0x1CE7). And **`0x0a35b0` is a horizontal-line primitive** that takes HL as the destination address.
 
-- **0x097ac8, 0x0a2854, 0x0976ed, 0x08a850** — jump-table entries, all writing exactly 816 bytes. Could be multi-character draws or small icons.
-- **0x081670** (jump-table[748]) — 408 writes. 408 / 2 = 204 pixels. Maybe a single character with metadata.
-- **0x06f274** (jump-table[715]) — 278 writes
-- **0x0ac2cb, 0x05da51, 0x05db12, 0x05db2e** — 264-272 writes each. Small icons?
-- **0x09173e** (vram-load-site) — 3552 writes. Several characters worth.
+These are real OS UI primitives. But we still don't have the **home screen** — the TI-OS main screen with menu bar, time, status, etc.
 
-Approach: deep-dive each via a probe similar to `probe-097ac8.mjs`. Test with various register inputs. Render the resulting VRAM as ASCII art to identify what they draw.
+Approach for finding home screen:
+- Look for function callers of `0x081670` or other UI primitives
+- Each caller is "code that displays the STAT editor". Trace one back — eventually you find the menu code that displays the home screen and lets you navigate to STAT.
+- OR: search ROM for `_DispHome`-like patterns. The home screen render likely lives in a fixed location callable from boot.
+- OR: invoke `0x081670` with a parameter that switches to "home screen mode" instead of STAT editor mode.
+
+### 2. Other Phase 31 catalog candidates
+
+Survey v2 also identified small-VRAM writers that DIDN'T render in our catalog probe with standard register conventions:
+- **0x06f274** (jump-table[715]) — catalog showed 490 px in rows 46-48 cols 4-188 (3-row horizontal band, color 0xAA52). Could be a divider or progress bar.
+- **0x07fae7, 0x07fd3a, 0x0a2854, 0x0976ed, 0x08a850** — survey numbers came from input variants we didn't test in catalog. Need wider register fuzzing (BC/DE pointing to specific RAM addresses, IY=0xD00080, etc).
+- **0x09173e** (vram-load-site) — 3552 writes per survey. Could be a multi-line text area or icon set.
 
 ### 2. LCD controller enable
 
