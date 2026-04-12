@@ -24,6 +24,8 @@ mem.set(romBytes);
 const ex = createExecutor(PRELIFTED_BLOCKS, mem, { peripherals: p });
 const cpu = ex.cpu;
 
+// ROM write-protect is now in cpu-runtime.js write8/write16/write24
+
 // ============================================================================
 // Stage 1: Cold boot
 // ============================================================================
@@ -117,6 +119,9 @@ const ramAfter = {
 };
 console.log(`  post-init: callback=${hex(ramAfter.callback)} sysFlag=${hex(ramAfter.sysFlag, 2)} initFlag=${hex(ramAfter.initFlag, 2)}`);
 console.log(`  cursor: curCol=${hex(ramAfter.curCol, 2)} curRow=${hex(ramAfter.curRow, 2)}`);
+// Verify magic at 0x020100 wasn't overwritten
+console.log(`  mem[0x020100..0x020108]: ${Array.from(mem.slice(0x020100, 0x020108)).map(b=>b.toString(16).padStart(2,'0')).join(' ')}`);
+console.log(`  mem[0x003d6e..0x003d76] (font base): ${Array.from(mem.slice(0x003d6e, 0x003d76)).map(b=>b.toString(16).padStart(2,'0')).join(' ')}`);
 
 // ============================================================================
 // Stage 3: Attempt character draw
@@ -156,11 +161,21 @@ cpu.write8 = function(addr, value) {
   return origWrite8b(addr, value);
 };
 
+const drawTrail = [];
 const drawResult = ex.runFrom(0x0059c6, 'adl', {
   maxSteps: 100000,
   maxLoopIterations: 500,
-  onBlock: (pc, mode) => { drawBlocks++; },
+  onBlock: (pc, mode) => {
+    drawBlocks++;
+    drawTrail.push(`${hex(pc)}:${mode} A=${hex(cpu.a, 2)} HL=${hex(cpu.hl)} DE=${hex(cpu.de)} BC=${hex(cpu.bc)} madl=${cpu.madl}`);
+  },
 });
+
+console.log('  Draw trail (first 30 blocks):');
+for (const t of drawTrail.slice(0, 30)) console.log(`    ${t}`);
+// Inspect the font buffer at 0xd005a1..0xd005c8 where LDIR should have copied the glyph
+console.log('  RAM at 0xd005a1 (font staging buffer):');
+console.log('    ' + Array.from(mem.slice(0xd005a1, 0xd005c8)).map(b=>b.toString(16).padStart(2,'0')).join(' '));
 
 console.log(`Draw: ${drawResult.steps} steps → ${drawResult.termination} at ${hex(drawResult.lastPc)}`);
 console.log(`  blocks visited: ${drawBlocks}`);
@@ -202,7 +217,10 @@ for (const ch of chars) {
     return origW(addr, value);
   };
   const result = ex.runFrom(0x0059c6, 'adl', { maxSteps: 10000, maxLoopIterations: 500 });
-  console.log(`  '${ch}': ${result.steps} steps → ${result.termination}, ${writes} VRAM writes, cursor=(${mem[0xD00595]}, ${mem[0xD00596]})`);
+  // Count non-zero cells AFTER this character only
+  let nzNow = 0;
+  for (let i = 0xD40000; i < 0xD40000 + 320*240*2; i++) if (mem[i] !== 0) nzNow++;
+  console.log(`  '${ch}': ${result.steps} steps → ${result.termination}, ${writes} writes, VRAM non-zero=${nzNow}, cursor=(${mem[0xD00595]}, ${mem[0xD00596]})`);
   totalWrites += writes;
   perCharWrites.push(writes);
 }
@@ -227,17 +245,32 @@ if (allNonZero > 0) {
   console.log(`  Last pixel:  row=${Math.floor(lastOff/640)}, col=${Math.floor((lastOff%640)/2)}`);
 }
 
-// ASCII render of the text region (rows 35-55, cols 0-80)
-console.log('\nText-art render of VRAM (rows 35-55, cols 0-80), # = pixel on:');
-for (let row = 35; row <= 55; row++) {
-  let line = '';
-  for (let col = 0; col < 80; col++) {
+// ASCII render of the text region — find non-empty rows first
+let minRow = 240, maxRow = -1, minCol = 320, maxCol = -1;
+for (let row = 0; row < 240; row++) {
+  for (let col = 0; col < 320; col++) {
     const off = row * 640 + col * 2;
-    // Pixel is 2 bytes BGR565. "On" if any byte non-zero
-    const pixelOn = mem[0xD40000 + off] !== 0 || mem[0xD40000 + off + 1] !== 0;
-    line += pixelOn ? '#' : '.';
+    if (mem[0xD40000 + off] !== 0 || mem[0xD40000 + off + 1] !== 0) {
+      if (row < minRow) minRow = row;
+      if (row > maxRow) maxRow = row;
+      if (col < minCol) minCol = col;
+      if (col > maxCol) maxCol = col;
+    }
   }
-  console.log('  ' + line);
+}
+if (maxRow >= 0) {
+  console.log(`\nText-art render (rows ${minRow}-${maxRow}, cols ${minCol}-${maxCol}), # = pixel on:`);
+  const padLeft = Math.max(0, minCol - 2);
+  const padRight = Math.min(319, maxCol + 2);
+  for (let row = Math.max(0, minRow - 1); row <= Math.min(239, maxRow + 1); row++) {
+    let line = '';
+    for (let col = padLeft; col <= padRight; col++) {
+      const off = row * 640 + col * 2;
+      const pixelOn = mem[0xD40000 + off] !== 0 || mem[0xD40000 + off + 1] !== 0;
+      line += pixelOn ? '#' : '.';
+    }
+    console.log('  ' + line);
+  }
 }
 
 // Check VRAM

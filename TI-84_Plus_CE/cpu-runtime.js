@@ -118,7 +118,12 @@ export class CPU {
   }
 
   write8(addr, value) {
-    this.memory[addr & this._memMask] = value & 0xff;
+    const a = addr & this._memMask;
+    // Flash ROM (0x000000-0x3FFFFF on TI-84 CE) is read-only at hardware level.
+    // Silently drop writes — OS code sometimes touches these addresses via
+    // wide LDIR loops and we must not corrupt the ROM image.
+    if (a < 0x400000) return;
+    this.memory[a] = value & 0xff;
   }
 
   read16(addr) {
@@ -128,6 +133,7 @@ export class CPU {
 
   write16(addr, value) {
     const a = addr & this._memMask;
+    if (a < 0x400000) return; // ROM write-protect
     this.memory[a] = value & 0xff;
     this.memory[a + 1] = (value >> 8) & 0xff;
   }
@@ -139,6 +145,7 @@ export class CPU {
 
   write24(addr, value) {
     const a = addr & this._memMask;
+    if (a < 0x400000) return; // ROM write-protect
     this.memory[a] = value & 0xff;
     this.memory[a + 1] = (value >> 8) & 0xff;
     this.memory[a + 2] = (value >> 16) & 0xff;
