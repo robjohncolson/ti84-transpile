@@ -284,6 +284,13 @@ function showScreen(entryAddr, entryMode, name, maxSteps = 300000) {
   for (let i = 0; i < 12; i++) romBytes[cpu2.sp + i] = 0xFF;
   cpu2.f = 0x40; // Z flag set — avoids taking RET NZ at function entry
 
+  // Phase 40: text-glyph fg/bg color RAM vars (read by 0x0a1a3b inner writer
+  // via LD DE,(0x002688)/LD DE,(0x00268a) which resolve through MBASE=0xD0).
+  // Defaults are 0xFFFF/0xFFFF → glyphs invisible. Set fg=black, bg=white
+  // so MODE/Y=/etc render real letter shapes.
+  romBytes[0xD02688] = 0x00; romBytes[0xD02689] = 0x00; // fg = 0x0000 black
+  romBytes[0xD0268A] = 0xFF; romBytes[0xD0268B] = 0xFF; // bg = 0xFFFF white
+
   const t0 = performance.now();
   const r = ex2.runFrom(entryAddr, entryMode, { maxSteps, maxLoopIterations: 2000 });
   const dt = Math.round(performance.now() - t0);
