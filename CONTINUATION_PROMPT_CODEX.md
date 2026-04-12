@@ -998,6 +998,52 @@ Artifact: `TI-84_Plus_CE/probe-boot-then-irq.mjs`.
 
 Artifacts: `TI-84_Plus_CE/probe-mode-screen.mjs`, plus the string-search findings in this document.
 
+### Phase 35: reseed MODE parents + retranspile (2026-04-12 CC session) — DONE ✓
+
+Added 9 MODE call-tree addresses to `scripts/transpile-ti84-rom.mjs` (Phase 34/35 seed block): 0x0296dd, 0x029610, 0x0293ea, 0x04082f, 0x040b16, 0x028f02, 0x029441, 0x029683, 0x0296ad. Walker retranspiled in 2.0s: 124543 → **124546 blocks** (+3). Most seeds were already reachable via the post-Phase-27 walker; only 3 produced new blocks.
+
+**Rerunning probe-mode-screen.mjs against the new build: results identical.** 0x0296dd still renders 14,292 cells. 0x04082f still runs 26K steps with zero VRAM writes. 0x0293ea and 0x029610 still terminate at step 1 / 408 with missing-block.
+
+Root cause for the early termination: **`RET NZ` with Z flag clear at runFrom entry**. Our probe doesn't explicitly set cpu.f before the runFrom call, so f=0 (NZ true), the first conditional return is taken, popping the sentinel 0xFFFFFF off the stack and landing in missing_block. **Fix for future probes**: set `cpu.f = 0x40` (Z flag set) before invoking any function that starts with conditional returns. This is included in probe-more-screens.mjs (Phase 36) and it materially improves probe success rates.
+
+The top-level 0x04082f still runs cleanly for 26K steps but draws nothing. Likely cause: the coroutine pops our sentinel values into HL and stores 0xFFFFFF as the callback pointer, then enters a processing loop that never reaches the draw stage because it thinks the screen state is already valid or is waiting for an event that never fires. Real invocation needs a valid HL pushed on the stack before the CALL, pointing to a plausible resume address like 0x0019BE.
+
+### Phase 36: Y= / STAT PLOT editor via Plot1 anchor (2026-04-12 CC session) — DONE ✓
+
+**String anchors scanned** (many adjacent label tables found):
+- `0x0778b4`: `"Plot1\0Plot2\0Plot3\0..."` — STAT PLOT / Y= editor row labels
+- `0x03ed08`: `"MATRX\0EQU\0GDB\0PIC\0PRGM\0..."` — VARS menu variable-type labels (no LD-HL xrefs, probably indexed via offset calculation)
+- `0x07b992`: `"STAT\0 2ND STAT PLOT\0 STO>\0"` — menu-bar string table
+- `0x07b9e6`: `"ZOOM\0"` — another menu-bar entry in the same table region
+- `0x062909`: `"WINDOW RANGE\0Check value\0"` — error help strings in the 0x062xxx region
+- `0x0a044f`: `"RadianN\x06DegreeO\x06NormalP\x03..."` — token-prefixed catalog
+
+**Plot1 xref chain** — `LD HL, 0x0778b4` at 0x0784ad → containing function 0x078419 → parent 0x0782fd → dispatcher **0x077e9d (zero callers)**.
+
+**probe-more-screens.mjs** results with `cpu.f=0x40` (Z set) on entry:
+
+| Entry | Steps | VRAM writes | Non-zero cells | Region |
+|-------|------:|------------:|--------------:|--------|
+| 0x077e9d (Plot dispatcher top) | 1 | 0 | 0 | — (early `RET Z` exits against our flag setup) |
+| 0x0782fd (Plot parent) | 200,000 | 0 | 0 | 0x08xxxx + 0x04xxxx walk loop |
+| **0x078419 (Plot draw inner)** | **200,000** | **126,392** | **54,528** | **rows 37-234 × cols 0-313** |
+| 0x07b886 (menu-bar table area) | 1 | 0 | 0 | — (hit sentinel) |
+
+**0x078419 rendered 54,528 cells — the biggest UI so far, ~70% of the screen**. Extended run to 2M steps (`probe-78419-full.mjs`) gave 207,347 blocks, 131,040 VRAM writes, 56,520 non-zero cells before hitting the sentinel exit. Structural layout is clearly the STAT PLOT / Y= editor grid:
+
+- Solid 18-row highlighted band, 2-row gap, 18-row band, 2-row gap, ... — five to six full-width bands spanning rows 37-234.
+- This is the classic TI-84 stat-plot editor layout: Plot1/Plot2/Plot3 rows at top, then Y= entries Y1..Y9/Y10 below.
+
+**Missing**: individual glyph text on top of the highlighted bars. The bars render as solid fills (no `.` cells punched in), meaning the draw routine that overlays label text on the bars didn't run or ran without proper Y= variable state (equation strings, plot on/off bits, current selection). This matches Phase 29's insight — full rendering needs RAM state we haven't set up. The **structural layout is correct** even without it.
+
+**Both screen-render top entries now known**:
+- **0x0296dd**: MODE screen renderer — 14,292 cells across rows 37-114 × cols 0-241. Multi-row inverse-video highlighted labels (RADIAN/DEGREE, FUNC/PAR/POL/SEQ, etc.).
+- **0x078419**: STAT PLOT / Y= editor renderer — 54,528 cells across rows 37-234 × cols 0-313. Multi-band row layout.
+
+Add them both to the shell-screen catalog. Next screens to locate via the same string-anchor-climb technique: TABLE editor (anchor: "Xmin"/"Xmax" at 0x062934, already has error-text near it — likely need a different anchor), MATH menu (`MATH/NUM/CPX/PRB` at 0x0290fd), VARS menu (0x03ed08 but no LD-HL), MATRIX editor (already have this — it's 0x081670 from Phase 31).
+
+Artifacts: `TI-84_Plus_CE/probe-more-screens.mjs`, `TI-84_Plus_CE/probe-78419-full.mjs`.
+
 ---
 
 - `ba6ae75` — Add Physical Calculator Mode (step card renderer, `physicalAdvance` / `physicalBack`, `physicalMode` persisted flag, renderer replaces WASM panel when active)
