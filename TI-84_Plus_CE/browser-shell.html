@@ -64,6 +64,11 @@ button.active { background: #2a5a2a; border-color: #4a8a4a; }
       <button id="btnShowC" disabled>Scr C (short)</button>
       <button id="btnShowD" disabled>Scr D (dialog)</button>
     </div>
+    <div class="controls">
+      <button id="btnShowE" disabled>Scr E (tall)</button>
+      <button id="btnShowF" disabled>Scr F (full)</button>
+      <button id="btnShowG" disabled>Scr G (half)</button>
+    </div>
     <div id="status" class="status">Ready. Click Boot to start.</div>
     <div class="regs" id="regs">
       <span class="label">A=</span><span class="val" id="rA">00</span>
@@ -229,6 +234,9 @@ function enableButtons(booted) {
   $('btnShowB').disabled = !booted;
   $('btnShowC').disabled = !booted;
   $('btnShowD').disabled = !booted;
+  $('btnShowE').disabled = !booted;
+  $('btnShowF').disabled = !booted;
+  $('btnShowG').disabled = !booted;
 }
 
 // Phase 37: freshly boot → run OS init → runFrom(screen entry) and swap the
@@ -441,6 +449,10 @@ $('btnShowA').addEventListener('click', () => showScreen(0x09e30c, 'adl', 'Scree
 $('btnShowB').addEventListener('click', () => showScreen(0x09e370, 'adl', 'Screen B', 400000));
 $('btnShowC').addEventListener('click', () => showScreen(0x09e2bf, 'adl', 'Screen C', 400000));
 $('btnShowD').addEventListener('click', () => showScreen(0x08aac3, 'adl', 'Screen D', 100000));
+// Phase 39: more candidates from (0xd007e0) dispatch-table scan
+$('btnShowE').addEventListener('click', () => showScreen(0x09e312, 'adl', 'Screen E', 400000));
+$('btnShowF').addEventListener('click', () => showScreen(0x0863b9, 'adl', 'Screen F', 400000));
+$('btnShowG').addEventListener('click', () => showScreen(0x08aa67, 'adl', 'Screen G', 200000));
 $('btnAutoRun').addEventListener('click', () => {
   autoRunning = !autoRunning;
   $('btnAutoRun').textContent = autoRunning ? 'Stop' : 'AutoRun';

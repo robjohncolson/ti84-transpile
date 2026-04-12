@@ -67,15 +67,20 @@ function freshRun(entry, mode, maxSteps = 500000) {
   return { r, blocks, vramWrites, nz, minR, maxR, minC, maxC, topR, mem };
 }
 
-// Dispatch table at 0x96e5c picks screens based on (0xd007e0) key code:
-//   0x48 → 0x9e30c    0x51 → 0x9e370    0x4b → 0x9e3b4 (TABLE SETUP, confirmed)
-//   0x53 → 0x9e2bf    0x4b → 0x8aac3    0x53 → 0x8aab3
+// Phase 39: more candidates from the 219 dispatch sites reading (0xd007e0)
 const candidates = [
-  { addr: 0x09e30c, name: 'Dispatch target key=0x48 (09e30c)' },
-  { addr: 0x09e370, name: 'Dispatch target key=0x51 (09e370)' },
-  { addr: 0x09e2bf, name: 'Dispatch target key=0x53 (09e2bf)' },
-  { addr: 0x08aac3, name: 'Dispatch target key=0x4b alt (08aac3)' },
-  { addr: 0x08aab3, name: 'Dispatch target key=0x53 alt (08aab3)' },
+  { addr: 0x079170, name: 'Y= sub-screen (79170)' },
+  { addr: 0x09e312, name: 'Cross-region screen (9e312)' },
+  { addr: 0x0861a0, name: '86xxx dispatch target (861a0)' },
+  { addr: 0x0862d8, name: '86xxx dispatch target (862d8)' },
+  { addr: 0x0863b9, name: '86xxx dispatch target (863b9)' },
+  { addr: 0x08aa67, name: '8b0c7 alt target (8aa67)' },
+  { addr: 0x08c630, name: '8aff6 target (8c630)' },
+  { addr: 0x057691, name: '8b062 target (57691)' },
+  { addr: 0x09d446, name: '608a3 target (9d446)' },
+  { addr: 0x084c31, name: '84b50 target (84c31)' },
+  { addr: 0x0b7891, name: 'b78e0 target (b7891)' },
+  { addr: 0x0b4460, name: 'ad080 target (b4460)' },
 ];
 
 for (const c of candidates) {
