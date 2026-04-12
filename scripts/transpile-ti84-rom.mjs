@@ -21956,6 +21956,10 @@ function walkBlocks() {
     { pc: 0x008642, mode: 'adl' },
     { pc: 0x008844, mode: 'adl' },
     { pc: 0x005351, mode: 'adl' },
+    // Phase 29: real boot path missing blocks (discovered 2026-04-12 via probe-boot-trace)
+    // Boot reaches 0x001afa → 0x0158a6 → 0x00e6d1 → 0x014e3f → 0x00218a → ... → NMI dispatch
+    { pc: 0x00e6d1, mode: 'adl' },
+    { pc: 0x014d18, mode: 'adl' },
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {

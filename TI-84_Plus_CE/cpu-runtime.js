@@ -963,6 +963,11 @@ export function createExecutor(blocks, memory, options = {}) {
       let loopHitCount = 0;
 
       while (steps < maxSteps) {
+        // Keep cpu.madl in sync with the block-mode we're about to dispatch.
+        // Without this, the executor picks up :adl block variants but leaves
+        // madl at whatever it was before, causing subtle bugs like 16-bit
+        // call/ret on ADL blocks that expect 24-bit stack operations.
+        cpu.madl = mode === 'adl' ? 1 : 0;
         const key = pc.toString(16).padStart(6, '0') + ':' + mode;
 
         // Loop detection: check if this key appeared recently (1 or 2-block loop)
