@@ -648,11 +648,7 @@ Test 25 still 9/9 PASS. Event-loop probe unchanged (the common `bit n, r; jr z/n
 - **The NMI handler `0x000066` is a no-op trampoline** for our ROM: it reads port 0x3D (returns 0x00 → zero branch), validates magic at 0x0008bb, then jumps through a redirect chain back to the halt. In real hardware 0x0220a8 probably does something but in our state it's a passthrough.
 - **The TI-OS architecture insight**: the OS doesn't have a single "render every tick" main loop. The shell, apps, and programs run in user context and call OS routines (`_GetCSC`, `_PutC`, etc.) explicitly. The ISR just acks interrupts — it doesn't render. To reach LCD activity we need to either (a) run user-context code that calls draw routines, (b) run OS init handler 0x08C331 first to establish RAM state then call specific functions, or (c) find a simpler VRAM blit routine and call it directly.
 
-**Current frontier for Phase 28 (Option B — Full OS Main Loop)**:
-
-The 2026-04-12 session proved the pipeline works end-to-end for direct function calls. The remaining question is: **how do we reach a state where the OS is running user-context code that draws to VRAM?**
-
-Recommended approach: **run OS init handler 0x08C331 BEFORE calling draw functions**. From Phase 24C, 0x08C331 is major OS init — 691 steps, 162 blocks, writes 262K bytes to system RAM including the callback pointer at 0xD02AD7 and flags at 0xD0009B/0xD177BA. Running it first should establish the RAM state that `_PutC`-style calls need. The risk from Phase 24D ("Running OS init before boot corrupts RAM, causing boot to loop at PLL") is real — the fix is to run boot FIRST (to cold-state), THEN run OS init, THEN call the draw function.
+Phase 27 closed with the recommendation to run OS init handler 0x08C331 *after* boot to establish RAM state, then call draw routines — that became Phase 28.
 
 ### Phase 28: Full OS Init + Real Glyph Rendering (2026-04-12 CC session) — DONE ✓
 
@@ -830,36 +826,71 @@ POP IY / POP IX / POP AF / RETI
 
 ## What Is Still Missing / Next Frontiers
 
-Coverage at ~124370 blocks (16.5%). ISR gate unlocked. Keyboard scan working. Browser shell deployed. Remaining frontiers:
+Coverage at 124378 blocks (16.5076%). ISR gate unlocked. Keyboard scan working. Browser shell deployed. **OS init + character draw pipeline working end-to-end** (Phase 28). ROM write-protected. Remaining frontiers:
 
-### 1. OS Event Loop Unblock
-- 0xB608 seeds already landed in commit `1836e80`; event loop runs 50K steps
-- Next step: rerun Test 23 on current `ROM.transpiled.js` (the one from `1836e80`) and see where it hangs now
-- The event loop at 0x001C33 walks a ROM table — need to understand what it dispatches
-- The stalled 19:06 retranspile on 2026-04-11 was going to feed in `new-seeds.txt` / `new-seeds-round2.txt` / `new-seeds-round3.txt` from the frontier runner. **That run died silently; diagnose first or bypass by manually running `node scripts/transpile-ti84-rom.mjs` with a small seed batch**
+### 1. Multi-character column advance bug (Phase 28 refinement)
 
-### 2. LCD Display
-- LCD MMIO intercept at 0xE00000 is wired (LCDUPBASE at 0x10, LCDControl at 0x18)
-- VRAM renderer at 0xD40000 (BGR565, 320×240, 153KB) is working
-- LCD stays black because OS boot path doesn't write VRAM
-- Need the event loop to reach display init code (depends on frontier #1)
+Single-character rendering works. Calling 0x0059c6 with `A='H'` reads ROM font, unpacks via the `sla c; adc a, d` loop, draws a real glyph outline to VRAM.
 
-### 3. CEmu Trace Verification
+**But** calling it 5 times for "HELLO" draws all 5 characters at approximately the same position, overlapping each other. Cursor variable at 0xD00595 advances correctly (0 → 5) but the column-to-pixel conversion produces wrong offsets.
+
+Suspected cause: block 0x005ab6 does `ld de, (0x00059c)` to load a column stride. ROM address 0x00059c contains `c3 5c 09 01` — a `JP 0x01095c` instruction (code bytes, not data). Reading as 16-bit gives 0x5cc3; as 24-bit gives 0x095cc3 — both bogus as column offsets.
+
+Hypotheses to investigate:
+- The draw routine should read from RAM (0xD005xx) not ROM (0x00059c). Maybe there's a base register that should make 0x00059c indexed into RAM.
+- The draw routine should never reach block 0x005ab6 in this configuration — maybe we're missing a branch that routes to a different draw path for regular text (as opposed to something like a "status bar" draw).
+- The column offset value at 0xD005A0 (which IS in RAM, set per-call) might be the real offset, and 0x00059c is a red herring we're misreading.
+
+Tool: extend `probe-os-init-draw.mjs` to trace exactly what HL ends up as after the `add hl, de; add hl, de` sequence at 0x005acd, and compare against the expected column position for each character.
+
+### 2. LCD controller enable
+
+LCD MMIO intercept at 0xE00000 is wired (LCDUPBASE at offset 0x10, LCDControl at offset 0x18 per cpu-runtime comments). VRAM renderer at 0xD40000 decodes BGR565. But LCDControl is never set by our current run, so the browser-shell canvas doesn't render the VRAM data even after OS init fills it.
+
+Option A: let OS init set LCDControl naturally (look for `ld ix, 0xe00000; ... set 0, (ix+24)` in ROM code and trace whether that path is hit).
+Option B: patch the browser-shell's LCD renderer to render VRAM regardless of LCDControl state — it's just a canvas readout, the "control" bit is mostly relevant for interrupts and timing.
+
+### 3. Reach TI-OS home screen / shell
+
+The deepest frontier. We've proven each layer (boot, init, draw) works in isolation. But we haven't reached the state where the OS is **sitting at the home screen, waiting for input, and responding to keys with UI updates**.
+
+What's missing: an OS "main loop" entry point (post-init) that polls keyboard + updates display. Options:
+- Find the OS `_DispHome` or equivalent and call it after 0x08C331 init
+- Simulate what the real boot path does after 0x08C331 returns (it must eventually reach a wait-for-key loop)
+- Run 0x08C331 → post-init entry that restores callbacks and halts ready for IRQs
+
+### 4. CEmu Trace Verification
+
 Compare block-by-block register state against CEmu to find emitter correctness bugs:
 - Export CEmu execution trace for first ~100 blocks from reset
 - Compare A/F/BC/DE/HL/SP/IX/IY after each block
 - Flag mismatches reveal ALU/flag computation errors that silently take wrong branches
 
+Phase 27-28 found **7 emitter/runtime bugs** by careful instrumentation — CEmu diff would surface the next batch systematically.
+
 ### Key Technical Findings
 
-- **ISR gate unlocked (Phase 24A)**: Flash port 0x06 returns 0xD0 (hardware ready status). Boot code reads port 0x06 but only SET bit 2 and write back — never branches on the value. 0xD0 has bit 2 = 0, passing the BIT 2 test, then CP 0xD0 matches.
-- **ISR dispatch path**: 0x38 → 0x6F3 (IN0 flash) → 0x704 (CP 0xD0 gate) → 0x710 (callback dispatch) → 0x1713 (call callback) → 0x719 → 0x19BE (event loop)
-- **Callback table at 0xD02AD7**: 24-bit pointer to ISR callback handler. Zeroed in our memory → calls 0x000000 (reset). Real OS sets this during init.
-- **Handler 0x08C331 is OS init**: 691 steps, 162 blocks across 10 regions. Writes 262K bytes to system RAM, initializes callback table at 0xD02AD7. Heavy in 0x0A0000 (statistics) and 0x050000 regions.
-- **ISR cycling is self-modifying**: The callback pointer at 0xD02AD7 evolves across interrupt cycles (0→0x10→0x0040B2). The ISR dispatch system bootstraps itself through repeated interrupt handling. Blocked at missing block 0x00AFF7.
-- **Port I/O is 16-bit**: `IN r,(C)` / `OUT (C),r` use full BC register. Interrupt controller (0x5000+), memory controller (0x1000+), LCD controller (0x4000+) all via 16-bit ports.
-- **Boot completes in 62 steps**: DI → PLL init → hardware setup → RST 0x08 → init → power-down HALT.
-- **MMIO at 0xF00000+**: Not accessed during current execution paths. LCD writes happen later (after key press wake).
+**ISR dispatch path (working)**: 0x38 → 0x6F3 (IN0 flash) → 0x704 (CP 0xD0 gate) → 0x710 (callback dispatch) → 0x1713 (validate magic via 0x8BB) → 0x1717 (ret nz on magic fail) → 0x1718 (ret nz on 0xD177BA flag) → 0x171E (push BC=0x020000, call 0x67F8) OR → 0x719 (jp nz 0x19BE). The 0x719 → 0x19BE path fires when 0xD177BA is set (post-OS-init) — that's the real event loop entry.
+
+**OS init (0x08C331, working)**: 691 steps, 1,049,479 RAM writes, 10 code regions. Sets callback pointer at 0xD02AD7 to 0xFFFFFF sentinel, system flag at 0xD0009B to 0xFF, 0xD177BA to 0xFF (the post-init flag). Writes real font data indirectly by... actually the font is in ROM at 0x003d6e + char*0x1c and is read on demand, not copied during init.
+
+**ROM write-protect is essential**: OS init writes to addresses in 0x000000-0x3FFFFF during its init sequence. Some of those are stray/buggy writes that would corrupt ROM. Real TI-84 CE flash is read-only at hardware level. `cpu-runtime.js` `write8/16/24` now silently drop writes where `addr < 0x400000`.
+
+**Timer IRQ must be disabled for OS init paths**: the default 200-tick IRQ fires mid-init and hijacks execution into the ISR trampoline (0x1713 → ... → 0x67F8 → 0x1c33 infinite loop). Pass `timerInterrupt: false` to `createPeripheralBus` when running OS init.
+
+**Character print (0x0059C6, working for single char)**:
+- Entry: `cp 0xd6` (check for CR), jr nz to char path
+- Calls 0x005a75 (prologue: di, push registers, cp 0xfa for special char)
+- Computes char offset: `ld l, a; ld h, 0x1c; mlt hl` → HL = char × 28
+- Calls 0x00596e (font load): validates magic, then `ld hl, 0x003d6e; add hl, de; ld de, 0xd005a5; ld bc, 0x1c; ldir` copies 28 bytes of glyph from ROM to RAM staging buffer
+- Returns to 0x005a8b: `pop ix` (IX = 0xD005A1, 4 bytes before glyph)
+- Glyph unpack loop at 0x005b16: for each bit in glyph byte, `sla c; adc a, d` writes either 0xFF (bg) or 0x00 (fg) to VRAM
+
+**Font table base at 0x003D6E**, 28 bytes per glyph. TI-84 big font (12x16 pixels, stored as 1-bit bitmap + metadata).
+
+**Port I/O is 16-bit**: `IN r,(C)` / `OUT (C),r` use full BC register. Interrupt controller (0x5000+), memory controller (0x1000+), LCD controller (0x4000+) all via 16-bit ports.
+
+**eZ80 mode prefix .SIL** (0x52) before SBC HL, BC does 16-bit subtract preserving HLU (upper byte of HL). Our runtime handles this via the `addressMask` based on `cpu.madl`, but runFrom must sync madl to startMode (fixed in Phase 27).
 
 ---
 
@@ -876,22 +907,44 @@ Compare block-by-block register state against CEmu to find emitter correctness b
 
 ## Useful Repo Files
 
-- `scripts/transpile-ti84-rom.mjs` — ROM transpiler (source of truth, 125 seeds)
+### Transpiler + runtime
+- `scripts/transpile-ti84-rom.mjs` — ROM transpiler, 21331 seeds, source of truth. Runs in ~2s after Phase 27 walker fix. Streams progress + errors to stderr.
 - `TI-84_Plus_CE/ROM.rom` — TI-84 Plus CE ROM image (4MB)
-- `TI-84_Plus_CE/ROM.transpiled.js` — Generated module (50485 blocks)
+- `TI-84_Plus_CE/ROM.transpiled.js` — Generated module, 124378 blocks, 16.5076% coverage. Gitignored (175MB).
+- `TI-84_Plus_CE/ROM.transpiled.js.gz` — Compressed module, committed for browser shell (~15MB).
 - `TI-84_Plus_CE/ROM.transpiled.report.json` — Coverage metrics
-- `TI-84_Plus_CE/cpu-runtime.js` — CPU class + createExecutor + missing block discovery
-- `TI-84_Plus_CE/peripherals.js` — I/O peripheral bus + interrupt controller (PLL, GPIO, flash=0xD0, keyboard port 0x01, timers, FTINTC010 at 0x5000, memory ctrl at 0x1000, interrupt status 0x3D/0x3E)
-- `TI-84_Plus_CE/test-harness.mjs` — 13-test validation harness + ISR dispatch + event loop + handler table scan
-- `TI-84_Plus_CE/ti84-math.mjs` — Function call harness (FPAdd, FPMult, FPDiv, Sin — 16MB memory, 24-bit regs)
-- `TI-84_Plus_CE/deep-profile.mjs` — Deep execution profiler (0x021000 analysis)
+- `TI-84_Plus_CE/cpu-runtime.js` — CPU class + createExecutor. **Write-protects 0x000000-0x3FFFFF as ROM** (Phase 28). `runFrom` syncs `cpu.madl` with startMode (Phase 27). `in r,(c)` / `in0 r,(n)` update flags via `ioReadAndUpdateFlags` / `ioReadPage0AndUpdateFlags`. `testBit` updates S/Z/PV/H/N.
+- `TI-84_Plus_CE/ez80-decoder.js` — Complete eZ80 instruction decoder (~790 lines)
+- `TI-84_Plus_CE/peripherals.js` — I/O peripheral bus + interrupt controller (PLL, GPIO, flash=0xD0, keyboard port 0x01, timers, FTINTC010 at 0x5000, memory ctrl at 0x1000, interrupt status 0x3D/0x3E). `setKeyboardIRQ(active)` sets bit 19 in rawStatus.
+
+### Validation + harness
+- `TI-84_Plus_CE/test-harness.mjs` — 25-test validation harness. Test 25 (direct keyboard scan at 0x0159C0) is the gold-standard regression check — 9/9 PASS.
+- `TI-84_Plus_CE/test-alu.mjs` — ALU unit tests (72 tests)
+- `TI-84_Plus_CE/ti84-math.mjs` — Function call harness (FPAdd, FPMult, FPDiv, Sin)
 - `TI-84_Plus_CE/coverage-analyzer.mjs` — Gap analysis + heatmap + seed suggestions
-- `TI-84_Plus_CE/ez80-decoder.js` — Complete eZ80 instruction decoder (~790 lines, integrated into transpiler)
-- `TI-84_Plus_CE/test-alu.mjs` — ALU unit tests (72 tests: inc8, dec8, add8, sub8, adc, sbc, flags)
-- `TI-84_Plus_CE/browser-shell.html` — Browser-based ROM executor (320x240 canvas, step/run controls, register display, block trace log)
-- `TI-84_Plus_CE/phase24b-seeds.txt` — 45 seed addresses from ISR exploration (Tests 11-13)
+- `TI-84_Plus_CE/deep-profile.mjs` — Deep execution profiler (0x021000 analysis)
+
+### Investigation probes (from Phase 27-28)
+- `TI-84_Plus_CE/probe-ld-hl.mjs` — Isolated test of block 0x0008bb across modes. Proved the `runFrom` madl desync bug in Phase 27.
+- `TI-84_Plus_CE/probe-event-loop.mjs` — Traces ISR dispatch from 0x000038 with predecessor tracking. Found the `in r,(c)` flag bug and the 0xD177BA uninitialized RAM issue in Phase 27.
+- `TI-84_Plus_CE/probe-main-loop.mjs` — Simulates post-HALT wake via `wakeFromHalt`. Discovered the NMI handler at 0x000066 is a trampoline chain back to halt.
+- `TI-84_Plus_CE/probe-vram-fill.mjs` — Calls 0x005b96 directly to prove the VRAM fill pipeline. Option A proof.
+- `TI-84_Plus_CE/probe-print-char.mjs` — Marker for early attempts at calling 0x0059c6 without OS init. Kept for history.
+- `TI-84_Plus_CE/probe-os-init-draw.mjs` — **Phase 28 star probe**. Runs boot → OS init → character draw end-to-end. Proves the pipeline and ROM write-protect fix. Includes ASCII-art VRAM renderer.
+
+### Browser + automation
+- `TI-84_Plus_CE/browser-shell.html` — Browser-based ROM executor (320x240 canvas, keyboard overlay, LCD intercept, block trace log). Deployed to GitHub Pages.
+- `TI-84_Plus_CE/ti84-keyboard.js` — PC → TI-84 key mapping module (SDK-authoritative reversed group ordering)
+- `TI-84_Plus_CE/ti84-lcd.js` — BGR565 LCD renderer for the browser shell
+- `TI-84_Plus_CE/frontier-runner.mjs` — Autonomous expansion runner: run tests → find missing blocks → inject seeds → retranspile → loop. Calls `cross-agent.py` for Claude Code escalation on stalls. **Default timer IRQ must be disabled** when running OS init paths inside it.
+- `TI-84_Plus_CE/AUTO_FRONTIER_SPEC.md` — Spec for the autonomous runner architecture
+
+### Documentation
+- `TI-84_Plus_CE/PHASE25_SPEC.md` / `PHASE25G_SPEC.md` — Phase 25 / 25G implementation specs
+- `TI-84_Plus_CE/keyboard-matrix.md` — Full 54-key matrix with SDK group mapping + scan codes
+- `TI-84_Plus_CE/phase24b-seeds.txt` — Historical seed addresses from Phase 24B
 - `ti84-rom-disassembly-spec.md`
 - `codex-rom-disassembly-prompt.md`
 - `codex-rom-state-machine-prompt.md`
 - `ti84-native-port-spec.md`
-- `CONTINUATION_PROMPT.md`
+- `CONTINUATION_PROMPT.md` — Trainer-side (Physical Calculator Mode) continuation prompt
