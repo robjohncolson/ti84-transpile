@@ -3,7 +3,7 @@
 **Session context log**:
 - 2026-04-12 (CC session resume): ~5% of 1M-context window after reading this file. Budget is green; continuing Phase 32 work (home-screen hunt via 0x081670 callers).
 
-**Last updated**: 2026-04-12T02:40Z
+**Last updated**: 2026-04-12T13:15Z (Phase 40 in progress)
 **Focus**: TI-84 Plus CE ROM transpilation (CC-led this session, Codex continues). The trainer app pivoted to Physical Calculator Mode on 2026-04-11 evening — see `CONTINUATION_PROMPT.md` for trainer work, this file is the ROM-side source of truth.
 
 **ROM transpiler current state** (after 2026-04-12 Phase 31):
@@ -1115,6 +1115,77 @@ All buttons wired into `browser-shell.html` Phase 37 pattern. Commit pending.
 2. **Identify the specific screens**: visually confirm which TI-OS screen each of 0x09e30c/0x09e370/0x09e2bf corresponds to by rendering them in the browser shell and comparing to a real TI-84 CE.
 3. **Home screen at last**: the home screen has no static labels but IS a screen — search for `LD HL, 0xd40000` directly loaded (bypass MBASE) plus `RST 0x28` (bcall) + `_ClrLCD` pattern.
 4. **Text overlay primitive**: still the best single improvement for visual fidelity of existing screens.
+
+### Phase 40: text-glyph chain decoded, 0x0a1799 isolated, font helper bug suspected (2026-04-12 CC session) — IN PROGRESS
+
+CC analysis decoded the full text-overlay chain by hand from ROM bytes:
+
+**The chain**:
+```
+0x028f02 (label-draw entry)
+ → CALL 0x080244  (state stub: BIT 1,(IY+0x35); CALL NZ 0x02398e; RET)
+ → CALL 0x029374  (string-stage: LDI loop copies HL string to 0xD026EA)
+ → PUSH DE
+ → CALL 0x0a1cac  (text loop: read (HL); INC HL; OR A; SCF; JR Z; CALL 0x0a1b5b; LD A,(0xd00595); CP B; JR C)
+       → CALL 0x0a1b5b  (per-char dispatch: CP 0xd6 newline check; if not, CALL 0x0a1799; INC (0xd00596) cursor)
+            → CALL 0x0a1799  (REAL glyph draw)
+                  ; PROLOGUE decoded:
+                  ;   DI; PUSH AF/BC/DE/HL/IX
+                  ;   RES 2,(IY+2); BIT 1,(IY+13); JR Z,skip; CALL 0x0a237e; LD (HL),A
+                  ;   skip nul / clamp to 0xfa
+                  ;   LD HL,0; LD L,A; LD H,0x1c; MLT HL    ; HL = char × 28 (small font 28 b/glyph)
+                  ;   CALL 0x07bf3e                          ; FONT LOOKUP HELPER
+                  ;   PUSH HL; POP IX                        ; IX = font ptr
+                  ;   LD A,(0xd00595); CALL 0x0a2d4c         ; column-to-VRAM-stride
+                  ;   LD HL,0; LD H,A; LD L,0xa0; MLT HL     ; HL = A * 160
+                  ;   ADD HL,HL; ADD HL,HL                   ; HL = A * 640 (BGR565 row offset)
+                  ;   ... rasterizes 12×18 glyph at computed VRAM addr
+ → POP HL; RES 3,(IY+5); RET
+```
+
+**probe-trace-mode.mjs results** (Codex Task B): runFrom(0x0296dd) for 49858 steps, 147 unique blocks, 2977 calls detected. Top targets:
+
+| Target  | Count | Identity |
+|---------|------:|----------|
+| 0x0a1a3b | **2376** | per-byte glyph writer (called from 0x0a1965 / 0x0a1a17) |
+| 0x000380 | 66 | ? (system call dispatcher?) |
+| 0x00038c | 66 | ? |
+| 0x07bf3e | 66 | font lookup helper |
+| 0x0a1799 | 66 | **glyph draw — once per char in MODE screen** |
+| 0x0a1b5b | 66 | per-char dispatch |
+| 0x0a237e | 66 | ? (called from prologue) |
+| 0x0a2a37 | 66 | ? |
+| 0x0a2d4c | 66 | column-to-VRAM-stride |
+| 0x0a1cac | 8 | text loop |
+| 0x080244 | 8 | text helper stub |
+| 0x029374 | 8 | string staging |
+| 0x028f02 | **4** | label-draw primitive — called 4 times = 4 menu rows in MODE screen |
+
+So the text-overlay routine **IS** running 66 times during MODE render (= 66 chars across 4 menu rows). The reason no glyphs are visible is NOT that the routine isn't reached.
+
+**probe-text-glyph.mjs results** (CC, after Codex Task A timed out and was rewritten directly):
+
+| Scenario | nz | bbox | colors | observation |
+|----------|---:|------|--------|-------------|
+| 0x0a1799 direct, A='R' (0x52) | 252 | rows 37-54 cols 0-13 | only 0xffff | 14×18 solid white box |
+| 0x028f02 with HL="RADIAN" | 1332 | rows 37-54 cols 0-73 | only 0xffff | 6 × 14×18 solid boxes side-by-side |
+| 0x0a1799 with A=0x30..0x39 (digits) | 252 each | identical | only 0xffff | **char-input-independent** |
+| Write-order trace | 3024 writes, 0 different-value overwrites, 360 same-value overwrites | every byte is 0xff | no fg/bg distinction at all |
+
+**Key conclusion**: 0x0a1799 produces a fixed 14×18 solid white rectangle regardless of which character is in A. Every VRAM byte written is 0xFF — there are zero 0x00 (background) bytes ever written. The glyph rasterizer is reading all-1 bits from somewhere, treating them all as foreground.
+
+**Working hypothesis**: 0x07bf3e (the font lookup helper called at 0x0a17c0) is returning a pointer to all-0xFF memory in our post-OS-init state. The likely candidates:
+- 0x07bf3e expects an OS-initialized font selection variable (e.g. at IY+offset or in 0xD0xxxx) that we are not setting → falls into a path that returns a pointer to garbage
+- OR 0x07bf3e returns the font ptr correctly but the rasterizer reads from the WRONG offset (e.g. uses MBASE in a context where we should be passing the upper byte differently)
+- OR the small font ROM region 0x003d6e+ contains all-0xff for the chars we tested (very unlikely — Phase 28+29 confirmed real glyphs render via probe-os-init-draw.mjs which uses 0x0059c6, a different OS char-print routine that DOES read 0x003d6e correctly)
+
+**Phase 41 next steps**:
+1. **Decode 0x07bf3e**: dump bytes and identify what RAM/ROM addresses it reads. Compare against the small-font load at 0x00596e (which Phase 28 confirmed works).
+2. **Check why probe-os-init-draw.mjs's 0x0059c6 path produces real glyphs but the 0x028f02 → 0x0a1799 path does not**: they likely use different font tables or different state setup. The 0x0059c6 path goes through 0x00596e which is a small-font load. 0x0a1799 might use a *different* font table loaded from a state-dependent pointer.
+3. **Trace VRAM writes inside a single 0x0a1799 call** with byte-level granularity to see exactly what addresses are being touched and confirm whether the bug is in the rasterizer or in the font source pointer.
+4. **Set every plausible RAM state variable**: try setting (0xD02505) limit, (0xD00595/96) cursor, IY+13 bit 1 / IY+5 bit 3, font selection vars before calling 0x028f02 to see if any combination unlocks real glyph rendering.
+
+Artifacts: `TI-84_Plus_CE/probe-trace-mode.mjs` (Codex Task B), `TI-84_Plus_CE/probe-text-glyph.mjs` (CC, after Codex Task A timed out).
 
 ### Phase 39: expanded dispatch scan + text-overlay confirmation (2026-04-12 CC session) — DONE ✓
 
