@@ -1191,8 +1191,11 @@ before invoking the draw routine. After this, "RADIAN" renders as actual letter 
 ```
 
 **Phase 41 next steps**:
-1. **Wire the fg/bg fix into all the existing screen-render probes and browser-shell.html buttons** so MODE / Y= / TABLE SETUP / CATALOG show actual text. This is the user-visible payoff.
-2. **Find the OS init step that SHOULD set 0xD02688 / 0xD0268A** — they're not random, they're a runtime "current text color" that some routine sets. Probably set when the OS enters a specific mode (e.g. ClrLCD / DispHome / SetTextColor). Search ROM for `LD HL, 0x002688` or `LD (0x002688), HL` patterns.
+1. **Wire the fg/bg fix into all the existing screen-render probes and browser-shell.html buttons** so MODE / Y= / TABLE SETUP / CATALOG show actual text. **DONE — commit `2329783` (Phase 40b)**.
+2. **Find the OS init step that SHOULD set 0xD02688 / 0xD0268A** — partial: ROM scan found 33 writes to (0x2688) and 12 writes to (0x268a). Key sites:
+   - **0x0802b2 region**: `LD DE,0xffff; LD (0x268a),DE; LD (0x2688),HL; SET 4,(IY+0x4a); RET` — this is a **SetTextFgColor** function (caller supplies HL = fg color, bg is hardcoded white). Bytes 0x0802a8-0x0802b1 look like a 5-entry BGR565 grayscale palette: `ff ff 1c e7 18 c6 51 8c aa 52` = 0xffff, 0xe71c, 0xc618, 0x8c51, 0x52aa. Phase 41 can call this function with HL=0x0000 to set fg=black properly.
+   - **0x08c7e7 inside OS init handler 0x08C331**: `LD (0x26aa),HL; LD (0x268a),HL; RES 7,(IY+0x28)` — OS init DOES write the bg color, but HL at that point is 0xffff in our state. Tracing the source of HL would tell us which OS state variable controls the default bg.
+   - 33 writers total for (0x2688) and 12 for (0x268a) — color is set in many places (per-app, per-mode), confirming it's a runtime "current text color" not a one-shot init.
 3. **Apply the same diagnostic technique to other "render produces solid bars" cases** — the same fg/bg RAM convention probably applies to large-font and inverse-video renderers too.
 4. **Check MODE screen specifically**: MODE render highlights selected option as inverse video (white on black). With fg=0x0000 / bg=0xffff, the selected row should now show black text on white. Without the fix the selected and non-selected rows are indistinguishable. Worth a re-render to confirm.
 
