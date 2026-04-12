@@ -101,9 +101,21 @@ console.log('=== SCENARIO 1: 0x0a1799 direct, A=0x52 (R) ===');
 {
   const { ex, cpu, mem } = fresh();
   setupDrawState(cpu, mem);
+  // Inspect (IY+0x35) before call to see if early-exit guards trigger
+  console.log(`(IY+0x35) = mem[0xd000b5] = 0x${mem[0xd000b5].toString(16)}`);
+  console.log(`(IY+13)   = mem[0xd0008d] = 0x${mem[0xd0008d].toString(16)}`);
   cpu.a = 0x52;
   const r = ex.runFrom(0x0a1799, 'adl', { maxSteps: 50000, maxLoopIterations: 500 });
   console.log(`steps=${r.steps} term=${r.termination} lastPc=0x${r.lastPc.toString(16)}`);
+  // Dump font staging buffer at 0xd005a1..0xd005c0 (28 bytes + 4 byte header)
+  let staging = '';
+  for (let i = 0; i < 32; i++) staging += mem[0xd005a1 + i].toString(16).padStart(2,'0') + ' ';
+  console.log(`staging buf 0xd005a1..: ${staging}`);
+  // What does ROM say the 'R' glyph (0x52) at 0x003d6e + 0x52*0x1c should be?
+  let romGlyph = '';
+  const romBase = 0x003d6e + 0x52 * 0x1c;
+  for (let i = 0; i < 32; i++) romGlyph += ROM[romBase + i].toString(16).padStart(2,'0') + ' ';
+  console.log(`ROM glyph @0x${romBase.toString(16)}: ${romGlyph}`);
   const s = vramStats(mem);
   console.log(`nz=${s.nz} bbox rows ${s.minR}-${s.maxR} cols ${s.minC}-${s.maxC}`);
   console.log(`colors: ${[...s.colors.entries()].map(([k,v]) => '0x'+k.toString(16)+'×'+v).join(', ')}`);

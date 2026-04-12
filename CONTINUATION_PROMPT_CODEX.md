@@ -1174,10 +1174,29 @@ So the text-overlay routine **IS** running 66 times during MODE render (= 66 cha
 
 **Key conclusion**: 0x0a1799 produces a fixed 14×18 solid white rectangle regardless of which character is in A. Every VRAM byte written is 0xFF — there are zero 0x00 (background) bytes ever written. The glyph rasterizer is reading all-1 bits from somewhere, treating them all as foreground.
 
-**Working hypothesis**: 0x07bf3e (the font lookup helper called at 0x0a17c0) is returning a pointer to all-0xFF memory in our post-OS-init state. The likely candidates:
-- 0x07bf3e expects an OS-initialized font selection variable (e.g. at IY+offset or in 0xD0xxxx) that we are not setting → falls into a path that returns a pointer to garbage
-- OR 0x07bf3e returns the font ptr correctly but the rasterizer reads from the WRONG offset (e.g. uses MBASE in a context where we should be passing the upper byte differently)
-- OR the small font ROM region 0x003d6e+ contains all-0xff for the chars we tested (very unlikely — Phase 28+29 confirmed real glyphs render via probe-os-init-draw.mjs which uses 0x0059c6, a different OS char-print routine that DOES read 0x003d6e correctly)
+**Diagnosis (after 2nd probe iteration)**: the font lookup is **NOT** the bug. Decoded:
+- **0x07bf3e**: `EX DE,HL; CALL 0x000380; ADD HL,DE; ...; LDIR 28 bytes from font[char*28] to staging buf at 0xd005a5; RET HL=0xd005a1`
+- **0x000380**: jump table — first entry is `JP 0x003d85`
+- **0x003d85**: `LD HL, 0x003d6e; RET` — returns the small-font base address (same as the working 0x00596e path!)
+
+Verified empirically: after a 0x0a1799 call with A=0x52 ('R'), the staging buffer at 0xd005a5 contains:
+```
+f8 e0 f8 f0 c0 38 c0 18 c0 18 c0 18 c0 38 f8 f0 f8 e0 c8 c0 c0 e0 c0 70 c0 38 c0 18
+```
+which matches **byte-for-byte** the ROM glyph at 0x003d6e + 0x52*0x1c = 0x4666. Font lookup works perfectly.
+
+**The real bug is in the rasterizer** (the code in 0x0a1799 AFTER 0x07bf3e returns). The rasterizer:
+- Has IX = 0xd005a1 (valid glyph staging ptr)
+- Should walk glyph bytes and write either fg or bg color per bit
+- Actually writes ONLY 0xFF bytes — never any 0x00, never any other value
+- Output is char-input-INDEPENDENT (digit '0' through '9' all produce identical 14×18 solid white box)
+
+**Most likely cause**: the **fg color register / palette index** that the rasterizer uses is wedged at 0xffff (white) in our post-OS-init state, AND the "write bg" branch is suppressed so we only see fg pixels. In the MODE/Y= screen case the bg fill IS painted (white) and the glyph fg writes are also white → invisible. Confirms Phase 39's "all pixels are 0x0000 or 0xffff" observation.
+
+**Phase 41 next steps**:
+1. Decode the rasterizer body of 0x0a1799 (bytes from 0x0a17c5 onwards): find every memory read and identify where the fg color comes from. Look for `LD A,(0xd00xxx)` or `(IY+offset)` reads near the inner write loop.
+2. The likely candidate is a "text fg color" RAM variable. Set it to 0x0000 (black) or any non-white value before calling 0x028f02 with HL="RADIAN" — should immediately produce real text.
+3. If the fg color hypothesis is wrong, the next-most-likely cause is that the bg-write branch reads the bitmap AND expects clear bits to write bg. That branch would need its own RAM state. The "value histogram: 0xff × 3024" data point distinguishes these — pure single-color writes points strongly to the fg-color hypothesis.
 
 **Phase 41 next steps**:
 1. **Decode 0x07bf3e**: dump bytes and identify what RAM/ROM addresses it reads. Compare against the small-font load at 0x00596e (which Phase 28 confirmed works).

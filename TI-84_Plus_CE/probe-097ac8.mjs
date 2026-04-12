@@ -22,8 +22,9 @@ mem.set(romBytes);
 const ex = createExecutor(PRELIFTED_BLOCKS, mem, { peripherals: p });
 const cpu = ex.cpu;
 
-// Boot + OS init
-ex.runFrom(0x000000, 'z80', { maxSteps: 5000, maxLoopIterations: 32 });
+// Boot + OS init (Phase 30: boot now runs 8804 steps + naturally sets MBASE)
+ex.runFrom(0x000000, 'z80', { maxSteps: 20000, maxLoopIterations: 32 });
+console.log(`After boot: mbase=0x${cpu.mbase.toString(16)}`);
 cpu.halted = false;
 cpu.iff1 = 0;
 cpu.iff2 = 0;
@@ -31,6 +32,7 @@ cpu.sp = 0xD1A87E;
 cpu.sp -= 3;
 mem[cpu.sp] = 0xFF; mem[cpu.sp + 1] = 0xFF; mem[cpu.sp + 2] = 0xFF;
 ex.runFrom(0x08C331, 'adl', { maxSteps: 100000, maxLoopIterations: 500 });
+console.log(`After OS init: mbase=0x${cpu.mbase.toString(16)}`);
 
 // Clear VRAM so we can see exactly what this function draws
 for (let i = 0xD40000; i < 0xD40000 + 320 * 240 * 2; i++) mem[i] = 0x00;
