@@ -526,8 +526,8 @@ function emitInstructionJs(instruction) {
     return [`cpu.ioWritePage0(${hex(instruction.port)}, cpu.${instruction.reg});`];
   }
   if (tag === 'in-reg') {
-    if (instruction.reg === '(hl)') return ['cpu.ioRead(cpu.bc);'];
-    return [`cpu.${instruction.reg} = cpu.ioRead(cpu.bc);`];
+    if (instruction.reg === '(hl)') return ['cpu.ioReadAndUpdateFlags(cpu.bc);'];
+    return [`cpu.${instruction.reg} = cpu.ioReadAndUpdateFlags(cpu.bc);`];
   }
   if (tag === 'out-reg') {
     if (instruction.reg === '(hl)') return ['cpu.ioWrite(cpu.bc, 0);'];

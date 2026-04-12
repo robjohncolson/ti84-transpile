@@ -582,6 +582,16 @@ export class CPU {
     return this._ioRead(port) & 0xff;
   }
 
+  ioReadAndUpdateFlags(port) {
+    const value = this._ioRead(port) & 0xff;
+    this._setFlag(FLAG_S, value & 0x80);
+    this._setFlag(FLAG_Z, value === 0);
+    this._setFlag(FLAG_H, false);
+    this._setFlag(FLAG_PV, parity(value));
+    this._setFlag(FLAG_N, false);
+    return value;
+  }
+
   ioWrite(port, value) {
     this._ioWrite(port, value & 0xff);
   }
@@ -919,6 +929,7 @@ export function createExecutor(blocks, memory, options = {}) {
 
       let pc = startAddress;
       let mode = startMode;
+      cpu.madl = mode === 'adl' ? 1 : 0;
       let steps = 0;
       let termination = 'max_steps';
       let loopsForced = 0;

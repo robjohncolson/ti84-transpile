@@ -1,7 +1,7 @@
 {
   "romPath": "TI-84_Plus_CE\\ROM.rom",
   "romSize": 4194304,
-  "generatedAt": "2026-04-12T01:55:57.637Z",
+  "generatedAt": "2026-04-12T02:37:19.847Z",
   "generator": "..\\..\\..\\..\\..\\..\\C:\\Users\\rober\\Downloads\\Projects\\school\\follow-alongs\\scripts\\transpile-ti84-rom.mjs",
   "blockCount": 124378,
   "coveredBytes": 692377,
