@@ -3,7 +3,7 @@
 **Last updated**: 2026-04-12T02:40Z
 **Focus**: TI-84 Plus CE ROM transpilation (CC-led this session, Codex continues). The trainer app pivoted to Physical Calculator Mode on 2026-04-11 evening — see `CONTINUATION_PROMPT.md` for trainer work, this file is the ROM-side source of truth.
 
-**ROM transpiler current state** (after 2026-04-12 CC session):
+**ROM transpiler current state** (after 2026-04-12 Phase 28):
 - Coverage: **16.5076%** (124378 blocks, 692377 bytes)
 - Seed count: **21331** (+14 Phase 24D seeds landed)
 - Live stubs: **0**
@@ -12,8 +12,11 @@
 - Keyboard scan: **WORKING** (0x0159C0, 9/9 PASS)
 - **ISR event-loop dispatch**: **WORKING** end-to-end (16 blocks, 0x38 → 0x19BE → 0x1A5D keyboard handler → RETI)
 - **VRAM pipeline**: **PROVEN** end-to-end (0x005B96 fills 153600 bytes in one step)
+- **Full OS init**: **WORKING** end-to-end (handler 0x08C331, 691 steps, 1M RAM writes, matches Phase 24C predictions)
+- **Real character rendering**: **WORKING** (0x0059c6 reads ROM font + draws actual glyph strokes to VRAM)
+- **ROM write-protect**: implemented in cpu-runtime.js write8/write16/write24 — flash region 0x000000-0x3FFFFF is now read-only
 - Browser shell: **deployed** on GitHub Pages
-- Current `ROM.transpiled.js` built from commit `def3da8` (2026-04-12), gitignored (175MB), **.gz committed**
+- Current `ROM.transpiled.js` built from commit `cb7af86` (2026-04-12), gitignored (175MB), **.gz committed**
 
 **Resolved incident — stalled retranspile on 2026-04-11 ~19:06–20:00**: Root cause was a **perf bug, not a crash**. The walker at `scripts/transpile-ti84-rom.mjs:21977` used `Object.keys(blocks).length` in its `while` condition plus `queue.shift()` — both O(n²) over ~124K blocks. That's ~15 billion string allocations during the walk, pinning a CPU core for 53+ minutes with GC churn. It probably OOM'd at the final `JSON.stringify(walk.blocks)` after the walker finally finished, but since the script never wrote to stdout before the final `writeFileSync`, any crash was invisible. Fixed in commit `206f375` — walker now runs in **1.9s** (1600x speedup). Stale `new-seeds*.txt` files (Apr 9) were never actually consumed by the frontier runner.
 
@@ -650,6 +653,72 @@ Test 25 still 9/9 PASS. Event-loop probe unchanged (the common `bit n, r; jr z/n
 The 2026-04-12 session proved the pipeline works end-to-end for direct function calls. The remaining question is: **how do we reach a state where the OS is running user-context code that draws to VRAM?**
 
 Recommended approach: **run OS init handler 0x08C331 BEFORE calling draw functions**. From Phase 24C, 0x08C331 is major OS init — 691 steps, 162 blocks, writes 262K bytes to system RAM including the callback pointer at 0xD02AD7 and flags at 0xD0009B/0xD177BA. Running it first should establish the RAM state that `_PutC`-style calls need. The risk from Phase 24D ("Running OS init before boot corrupts RAM, causing boot to loop at PLL") is real — the fix is to run boot FIRST (to cold-state), THEN run OS init, THEN call the draw function.
+
+### Phase 28: Full OS Init + Real Glyph Rendering (2026-04-12 CC session) — DONE ✓
+
+Pursued Option B from Phase 27's recommendation. Landed `probe-os-init-draw.mjs` that runs the complete boot → OS init → draw pipeline, and fixed two more bugs along the way.
+
+**Three-stage probe flow**:
+
+1. **Boot**: 66 steps to power-down HALT at 0x0019b5
+2. **OS init handler 0x08C331**: 691 steps, clean sentinel exit, **1,049,479 RAM writes** across 10 code regions (0x0axxxx dominant at 558 blocks, then 0x05xxxx, 0x03xxxx, 0x04xxxx, 0x02xxxx, 0x08xxxx). Post-init state: callback=0xFFFFFF sentinel, sysFlag=0xFF, initFlag=0xFF (0xD177BA set — no more workaround needed).
+3. **Character print via 0x0059c6**: 84 steps per character, clean exit, reads real ROM font data at 0x003d6e + char * 0x1c, unpacks via the `sla c; adc a, d` 1-bit glyph loop at 0x005b16, and writes actual glyph strokes to VRAM.
+
+**Commit `59c73e9` — Option B proof + critical fix**
+
+First version required **disabling timer interrupts** (`timerInterrupt: false` on the peripheral bus). Without that, the default 200-tick IRQ fires mid-init and hijacks execution through the ISR dispatch chain (0x000710 → 0x001713 → ... → 0x0067f8 → 0x001c33 infinite loop). With timer off, OS init runs to completion in the 691 steps Phase 24C predicted.
+
+**Commit `cb7af86` — ROM write-protect + real glyph rendering**
+
+First pass showed solid white-filled 12x16 cells instead of character shapes. Investigation revealed the font staging buffer at 0xD005A1-0xD005C0 was all zeros — the `ldir` at block 0x005998 that copies font data from ROM (0x003d6e + char*0x1c) to RAM wasn't finding real font bytes.
+
+Root cause: **OS init was writing to ROM addresses during its 1M-write sequence**, corrupting `mem[0x020100]` (magic header from `5a a5 ff ff` → `00 00 00 00`) and `mem[0x003d6e..]` (font bitmap data). Our emulator treated the entire 16MB `mem` array as writable, but TI-84 CE flash is read-only at hardware level.
+
+Fix: added `if (a < 0x400000) return;` to cpu-runtime.js `write8`, `write16`, `write24`. Flash region is silently protected. OS init still runs cleanly (691 steps unchanged) but its stray ROM-region writes are dropped.
+
+After the fix:
+- `mem[0x020100..] = 5a a5 ff ff c3 ba d6 0b` — magic preserved ✓
+- `mem[0x003d6e..]` — real font data preserved ✓
+- Draw path reads real glyph bytes from ROM
+- VRAM contains actual character glyph strokes, not solid fills
+
+**Text-art render of a single character (rows 111-126, cols 67-78)**:
+```
+..############..
+..###....#####..
+..##......####..
+..#...##...###..
+..#..####..###..
+....######..##..
+....######..##..
+....######..##..
+....######..##..
+....######..##..
+....######..##..
+..#..####..###..
+..#...##...###..
+..##......####..
+..###....#####..
+................
+```
+
+Recognizable glyph outline with curves and verticals. First time real OS-rendered character data has reached VRAM in this project.
+
+**Test 25 still 9/9 PASS** (step count shifted 102 → 90 because ROM-region writes no longer succeed, reducing the path length, but scan codes are correct).
+
+**Known refinement — multi-character HELLO still overlaps**:
+
+Calling 0x0059c6 five times for H-E-L-L-O advances the cursor variable at 0xD00595 (0 → 1 → 2 → 3 → 4 → 5) but all 5 characters render in approximately the same VRAM area, overlapping each other. VRAM non-zero count per character: 248 → 240 → 296 → 296 → 256 (fluctuating as each overlap changes which pixels are "on").
+
+Suspected cause: the column-offset computation at block 0x005ab6 reads `ld de, (0x00059c)` from ROM. At 0x00059c the ROM bytes are `c3 5c 09 01` — these are **code bytes** (a `JP 0x01095c` instruction), not a data table. Reading them as a 16-bit or 24-bit value gives a bogus column offset (0x5cc3 or 0x095cc3) that overflows the screen width and wraps around. Real hardware must be getting different bytes here somehow — possibly this is a memory bank switching thing, or a pointer indirection we're missing, or the draw routine should NOT be reading this address at all.
+
+Follow-up work: trace the cursor-to-column conversion path more carefully. One character rendering is proven; multi-character rendering needs the column advance fixed.
+
+---
+
+**Phase 28 bugs fixed**:
+1. Default timer IRQ disabled for OS init paths (probe-side, not code fix)
+2. **ROM write-protect** in cpu-runtime.js (real fix, prevents ROM corruption from stray writes)
 
 - `ba6ae75` — Add Physical Calculator Mode (step card renderer, `physicalAdvance` / `physicalBack`, `physicalMode` persisted flag, renderer replaces WASM panel when active)
 - `a976af6` — Default flipped to physical (`parsed.physicalMode !== false`); legacy users grandfathered in, explicit opt-outs respected
