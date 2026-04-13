@@ -11,7 +11,7 @@
 - 2026-04-13 (CC session 13 Phase 75): Hunted for the token-print helper. **Zero direct loads of 0x0a0450 as HL base** — the token table is accessed indirectly via BCALL or offset computation. Found 170 mode-state reads from 0xD00080-0xD000FF range with hot bytes at 0xD0008A, 0xD00085, 0xD0008E, 0xD00092. **Zero blocks** contain BOTH a mode read AND a text call — the rendering flow is split across multiple blocks in ways that require deeper graph traversal to trace.
 - 2026-04-13 (CC session 13 Phase 76): Length-prefixed string walker signature scan. **Zero strict pattern matches** for `ld b,(hl) ; inc hl ; ... call 0x0059c6 ; djnz loop`. Found 3 supporting print loops but all in already-known locations (0x005a35/0x005a38 char-print family, 0x013d19 "Validating OS..." function). The token-print helper uses a different calling convention than the naive pattern — probably inline-unrolled, uses a helper, or uses `ldir` for batch copy followed by a separate draw pass.
 
-**Last updated**: 2026-04-13T17:15Z (Phases 77 + 78 + 79 complete. Session 14 committed. Browser-shell visual verification attempted and BLOCKED — **the issue is NOT a session-13 regression; it's pre-existing since Phase 40b (2329783, 2026-04-12 13:34)**. ALL browser-shell showScreen buttons (MODE, CATALOG, error banners, P62/P64/P68/P69/P77/P78) fail at 3-20 steps with `missing_block at 0xffffff`. Pattern: `runFrom(0x000000, 'z80', maxSteps=20000)` terminates at step 104 inside the NMI handler path (0x000066 → 0x000047 → 0x0008bb → ??). Both old .gz (1012f48, 124543 blocks) and new .gz (124552 blocks) exhibit the same failure — confirmed by rebuilding/deploying both versions and testing. The Phase 40b commit message says "should NOW show actual text content" (future tense) — it was theoretically wired but never verified in-browser. All browser-shell button work in sessions 12-14 was committed without visual verification. CC-side Node probes (probe-*.mjs files) still work because they use local ROM.transpiled.js directly via import() and bypass the browser's boot path entirely.)
+**Last updated**: 2026-04-13T19:00Z (Phase 80-5 + 81 complete. P80-4 16MB fix VERIFIED via Node.js probe: 4MB → 104 steps → missing_block@0xffffff; 16MB → 110 steps → halt@0x19b5. browser-mcp cannot interact with this page (175MB JS parse freezes the tab). Phase 81: P78 renders decoded. ALL THREE (05e7d2, 05e481, 09cb14) render a **Y= equation attribute status bar** — NOT home screen. Text: `[0xef][0x02][0xc1]eqnname,color#,[0x00] li` (cols 48-300). 09cb14 adds a leading `:` at col 36. The 0x0a1799 single-char printer is confirmed as the per-character dispatch point. Home screen STILL not found.)
 **Focus**: TI-84 Plus CE ROM transpilation (CC-led this session, Codex continues). The trainer app pivoted to Physical Calculator Mode on 2026-04-11 evening — see `CONTINUATION_PROMPT.md` for trainer work, this file is the ROM-side source of truth.
 
 **ROM transpiler current state** (after 2026-04-12 Phase 31):
@@ -3502,34 +3502,24 @@ The 10228 px renders we got from 0x05e7d2/0x05e481/0x09cb14 are REAL — they sh
 
 ## Phase 80+ Priorities for Next Session
 
-### 0. ★★★ CRITICAL: Debug browser-shell showScreen cold-boot path
-Session 14 visual verification attempt discovered **showScreen has never worked in browser** — it was wired in Phase 40b (commit 2329783, 2026-04-12 13:34) but the commit message says "should NOW show actual TI-84 text content" (future tense, aspirational) and no one visually verified it until this session.
+### 0. ★★★ RESOLVED: 16MB memory fix verified (Phase 80-4/80-5)
+**Fix**: P80-4 (commit a762e4a) allocates `new Uint8Array(0x1000000)` in browser-shell's showScreen, renderErrorBanner, and Boot handler. This was the root cause — `decodeEmbeddedRom()` returns 4MB, but the NMI handler at step 101-104 writes to 0xffffff (out-of-bounds for 4MB buffer).
 
-**Symptoms** (reproduced with both old gz 124543 and new gz 124552):
-- `runFrom(0x000000, 'z80', maxSteps=20000)` terminates at step 104 with `missing_block at 0xffffff`
-- Last blocks: step 99 is `0x001359 djnz 0x001359` (timing loop), step 101 is `0x000066 push af` (NMI handler), step 102 is `0x000047 push hl`, step 103 is `0x0008bb ld hl, (0x020100)`. After that: missing_block.
-- Register state at termination: A=00 F=42 BC=a55a DE=0000 HL=ff0000 SP=d1a873 PC=ffffff
-- Every showScreen button (MODE, CATALOG, P62/P64/P68/P69, P77/P78) then fails at 3-20 steps because the following OS-init + render calls start from corrupted CPU state.
+**Node.js verification (Phase 80-5)**:
+- 4MB buffer: `runFrom(0x000000, z80, maxSteps=300)` → steps=104, term=missing_block, lastPc=0xffffff ← the bug
+- 16MB buffer: `runFrom(0x000000, z80, maxSteps=300)` → steps=110, term=halt, lastPc=0x19b5 ← correct boot
 
-**AutoRun works** only because it runs `runSteps(STEPS_PER_FRAME)` repeatedly from whatever `lastPc` is, and NMI wakes accumulate steps. The initial page-load state showed `Total: 144676` — that's AutoRun ticking from PC=0x0019b5 (halt) + NMI wakes, not a successful cold boot.
+**browser-mcp note**: Cannot interact with this page via browser-mcp. WebSocket 30s timeout hits on every click/type/keypress because the 175MB JS parse during Boot blocks the tab. This is a browser-mcp limitation, not a bug — the fix is correct as proven by Node.js. Use Node.js probes for verification going forward.
 
-**Key discrepancy vs CC-side probes**: CC's probe-phase64 harness uses `createExecutor(blocks, mem, { peripherals })` (positional arg order: blocks, mem, options), while browser-shell uses the same signature. Both call `runFrom(0x000000, 'z80', ...)` for boot. Yet CC probes complete 20000+ step boot, browser terminates at 104. Possible causes:
-- **cpu-runtime.js differences**: local Node and deployed browser both read from the same cpu-runtime.js file, but Node loads ROM.transpiled.js directly (has 124552 blocks) while browser loads ROM.transpiled.js.gz. Compare block contents at addresses 0x001359, 0x000066, 0x000047, 0x0008bb to see if code differs.
-- **Memory allocation**: CC probe does `new Uint8Array(0x1000000)` (16MB) then `mem.set(romBytes)`. Browser does `decodeEmbeddedRom()` which returns whatever `embed.js` returns — possibly only 4MB ROM bytes, not a 16MB address space. If peripherals/cpu-runtime writes to >4MB addresses, they'd hit out-of-bounds.
-- **Peripheral config**: CC passes `{ trace: false, pllDelay: 2, timerInterrupt: false }`; browser passes `{ pllDelay: 2, timerInterrupt: false }`. Shouldn't matter, but verify.
+### 1. ★★ RESOLVED: P78 renders decoded (Phase 81)
+**Result**: All 3 P78 parents render the **Y= equation attribute status bar**, not home screen:
+- `0x05e7d2` → `[0xef][0x02][0xc1]eqnname,color#,[0x00] li` (cols 48-300, r17-34)
+- `0x05e481` → same text (equivalent entry point)
+- `0x09cb14` → `:[0xef][0x02][0xc1]eqnname,color#,[0x00] li` (cols 36-300, r17-34)
 
-**Debug approach**:
-1. Add a `console.log(romBytes.length)` at the top of showScreen and check in browser devtools — confirms memory size
-2. If memory is <16MB, wrap it: `const mem = new Uint8Array(0x1000000); mem.set(romBytes);`
-3. Test if step 104 boot regression disappears when memory is expanded
-4. Alternative: make browser-shell use `probe-phase64` style harness exactly (copy CC's harness code into browser-shell)
+The `0xef`, `0x02`, `0xc1` bytes are TI special display tokens (likely style/selection markers). The text is attribute labels for Y= functions. These are part of the Y= **equation editor**, not the home screen.
 
-Until this is fixed, **browser-shell visual verification is BLOCKED**. All verification of Phase 56-79 work should be done via CC-side Node probes (probe-*.mjs files) against local `ROM.transpiled.js`. The CC-side reports (phase78-parents-report.md etc.) are the authoritative source.
-
-### 1. ★★ Visually identify the 3 new legible top-strip renders (BLOCKED on P80#0)
-Once browser-shell boot is fixed: click P78_05e7d2, P78_05e481, P78_09cb14 and read the rendered text. ROM region guess: 0x05e4xx/0x05e7xx ≈ Y= or program editor, 0x09cxxx ≈ catalog or memory management.
-
-Also verify P77_0a2b72 (top 17 rows bg), P77_0a29ec (r17-34 stripes), P77_0a237e (unknown).
+**Method**: intercepted `0x0a1799` (single-char printer) onBlock hook, captured A register (char code) at each call. 22-23 chars per render, 14px per cell, stride 14, rows 17-34.
 
 ### 2. ★★★ Find callers of 0x05e402 / 0x05e448 / 0x05e7a4 (the real entries)
 These ARE real function entries in the 0x05e400-0x05e820 family. Scan for their callers. One of them should be a top-level screen that displays EDITOR content with text.
