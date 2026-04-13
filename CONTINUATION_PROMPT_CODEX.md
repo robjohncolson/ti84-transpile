@@ -10,8 +10,10 @@
 - 2026-04-13 (CC session 13 Phase 72-74): Phase 72 probed all 3 OS init entries (0x08c331, 0x08c366, 0x08c33d) — all produce IDENTICAL output: **76800 VRAM writes (full screen 320×240, all white)**. They're equivalent entry points into the same state machine. **OS init is a screen clear, not a home-screen renderer.** Phase 73 found 0x046aff is a hardcoded full-screen clear helper (BC=239, DE=319) with 11 diagnostic-screen callers. Phase 74 made the **CRITICAL DISCOVERY**: "NORMAL", "FLOAT" are NOT plain ASCII in ROM — the TI-BASIC **token table at 0x0a0450** stores mode names as `<token_code><length><name>` entries (0x4C=prgm, 0x4D=Radian, 0x4E=Degree, **0x4F=Normal**, 0x50=Sci, 0x51=Eng, **0x52=Float**, 0x53=Fix, ...). The home-screen status bar renders these by token code, not direct string load.
 - 2026-04-13 (CC session 13 Phase 75): Hunted for the token-print helper. **Zero direct loads of 0x0a0450 as HL base** — the token table is accessed indirectly via BCALL or offset computation. Found 170 mode-state reads from 0xD00080-0xD000FF range with hot bytes at 0xD0008A, 0xD00085, 0xD0008E, 0xD00092. **Zero blocks** contain BOTH a mode read AND a text call — the rendering flow is split across multiple blocks in ways that require deeper graph traversal to trace.
 - 2026-04-13 (CC session 13 Phase 76): Length-prefixed string walker signature scan. **Zero strict pattern matches** for `ld b,(hl) ; inc hl ; ... call 0x0059c6 ; djnz loop`. Found 3 supporting print loops but all in already-known locations (0x005a35/0x005a38 char-print family, 0x013d19 "Validating OS..." function). The token-print helper uses a different calling convention than the naive pattern — probably inline-unrolled, uses a helper, or uses `ldir` for batch copy followed by a separate draw pass.
+- 2026-04-13 (CC session 16 — Phase 87b/88/89): **CE OS architecture revealed**: uses direct CALL instructions internally, not BCALL, for rendering. Slot numbers corrected: **470→0x0a29ec**, **479→0x0a2b72** (Phase 77 had wrong slots 627/639). Found 5 direct CALL callers of 0x0a29ec (0x25b37/0x60a39/0x6c865/0x78f6d/0x8847f) and 3 for 0x0a2b72 (0x5e481/0x5e7d2/0x09cb14); all have 0 static callers — called via computed indirect dispatch. Event loop 0x0019BE IS transpiled (blocks exist) but execution loops in hardware poll at 0x690-0x69a. Event dispatch mechanism at 0x001C33 decoded: bytecode table walker, compares D/E event-code against table at HL. Phase 90: scan that table to find home-screen event code. Commit: 70433e0.
+- 2026-04-13 (CC session 17 — Phase 90 a/b/c/d/e): **Home screen composite render achieved**. Confirmed all 5 callers of 0x0a29ec and 3 callers of 0x0a2b72 have ZERO static callers (confirmed via ROM scan for CALL/JP instructions) — full dead end for static analysis. Correct composite sequence: (1) 0x0a2b72 → r0-34 status bar background (10228px, r0-34 all white in r0-16 + content in r17-34), (2) 0x0a29ec → r17-34 home row strip (adds +864px to give 11092px total). r35-239 is empty for fresh-boot (no history entries). The "8 callers of 0x088471" drew a MENU LIST renderer (r37-114→r37-234 at 200k steps), NOT the home screen history — that was a false lead from a heuristic fn-start estimate. Key bug found+fixed: `mem.set(ramSnap, 0x400000)` also resets VRAM (VRAM_BASE=0xD40000 is within 0x400000-0xE00000). Mode text in r0-16 NOT rendered — 0x0a2b72 fills r0-16 with white only, mode indicator text needs separate function call with proper mode RAM state. 0x0a29ec renders 26 chars all 0xFF (TI two-byte token prefix) = 0xFF glyph blocks visible in ASCII art. Phase 91: set mode RAM bytes and find mode text renderer.
 
-**Last updated**: 2026-04-13T19:30Z (Phase 80-5 + 81 + 82 complete. P80-4 16MB fix VERIFIED. Phase 81: P78 renders are Y= attribute bar (`[0xef][0x02][0xc1]eqnname,color#,[0x00] li`), NOT home screen. Phase 82: probed all 19 candidates in 0x09cxxx — none is top-level Y= editor. 0x09cb14 is still the best renderer (attribute bar only); 0x09cb08/0x09cb1a draw single glyphs; 17 others draw zero pixels. Top-level Y= entry is in a parent caller OUTSIDE 0x09cxxx. Next: find callers of 0x09cb14 from other pages.)
+**Last updated**: 2026-04-13 session 17 (Phase 90a/b/c/d/e complete. Composite render works: 0x0a2b72 + 0x0a29ec = 11092px in r0-34. Mode text missing from status bar. Phase 91 = seed mode RAM bytes + find status bar text renderer.)
 **Focus**: TI-84 Plus CE ROM transpilation (CC-led this session, Codex continues). The trainer app pivoted to Physical Calculator Mode on 2026-04-11 evening — see `CONTINUATION_PROMPT.md` for trainer work, this file is the ROM-side source of truth.
 
 **ROM transpiler current state** (after 2026-04-12 Phase 31):
@@ -3602,39 +3604,47 @@ Top-level Y= editor entry is NOT in 0x09c000-0x09cfff. Must find external caller
 
 **Conclusion**: Static analysis is exhausted for finding the home screen entry. The home screen renderer is called by the OS event loop after IRQ wakes the CPU from HALT. To observe it, we need the IRQ path working (Phase 56 sustained the loop). The home screen entry point must be found dynamically.
 
-### 5. ★★★ NEXT: Event loop dispatch table scan — Phase 90
+### 5. ★★ RESOLVED Phase 90: Composite home screen render assembled
 
-**Event loop IS transpiled** (confirmed Phase 89):
-- 0x0019be, 0x001c33, 0x00b608 are all in PRELIFTED_BLOCKS
-- Trace from 0x0019BE: `0x19be → 0x19ef → 0x1a17 → 0x1a23 → 0x1a2d → 0x1a32 → 0x0 → 0x3 → 0x658 → 0x673 → 0x679 → 0x67e → 0x688 → 0x697 → 0x69a → 0x690 (loop)`
-- Gets stuck in hardware poll loop at 0x690→0x69a: `3e 04 f3 18 00 f3` (LD A,4; DI; NOP; DI)
-- Boot with timerInterrupt: true → also stuck in 0x6138 loop after 500k steps, 0 new VRAM pixels
+**Phase 90 results** (session 17):
+- Confirmed ZERO direct CALL/JP callers of all 5 callers of 0x0a29ec and all 3 callers of 0x0a2b72 — full static analysis dead end (no CALL nn, no JP nn, no 3-byte pointer references in ROM)
+- Correct caller addresses (from Phase 88): 0x025b37/0x060a39/0x06c865/0x078f6d/0x088483 (not 0x08847f — off by 4)
+- **Composite render sequence**: call 0x0a2b72 → then 0x0a29ec (no RAM/VRAM reset between) → gives 11092px in r0-34
+- **Key bug**: `mem.set(ramSnap, 0x400000)` ALSO resets VRAM (VRAM_BASE=0xD40000 is within 0x400000-0xE00000) — must use separate clearVramOnly() function
+- **Status bar (r0-16)**: all white — 0x0a2b72 fills it white-only, mode indicator text NOT drawn here
+- **Home row (r17-34)**: borders + 26 chars all 0xFF (TI token prefix glyph = 0xFF block glyph rendered)
+- **r35-239**: empty for fresh boot (no history entries), some of the 8 callers of estimated fn 0x088471 render a MENU LIST at r37-234 (false lead — not home screen history)
 
-**Event dispatch mechanism** (decoded from 0x001C33 bytecode):
-```
-7e fe ff 28 12 23 ba 20 08 7e e6 f0 bb 20 02 2b c9
-LD A,(HL); CP 0xFF; JR Z,+18; INC HL; CP D; JR NZ,+8; LD A,(HL); AND 0xF0; CP E; JR NZ,+2; DEC HL; RET
-```
-- Walks a table at HL comparing (D=event_hi, E=event_lo) against event code pairs
-- When match found: HL points to matching table entry, caller reads handler address from HL+n
+**Phase 91 target**: Make the composite render show actual mode text:
+1. Find RAM addresses where the OS stores current mode (Normal/Float/Radian/etc.) — likely at IY+0x08 or similar offsets from 0xD00080
+2. Set those bytes to known values before calling 0x0a2b72/0x0a29ec
+3. Mode indicator rendering: Phase 87b showed DE=0x4f gives "O" (=Normal), DE=0x52 = Float, etc. — seed DE and/or mode RAM bytes
+4. Find which function renders the actual mode text INTO r0-16 (not just the white background)
 
-**The 5 callers of 0x0a29ec have no data table references** (no 3-byte LE pointers in ROM data). Called via computed indirect (JP (HL) / JP (IY+n) / similar). Static analysis dead end confirmed.
+**Key reference addresses** (phase 90 confirmed):
+- CALL 0x0a29ec at: 0x025b37 (starts with CD EC 29 0A), 0x060a39, 0x06c865, 0x078f6d, 0x088483
+- CALL 0x0a2b72 at: 0x05e481, 0x05e7d2, 0x09cb14
+- JP 0x0a29ec at 0x02085c (JT slot 470 entry) — CONFIRMED
+- JP 0x0a2b72 at 0x020880 (JT slot 479 entry) — CONFIRMED
 
-**Phase 90 goal**: Find the event table entries and the handler for "render home screen":
-1. Find where the event table lives (HL when 0x001C33 is called from 0x001C33 region)
-2. Read the table entries to find event codes
-3. Find which event code maps to the callers of 0x0a29ec (home screen row renderers)
-4. Call that handler directly via our boot-snapshot probe harness
+### 5b. ★★★ NEXT: Phase 91 — Mode state setup for correct home screen render
 
-**Key reference addresses**:
-- Boot HALT: 0x19b5
-- Event loop entry: 0x0019BE
-- Event dispatch bytecode: 0x001C33 (D=hi, E=lo event code, HL=table base)
-- ISR path: 0x38 → 0x6F3 → 0x704 → 0x710 → 0x1713 → 0x171E → event loop
-- Home row strip: 0x0a29ec (slot 470), callers: 0x25b37/0x60a39/0x6c865/0x78f6d/0x8847f
-- Status bar: 0x0a2b72 (slot 479), callers: 0x5e481/0x5e7d2/0x09cb14
+**Goal**: Make the composite render (0x0a2b72 + 0x0a29ec) show actual mode indicator text instead of 0xFF glyph blocks and a blank status bar.
 
-**Quick approach**: Trace 0x0019BE with HL loaded to each of the 5 callers of 0x0a29ec as target. One of those callers IS the event handler. Set HL to point to each one, push the address on stack and CALL to see which draws 5652px.
+**Background**:
+- 0x0a2b72 draws r0-34 but fills r0-16 with WHITE ONLY (no mode text)
+- 0x0a29ec renders 26 chars all coded 0xFF (TI two-byte token prefix) → renders as 0xFF glyph pattern
+- Phase 87b showed: seeding DE=0x4f before 0x0a2b72 → 1 char 'O' (Normal mode letter)
+- Mode token table at ROM 0x0a0450: code 0x4C=prgm, 0x4D=Radian, 0x4E=Degree, 0x4F=Normal, 0x50=Sci, 0x51=Eng, 0x52=Float, 0x53=Fix
+- Mode bytes in OS RAM likely at IY+nn offsets (IY=0xD00080), probably IY+0x08/0x0A/0x0C for angle/display/etc.
+
+**Approach for Phase 91**:
+1. **Find mode RAM addresses**: trace 0x0a2b72 with onBlock hook watching all memory reads from 0xD000XX range → identify which bytes it reads as mode state
+2. **Seed mode bytes**: write known mode values to those addresses before calling 0x0a2b72
+3. **Two-byte token intercept**: track `lastWas0xFF` across 0x0a1799 calls in 0x0a29ec — when last char was 0xFF, current char's A = the actual token second byte
+4. **Verify**: combined render should show "Normal Float Radian" or similar visible in r17-34
+
+**Quick probe** (Phase 91a): add memory read tracing to the 0x0a2b72 run — hook `onMemRead` (if available) or scan RAM-before/RAM-after delta to see which 0xD000XX bytes changed, then reverse-engineer which ones are MODE state.
 
 ### 6. ★★ Two-byte token decode for 0x0a29ec
 
@@ -3644,53 +3654,22 @@ Alternatively: intercept at `0x0a29ec` itself and look at what HL/DE contain (to
 
 ### Slot number corrections (Phase 88)
 
-**Phase 77 was wrong about slot numbers**. Correct mapping (verified via JT scan with fixed formula = skip JP opcode byte, read bytes+1+2+3):
+**Phase 77 was wrong about slot numbers**. Correct mapping (JT formula: base=0x020104, stride=4, read bytes+1+2+3 to skip JP opcode):
 - Slot 470 (0x1d6) → 0x0a29ec (home row strip renderer)
 - Slot 479 (0x1df) → 0x0a2b72 (status bar fill)
 - Slot 21 (0x15) → 0x08c366 (OS entry/dispatcher) — CONFIRMED correct
 
-### 4. ★★★ OLD PRIORITY (now resolved): Raw ROM BCALL scanner
-Scan ROM.rom bytes for `CF <lo> <hi>` patterns (RST 0x08 + 2-byte slot number). For each BCALL call site, record:
-1. The caller PC (address of CF instruction)
-2. The slot number (2-byte LE value after CF)
-3. What that slot maps to in the JT (if known)
+### 7. ★★ Two-byte token intercept for 0x0a29ec
+Phase 87b noseed: 26 chars all 0xFF (TI extended token prefixes). Capture PAIRS: track `lastWas0xFF` across 0x0a1799 calls; the next A is the real token byte. Alternatively, intercept at 0x0a29ec entry and read HL (token pointer into OS RAM token buffer) before the render loop.
 
-This will reveal which code calls BCALL slot 639 (→ 0x0a2b72, home bar fill) and slot 627 (→ 0x0a29ec, text strip). Those callers ARE the home screen renderer.
+### 8. ★★ Probe more JT slots in the 0x0a mode-region cluster
+Phase 77 only probed slots 627/635/639/647 (with wrong slot numbers). Corrected nearby slots to probe: **slots 460-485** (4-byte stride from JT_BASE=0x020104, verify targets with the fixed JT formula). Each is a potential mode-screen entry point.
 
-**JT base address**: From Phase 71: slot 21 is at 0x020158. If entries are 4 bytes each: base = 0x020158 - 21*4 = 0x020158 - 0x54 = 0x020104. So slot N is at 0x020104 + N*4. To find slot 639's target: 0x020104 + 639*4 = 0x020104 + 0x9FC = 0x020B00 — read the 24-bit value there.
+### 9. ★ Session 13 deferred: font-lookup VRAM decoder
+Write a decoder that reads TI-84 font table at 0x003d6e (28 bytes/glyph) and matches rendered pixels to characters. Turns Phase 78/81 ascii-art previews into readable text without needing a running interpreter.
 
-Probe file to write: TI-84_Plus_CE/probe-phase88-bcall-scan.mjs
-Report: TI-84_Plus_CE/phase88-bcall-scan-report.md
-
-### 3. ★★ Decode text content via font lookup, not ASCII art
-The phase78 ascii previews mix pixel positions in a way that's hard to read. Write a VRAM decoder that uses the TI-84 font table at `0x003d6e` (28-byte glyphs) to identify which characters are rendered at each position. This would turn the pixel soup into readable text strings.
-
-### 4. ★★ Probe 0x028f0b directly (Phase A vs Phase B split)
-The 0x028f02 function has two phases — a mode-icon draw and a text draw via 0x0a1cac. Our probes hit missing_block before reaching 0x028f0b. Probe 0x028f0b directly with (HL=0x029132, DE set up, etc.) to validate the 0x0a1cac calling convention for TEST mode strings.
-
-### 5. ★★ Probe more JT slots (591, 595, 599, 603, 607, 611, 615, 619, 623, 631, 635, 643, 851)
-Phase 77 only probed 4 slots (627, 635, 639, 647). 12 more slots in the mode-region cluster are untested as function entries.
-
-### 6. ★ Rename 0x0a2b72's role in the project memory
-0x0a2b72 was originally hypothesized as "home screen status bar renderer" but Phase 78-79 found it's actually **a top-strip background fill helper used by text renderers** (possibly a "scroll screen up + clear top line" operation, since the surrounding loops call it repeatedly). Not a renderer by itself.
-
-### 2. ★★★ Jump-table slot scan for token helpers
-Scan JT slots 0-979 for any slot that targets 0x0a0300-0x0a0500 (near the token table). Those slots ARE the BCALL entries for token-print. Find their callers via `rst 0x08 ; db <slot>` pattern in ROM.
-
-### 3. ★★ Trace 0x028f02 (TEST mode label helper) backward
-Phase 74 found 0x028f02 is called by 0x0296dd (TEST angle mode) with (A=label_code, HL=string_addr). Disassemble 0x028f02 to understand how it uses label_code + string_addr. If the home-screen renderer has a similar helper (takes token_code, looks up string), finding one teaches us the other.
-
-### 4. ★★ Probe the 0x0a2xxx-0x0a6xxx mode-var-reading functions
-Phase 75 identified 0x0a2812, 0x0a281a, 0x0a29a8, 0x0a654e as reading 0xD0008X bytes. These are in the same ROM page as the token table. Probe them — one of them might render a mode-display screen.
-
-### 5. ★★ Fix probe termination at 0xFFFFFF
-Unchanged. Halt-wrapper or proper post-init frame.
-
-### 6. ★ Probe 0x0207C0 JT dispatcher
-Unchanged.
-
-### 7. ★ More Phase 69 batch probes
-~80 untested Phase 63 callers. Diminishing returns.
+### 10. ★ Session 13 deferred: probe 0x0a2812/0x0a281a/0x0a29a8/0x0a654e (mode-var readers)
+These read 0xD0008X bytes (mode state). One might render a mode-display screen. Low priority since Phase 88/89 found none of these are home screen renderers.
 
 ### Session 13 stop rationale
 **16 phases complete**: 61, 62, 62B, 63, 64, 65A, 65B, 66, 67 (manual), 68, 69, 70 (manual), 71 (manual), 72, 73 (manual), 74 (manual), 75 (manual), 76. Context 40% of 1M after full session. **Codex timeout pattern**: investigate-style tasks reliably timeout (~60%), implement-style tasks with 1-4 deliverables succeed. CC now defaults to running Node one-off scripts for complex static analysis. Phase 76 was a null result (walker-scan pattern didn't match) — home-screen hunt needs a deeper approach than single-block pattern matching.
