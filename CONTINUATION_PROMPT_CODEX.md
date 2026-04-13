@@ -11,7 +11,7 @@
 - 2026-04-13 (CC session 13 Phase 75): Hunted for the token-print helper. **Zero direct loads of 0x0a0450 as HL base** — the token table is accessed indirectly via BCALL or offset computation. Found 170 mode-state reads from 0xD00080-0xD000FF range with hot bytes at 0xD0008A, 0xD00085, 0xD0008E, 0xD00092. **Zero blocks** contain BOTH a mode read AND a text call — the rendering flow is split across multiple blocks in ways that require deeper graph traversal to trace.
 - 2026-04-13 (CC session 13 Phase 76): Length-prefixed string walker signature scan. **Zero strict pattern matches** for `ld b,(hl) ; inc hl ; ... call 0x0059c6 ; djnz loop`. Found 3 supporting print loops but all in already-known locations (0x005a35/0x005a38 char-print family, 0x013d19 "Validating OS..." function). The token-print helper uses a different calling convention than the naive pattern — probably inline-unrolled, uses a helper, or uses `ldir` for batch copy followed by a separate draw pass.
 
-**Last updated**: 2026-04-13T16:45Z (Phases 77 + 78 + 79 complete. Session 14. Phase 78 finding: **0x05e7d2 / 0x05e481 / 0x09cb14** render 10228-10444 px including legible top-strip text. Phase 79 discovered these are mid-function call sites inside a text-rendering-loop family at 0x05e400-0x05e820 that uses 0x05e242 as a per-char printer. Session reached a human-verification checkpoint: user should boot browser-shell and click P78_05e7d2/05e481/09cb14 to identify the actual screens before continuing deeper. 6 new browser-shell buttons wired.)
+**Last updated**: 2026-04-13T17:00Z (Phases 77 + 78 + 79 complete, browser-shell verification attempted and BLOCKED by a session-13 regression. Session 14 committed (5893e60). Rebuilt `.gz` from current `ROM.transpiled.js` pushed (0875276) then REVERTED (4e73a9b) because **the session-13 transpiler rebuild (blockCount 124552, 2026-04-12T22:13Z) regressed cold-boot behavior** — boot terminates at step 104 with `missing_block at 0xffffff` instead of reaching the 8800+ step HALT state, breaking ALL browser-shell showScreen buttons (including pre-existing MODE, CATALOG, error banners — all fail at 3-20 steps). The pre-session-13 `.gz` (1012f48, 124543 blocks, Phase 29, 2026-04-12T13:28Z) still works for AutoRun (144676 natural boot steps). Root cause unknown — something in session 13's Phase 30-76 seed/rebuild work changed lifted code in a way that breaks cold-boot with sentinel-return stack frames. Needs dedicated debug session.)
 **Focus**: TI-84 Plus CE ROM transpilation (CC-led this session, Codex continues). The trainer app pivoted to Physical Calculator Mode on 2026-04-11 evening — see `CONTINUATION_PROMPT.md` for trainer work, this file is the ROM-side source of truth.
 
 **ROM transpiler current state** (after 2026-04-12 Phase 31):
@@ -3502,18 +3502,28 @@ The 10228 px renders we got from 0x05e7d2/0x05e481/0x09cb14 are REAL — they sh
 
 ## Phase 80+ Priorities for Next Session
 
-### 1. ★★★ BOOT BROWSER-SHELL AND VISUALLY IDENTIFY P78 SCREENS
-**User action required**: Open `TI-84_Plus_CE/browser-shell.html` in a browser, boot, click these 3 new buttons and read the rendered text on the LCD:
-- `P78 parent 05e7d2`
-- `P78 parent 05e481`
-- `P78 parent 09cb14`
+### 0. ★★★ CRITICAL: Debug browser-shell boot regression
+Session 14 visual verification attempt discovered that the latest `ROM.transpiled.js` (22:13Z, 124552 blocks) breaks cold-boot in browser-shell. Symptoms:
+- `showScreen()` calls `runFrom(0x000000, 'z80', { maxSteps: 20000, maxLoopIterations: 32 })`
+- Boot trace reaches step 103 (0x0008bb `ld hl, (0x020100)`) — inside the NMI handler path via 0x000066 → 0x000047 → 0x0008bb
+- Step 104 terminates at `missing_block at 0xffffff`
+- All subsequent OS-init / render calls fail because CPU state is broken
+- Effect: MODE, CATALOG, error banners, P62/P64/P68/P69 buttons, P77/P78 buttons ALL fail at 3-20 steps
 
-Human identification of these 3 screens is the critical next step. Based on ROM region: 0x05e4xx/0x05e7xx is likely **Y= editor / Program editor / text input screen**; 0x09cxxx is likely **CATALOG or TABLE screen**. The human can read the actual text content which our ASCII dumps can't clearly show.
+Working baseline: the `.gz` from commit `1012f48` (Phase 29, 124543 blocks, 2026-04-12T13:28Z) lets boot run naturally via AutoRun NMI wake loop to 144676 total steps and reaches HALT at 0x0019b5. That's the CURRENTLY-DEPLOYED version after the revert (commit `4e73a9b`).
 
-Also verify the P77 buttons:
-- `P77 home top bar (0a2b72)` — should show top 17 rows bg fill only
-- `P77 home row (0a29ec)` — should show r17-34 with stripe pattern
-- `P77 cursor prep (0a237e)` — unknown
+**Debug approach**:
+- (a) Diff PRELIFTED_BLOCKS between old gz and new gz at addresses 0x0008bb, 0x000047, 0x000066, 0x001359 — find the first block where the code differs
+- (b) Check which seeds / transpiler changes between 2026-04-12T13:28Z and 22:13Z modified those blocks
+- (c) The Phase 30 OTIMR fix (commit 206f375) is a prime suspect — it changed how the walker processes loop boundaries, which may have affected NMI/boot block generation
+- (d) Alternative: maybe the issue isn't the .gz itself — maybe it's a cpu-runtime.js / ez80-decoder.js change in session 13 that interacts with the lifted code. Those files are NOT gzipped — they're fetched as-is from the repo. Check git log for cpu-runtime.js and ez80-decoder.js changes between 1012f48 and session 13 end.
+
+Until this is fixed, **browser-shell visual verification is BLOCKED**. CC-side Node probes (using local `ROM.transpiled.js` directly via `import()`) still work — that's how Phase 77-79 produced their reports.
+
+### 1. ★★ Visually identify the 3 new legible top-strip renders (BLOCKED on P80#0)
+Once browser-shell boot is fixed: click P78_05e7d2, P78_05e481, P78_09cb14 and read the rendered text. ROM region guess: 0x05e4xx/0x05e7xx ≈ Y= or program editor, 0x09cxxx ≈ catalog or memory management.
+
+Also verify P77_0a2b72 (top 17 rows bg), P77_0a29ec (r17-34 stripes), P77_0a237e (unknown).
 
 ### 2. ★★★ Find callers of 0x05e402 / 0x05e448 / 0x05e7a4 (the real entries)
 These ARE real function entries in the 0x05e400-0x05e820 family. Scan for their callers. One of them should be a top-level screen that displays EDITOR content with text.
