@@ -12,8 +12,9 @@
 - 2026-04-13 (CC session 13 Phase 76): Length-prefixed string walker signature scan. **Zero strict pattern matches** for `ld b,(hl) ; inc hl ; ... call 0x0059c6 ; djnz loop`. Found 3 supporting print loops but all in already-known locations (0x005a35/0x005a38 char-print family, 0x013d19 "Validating OS..." function). The token-print helper uses a different calling convention than the naive pattern — probably inline-unrolled, uses a helper, or uses `ldir` for batch copy followed by a separate draw pass.
 - 2026-04-13 (CC session 16 — Phase 87b/88/89): **CE OS architecture revealed**: uses direct CALL instructions internally, not BCALL, for rendering. Slot numbers corrected: **470→0x0a29ec**, **479→0x0a2b72** (Phase 77 had wrong slots 627/639). Found 5 direct CALL callers of 0x0a29ec (0x25b37/0x60a39/0x6c865/0x78f6d/0x8847f) and 3 for 0x0a2b72 (0x5e481/0x5e7d2/0x09cb14); all have 0 static callers — called via computed indirect dispatch. Event loop 0x0019BE IS transpiled (blocks exist) but execution loops in hardware poll at 0x690-0x69a. Event dispatch mechanism at 0x001C33 decoded: bytecode table walker, compares D/E event-code against table at HL. Phase 90: scan that table to find home-screen event code. Commit: 70433e0.
 - 2026-04-13 (CC session 17 — Phase 90 a/b/c/d/e): **Home screen composite render achieved**. Confirmed all 5 callers of 0x0a29ec and 3 callers of 0x0a2b72 have ZERO static callers (confirmed via ROM scan for CALL/JP instructions) — full dead end for static analysis. Correct composite sequence: (1) 0x0a2b72 → r0-34 status bar background (10228px, r0-34 all white in r0-16 + content in r17-34), (2) 0x0a29ec → r17-34 home row strip (adds +864px to give 11092px total). r35-239 is empty for fresh-boot (no history entries). The "8 callers of 0x088471" drew a MENU LIST renderer (r37-114→r37-234 at 200k steps), NOT the home screen history — that was a false lead from a heuristic fn-start estimate. Key bug found+fixed: `mem.set(ramSnap, 0x400000)` also resets VRAM (VRAM_BASE=0xD40000 is within 0x400000-0xE00000). Mode text in r0-16 NOT rendered — 0x0a2b72 fills r0-16 with white only, mode indicator text needs separate function call with proper mode RAM state. 0x0a29ec renders 26 chars all 0xFF (TI two-byte token prefix) = 0xFF glyph blocks visible in ASCII art. Phase 91: set mode RAM bytes and find mode text renderer.
+- 2026-04-13 (CC session 18 — Phase 91 a/b/c): **Mode display buffer found and home screen rendered with real text**. Phase 91a scanned 0xD00080-0xD001FF — zero bytes affect char output. Phase 91b (memory read trace via cpu.read8 wrapping): HL steps through 0xD020A6-0xD020BF on each 0x0a1799 call — confirmed mode display buffer = **26 bytes at 0xD020A6**, all 0xFF in boot snapshot (uninit). 0xD00595=curRow, 0xD00596=curCol (CE standard memory map). Two-byte token intercept: ALL 26 calls pass 0xFF prefix — no second bytes, buffer is genuinely uninitialized not encoded. Binary search confirmed buffer in 0xD01E00-0xD021FF. Phase 91c (seed experiments): seeding 0xD020A6 with ASCII bytes confirmed format — 0x0a1799 renders raw ASCII chars. ASCII "ABCDEFGHIJKLMNOPQRSTUVWXYZ" → text="ABCDE...Z". "Normal Float Radian       " (26 chars) → mode text renders correctly with letter-shaped glyph patterns in r17-34. **Browser-shell wired**: new "P91 Home Screen ★" button runs composite (0x0a2b72 → seed 0xD020A6 with "Normal Float Radian       " → 0x0a29ec). No static LD HL,0xD020A6 reference in ROM — buffer is populated by computed-address OS function not yet found.
 
-**Last updated**: 2026-04-13 session 17 (Phase 90a/b/c/d/e complete. Composite render works: 0x0a2b72 + 0x0a29ec = 11092px in r0-34. Mode text missing from status bar. Phase 91 = seed mode RAM bytes + find status bar text renderer.)
+**Last updated**: 2026-04-13 session 18 (Phase 91a/b/c complete. Mode buffer = 0xD020A6 (26 bytes ASCII). Home screen "P91 Home Screen ★" button wired in browser-shell. Next: find OS function that populates 0xD020A6 from mode settings, then explore what renders r0-16 top area and history area r35-239.)
 **Focus**: TI-84 Plus CE ROM transpilation (CC-led this session, Codex continues). The trainer app pivoted to Physical Calculator Mode on 2026-04-11 evening — see `CONTINUATION_PROMPT.md` for trainer work, this file is the ROM-side source of truth.
 
 **ROM transpiler current state** (after 2026-04-12 Phase 31):
@@ -3615,42 +3616,45 @@ Top-level Y= editor entry is NOT in 0x09c000-0x09cfff. Must find external caller
 - **Home row (r17-34)**: borders + 26 chars all 0xFF (TI token prefix glyph = 0xFF block glyph rendered)
 - **r35-239**: empty for fresh boot (no history entries), some of the 8 callers of estimated fn 0x088471 render a MENU LIST at r37-234 (false lead — not home screen history)
 
-**Phase 91 target**: Make the composite render show actual mode text:
-1. Find RAM addresses where the OS stores current mode (Normal/Float/Radian/etc.) — likely at IY+0x08 or similar offsets from 0xD00080
-2. Set those bytes to known values before calling 0x0a2b72/0x0a29ec
-3. Mode indicator rendering: Phase 87b showed DE=0x4f gives "O" (=Normal), DE=0x52 = Float, etc. — seed DE and/or mode RAM bytes
-4. Find which function renders the actual mode text INTO r0-16 (not just the white background)
+### ★★★ RESOLVED: Phase 91 — Mode display buffer found, home screen renders real text
+
+**Phase 91a/b/c COMPLETE**. All three sub-phases done in session 18.
+
+**Key finding — mode display buffer at 0xD020A6 (26 bytes ASCII)**:
+- Phase 91b (cpu.read8 trace): HL steps 0xD020A6→0xD020BF on each 0x0a1799 call. The 26 0xFF chars come directly from mem[0xD020A6+idx] — buffer is uninitialized in boot snapshot.
+- 0xD00595=curRow, 0xD00596=curCol (CE standard memory map — confirmed by incrementing pattern).
+- Two-byte token intercept: ALL 26 calls are raw 0xFF values, not 0xFF-prefix two-byte tokens. Buffer is genuinely uninitialized.
+- Phase 91c experiments confirmed: seeding 0xD020A6 with ASCII chars works. "Normal Float Radian       " (26 chars) renders legible letter-shaped glyphs in r17-34.
+- No static LD HL,0xD020A6 in ROM — buffer is populated by a computed-address OS function that runs after full OS boot (not reached in our snapshot).
+
+**Browser-shell**: "P91 Home Screen ★" button added — runs 0x0a2b72 (bg), seeds 0xD020A6 with "Normal Float Radian       ", runs 0x0a29ec (content).
 
 **Key reference addresses** (phase 90 confirmed):
-- CALL 0x0a29ec at: 0x025b37 (starts with CD EC 29 0A), 0x060a39, 0x06c865, 0x078f6d, 0x088483
+- CALL 0x0a29ec at: 0x025b37, 0x060a39, 0x06c865, 0x078f6d, 0x088483
 - CALL 0x0a2b72 at: 0x05e481, 0x05e7d2, 0x09cb14
-- JP 0x0a29ec at 0x02085c (JT slot 470 entry) — CONFIRMED
-- JP 0x0a2b72 at 0x020880 (JT slot 479 entry) — CONFIRMED
+- JP 0x0a29ec at 0x02085c (JT slot 470) — CONFIRMED
+- JP 0x0a2b72 at 0x020880 (JT slot 479) — CONFIRMED
 
-### 5b. ★★★ NEXT: Phase 91 — Mode state setup for correct home screen render
+### 5c. ★★★ NEXT: Phase 92 — Find the OS function that populates 0xD020A6
 
-**Goal**: Make the composite render (0x0a2b72 + 0x0a29ec) show actual mode indicator text instead of 0xFF glyph blocks and a blank status bar.
+**Goal**: Find the OS function that writes the mode text into 0xD020A6-0xD020BF. When found, we can call it after boot to get correct mode text automatically (instead of hardcoding "Normal Float Radian").
 
-**Background**:
-- 0x0a2b72 draws r0-34 but fills r0-16 with WHITE ONLY (no mode text)
-- 0x0a29ec renders 26 chars all coded 0xFF (TI two-byte token prefix) → renders as 0xFF glyph pattern
-- Phase 87b showed: seeding DE=0x4f before 0x0a2b72 → 1 char 'O' (Normal mode letter)
-- Mode token table at ROM 0x0a0450: code 0x4C=prgm, 0x4D=Radian, 0x4E=Degree, 0x4F=Normal, 0x50=Sci, 0x51=Eng, 0x52=Float, 0x53=Fix
-- Mode bytes in OS RAM likely at IY+nn offsets (IY=0xD00080), probably IY+0x08/0x0A/0x0C for angle/display/etc.
+**Approach**:
+1. Wrap cpu.write8 to log writes to 0xD020A6-0xD020BF during a longer boot or during mode-change operations
+2. Run longer boot sequences (more than 100k steps for OS init) and capture first write to 0xD020A6
+3. The block PC at the write is the mode-buffer populate function entry (or inside it)
+4. Once found: call it from browser-shell before 0x0a29ec to get real mode text from OS mode settings
 
-**Approach for Phase 91**:
-1. **Find mode RAM addresses**: trace 0x0a2b72 with onBlock hook watching all memory reads from 0xD000XX range → identify which bytes it reads as mode state
-2. **Seed mode bytes**: write known mode values to those addresses before calling 0x0a2b72
-3. **Two-byte token intercept**: track `lastWas0xFF` across 0x0a1799 calls in 0x0a29ec — when last char was 0xFF, current char's A = the actual token second byte
-4. **Verify**: combined render should show "Normal Float Radian" or similar visible in r17-34
+**Bonus**: The write trace will also reveal what mode-setting bytes control the actual mode (Normal/Sci/Float/Radian etc.), not just the display buffer.
 
-**Quick probe** (Phase 91a): add memory read tracing to the 0x0a2b72 run — hook `onMemRead` (if available) or scan RAM-before/RAM-after delta to see which 0xD000XX bytes changed, then reverse-engineer which ones are MODE state.
+### 5d. ★★ Phase 92 — What renders r0-16 (status bar top portion)?
 
-### 6. ★★ Two-byte token decode for 0x0a29ec
+0x0a2b72 fills r0-34 with white background but no text. The real TI-84 CE shows battery indicator, clock, and other status icons in r0-16. What function renders those?
 
-Phase 87b showed 0x0a29ec renders 26 chars all `0xFF` (TI extended token prefix). Need to capture the SECOND byte after each 0xFF to decode actual token names (Normal/Float/Radian/etc.). Write a probe that tracks state: when pc=0x0a1799 and lastCharWas0xFF, the next call's A = the actual token byte.
+**Approach**: Look for callers of 0x0a2b72 that ALSO call something that renders in r0-16 (a rectangle fill or bitmap renderer). Or run longer after 0x0a2b72 to see if the caller itself continues rendering.
 
-Alternatively: intercept at `0x0a29ec` itself and look at what HL/DE contain (token pointer?) before the render loop starts.
+### 6. ★★ Probe more JT slots in the 0x0a mode-region cluster
+Phase 77 only probed slots 627/635/639/647 (with wrong slot numbers). Corrected nearby slots to probe: **slots 460-485** (4-byte stride from JT_BASE=0x020104, verify targets with the fixed JT formula). Each is a potential mode-screen entry point.
 
 ### Slot number corrections (Phase 88)
 
@@ -3658,12 +3662,6 @@ Alternatively: intercept at `0x0a29ec` itself and look at what HL/DE contain (to
 - Slot 470 (0x1d6) → 0x0a29ec (home row strip renderer)
 - Slot 479 (0x1df) → 0x0a2b72 (status bar fill)
 - Slot 21 (0x15) → 0x08c366 (OS entry/dispatcher) — CONFIRMED correct
-
-### 7. ★★ Two-byte token intercept for 0x0a29ec
-Phase 87b noseed: 26 chars all 0xFF (TI extended token prefixes). Capture PAIRS: track `lastWas0xFF` across 0x0a1799 calls; the next A is the real token byte. Alternatively, intercept at 0x0a29ec entry and read HL (token pointer into OS RAM token buffer) before the render loop.
-
-### 8. ★★ Probe more JT slots in the 0x0a mode-region cluster
-Phase 77 only probed slots 627/635/639/647 (with wrong slot numbers). Corrected nearby slots to probe: **slots 460-485** (4-byte stride from JT_BASE=0x020104, verify targets with the fixed JT formula). Each is a potential mode-screen entry point.
 
 ### 9. ★ Session 13 deferred: font-lookup VRAM decoder
 Write a decoder that reads TI-84 font table at 0x003d6e (28 bytes/glyph) and matches rendered pixels to characters. Turns Phase 78/81 ascii-art previews into readable text without needing a running interpreter.

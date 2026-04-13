@@ -153,6 +153,7 @@ button.active { background: #2a5a2a; border-color: #4a8a4a; }
       <button id="btnP69_03ebed" disabled>P69 03ebed</button>
       <button id="btnP69_03f338" disabled>P69 03f338</button>
       <button id="btnP69_06daaf" disabled>P69 06daaf</button>
+      <button id="btnP91_homeScreen" disabled>P91 Home Screen ★</button>
       <button id="btnP77_0a2b72" disabled>P77 home top bar (0a2b72)</button>
       <button id="btnP77_0a29ec" disabled>P77 home row (0a29ec)</button>
       <button id="btnP77_0a237e" disabled>P77 cursor prep (0a237e)</button>
@@ -312,6 +313,9 @@ const ERROR_BANNER_SELECTOR_ADDR = 0xD008DF;
 const ERROR_BANNER_SELECTOR_ADDR_HEX = '0xD008DF';
 const ERROR_BANNER_MODE_ADDR = 0xD00824;
 const ERROR_BANNER_MODE_ADDR_HEX = '0xD00824';
+// Phase 91: Mode display buffer — 26-byte ASCII text for home screen status bar
+const HOME_SCREEN_MODE_BUF = 0xD020A6;
+const HOME_SCREEN_MODE_TEXT = 'Normal Float Radian       '; // exactly 26 chars
 const ERROR_BANNER_RENDER_STEPS = 8000;
 const ERROR_BANNER_SPECIAL_CASES = [
   { label: 'Error in Xmit', selectorByte: 0x00, selectorRamAddr: ERROR_BANNER_MODE_ADDR_HEX, selectorValue: 0x37 },
@@ -432,6 +436,7 @@ function enableButtons(booted) {
   $('btnP69_03ebed').disabled = !booted;
   $('btnP69_03f338').disabled = !booted;
   $('btnP69_06daaf').disabled = !booted;
+  $('btnP91_homeScreen').disabled = !booted;
   $('btnP77_0a2b72').disabled = !booted;
   $('btnP77_0a29ec').disabled = !booted;
   $('btnP77_0a237e').disabled = !booted;
@@ -823,6 +828,82 @@ function showScreen(entryAddr, entryMode, name, maxSteps = 300000, hlValue = nul
   log(`<span class="info">--- ${name} rendered (${r.steps} steps, ${dt} ms) ---</span>`);
 }
 
+// Phase 91: Composite home screen render.
+// Sequence: 0x0a2b72 (status bar background r0-34) → seed mode buffer → 0x0a29ec (home row content r17-34).
+// Phase 91b/c finding: mode text buffer at 0xD020A6 (26 bytes ASCII). Default "Normal Float Radian       ".
+function showHomeScreen() {
+  if (!PRELIFTED_BLOCKS) {
+    setStatus('Boot first so the ROM module is loaded.', true);
+    return;
+  }
+  autoRunning = false;
+  $('btnAutoRun').textContent = 'AutoRun';
+  $('btnAutoRun').classList.remove('active');
+
+  setStatus('P91 Home Screen: cold boot + composite render...');
+
+  const romBytes = decodeEmbeddedRom();
+  const mem = new Uint8Array(0x1000000);
+  mem.set(romBytes);
+  const p2 = createPeripheralBus({ pllDelay: 2, timerInterrupt: false });
+  const ex2 = createExecutor(PRELIFTED_BLOCKS, mem, { peripherals: p2 });
+  const cpu2 = ex2.cpu;
+
+  // Stage 1: cold boot
+  ex2.runFrom(0x000000, 'z80', { maxSteps: 20000, maxLoopIterations: 32 });
+
+  // Stage 2: explicit OS init
+  cpu2.halted = false; cpu2.iff1 = 0; cpu2.iff2 = 0;
+  cpu2.sp = SCREEN_STACK_TOP - 3;
+  fillSentinel(mem, cpu2.sp, 3);
+  ex2.runFrom(0x08C331, 'adl', { maxSteps: 100000, maxLoopIterations: 500 });
+
+  // Stage 3: clear VRAM to black, then set text colors
+  for (let i = LCD_VRAM_BASE; i < LCD_VRAM_BASE + LCD_VRAM_BYTES; i++) mem[i] = 0x00;
+  callSetTextFgColor(ex2, cpu2, mem, TEXT_FG_COLOR);
+
+  // Helper: reset CPU to render-ready state (does NOT touch VRAM or RAM)
+  function resetForRender() {
+    cpu2.halted = false; cpu2.iff1 = 0; cpu2.iff2 = 0;
+    cpu2._iy = 0xD00080; cpu2.f = 0x40;
+    cpu2.sp = SCREEN_STACK_TOP - SCREEN_RENDER_STACK_BYTES;
+    fillSentinel(mem, cpu2.sp, SCREEN_RENDER_STACK_BYTES);
+  }
+
+  // Stage 4a: render status bar background (r0-34, all white)
+  const t0 = performance.now();
+  resetForRender();
+  const r1 = ex2.runFrom(0x0a2b72, 'adl', { maxSteps: 30000, maxLoopIterations: 500 });
+
+  // Stage 4b: seed mode display buffer — Phase 91c confirmed format is 26 ASCII chars
+  for (let i = 0; i < HOME_SCREEN_MODE_TEXT.length && i < 26; i++) {
+    mem[HOME_SCREEN_MODE_BUF + i] = HOME_SCREEN_MODE_TEXT.charCodeAt(i);
+  }
+
+  // Stage 4c: render home row content (r17-34, mode text + borders) — NO VRAM clear
+  resetForRender();
+  const r2 = ex2.runFrom(0x0a29ec, 'adl', { maxSteps: 30000, maxLoopIterations: 500 });
+  const dt = Math.round(performance.now() - t0);
+
+  executor = ex2;
+  cpu = cpu2;
+  peripherals = p2;
+  totalSteps = r1.steps + r2.steps;
+  lastPc = r2.lastPc;
+  lastMode = r2.lastMode;
+
+  if (lcd) lcd.destroy();
+  lcd = createLCDRenderer($('lcd'), mem);
+  syncLCDState();
+  lcd.renderFrame();
+
+  updateRegs();
+  updateKeyStateDisplay();
+  updateKeyboardOverlay();
+  setStatus(`P91 Home Screen: ${totalSteps} steps → ${r2.termination} (${dt} ms) — "Normal Float Radian" mode text seeded at 0xD020A6`);
+  log(`<span class="info">--- P91 Home Screen rendered (${totalSteps} steps, ${dt} ms) ---</span>`);
+}
+
 function showScreenWithMenuMode(entryAddr, entryMode, name, menuMode, maxSteps = 300000) {
   showScreen(entryAddr, entryMode, name, maxSteps, null, null, null, null, menuMode);
 }
@@ -1068,6 +1149,7 @@ $('btnP69_03dc1b').addEventListener('click', () => showScreen(0x03dc1b, 'adl', '
 $('btnP69_03ebed').addEventListener('click', () => showScreen(0x03ebed, 'adl', 'P69 03ebed', 200000));
 $('btnP69_03f338').addEventListener('click', () => showScreen(0x03f338, 'adl', 'P69 03f338', 200000));
 $('btnP69_06daaf').addEventListener('click', () => showScreen(0x06daaf, 'adl', 'P69 06daaf', 200000));
+$('btnP91_homeScreen').addEventListener('click', showHomeScreen);
 $('btnP77_0a2b72').addEventListener('click', () => showScreen(0x0a2b72, 'adl', 'P77 home top 0a2b72', 200000, null, 0x004f));
 $('btnP77_0a29ec').addEventListener('click', () => showScreen(0x0a29ec, 'adl', 'P77 home row 0a29ec', 200000));
 $('btnP77_0a237e').addEventListener('click', () => showScreen(0x0a237e, 'adl', 'P77 cursor 0a237e', 200000));
