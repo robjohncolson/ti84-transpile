@@ -11,7 +11,7 @@
 - 2026-04-13 (CC session 13 Phase 75): Hunted for the token-print helper. **Zero direct loads of 0x0a0450 as HL base** — the token table is accessed indirectly via BCALL or offset computation. Found 170 mode-state reads from 0xD00080-0xD000FF range with hot bytes at 0xD0008A, 0xD00085, 0xD0008E, 0xD00092. **Zero blocks** contain BOTH a mode read AND a text call — the rendering flow is split across multiple blocks in ways that require deeper graph traversal to trace.
 - 2026-04-13 (CC session 13 Phase 76): Length-prefixed string walker signature scan. **Zero strict pattern matches** for `ld b,(hl) ; inc hl ; ... call 0x0059c6 ; djnz loop`. Found 3 supporting print loops but all in already-known locations (0x005a35/0x005a38 char-print family, 0x013d19 "Validating OS..." function). The token-print helper uses a different calling convention than the naive pattern — probably inline-unrolled, uses a helper, or uses `ldir` for batch copy followed by a separate draw pass.
 
-**Last updated**: 2026-04-13T19:00Z (Phase 80-5 + 81 complete. P80-4 16MB fix VERIFIED via Node.js probe: 4MB → 104 steps → missing_block@0xffffff; 16MB → 110 steps → halt@0x19b5. browser-mcp cannot interact with this page (175MB JS parse freezes the tab). Phase 81: P78 renders decoded. ALL THREE (05e7d2, 05e481, 09cb14) render a **Y= equation attribute status bar** — NOT home screen. Text: `[0xef][0x02][0xc1]eqnname,color#,[0x00] li` (cols 48-300). 09cb14 adds a leading `:` at col 36. The 0x0a1799 single-char printer is confirmed as the per-character dispatch point. Home screen STILL not found.)
+**Last updated**: 2026-04-13T19:30Z (Phase 80-5 + 81 + 82 complete. P80-4 16MB fix VERIFIED. Phase 81: P78 renders are Y= attribute bar (`[0xef][0x02][0xc1]eqnname,color#,[0x00] li`), NOT home screen. Phase 82: probed all 19 candidates in 0x09cxxx — none is top-level Y= editor. 0x09cb14 is still the best renderer (attribute bar only); 0x09cb08/0x09cb1a draw single glyphs; 17 others draw zero pixels. Top-level Y= entry is in a parent caller OUTSIDE 0x09cxxx. Next: find callers of 0x09cb14 from other pages.)
 **Focus**: TI-84 Plus CE ROM transpilation (CC-led this session, Codex continues). The trainer app pivoted to Physical Calculator Mode on 2026-04-11 evening — see `CONTINUATION_PROMPT.md` for trainer work, this file is the ROM-side source of truth.
 
 **ROM transpiler current state** (after 2026-04-12 Phase 31):
@@ -3434,6 +3434,32 @@ Still haven't found the "NORMAL"/"FLOAT" text rendering path. The token table 0x
 - (c) Find callers of 0x0a2b72 (slot 639) to see what top-level screen it's invoked from — that's the parent screen renderer
 - (d) Cross-reference with 0x028f0b's 0x0a1cac call — what HL does it pass? The full 0x028f02 → 0a1cac path needs to complete so we can see a LABELED status bar
 
+### Phase 87b/88/89 — BCALL scanner + CE OS architecture revelation (2026-04-13 CC session 16) — DONE ✓
+
+**Phase 87b** (correct harness — reuse one executor+peripherals):
+- `0x0a29ec` noseed: 5652px r17-34, 26 chars ALL `0xFF` (TI extended token prefix, 2-byte token system)
+- `0x0a2b72` seeded with DE=mode_code: 1 char per run = TI mode char (0x4F→Normal, 0x52→Float, 0x4D→Radian, 0x4E→Degree, 0x50→Sci). Note: char codes are TI character encoding, not ASCII.
+- Bug fixed: previous Phase 87 used fresh peripherals per probe → LCD uninitialized → 0px VRAM.
+
+**Phase 88** (BCALL scanner — raw ROM byte scan):
+- Slot correction: Phase 77 was wrong. Correct slots: **470→0x0a29ec**, **479→0x0a2b72** (not 627/639).
+- **0 BCALL (CF lo hi) call sites** for either slot in entire ROM.
+- **CE OS uses direct CALL instructions internally**, not BCALL for rendering pipeline.
+- The jump table (base 0x020104) formula fix: each entry is `C3 lo hi UU` (eZ80 JP nn), read bytes+1+2+3 (skip opcode). Previous formula used bytes+0+1+2 → wrong addresses.
+
+**Phase 89** (direct call chain analysis):
+- 5 CALL callers of 0x0a29ec: 0x25b37 (block), 0x60a35 (block), 0x6c865 (block), 0x78f69 (block), 0x8847f (block). All draw same 5652px or 0px.
+- 3 CALL callers of 0x0a2b72: 0x5e481 (block, 10228px), 0x5e7d2 (block, 10228px), 0x09cb14 (block, same Y= status bar from Phase 81).
+- ALL 8 callers have **0 PRELIFTED_BLOCKS callers** and **0 JT slots** — dead end for static analysis.
+- Full boot probe: `0x000000` z80 50k steps → 76800px white fill + HALT at 0x19b5. OS clears screen, then halts. **Home screen is drawn by event loop AFTER IRQ wake**, not during OS init.
+- Slot 1525 (→ 0x8849e) has 9 BCALL sites but runs 100k steps and draws 0px — not a renderer.
+
+**Architecture revelation**: The CE OS home screen entry is unreachable via static analysis. It sits in the event loop dispatch table at 0x0019BE (from Phase 58) and is called dynamically after IRQ wakes the HALT. Next session must trace the IRQ event loop (Approach B: timerInterrupt: true) to find the renderer.
+
+**Artifacts**: `probe-phase87b-0a29ec-fixed.mjs`, `phase87b-0a29ec-fixed-report.md`, `probe-phase88-bcall-scan.mjs`, `phase88-bcall-scan-report.md`
+
+---
+
 ### Phase 78 — Parent caller discovery + legible top-strip renders (2026-04-13 CC session 14) — DONE ✓ MAJOR WIN
 
 **Finding 1**: 0x0a2b72 is ONLY a top-strip background fill helper. It returns normally after 3868 steps (lastPc=0xffffff was our sentinel, not a missing block). The "missing_block" termination was misleading — the function completed successfully.
@@ -3521,8 +3547,120 @@ The `0xef`, `0x02`, `0xc1` bytes are TI special display tokens (likely style/sel
 
 **Method**: intercepted `0x0a1799` (single-char printer) onBlock hook, captured A register (char code) at each call. 22-23 chars per render, 14px per cell, stride 14, rows 17-34.
 
-### 2. ★★★ Find callers of 0x05e402 / 0x05e448 / 0x05e7a4 (the real entries)
-These ARE real function entries in the 0x05e400-0x05e820 family. Scan for their callers. One of them should be a top-level screen that displays EDITOR content with text.
+### 2. ★★ RESOLVED: Phase 82 — 0x09cxxx is all subroutines, not top-level (commit a680c8d)
+Probed all 19 candidates. Results:
+- **0x09cb14**: 10,444px — Y= attribute bar (known from Phase 81, best renderer in page)
+- **0x09cb08**, **0x09cb1a**: 252px — single-glyph subroutines
+- **0x09c98c**, **0x09cd5a**: 30,000 steps, 0px — hit max_steps (possible setup-heavy entry)
+- All others: 0px, missing_block
+
+Top-level Y= editor entry is NOT in 0x09c000-0x09cfff. Must find external callers.
+
+### 3. ★★ RESOLVED: Phase 83/83c/84 — BCALL barriers confirmed (2026-04-13 session 15)
+
+**Core finding**: The home screen and Y= editor functions are hidden behind BCALL (RST 0x08 + 16-bit slot) dispatch, not direct CALL instructions. Static scan of PRELIFTED_BLOCKS finds 0 direct callers for:
+- 0x09cb14 (Y= attribute bar renderer) — 0 callers in PRELIFTED_BLOCKS
+- 0x0a2812, 0x0a281a, 0x0a29a8, 0x0a654e (mode-var readers) — 0 callers
+- All called via indirect/computed dispatch, not static `call 0xADDR`
+
+**Y= editor structure (Phase 83c/86)**:
+- 0x09c4e0: Called by 32 external blocks, but it's just `bit 0,(iy+7); ret` — a flag checker
+- 0x09c000 page entry: 50,000+ steps, 0px VRAM, hits missing_block at 0xffe871 after 2067 steps
+- 0x09c95a: No callers in PRELIFTED_BLOCKS — BCALL-dispatched event handler (reads key from 0xD0058E)
+- Backward trace: loop 0x09cb08↔0x09cb18 ← 0x09ca1a ← ... ← 0x09c9de ← 0x09c95a (dead end)
+- Conclusion: Y= editor is entered via BCALL, not direct call. 0x09c95a is the BCALL-dispatched key handler.
+
+**0x0a29ec (slot 627) decode attempt (Phase 87)**:
+- Intercepts 0x0a1799 26 times, all with char code 0xff
+- 0xff may be a TI token prefix byte (two-byte token start) — the status bar uses two-byte tokens like `[0xff][0x4f]` = "Normal"
+- 0 VRAM pixels because char 0xff might be invisible or the write path differs
+
+**New priority**: Scan raw ROM bytes for `rst 0x08` (CF opcode) followed by slot bytes to find callers of BCALL functions. This requires reading ROM.rom as binary data, not using PRELIFTED_BLOCKS.
+
+### 4. ★★★ RESOLVED: Phase 88/89 — BCALL scanner ran, CE OS uses direct CALL (session 16)
+
+**Phase 87b (correct harness)** — reusing single executor+peripherals across probes:
+- `0x0a29ec` (noseed): 5652px r17-34, 26 chars ALL `0xFF` — TI extended token prefix bytes. The home row strip renderer prints two-byte tokens; our 0x0a1799 intercept only captures the first byte (0xFF prefix). Need two-byte intercept to decode actual tokens.
+- `0x0a2b72` with mode seed: DE=0x4f→'O' (Normal), DE=0x52→'R' (Float), DE=0x4d→'M' (Radian), DE=0x4e→'N' (Degree), DE=0x50→'P' (Sci). One char per call = mode abbreviation character. The char is TI char_code, not plain ASCII 'O'/'R'/etc.
+- Key fix: previous Phase 87 failed because fresh `createPeripheralBus()` per probe skips boot → LCD not initialized → 0px VRAM. Must reuse one executor+peripherals that went through full boot.
+
+**Phase 88 — BCALL scanner**:
+- Slot correction: Phase 77 said slots 627/639 → these were WRONG. Correct: Slot **470** (0x1d6) → 0x0a29ec, Slot **479** (0x1df) → 0x0a2b72
+- **0 BCALL call sites** for slots 470 and 479 in the entire ROM. These functions are NOT called via BCALL.
+- The TI-84 CE OS uses **direct CALL instructions** for its internal rendering calls, not BCALL.
+- Large CF values (slots >50000) in ROM are false positives — data bytes that happen to follow 0xCF opcodes from other instruction contexts.
+
+**Phase 89 — Direct caller analysis**:
+- `0x0a29ec` has **5 direct CALL callers** in ROM: 0x25b37, 0x60a39, 0x6c865, 0x78f6d, 0x8847f (block starts at 0x8847f)
+- `0x0a2b72` has **3 direct CALL callers**: 0x5e481, 0x5e7d2, 0x09cb14 (all mid-function blocks)
+- All 8 of these callers have **0 static callers** in PRELIFTED_BLOCKS
+- None appear in the jump table (JT slots 0-2000 scanned)
+- **Probe results**: 0x8847f draws 5652px (r17-34, same as 0x0a29ec); 0x5e481/0x5e7d2 draw 10228px (r0-34, status bar); 0x60a39/0x78f6d/0x88483 draw 0px (hit missing_block in ROM before reaching renderer)
+- The 0x5e*** cluster (slots 746-1938, 48 JT entries, all with 0 BCALL sites) forms a rich text-rendering family but its top-level callers are not statically traceable.
+
+**Full boot probe**: `runFrom(0x000000, z80, 50k steps)` → 76800px white fill + HALT at 0x19b5. The OS clears the full screen, then halts waiting for IRQ. Home screen content is NOT drawn during OS init — it's drawn by the event loop after IRQ wake.
+
+**Conclusion**: Static analysis is exhausted for finding the home screen entry. The home screen renderer is called by the OS event loop after IRQ wakes the CPU from HALT. To observe it, we need the IRQ path working (Phase 56 sustained the loop). The home screen entry point must be found dynamically.
+
+### 5. ★★★ NEXT: Event loop dispatch table scan — Phase 90
+
+**Event loop IS transpiled** (confirmed Phase 89):
+- 0x0019be, 0x001c33, 0x00b608 are all in PRELIFTED_BLOCKS
+- Trace from 0x0019BE: `0x19be → 0x19ef → 0x1a17 → 0x1a23 → 0x1a2d → 0x1a32 → 0x0 → 0x3 → 0x658 → 0x673 → 0x679 → 0x67e → 0x688 → 0x697 → 0x69a → 0x690 (loop)`
+- Gets stuck in hardware poll loop at 0x690→0x69a: `3e 04 f3 18 00 f3` (LD A,4; DI; NOP; DI)
+- Boot with timerInterrupt: true → also stuck in 0x6138 loop after 500k steps, 0 new VRAM pixels
+
+**Event dispatch mechanism** (decoded from 0x001C33 bytecode):
+```
+7e fe ff 28 12 23 ba 20 08 7e e6 f0 bb 20 02 2b c9
+LD A,(HL); CP 0xFF; JR Z,+18; INC HL; CP D; JR NZ,+8; LD A,(HL); AND 0xF0; CP E; JR NZ,+2; DEC HL; RET
+```
+- Walks a table at HL comparing (D=event_hi, E=event_lo) against event code pairs
+- When match found: HL points to matching table entry, caller reads handler address from HL+n
+
+**The 5 callers of 0x0a29ec have no data table references** (no 3-byte LE pointers in ROM data). Called via computed indirect (JP (HL) / JP (IY+n) / similar). Static analysis dead end confirmed.
+
+**Phase 90 goal**: Find the event table entries and the handler for "render home screen":
+1. Find where the event table lives (HL when 0x001C33 is called from 0x001C33 region)
+2. Read the table entries to find event codes
+3. Find which event code maps to the callers of 0x0a29ec (home screen row renderers)
+4. Call that handler directly via our boot-snapshot probe harness
+
+**Key reference addresses**:
+- Boot HALT: 0x19b5
+- Event loop entry: 0x0019BE
+- Event dispatch bytecode: 0x001C33 (D=hi, E=lo event code, HL=table base)
+- ISR path: 0x38 → 0x6F3 → 0x704 → 0x710 → 0x1713 → 0x171E → event loop
+- Home row strip: 0x0a29ec (slot 470), callers: 0x25b37/0x60a39/0x6c865/0x78f6d/0x8847f
+- Status bar: 0x0a2b72 (slot 479), callers: 0x5e481/0x5e7d2/0x09cb14
+
+**Quick approach**: Trace 0x0019BE with HL loaded to each of the 5 callers of 0x0a29ec as target. One of those callers IS the event handler. Set HL to point to each one, push the address on stack and CALL to see which draws 5652px.
+
+### 6. ★★ Two-byte token decode for 0x0a29ec
+
+Phase 87b showed 0x0a29ec renders 26 chars all `0xFF` (TI extended token prefix). Need to capture the SECOND byte after each 0xFF to decode actual token names (Normal/Float/Radian/etc.). Write a probe that tracks state: when pc=0x0a1799 and lastCharWas0xFF, the next call's A = the actual token byte.
+
+Alternatively: intercept at `0x0a29ec` itself and look at what HL/DE contain (token pointer?) before the render loop starts.
+
+### Slot number corrections (Phase 88)
+
+**Phase 77 was wrong about slot numbers**. Correct mapping (verified via JT scan with fixed formula = skip JP opcode byte, read bytes+1+2+3):
+- Slot 470 (0x1d6) → 0x0a29ec (home row strip renderer)
+- Slot 479 (0x1df) → 0x0a2b72 (status bar fill)
+- Slot 21 (0x15) → 0x08c366 (OS entry/dispatcher) — CONFIRMED correct
+
+### 4. ★★★ OLD PRIORITY (now resolved): Raw ROM BCALL scanner
+Scan ROM.rom bytes for `CF <lo> <hi>` patterns (RST 0x08 + 2-byte slot number). For each BCALL call site, record:
+1. The caller PC (address of CF instruction)
+2. The slot number (2-byte LE value after CF)
+3. What that slot maps to in the JT (if known)
+
+This will reveal which code calls BCALL slot 639 (→ 0x0a2b72, home bar fill) and slot 627 (→ 0x0a29ec, text strip). Those callers ARE the home screen renderer.
+
+**JT base address**: From Phase 71: slot 21 is at 0x020158. If entries are 4 bytes each: base = 0x020158 - 21*4 = 0x020158 - 0x54 = 0x020104. So slot N is at 0x020104 + N*4. To find slot 639's target: 0x020104 + 639*4 = 0x020104 + 0x9FC = 0x020B00 — read the 24-bit value there.
+
+Probe file to write: TI-84_Plus_CE/probe-phase88-bcall-scan.mjs
+Report: TI-84_Plus_CE/phase88-bcall-scan-report.md
 
 ### 3. ★★ Decode text content via font lookup, not ASCII art
 The phase78 ascii previews mix pixel positions in a way that's hard to read. Write a VRAM decoder that uses the TI-84 font table at `0x003d6e` (28-byte glyphs) to identify which characters are rendered at each position. This would turn the pixel soup into readable text strings.
