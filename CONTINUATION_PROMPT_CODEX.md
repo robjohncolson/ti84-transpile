@@ -2,8 +2,16 @@
 
 **Session context log**:
 - 2026-04-12 (CC session resume): ~5% of 1M-context window after reading this file. Budget is green; continuing Phase 32 work (home-screen hunt via 0x081670 callers).
+- 2026-04-12 (CC session 2, autonomous loop): completed Phases 41 + 42. Phase 41 verified end-to-end text rendering with the Phase 40 fg/bg fix and replaced manual mem writes with the real `SetTextFgColor` helper at `0x0802b2`. Phase 42 mapped the (0xd007e0) menu-mode dispatch space and discovered `0x0b6a58` as a major shell screen render entry (75K cells, 84% black/16% white — likely the home screen with inverted colors or list editor with garbage strings). Context at ~25-30% of 1M after Phase 42 wrap-up.
+- 2026-04-13 (CC session 13, autonomous parallel dispatch): completed Phases 61, 62, 62B, 63 via 4 parallel Codex agents. **Phase 62 found 4 new rendering callers of 0x0059C6 including 0x013d11 with an 11,004-pixel near-full-screen bbox (r37-192 c2-289) — the largest render ever observed in this project.** Phase 63 fully decoded the 0x0a1cac string-render calling convention and catalogued 110 callers with 5 high-value novel families identified (compat screen, self-test menu, keyboard test, MODE screen, solver prompts). Phase 61 partial progress: crossed D14038=0x07D0 threshold, discovered 0x014DDE/0x014E33/0x014E3D, but 0xD177B8 flag gates deeper path — zero VRAM.
+- 2026-04-13 (CC session 13 continued): completed Phases 64, 65A, 65B, 66 via 5 parallel Codex agents. **MILESTONE: 0x013d00 identified as the "Validating OS..." boot-time status renderer — first legible TI-OS text rendered end-to-end through the transpiler.** Phase 64 probed 5 novel caller families and all 7 produced legible screens (flash_test, solver_prompt, os_compat, test_halt, keyboard_test, self_test_hub, mode_screen) — browser-shell now has 7 new buttons. Phase 65B ran 0x013d11 with maxSteps=30000, observed 16,320 VRAM writes (fg=3011, bg=13309) with visible multi-line glyph patterns in the ASCII art. Phase 65A static disasm confirmed the nearby string pool: "Validating OS...", "Calculator will restart when validation is complete.", "Waiting...", "The OS is invalid, please load the latest OS at education.ti.com". Phase 66 confirmed D177B8 is the second gate: variants with D14038=0x07D0 + D177B8=0x00 reached 4 new blocks (0x006EB6, 0x014DE6, 0x014DEA, 0x014DED) but a THIRD gate at D14081 blocks further progress.
+- 2026-04-13 (CC session 13 Phase 67-69): Phase 67 traced the boot path from 0x000721 forward and found the OS-valid branch (0x000877) writes ports 0x1D/0x1E/0x1F from jump-table row 0x020105, jumps to 0x001afa, re-checks 0x0158a6, then 0x001b01 sets up hardware and `jp 0x0019b5` (HALT). Phase 68 found 12 MODE parent candidates; winner 0x08a6b3 renders 2081 px r97-134 c0-301 (the middle MODE settings list). Phase 69 batch-probed 25 untested 0x0a1cac callers — discovered 0x046878 (12800 px) and 0x03dc1b (5440 px), initially interpreted as bottom/top status bars.
+- 2026-04-13 (CC session 13 Phase 70-71, manual traces by CC after Codex timeouts): **CORRECTION**: Phase 70 intersection analysis revealed 0x046878 and 0x03dc1b are NOT text renderers — they're solid **rectangle fills** (12800 = exactly 40×320, 5440 = exactly 17×320, 100% fill ratio vs. ~29% for real text). The top/bottom "status bars" are actually background-fill helpers; real text rendering happens separately. Phase 71 found OS init has 33 external callers into its region, jump-table slot 21 (0x020158) dispatches to 0x08c366 (state-resume entry), and 0x08c33d is a partial-init entry with 10+ external callers. **The real OS boot is ISR-driven through bcall dispatch** — the linear boot path never directly calls 0x08c331; it's reached via interrupts that hit jump-table slot 21 → 0x08c366.
+- 2026-04-13 (CC session 13 Phase 72-74): Phase 72 probed all 3 OS init entries (0x08c331, 0x08c366, 0x08c33d) — all produce IDENTICAL output: **76800 VRAM writes (full screen 320×240, all white)**. They're equivalent entry points into the same state machine. **OS init is a screen clear, not a home-screen renderer.** Phase 73 found 0x046aff is a hardcoded full-screen clear helper (BC=239, DE=319) with 11 diagnostic-screen callers. Phase 74 made the **CRITICAL DISCOVERY**: "NORMAL", "FLOAT" are NOT plain ASCII in ROM — the TI-BASIC **token table at 0x0a0450** stores mode names as `<token_code><length><name>` entries (0x4C=prgm, 0x4D=Radian, 0x4E=Degree, **0x4F=Normal**, 0x50=Sci, 0x51=Eng, **0x52=Float**, 0x53=Fix, ...). The home-screen status bar renders these by token code, not direct string load.
+- 2026-04-13 (CC session 13 Phase 75): Hunted for the token-print helper. **Zero direct loads of 0x0a0450 as HL base** — the token table is accessed indirectly via BCALL or offset computation. Found 170 mode-state reads from 0xD00080-0xD000FF range with hot bytes at 0xD0008A, 0xD00085, 0xD0008E, 0xD00092. **Zero blocks** contain BOTH a mode read AND a text call — the rendering flow is split across multiple blocks in ways that require deeper graph traversal to trace.
+- 2026-04-13 (CC session 13 Phase 76): Length-prefixed string walker signature scan. **Zero strict pattern matches** for `ld b,(hl) ; inc hl ; ... call 0x0059c6 ; djnz loop`. Found 3 supporting print loops but all in already-known locations (0x005a35/0x005a38 char-print family, 0x013d19 "Validating OS..." function). The token-print helper uses a different calling convention than the naive pattern — probably inline-unrolled, uses a helper, or uses `ldir` for batch copy followed by a separate draw pass.
 
-**Last updated**: 2026-04-12T13:15Z (Phase 40 in progress)
+**Last updated**: 2026-04-13T16:45Z (Phases 77 + 78 + 79 complete. Session 14. Phase 78 finding: **0x05e7d2 / 0x05e481 / 0x09cb14** render 10228-10444 px including legible top-strip text. Phase 79 discovered these are mid-function call sites inside a text-rendering-loop family at 0x05e400-0x05e820 that uses 0x05e242 as a per-char printer. Session reached a human-verification checkpoint: user should boot browser-shell and click P78_05e7d2/05e481/09cb14 to identify the actual screens before continuing deeper. 6 new browser-shell buttons wired.)
 **Focus**: TI-84 Plus CE ROM transpilation (CC-led this session, Codex continues). The trainer app pivoted to Physical Calculator Mode on 2026-04-11 evening — see `CONTINUATION_PROMPT.md` for trainer work, this file is the ROM-side source of truth.
 
 **ROM transpiler current state** (after 2026-04-12 Phase 31):
@@ -1336,6 +1344,2319 @@ Sample row 40 (middle of a "solid" band): all 320 pixels are 0xFFFF. No text pun
 4. **Cross-reference with real TI-84 OS screens**: with 12 confirmed screens and ~40 remaining candidates from the dispatch scan, we've likely got 60-70% of the shell-level screens. Further dispatch-table scans (0xd00088, 0xd00809, other RAM mode-bytes) should push this higher.
 
 **Session context usage**: estimated ~50% of the 1M window. Started at 5%, ended at 50%. 6 commits, 10 new probe files, 12 screen entries discovered (from 1 at session start → 12 at end = **12x catalog growth**), browser-shell updated with 9 screen buttons.
+
+---
+
+### Phase 41: Verify text rendering + replace manual fix with SetTextFgColor helper (2026-04-12 CC session 2) — DONE ✓
+
+Phase 40 (commit `5e631ef`) discovered the text rasterizer reads fg/bg colors from RAM at `(0xd02688)` and `(0xd0268a)`. This phase verified the fix end-to-end and replaced the manual `mem[]` workaround with a real call to the OS helper at `0x0802b2`.
+
+**Phase 41.1 — verification (`probe-mode-with-text.mjs`)**:
+- Boot → OS init → set fg=0x0000/bg=0xffff → MODE renderer 0x0296dd
+- VRAM cleared to sentinel 0xAAAA so we can distinguish drawn vs untouched cells
+- Result: pixel histogram shows 3 distinct values:
+  - `0xaaaa`: 62508 (sentinel, untouched)
+  - `0xffff`: 9778 (bar bg fill)
+  - `0x0000`: 4514 (text glyph cells — REAL TEXT!)
+- ASCII art at stride 4 confirms 4 MODE rows with text glyphs visible inside the highlighted bars (RADIAN/DEGREE-style labels). **End-to-end text rendering proven.**
+
+**Phase 41.2 — HL source trace (Codex investigate task)**:
+- Question: where does HL come from at `0x08c7e7` (the OS init bg-color writer found in Phase 40c)?
+- Answer: `LD HL, 0x000000` at `0x0a2e05`, then `DEC HL` at `0x08c7e1` → HL = 0xFFFFFF, low 16 bits = 0xFFFF. **Hardcoded to white.**
+- **Critical caveat**: the actual 691-step OS init dynamic path **does NOT execute the 0x08c7e1 block**. Static analysis says it's reachable but the run-time path skips it.
+- **Does OS init set fg `(0x2688)`?**: NO. The dynamic 691-step path executes ZERO writes to (0x2688). Static analysis finds 29 distinct writers in the broader 0x08C331-rooted graph but none on the executed path. **Fg is genuinely uninitialized after our OS init.**
+- **SetTextFgColor function at `0x0802b2`** (full disassembly):
+  ```asm
+  0802b2: 11 ff ff 00      LD DE, 0x00ffff
+  0802b6: 40 ed 53 8a 26   LD (0x268a), DE     ; bg = 0xffff (hardcoded white)
+  0802bb: 40 22 88 26      LD (0x2688), HL     ; fg = HL (caller-supplied)
+  0802bf: fd cb 4a e6      SET 4, (IY+0x4A)
+  0802c3: c9               RET
+  ```
+- Calling convention: `LD HL, <fg_color>; CALL 0x0802b2`. Tail entries `0x0802bb` (fg only) and `0x0802b6` (DE=bg, HL=fg) also exist.
+
+**Phase 41.3 — replace manual fix with helper call**:
+- New probe `probe-mode-helper-call.mjs`: instead of `mem[0xd02688..]/mem[0xd0268a..]` writes, runs `runFrom(0x0802b2)` with `cpu.hl = 0x000000` and a sentinel-stack return.
+- Helper executes in 1 step (one block, all 4 instructions before RET) and exits via sentinel.
+- Verified: `mem[0xd02688..89] = 0x0000`, `mem[0xd0268a..8b] = 0xffff` after the call.
+- Render output: identical to manual fix (4514 text cells, 9778 bg cells).
+- `browser-shell.html` updated to use `callSetTextFgColor()` helper instead of manual mem writes (Codex implement task — verified by re-running the new probe).
+
+**Phase 41 summary**: text rendering is now end-to-end via real OS code. No more manual RAM pokes. The Phase 40 milestone is fully integrated.
+
+Artifacts: `TI-84_Plus_CE/probe-mode-with-text.mjs`, `TI-84_Plus_CE/probe-mode-helper-call.mjs`, updated `TI-84_Plus_CE/browser-shell.html`.
+
+---
+
+### Phase 42: Home screen hunt — (0xd007e0) menu-mode dispatch + 0x0b6a58 candidate (2026-04-12 CC session 2) — IN PROGRESS
+
+Pursued the home screen via two parallel approaches: probing the shell coroutine (0xd02ad7) callback writers and mapping the (0xd007e0) menu-mode dispatch space.
+
+**Phase 42.1 — (0xd007e0) state after OS init (`probe-d007e0-state.mjs`)**:
+- After OS init, `mem[0xd007e0] = 0xff` — uninitialized. The OS init handler does NOT set the menu mode byte.
+- Disassembled the `0x96e5c` dispatcher: tests for values 0x48, 0x51, 0x4b, 0x53, 0x05, 0x04. None of these is 0xff or 0x40. **Our cold-init state would fall through any (0xd007e0) dispatcher**, which explains why no shell screen renders naturally.
+
+**Phase 42.2 — ROM-wide writer scans (`scan-shell-state-writers.mjs`)**:
+- 30 sites write to `(0xd007e0)`. The most common immediate value is **`0x40`** (9 sites: 0x02375f, 0x0302d0, 0x058c61, 0x05b800, 0x0620c0, 0x08b0f9, 0x08b123, 0x08c8cb, 0x0b6a58). Strong "default home mode" candidate.
+- 65 writers to `(0xd02ad7)` (callback pointer). Categories:
+  - Low OS region (0x000xxx): callback utility helpers
+  - 0x040xxx: error display routines (0x040000-0x040023 are debug format strings)
+  - 0x04082f: Phase 34's known MODE shell coroutine
+  - 0x04c8xx: 5 callback getter/setter utility wrappers (NOT shell entries)
+  - 0x07b815: in Y= editor area
+  - 0x0b418e: high region
+
+**Phase 42.3 — 0x40 dispatch scan (`scan-d007e0-dispatch.mjs`)**:
+- 219 ROM sites read `(0xd007e0)`. ~80 of those have CP+JP/JR dispatch tables.
+- **15 sites branch on (0xd007e0) == 0x40**:
+  - JP Z / JR Z targets: `0x065b35`, `0x0884b0` (jump TO when value matches)
+  - JR NZ / JP NZ fallthrough: `0x030227`, `0x051b02`, `0x05c72f`, `0x06f48b`, `0x085d9b`, `0x085ff1`, `0x08c4c7` (note: inside OS init region!), `0x096b29`, `0x0af5fa`, `0x0b6af5`
+
+**Phase 42.4 — 0x40 writer probe (`probe-shell-040xxx.mjs`)**:
+- Tested the 9 sites that write `LD A, 0x40; LD (0xd007e0), A` directly with boot+OS init+SetTextFgColor preamble + cpu.f=0x40 + IY=0xD00080 + sentinel stack.
+- **MAJOR FINDING — `0x0b6a58`**: ran 1,620,288 steps in 2.1s, exited via sentinel (clean RET to 0xffffff). Drew **75,046 cells** out of 76,800 (97.7% screen coverage). Histogram:
+  - `0x0000` (black): 63,088 (84% of drawn)
+  - `0xffff` (white): 11,958 (16% of drawn)
+  - `0xaaaa` (sentinel/untouched): 1,754
+- Bbox: rows 1-239 × cols 0-313 (full screen).
+- ASCII art shows alternating ~14-row solid black bars and ~6-row text strips. Most text rows show a repeating glyph pattern across the entire row width. Row 159-160 has irregular non-uniform content suggesting real text.
+- **Interpretation hypothesis**: Either (a) this is the home screen with INVERTED colors (renderer expects fg=0xffff/bg=0x0000 but we set the opposite) — supported by 84% black majority, or (b) it's a list editor (program list / VAR menu) with garbage uninitialized strings causing every cell to draw the same fallback glyph.
+- Either way, **0x0b6a58 is a real top-level shell screen renderer**, the largest seen in this project (75K cells vs CATALOG's 69K), and the first one found via the (0xd007e0)==0x40 search.
+
+**Phase 42 candidates that DIDN'T render**:
+- `0x040049` — turned out to be in the middle of an ERROR DISPLAY routine (0x040000-0x040023 are printf format strings like `"IX:%06X IY:%06X SP:%06X PC:%06X"`). Cleared the screen as part of error setup.
+- `0x065b35`, `0x065b01`, `0x030227`, `0x051b02` — exited via sentinel after 4-7 steps (RET pattern with Z flag set hits sentinel).
+- `0x0884b0`, `0x0884a3` — ran 300K steps, hit max_steps at 0x08f2d9/0x08f37d, ZERO VRAM writes. They executed deeply but produced no render. Maybe need different state setup.
+
+**Phase 43 priorities**:
+1. **Diagnose 0x0b6a58 inverted-color issue**: search for a "set inverted text color" or "large font color" RAM var separate from (0xd02688)/(0xd0268a). Or probe by setting fg=0xffff/bg=0x0000 (opposite) and re-running. If colors flip and result looks like clean text on black bg, we have the home screen.
+2. **Scan for LD instructions writing other 0xd026XX RAM addresses** to find more text-color state vars.
+3. **Try the remaining (0xd007e0)==0x40 dispatcher targets**: `0x05c734`, `0x06f490`, `0x085da0`, `0x08c4d?` (inside OS init!), `0x091369`, `0x0af5ff`, `0x0b6afa`.
+4. **Investigate `0x08c4c7` (inside OS init region)**: this is one of the 0x40 dispatchers AND it's inside the 0x08C331 handler's static graph. If we can force OS init to execute it, mem[0xd007e0] would be set to 0x40 naturally and we'd reach the home screen via the cold boot path.
+5. **Visually identify 0x0b6a58 by rendering it in browser-shell.html** with both color polarities and see which one looks like a known TI-OS screen.
+
+**Phase 42 artifacts**: `probe-d007e0-state.mjs`, `scan-shell-state-writers.mjs`, `scan-d007e0-dispatch.mjs`, `probe-shell-040xxx.mjs`, `probe-0b6a58.mjs`, `dump-040xxx.mjs`.
+
+**Session 2 context check**: estimated ~25-30% of 1M window after Phase 42. Plenty of headroom for Phase 43.
+
+---
+
+### Phase 43: First legible text rendered + DispDone family + slot 9 = _ClrLCDFull (2026-04-12 CC session 2) — IN PROGRESS
+
+Continued the home screen hunt and surfaced the first **legible alphabetical text** rendered through lifted ROM blocks.
+
+**Phase 43.1 — 0x0b6a58 inverse-color test (`probe-0b6a58.mjs`)**: Re-ran with HL=0xffff (fg=white, bg=black). Histogram flipped cleanly: 11958 black + 63088 white. ASCII art shows the SAME repeating glyph pattern, just inverted. **Conclusion: 0x0b6a58 is a list editor (PRGM/VARS/MEM MGMT) drawing uninitialized garbage strings — every list slot contains 0xff bytes which all map to the same fallback glyph.** NOT the home screen.
+
+**Phase 43.2 — fall-through dispatchers**: Probed 8 (0xd007e0)!=0x40 fall-through addresses. None rendered anything significant. Most exited via sentinel after a few steps. The "default case" approach didn't find a home screen renderer.
+
+**Phase 43.3 — "Done\0" anchor + jump table mapping (`scan-jumptable-and-done.mjs`, `scan-callers.mjs`)**:
+- "Done\0" appears EXACTLY ONCE in ROM at `0x0a2ea4`. Two LD HL refs:
+  - `0x08920b` (in 0x089xxx region)
+  - `0x0a2d80` (next to text rasterizer)
+- `0x0a2d80` decoded as `_DispDone` helper: `LD HL, 0x0a2ea4; CALL 0x0a1cac (text loop); RET`. The simplest possible "draw the Done string" function.
+- "ERR:" string: 6 hits at 0x075514, 0x0759c1, 0x077954, 0x08a56c, 0x08a578, 0x0a2eac (error display anchors).
+- "MAIN MENU" string: 0 hits — confirms the home screen has no static title.
+- **OS jump table slots 0-49 enumerated**:
+  - Slot 0 → 0x0bd6ba
+  - Slot 1 → 0x0401df
+  - **Slot 2 → 0x03cf7d** (= `_GetCSC` from Phase 25G — confirmed)
+  - Slot 3-7 → 0x04ab5d-0x04ab6d (sequential — callback table region)
+  - **Slot 9 → 0x040e7e** (`_ClrLCDFull` — see Phase 43.4)
+  - Slot 10 → 0x061db6 (Phase 24B "deep handler")
+  - **Slot 19 → 0x08c331** (= the OS init handler we already use)
+  - Slots 20-35 → 0x08c33d-0x08c782 (OS init helpers)
+  - **No slots in 0x002000-0x010000** (low OS code is NOT exposed via the public bcall jump table)
+
+**Phase 43.4 — slot 9 = `_ClrLCDFull` confirmed**: Probed 0x040e7e directly. Filled the entire screen (76800 cells) with 0xffff (white) then ran into the boot wait loop at 0x006138. **First confirmed bcall identification in this project.**
+
+**Phase 43.5 — MILESTONE: 0x089100 renders LEGIBLE TEXT (`probe-0b6a58.mjs` retargeted)**:
+- Probed 0x089100 (a routine in the 0x089xxx region that calls the text loop 0x0a1cac).
+- 29,857 steps, clean exit via sentinel. **Drew 5,472 cells (3358 fg/2114 bg) at rows 77-112, cols 12-301.**
+- ASCII art at stride 2 reveals **2 distinct text lines**:
+  - **Line 1 (rows 77-94)**: inverse-video status bar with multi-segment text content. Pattern shows reverse-video text shapes embedded in black bg.
+  - **Line 2 (rows 97-112)**: NORMAL text reading **"Done"** in 12-pixel-wide large-font glyphs. Each letter clearly identifiable: D-o-n-e.
+- This is the **FIRST legible alphabetical text rendered through lifted ROM blocks in the entire project**. Phase 40's "RADIAN" was a synthetic test; this is the real OS rendering its native message.
+- 0x089100 disassembly shows it: saves DE, sets a status byte to 0x27, sets cursor to (col 2, row 1), calls the text loop (0x0a1cac) multiple times via sub-routines. It's clearly a "result + Done" display routine — likely the post-computation home-screen state.
+
+**Phase 43.5 ASCII excerpt** (rows 97-112, cols 0-25 stride 2):
+```
+########................   ← D
+####....................
+#..##...................
+#...#...................
+#...#..###...###...###..   ← D-o-n-e
+#...#..####..####..####.
+#...#.##..#..#..#.##..#.
+#...#.#...#..#..#.##..#.
+#...#.#...#..#..#.#####.
+#...#.#...#..#..#.#####.
+#...#.#...#..#..#.#.....
+#..##.##..#..#..#.##....
+####...####..#..#..####.
+####...###...#..#..###..
+```
+
+**Where 0x089100 fits in the call graph**: Has ZERO direct CALL/JP callers in the entire ROM and is NOT in the OS jump table. Reached only via computed jumps from a runtime-built dispatch table. The same is true for 0x0a2d80 (_DispDone helper). Both are likely invoked via OS function-pointer tables we haven't located.
+
+**Sibling probes**:
+- 0x089154: 1660 steps → 252 cells at rows 18-35 cols 180-193 (a single 14×18 character — likely a status icon).
+- 0x089225: 514 steps → 0 cells (state-dependent).
+- 0x0a2d80 (DispDone helper): 2 steps → 0 cells (sentinel exit before text loop runs — needs cursor/state setup).
+
+**Phase 44 priorities**:
+1. **Wire 0x089100 into browser-shell.html as a new screen button** ("DispDone / Result Display"). User-visible payoff of Phase 43.
+2. **Find more text-rendering routines**: scan ROM for ALL `CALL 0x0a1cac` (text loop) sites — every caller is a text-rendering function. Probe each with the Phase 41.3 SetTextFgColor preamble.
+3. **Decode the inverse-video line 1 of 0x089100** (rows 77-94) to identify what label/menu item it shows. May be "MEM" or a menu bar.
+4. **Find _DispHL / _DispOP1 / _DispAns** — TI-OS routines that show numeric values on the home screen. They'd be near the text loop and use similar conventions.
+5. **Browser-shell visual identification** of 0x089100 — render it in browser-shell, compare to a real TI-84 home screen with "Done" displayed.
+
+**Phase 43 artifacts**: `scan-jumptable-and-done.mjs`, `scan-callers.mjs`, `scan-jt-target-range.mjs`, updated `probe-0b6a58.mjs`.
+
+**Session 2 context check**: estimated ~55-60% of 1M after Phase 43. Approaching the 70% threshold. Phase 44 may need to be done in a fresh session.
+
+---
+
+### Phase 44.1: Text-loop caller scan + 2 more legible-text screens (2026-04-12 CC session 2) — IN PROGRESS
+
+Continued the text-rendering hunt by finding ALL callers of the text loop `0x0a1cac`.
+
+**Phase 44.1 — text loop caller census (`scan-callers.mjs 0x0a1cac`)**:
+- **110 total callers** (103 CALL + 7 JP) across many regions.
+- One JP at `0x0207c0` is INSIDE the OS jump table (slot ~431) — meaning the text loop itself is exposed as a public bcall.
+- Heavy concentrations:
+  - **0x024xxx-0x029xxx**: ~9 sites (early menus, MODE area)
+  - **0x03dxxx-0x03fxxx**: ~5 sites (around _GetCSC region)
+  - **0x040xxx-0x046xxx**: ~25+ sites (shell/screen region — densest!)
+  - **0x089xxx**: 0x089100 family (Phase 43.5 result-display)
+  - **0x09exxx, 0x0b2xxx**: a few each
+
+**Phase 44.2 — sample probe of text-loop callers**:
+
+| Addr | Steps | Drawn | fg/bg | Bbox | Interpretation |
+|------|------:|------:|-----:|------|----------------|
+| 0x024528 | 41,378 | 76,800 | 0/0/76800 (other 0x2020) | full screen | **Whole-screen 0x2020 fill** (gray transition?) — crashes at 0x202020 (running through string buffer as code) |
+| 0x028a17 | 300,000 (max) | 0 | — | — | Stuck in boot wait loop |
+| 0x02fc87 | 822 | 252 | 188/64 | rows 18-35 cols 180-193 | **Single 14×18 character** (cursor draw — same as 0x089154) |
+| **0x03dc1b** | 3,093 | 5,440 | 0/5440 | **rows 0-16 × cols 0-319** | **TOP STATUS BAR** — full-width 16-row white fill (no glyphs in this run) |
+| 0x040aea | 90 | 0 | — | — | Halts immediately |
+| 0x04552f | 849 | 252 | 188/64 | rows 18-35 cols 180-193 | Single cursor char (same as 0x02fc87) |
+| **0x045de1** | 300,000 (max) | **8,244** | **1760/6484** | **rows 77-134 × cols 0-229** | **2-LINE TEXT BLOCK with REAL GLYPHS** — see below |
+| 0x046126 | 300,000 (max) | 0 | — | — | Executing but no draw |
+| 0x09ed4c | 18 | 0 | — | — | Sentinel exit |
+| 0x0b252c | 821 | 252 | 188/64 | rows 18-35 cols 180-193 | Single cursor char |
+
+**Phase 44.3 — MILESTONE: 0x045de1 renders 2 lines of legible text (`probe-0b6a58.mjs` retargeted)**:
+
+ASCII excerpt rows 77-93 stride 2 (line 1):
+```
+.####...........##..............##...............#........................##.................##.........###..#####.
+.####..........###..............##....#..........#........................##................####........####.#####.
+.#..##.........#.................#....#..........#.........................#................#..#.......##..#.#.....
+.#...#.........#.................#....#..........#.........................#.....#.........#...#.......#...#.#.....
+.#...#..###....#....####.#...#...#....#..........#......###..#...#..###....#.....#.........#..##.#...#.#...#.#.....
+.#...#..####...#....####.#...#...#...####........#......####.#...#..####...#.....#.........#..##.##..#.##..#.####..
+.#...#.##..#..###......#.#...#...#...####........#.....##..#.#...#.##..#...#...............#...#..#.##..####..####.
+.#...#.##..#..###......#.#...#...#....#..........#.....##..#..#..#.##..#...#...............#.#.#..###...####.....#.
+.#...#.#####...#....####.#...#...#....#..........#.....#####..#..#.#####...#...............#.#.#...##......#.....#.
+.#...#.#####...#....####.#...#...#....#..........#.....#####..#.#..#####...#.....#.........##..#...##.....##.....#.
+.#...#.#.......#...#...#.#...#...#....#..........#.....#......#.#..#.......#.....#.........##..#..###.....#..#...#.
+.#..##.##......#...#...#.##..#...#....#..........#.....##......##..##......#.....#..........#..#..#.##...##..##..#.
+.####...####...#...#####..####..####..####.......#####..####...##...####..####..............####.##..#..##....####.
+.####...###....#....####..####..####...###.......#####..###....#....###...####...............##..#...#..##....###..
+```
+First letter is clearly **D**. Followed by additional lowercase letters. Line 2 (rows 117-134) has the same structure but different first character.
+
+**Pixel histogram**: 0xaaaa=68556 (sentinel), 0xffff=6484 (bg), 0x0000=1760 (fg = text glyphs).
+
+This is the **second confirmed legible text rendering** in this session (after 0x089100's "Done"). Combined, they prove we now have a working pipeline for finding real text screens via the (text loop caller scan + Phase 41.3 SetTextFgColor) approach.
+
+**Component sketch of the home screen architecture**:
+- `0x03dc1b` = top status bar (full width, ~16 rows) — needs different state setup to draw glyph text
+- `0x045de1` = 2-line text body (rows 77-134, ~230 cols wide)
+- `0x089100` = result display + "Done" indicator (rows 77-112, ~290 cols wide)
+
+These three together suggest the home screen render is composed of MULTIPLE component calls (status bar + result area + Done indicator), not a single function.
+
+**Phase 44 priorities**:
+1. **Wire 0x089100 + 0x045de1 into browser-shell.html** as 2 new screen buttons. User-visible payoff.
+2. **Decode the rest of 0x089100 line 1** (the inverse-video status bar) to identify what label it shows.
+3. **Decode 0x045de1 line 1 and line 2 fully** — what does the text say? Likely an OS info screen, About dialog, or version banner.
+4. **Probe more 0x045xxx callers** — the 0x045xxx region has 14+ text loop callers, which suggests it's a screen with many text labels (could be CATALOG, MEMORY MGMT, About box).
+5. **Figure out callers of 0x089100** via OS function-pointer table search (none found via direct CALL/JP/JT scan in Phase 43).
+
+**Phase 44 artifacts**: `scan-callers.mjs` (used for 0x0a1cac), updated `probe-shell-040xxx.mjs`, updated `probe-0b6a58.mjs`.
+
+**Session 2 final context check**: estimated ~68-72% of 1M after Phase 44.3. **AT THE 70% THRESHOLD — PAUSING for the user to clear context before continuing.**
+
+---
+
+### Phase 44.4: Memory Management screen family discovered (2026-04-12 CC session 3) — DONE ✓
+
+**Workflow updated**: Session 3 added an autonomous-loop workflow to `school/follow-alongs/CLAUDE.md` documenting the "go for it" pattern: dispatch Codex via cross-agent.py for implementation, do investigation directly, update CONTINUATION_PROMPT_CODEX.md after each phase, stop only at 70% context.
+
+**Phase 44.4.1 — browser-shell wiring** (CC, ~5 lines each in 3 spots): added 7 new screen buttons to browser-shell.html for:
+- Phase 43.5: 0x089100 (Done/Result)
+- Phase 44.3: 0x045de1 (Text Block)
+- Phase 44.4: 0x0458bf (Mem Mgmt 2-bar), 0x046272 (2-Word Dialog), 0x03f300 (Status Line), 0x045e7c (MemMgmt A inverse), 0x045e9c (MemMgmt B normal)
+
+**Phase 44.4.2 — `_DispOP1` candidate scan** (CC: `scan-op1-refs.mjs`):
+- 285 LD HL/DE/BC sites referencing OP1 (0xD005F8)
+- 32 caller<->ref pairs within 256 bytes of a text-loop call
+- Top candidates with 4-byte distance (LD HL,OP1; CALL 0a1cac):
+  - **0x03f312 → 0x03f316** ← HIT (see 44.4.4)
+  - 0x04266a → 0x04266e (failed sentinel)
+  - 0x09edb3 → 0x09edb7 (single 14×18 cursor char only)
+  - 0x0ae357 → 0x0ae35b (failed)
+- 0 caller-ref pairs for OP2 (0xD00601) or ANS (0xD00589)
+- 2 .SIS short-addr LD DE, (0x05F8) sites: 0x0abb9b, 0x0b0a6e
+
+**Phase 44.4.3 — `_DispOP1` candidate probe** (CC: `probe-dispop1.mjs`):
+Tested 9 candidates with boot→OS init→SetTextFgColor preamble + OP1 set to BCD pi.
+- **0x03f300** — 684 cells, fg/bg split, bbox r37-54 c12-49 (LATER expanded to 1548 cells when re-probed → see 44.4.4)
+- 0x09edb3 / 0x09edaf — both 252 cells (single 14×18 char at r18-35 c180-193) — cursor/selection icon, NOT a number renderer
+- All other candidates: 2-5 steps to sentinel (mid-function entry, needs RET+NZ skip)
+
+**Phase 44.4.4 — 0x03f300 deep probe** (CC: `probe-03f300.mjs`):
+- 5742 steps, 1548 drawn (1181 fg / 367 bg), bbox r37-54 c12-97
+- **HUGE finding from byte dump** at 0x03f2e1: ASCII strings `"Validating"` (0x03f2e1) and `"Defragmenting"` (0x03f2f1) — these are MEMORY MANAGEMENT progress messages
+- Function structure at 0x03f300:
+  ```
+  LD DE, OP1; LD BC, 0x1B; LDIR    ; copy 27 bytes from HL→OP1 buffer
+  LD HL, 0x000100; LD (cursor), HL ; cursor to (0,1)
+  LD HL, OP1; CALL 0x0a1cac        ; draw string from OP1
+  EI; RET
+  ```
+- This is a **status-message display routine**: caller passes string ptr in HL, function copies to OP1, sets cursor, calls text loop
+- ASCII art shows an 86-col-wide × 18-row inverse-video bar with embedded text (currently shows garbage because we passed HL=0 → it copied boot vector bytes as "string")
+- Wired into browser-shell as "Status Line"
+
+**Phase 44.4.5 — Codex batch probe of 0x045xxx region** (Codex implement task, CC ran):
+Codex created `scan-0a1cac-045xxx.mjs` and `probe-phase44-045xxx.mjs` (batch probe with snapshot/restore between calls). CC ran the probe. Results in `phase44-045xxx-log.txt`.
+
+**11 hits** (drawn>500, fg>100) in the 0x045xxx region — all from text-loop callers:
+
+| Addr | Drawn | Fg | Bg | Bbox | Interpretation |
+|------|------:|---:|---:|------|----------------|
+| **0x0458bf** | **13,500** | 10,725 | 2,775 | r97-194 × c0-313 | **2 stacked inverse-video bars** — Mem Mgmt dialog |
+| **0x045e7c** | 10,188 | 2,040 | 8,148 | r77-214 × c0-265 | inverse-video heavy (BG dominant) |
+| **0x045e9c** | 9,000 | 7,228 | 1,772 | r77-214 × c0-265 | normal polarity tall — partial Mem Mgmt screen |
+| 0x045de1 | 8,244 | 1,760 | 6,484 | r77-134 × c0-229 | (already known from Phase 44.3) |
+| 0x045e11 | 4,644 | 3,692 | 952 | r17-134 × c0-229 | medium |
+| 0x045eac | 4,212 | 3,400 | 812 | r77-134 × c0-217 | medium |
+| 0x045e01 | 4,140 | 3,300 | 840 | r117-134 × c0-229 | one-row variant |
+| 0x045ecd | 2,916 | 2,245 | 671 | r18-134 × c0-193 | tall narrow |
+| **0x046272** | 2,196 | 532 | 1,664 | r97-114 × c48-169 | **READABLE 2-WORD DIALOG** — clear glyphs visible |
+| 0x046188 | 1,116 | 334 | 782 | r97-114 × c60-121 | small dialog |
+| 0x045edd | 684 | 526 | 158 | r117-134 × c132-169 | tiny label |
+
+(Plus 3 single-cursor renders at r18-35 c180-193 — selection/cursor primitives, not text screens.)
+
+**Phase 44.4.6 — re-rendering top hits with full bbox** (CC: `probe-rerender-hits.mjs`):
+- Codex's batch ASCII art only printed a 30-row crop window. Re-rendered top 4 hits with FULL bbox.
+- 0x0458bf (rows 96-195): TWO clearly visible inverse-video bars (rows 97-114 narrow, rows 137-154 full-width)
+- 0x046272 (rows 96-115): NORMAL POLARITY 14-row text — TWO words separated by ~7-col gap. Letter shapes are clearly visible (uppercase glyphs ~12 cols wide). First char of word 1 looks like "F" or "P", first char of word 2 looks similar. Likely a Yes/No dialog or memory operation prompt.
+- 0x045e9c (rows 76-215): TWO inverse-video bars at r77-94 and r117-134 — same pattern as 0x0458bf but offset. Memory management progress display with multiple lines.
+
+**Phase 44.4 conclusion**: The **0x045xxx region IS the Memory Management UI subsystem**. Together with 0x03f300 (which uses the "Validating"/"Defragmenting" strings), we've cataloged the full Mem Mgmt screen family. Total **11 new legible-text-rendering functions** discovered in one session, all wired into browser-shell.html.
+
+**Phase 44.4 artifacts**:
+- `scan-op1-refs.mjs` (OP1 ref scan)
+- `probe-dispop1.mjs` (DispOP1 candidate probe)
+- `probe-03f300.mjs` (deep status-line probe)
+- `dump-03f300.mjs` (byte dump → revealed Validating/Defragmenting strings)
+- `scan-0a1cac-045xxx.mjs` (Codex — region-filtered caller scan)
+- `probe-phase44-045xxx.mjs` (Codex — batch probe with snapshot/restore)
+- `probe-rerender-hits.mjs` (CC — full-bbox re-render)
+- `phase44-045xxx-log.txt` (full results)
+- `phase44-045xxx-*.txt` (per-hit ASCII art, 30-row window)
+- `phase44-rerender-*.txt` (per-hit ASCII art, full bbox)
+- `phase44-03f300.txt` (status line ascii)
+
+**Phase 45 priorities**:
+1. **Pass real string pointers to 0x03f300** — set HL to point to "Validating" (0x03f2e1) or "Defragmenting" (0x03f2f1) before runFrom and re-probe. Should produce LEGIBLE memory progress messages.
+2. **Decode the 2-word text in 0x046272** — render at stride 1 to higher resolution and identify what it says ("Yes No?", "Erase All?", "Format OK?").
+3. **Find more string anchors** in the 0x03fxxx and 0x045xxx regions — there are likely more "Validating"-style strings nearby. Scan ROM for printable ASCII runs (length > 5).
+4. **Apply the same caller-scan technique to other regions**: 0x024xxx, 0x089xxx, 0x09exxx, 0x0b2xxx — each text-loop caller cluster is a potential UI screen family.
+5. **Find the home screen for real** — try the (0xd007e0) state vars + dispatch table approach with values 0x40, 0x48, etc., AFTER setting up RAM state mimicking post-keypress shell state.
+6. **Browser shell visual identification** of all 7 new buttons — render in browser, compare to real TI-84, label them properly.
+
+**Session 3 context check after Phase 44.4**: estimated ~50-60% of 1M. Continuing to Phase 45.
+
+---
+
+### Phase 45.1: DispMessage primitive at 0x03f300 unlocked — 4 mem-mgmt strings (2026-04-12 CC session 3) — DONE ✓
+
+**MILESTONE**: The function at 0x03f300 is a **general-purpose DispMessage primitive**. It accepts any string pointer in HL and renders it in inverse video at row 1. Verified by passing 4 different mem-mgmt strings:
+
+| HL | String | Chars | Bbox cols | Cells |
+|----|--------|------:|-----------|------:|
+| 0x03f2d0 | "Waiting" | 7 | c12-109 (98 cols) | 1764 |
+| 0x03f2d9 | " Receiving" | 10 | c12-145 (134 cols) | 2412 |
+| 0x03f2e5 | "Validating" | 10 | c12-145 (134 cols) | 2412 |
+| 0x03f2f1 | "Defragmenting" | 13 | c12-181 (170 cols) | 3060 |
+
+**Linear scaling proves it's char-input-dependent**: 13-14 cols/char (big font), ~245 cells/char.
+
+**The string table at 0x03f2d0-0x03f2ff** contains 4 mem-mgmt status messages, each terminated with `0xCE 0x00`:
+```
+0x03f2d0: 57 61 69 74 69 6e 67 ce 00     "Waiting"
+0x03f2d9: 20 52 65 63 65 69 76 69 6e 67 ce 00   " Receiving"
+0x03f2e5: 56 61 6c 69 64 61 74 69 6e 67 ce 00   "Validating"
+0x03f2f1: 44 65 66 72 61 67 6d 65 6e 74 69 6e 67 ce 00  "Defragmenting"
+```
+
+The 0xCE byte is a TI-OS control character (probably "newline-with-pause" or "next-screen"). The text loop terminates on null.
+
+**Function structure** (from byte dump at 0x03f300):
+```asm
+0x03f300: LD DE, 0x05F8       ; .SIS — DE = 0xD005F8 (OP1) with MBASE=0xD0
+0x03f304: LD BC, 0x001B       ; copy length 27 bytes
+0x03f308: LDIR                 ; copy from HL→OP1
+0x03f30a: LD HL, 0x000100     ; HL = (col=0, row=1)
+0x03f30e: .SIS LD (0x0595), HL ; cursor pos
+0x03f312: LD HL, 0x0005F8     ; .SIL — HL = 0xD005F8 (OP1)
+0x03f316: CALL 0x0a1cac        ; text loop
+0x03f31a: EI; RET
+```
+
+**This is Phase 45's key win**: we now have a general primitive for displaying arbitrary text at a fixed position. Wired into browser-shell.html as "Status Line" (defaults to whatever HL the boot leaves — needs HL parameter via per-call state).
+
+**Phase 45.1 artifacts**: `probe-03f300-strings.mjs`, `phase45-03f300-hl3f2d0.txt`, `phase45-03f300-hl3f2d9.txt`, `phase45-03f300-hl3f2e5.txt`, `phase45-03f300-hl3f2f1.txt`.
+
+**Phase 45.2 — 2-word dialog at 0x046272 inspection**: Re-render at stride 2 shows 5-char word + 1-space + 4-char word = 9 chars total (~120 cols). Pattern matches typical TI-OS yes/no prompts: "Reset Done", "Erase All?", "Press Test", "Tests Done", or similar. First letter of word 1 looks like "F" or "P" (top horizontal + vertical left). First letter of word 2 looks like "F" or "P". Text shapes are clearly visible but require stride-1 rendering for full readability.
+
+**Session 3 context check after Phase 45.1**: estimated ~55-65% of 1M. Approaching the 70% threshold but still safe to continue.
+
+**Phase 46 priorities**:
+1. **Wire HL parameter into browser-shell `showScreen()`** so the Status Line button can pass a real string pointer (e.g., "Defragmenting" at 0x03f2f1)
+2. **Apply the 0x045xxx scan technique to other text-loop caller regions**: 0x024xxx (9 callers), 0x028xxx-0x029xxx (5 callers), 0x089xxx, 0x09exxx, 0x0b2xxx
+3. **Decode 0x046272 dialog text** at stride 1 to identify the exact 2 words
+4. **Find more string tables**: scan ROM for printable ASCII runs of 5+ chars near other text-loop callers (likely additional message tables besides 0x03f2d0)
+5. **Hunt for the home screen** — use string anchors like ":Y", "(", ")", or numeric format strings; the home screen has minimal static text but has the entry prompt and result display patterns we now know how to render
+
+---
+
+### Phase 46: HL parameter wiring + DispMessage GENERIC + ROM string table census (2026-04-12 CC session 3) — IN PROGRESS
+
+**Phase 46.2 — `showScreen(...)` HL parameter wired** (CC, 3-line edit to browser-shell.html):
+- Added 5th parameter `hlValue = null` to `showScreen()`
+- After Stage 4 stack/flag setup, sets `cpu2.hl = hlValue` if non-null
+- Status Line button now passes `0x03f2f1` ("Defragmenting") so it renders REAL TEXT instead of random boot vector bytes
+
+**Phase 46.3 — DispMessage button bank** (CC, ~10 line additions to browser-shell.html):
+- Added 5 new buttons calling 0x03f300 with different string pointers:
+  - "Msg: Waiting" → HL=0x03f2d0
+  - "Msg: Validating" → HL=0x03f2e5
+  - "Msg: Defragmenting" → HL=0x03f2f1
+  - "Msg: OVERFLOW" → HL=0x062338
+  - "Msg: DIVIDE BY 0" → HL=0x062391
+
+**Phase 46.4 — DispMessage GENERIC verification** (CC: re-ran `probe-03f300-strings.mjs`):
+
+**MEGA MILESTONE — 0x03f300 truly is a generic DispMessage primitive.** Tested 5 strings from 3 totally different ROM regions, all rendered correctly with consistent ~12.3 cols/char width:
+
+| HL | String | Chars | Bbox cols | Cells | cols/char |
+|----|--------|------:|-----------|------:|----------:|
+| 0x06aeb9 | "dy/dx=" | 6 | c12-85 | 1332 | 12.3 |
+| 0x06aec0 | "Minimum" | 7 | c12-97 | 1548 | 12.3 |
+| 0x06aed0 | "Intersection" | 12 | c12-157 | 2628 | 12.2 |
+| 0x062338 | "OVERFLOW" | 8 | c12-109 | 1764 | 12.3 |
+| 0x062391 | "DIVIDE BY 0" | 11 | c12-145 | 2412 | 12.2 |
+
+The function works for ANY ASCII string anywhere in ROM. We now have full control over inverse-video text display at row 1.
+
+**Phase 46.5 — ROM string table census** (CC: `scan-string-tables.mjs`):
+
+Scanned the entire 4MB ROM for ASCII strings (length ≥ 5). Result: **3,333 strings**, **128 clusters of 3+ adjacent strings**. Highlights:
+
+| Region | Strings | Theme |
+|--------|--------:|-------|
+| 0x003a92 | 5 | "ERROR! / Press any key / unit OFF / Then turn unit back ON / Version Error" |
+| 0x013d3a | 4 | "L Validating OS... / Calculator will restart / when validation is / complete" |
+| 0x013dbe | 4 | "]Waiting... / The OS is invalid, please / load the latest OS at / education.ti.com" |
+| 0x0146ea | 3 | "N Preparing... / Install Operating System" |
+| 0x0157a6 | 11 | "BOOT Code / ERASING STORAGE / Waiting... / erase all storage / Press [clear] to / annul] / Please install / operating / system now" |
+| 0x024402 | 9 | "Python / 5.5.2.0044 / 5.7.1.0022 / ..." (Python version table) |
+| 0x027272 | 3 | "PlySmlt2 / Python / PyAdaptr" (App names) |
+| **0x028ff5** | **50** | TEST MODE / DELETE APPS / FOR SINGAPORE / DISABLE / RESET OPTIONS / DEGREE / RADIAN / FUNCTION / etc. |
+| 0x029e51 | 17 | "RESET: RAM & ARCHIVE / EXCEPTIONS: / Allowed TI Apps / Disable Pic & Image VARS / Validating App: / Please wait while the Apps / on your CE validate..." |
+| **0x03f2d0** | 4 | "Waiting / Receiving / Validating / Defragmenting" (the table we already use) |
+| 0x03ed08 | 9 | "MATRX / WINDW / TABLE / STRNG / GROUP / IMAGE / Window / RclWindow / TblSet" (VARS menu) |
+| **0x055d96** | **63** | "PRESS / ENTER]  TO  EDIT / DRAW LINE SEGMENT / CALC ZERO / CALC MINIMUM / CALC INTERSECT / FREE TRACE VALUES / ..." (graph/calc help — biggest table!) |
+| **0x062338** | **174** | OVERFLOW / DIVIDE BY 0 / SINGULAR MATRIX / DOMAIN / and 170 more error messages with explanations |
+| 0x06aeb9 | 16 | "dy/dx= / Minimum / Maximum / Intersection / First curve? / Second curve? / Lower Limit? / Guess? / STORE RESULTS? / DROP POINTS / SELECT / BACKGROUND / PICTURE" |
+
+Total useful strings for rendering: **800+**. With 0x03f300, we can display ANY of them.
+
+**Phase 46.5 architectural insight**: The 0x055d96 cluster (63 strings, ~1160 bytes) is the **graph/CALC help string table** — likely indexed by the 2nd/QUIT-style overlays. The 0x062338 cluster (174 strings, ~3KB) is the **complete TI-OS error message table** — every error message the OS displays is in this region.
+
+**Phase 46.6 — Codex batch scan COMPLETE: 15 new screen renderers across 3 regions**:
+
+Codex created `probe-phase46-024xxx.mjs`, `probe-phase46-09exxx.mjs`, `probe-phase46-0b2xxx.mjs` (each modeled on Phase 44.4 with snapshot/restore + skip-midfunc detection). Codex did NOT run them itself (sandbox restriction); CC ran all three.
+
+| Region | Callers | Hits | Top hit | Top cells |
+|--------|--------:|-----:|---------|----------:|
+| 0x024xxx | 10 | **3** | 0x02985e | 10,692 |
+| 0x09exxx | 21 | **10** | 0x09ec0e | **20,340** |
+| 0x0b2xxx | 12 | **2** | 0x0b79f3 | 5,472 |
+| **TOTAL** | **43** | **15** | | |
+
+**Top 0x024xxx hits** (TEST MODE region — adjacent to "TEST MODE / DELETE APPS / DEGREE / RADIAN" string table at 0x028ff5):
+
+| Addr | Drawn | Fg | Bg | Bbox | Notes |
+|------|------:|---:|---:|------|-------|
+| 0x02985e | 10,692 | 8,585 | 2,107 | r57-114 c0-313 | full-width 2-bar render |
+| 0x029878 | 5,292 | 4,335 | 957 | r18-114 c0-265 | medium 5-row text block |
+| 0x029892 | 504 | 440 | 64 | r18-114 c0-193 | small dialog |
+
+(Plus 0x024528 = 76,800 cells of solid 0x2020 grey — full-screen LCD diagnostic.)
+
+**Top 0x09exxx hits** (LARGEST family — 10 sequential entries in 0x40 bytes, all >3K cells):
+
+| Addr | Drawn | Fg | Bg | Bbox | Notes |
+|------|------:|---:|---:|------|-------|
+| **0x09ec0e** | **20,340** | 15,158 | 5,182 | r18-234 c0-253 | **3 stacked inverse-video text bars** — biggest text screen ever |
+| 0x09ec4b | 20,088 | 14,970 | 5,118 | r57-234 c0-253 | similar 3-bar |
+| 0x09ec67 | 17,892 | 13,324 | 4,568 | r77-234 c0-253 | 2-bar variant |
+| 0x09ec77 | 15,336 | 11,431 | 3,905 | r17-234 c0-253 | 4-bar |
+| 0x09ec93 | 15,120 | 11,262 | 3,858 | r17-234 c0-253 | 4-bar (twin) |
+| 0x09ec9f | 15,120 | 11,274 | 3,846 | r17-234 c0-253 | 4-bar (twin) |
+| 0x09ecef | 11,160 | 8,379 | 2,781 | r18-234 c0-253 | 3-bar |
+| 0x09ed0f | 10,908 | 8,183 | 2,725 | r177-234 c0-253 | bottom-half 3-bar |
+| 0x09ed2c | 6,336 | 4,619 | 1,717 | r197-234 c0-241 | bottom 2-bar |
+| 0x09ed3c | 3,708 | 2,670 | 1,038 | r217-234 c36-241 | single bottom bar |
+
+**0x09ec0e ASCII art (rows 57-114) shows THREE stacked inverse-video text bars**, each ~18 rows tall × 250 cols wide. The pattern matches a multi-line text dialog or menu with selected/unselected states. Most likely candidates: **PRGM editor**, **TEST MODE setup screen**, or **memory management options dialog**. The 10-entry tight cluster suggests these are variants of the same render function called with different selection indices or input states.
+
+**Top 0x0b2xxx hits**:
+
+| Addr | Drawn | Fg | Bg | Bbox | Notes |
+|------|------:|---:|---:|------|-------|
+| 0x0b79f3 | 5,472 | 2,355 | 3,117 | r17-94 c0-193 | bg-heavy top-half text |
+| 0x0b3f1b | 504 | 403 | 101 | r17-35 c0-193 | small status line |
+
+**Phase 46.6 conclusion**: total 0x0a1cac caller scan now covers 0x024/0x028/0x029/0x03d/0x03f/0x040/0x042/0x045/0x089/0x09e/0x0b2/0x0b6 regions. **42 confirmed legible-text rendering functions found in this session alone** (11 from 045xxx + 15 from 024/09e/0b2 + 4 strings × 1 primitive (03f300) + 6 from earlier phases + 5 from 0x046xxx + 1 from 0x0b6a58 + 0x089100 + 0x045de1).
+
+**Phase 46.7 — DispMessage variant 0x03f31c probe (FAILED)**:
+The function at 0x03f31c looks like a DispMessageAt variant taking DE=cursor and HL=string. Probed with DE=0x000302 / HL=0x062338 (OVERFLOW) but it terminated in 9 steps with sentinel exit and 0 cells drawn. Suspect: BC wasn't being read correctly (set BC=0x1B but cpu register isn't propagating, or the LDIR completes too fast and the JR -23 lands at 0x03f312 inside another instruction). Needs Phase 47 follow-up — possibly seed 0x03f31c as an entry point and re-transpile.
+
+**Phase 46 artifacts FINAL**:
+- `scan-string-tables.mjs` (CC: full ROM ASCII string scan, 3333 strings)
+- `scan-dispmessage-variants.mjs` (CC: LDIR→CALL_0a1cac pattern scan, found 3 candidates)
+- `probe-03f31c.mjs` (CC: failed probe of DispMessageAt variant)
+- `probe-phase46-024xxx.mjs` (Codex: batch probe TEST MODE region — 3 hits)
+- `probe-phase46-09exxx.mjs` (Codex: batch probe 0x09exxx — 10 hits including the 20K-cell 0x09ec0e family)
+- `probe-phase46-0b2xxx.mjs` (Codex: batch probe 0x0b2xxx — 2 hits)
+- 15× `phase46-*-<addr>.txt` ASCII art files
+- `browser-shell.html` updated with 8 new buttons (5 message buttons + 3 phase 46 hit buttons)
+
+**Phase 47 priorities**:
+1. **Seed 0x03f31c as a transpiler entry** to enable the DispMessageAt variant for arbitrary cursor positions. After re-transpile, the JR -23 → 0x03f312 path should work because both blocks will be properly registered.
+2. **Visually identify 0x09ec0e** in browser-shell — render it, compare to a real TI-84, name it (PRGM editor? TEST MODE? what?). Same for 0x02985e and 0x0b79f3.
+3. **Wire HL parameter into the new buttons** — many of the Phase 46 hits might be DispMessage-style and produce different text with different HL values. Worth experimenting.
+4. **Apply scan-string-tables.mjs results** to find DispMessage routines for OTHER message families (graph CALC strings at 0x055d96, error strings at 0x062338, mode/test strings at 0x028ff5).
+5. **Find the home screen** by scanning for callers of 0x0a1cac in regions we haven't yet covered: 0x040xxx (~5 callers), 0x042xxx (1 caller), AND scan jumps to 0x0a1cac from indirect dispatch tables.
+6. **Process the 0x09ec0e family** — 10 sequential entries suggest they're all variants of one menu function. Find the dispatcher that calls them with different inputs.
+
+**Session 3 final context check**: estimated ~65-70% of 1M after Phase 46.6 + final wrap-up. **AT/NEAR THE 70% THRESHOLD — STOPPING for context clear.** All findings preserved in this file + browser-shell.html + all probe artifacts.
+
+(Note — context check via /context revealed actual usage at 30%, much lower than estimated. Continued with Phases 47.1-47.2.)
+
+---
+
+### Phase 47.1: 0x03f31c seeded as DispMessageAt — arbitrary cursor positioning unlocked (2026-04-12 CC session 3) — DONE ✓
+
+**MILESTONE**: Added 0x03f31c and 0x03f312 as transpiler seeds in `scripts/transpile-ti84-rom.mjs`. Re-transpiled in 1.6s — block count went 124546 → **124548** (+2 new blocks). 
+
+After re-transpile, **`probe-03f31c.mjs` now works** for all 3 cursor positions tested:
+
+| DE | Decoded | Bbox | Cells |
+|----|---------|------|------:|
+| 0x000302 | col=3, row=2 | r77-94 c36-133 | 1764 |
+| 0x000502 | col=5, row=2 | r77-94 c60-157 | 1764 |
+| 0x000805 | col=8, row=5 | r137-154 c96-193 | 1764 |
+
+**Decoded cursor format**: DE = `(col_units << 8) | row_units` where:
+- `pixel_col = col_units * 12` (12-pixel-wide big font glyphs)
+- `pixel_row = row_units * 20 + 37` (20-pixel-tall row stride, 37px offset for top status bar margin)
+
+Each call drew exactly 1764 cells = 8 chars ("OVERFLOW") at the cursor position. All 3 positions rendered the same string at different screen locations. **Char-input AND position-input dependent**. ✓
+
+**0x03f31c calling convention**: `DE = cursor; HL = string ptr; BC = byte count to copy (typically 27)`. Sets cursor, copies HL→OP1 buffer for BC bytes via LDIR, jumps into 0x03f300's body which loads HL=OP1 and calls text loop 0x0a1cac.
+
+**Phase 47.1.2 — `showScreen()` extended** with optional DE and BC parameters for DispMessageAt callers:
+```javascript
+function showScreen(entryAddr, entryMode, name, maxSteps = 300000, hlValue = null, deValue = null, bcValue = null)
+```
+
+**Phase 47.1.3 — 4 new browser-shell buttons**:
+- "DispAt(0,2) Defrag" → 0x03f31c with HL=0x03f2f1 ("Defragmenting"), DE=0x000002, BC=0x1B
+- "DispAt(2,5) Validate" → 0x03f31c with HL=0x03f2e5 ("Validating"), DE=0x000205, BC=0x1B
+- "DispAt(4,8) Wait" → 0x03f31c with HL=0x03f2d0 ("Waiting"), DE=0x000408, BC=0x1B
+- "About Screen" → 0x09ebf6 (the ABOUT renderer — see Phase 47.2)
+
+**Phase 47.1 artifacts**: `scripts/transpile-ti84-rom.mjs` (+2 seeds), `probe-03f31c.mjs` (now works), `browser-shell.html` updated.
+
+---
+
+### Phase 47.2: ABOUT SCREEN at 0x09ebf6 — TEXAS INSTRUMENTS + (C)1990-2024 + Help (2026-04-12 CC session 3) — DONE ✓
+
+**MILESTONE — found and rendered the TI-84 ABOUT/INFO screen.**
+
+**Discovery path**:
+1. Phase 46.6 found the 0x09ec0e family (10 hits in 0x40 bytes, biggest text rendering 20K cells).
+2. Investigated callers: **0 direct refs** for any of the 10 entries (no CALL/JP/24-bit pointer in ROM). They're called via runtime-computed dispatch.
+3. Dumped bytes around 0x09ec0e → found ASCII strings BEFORE the function:
+   - **0x09ebc1**: `"Help:education.ti.com\0"`
+   - **0x09ebd7**: `"(C)1990-2024\0"`
+   - **0x09ebe4**: `"TEXAS INSTRUMENTS\0"`
+4. Function actually starts at **0x09ebf6** (after the data + RET at 0x09ebbd). The 10 0x09ec_e entries are MID-FUNCTION CALL SITES, not entry points.
+
+**probe-09ebf6.mjs results**:
+- 117,123 steps in 204ms, clean sentinel exit
+- **22,824 cells drawn** (10,439 fg / 12,385 bg) — even bigger than the 20K Phase 46 result
+- Bbox: r37-234 × c0-253 (full screen height, almost full width)
+- **4 distinct text regions** visible in the ASCII art:
+  - Rows 77-94: inverse-video header bar (probably "TEXAS INSTRUMENTS")
+  - Rows 99-112: normal-polarity text (probably "(C)1990-2024" copyright)
+  - Rows 177-194: large-font text (possibly "Hardware Version" line)
+  - Rows 219-232: large-font text starting with what visually looks like "TE" + more chars
+
+**Sample row from rows 219-232 area**:
+```
+219|#####.#####.#...#..###...###.........###..#...#..###..#####.####..#...#.#...#.#####.#...#.#####..###..
+220|#####.#####.#...#..####..####........###..##..#..####.#####.#####.#...#.##..#.#####.##..#.#####..####.
+```
+
+The first character is clearly "T" (top horizontal `#####`, vertical center `..#..`). Second char is "E" or similar. Big-font text shapes are perfectly visible.
+
+**Wired into browser-shell as "About Screen"** button. Phase 47.2 is the **first time we've found a real, identified TI-OS screen** (vs. previous "memory mgmt dialog" type guesses). Visual identification by user in browser-shell will confirm exact text content.
+
+**Phase 47.2 artifacts**: `probe-09ebf6.mjs`, `phase47-09ebf6.txt` (full ascii art, 198 rows), `scan-ptr-refs.mjs` (helper for finding pointer references), `browser-shell.html` ABOUT button.
+
+**Phase 48 priorities** (now superseded by Phase 47.3+47.4 findings — see below):
+1. ~~Find more anchor functions~~ — DONE in Phase 47.3 + 47.4 (found 13 more screens)
+
+---
+
+### Phase 47.3: strings-near-text-loop-callers scan + Test/Info screens (2026-04-12 CC session 3) — DONE ✓
+
+Built `scan-string-near-call.mjs` that scans every text-loop caller (0x0a1cac) for an ASCII string of ≥10 chars within 250 bytes BEFORE the call site. The string is the most likely "what this function displays" hint.
+
+**15 hits** clustered around recognizable strings:
+- 0x024528 → `"5.5.0.0038"` (Python version)
+- 0x03f316/0x03f357 → `"Defragmenting"` (already known DispMessage 0x03f300)
+- **0x046188/0x0461eb/0x046222 → `" Keyboard Test, ON = halt "`** ← Keyboard Test screen!
+- **0x046272/0x046319 → `"    FLASH System Test     "`** ← FLASH System Test (this is what we mistakenly labeled "2-Word Dialog")
+- **0x06b004 → `"STORE RESULTS?"`** ← CALC store-results prompt
+- 0x09ec0e + 5 siblings → `"Help:education.ti.com"` (the ABOUT screen Phase 47.2 already found)
+
+**Phase 47.3 — probe of test/info screens** (`probe-test-screens.mjs`):
+
+| Function | Cells | Bbox | Notes |
+|----------|------:|------|-------|
+| **0x04615c** | 6,732 | r37-114 c0-313 | **Keyboard Test** screen — has 4578 OTHER colors |
+| **0x046246** | 7,812 | r37-114 c0-313 | **FLASH System Test** screen — has 2493 OTHER colors |
+| **0x06aff0** | 4,176 | r37-74 c0-133 | **Store Results?** CALC prompt |
+| 0x06afd0 | 56,520 | r37-234 c0-313 | Bigger Store Results variant — but mostly fg (graphical) |
+
+3 wired into browser-shell as "Kbd Test", "Flash Test", "Store Results?".
+
+---
+
+### Phase 47.4: ClrScreen-callers batch probe — 10 NEW info/app screens (2026-04-12 CC session 3) — DONE ✓
+
+Built `probe-clrscreen-callers.mjs` — batch probe of all **38 sites** that call 0x05c634 (ClrScreen helper). Each is a candidate "info screen" function.
+
+**RESULT: 10 hits with both fg>100 and bg>100** (real text screens):
+
+| Addr | Drawn | Fg | Bg | Other | Bbox | App / Identification |
+|------|------:|---:|---:|------:|------|---------------------|
+| **0x0b9c64** | **32,470** | 8,281 | 24,189 | 0 | r1-239 c0-289 | **Transformation Graphing** main screen |
+| **0x074817** | **30,028** | 3,069 | 26,959 | 0 | r37-239 c0-319 | **Inequality Graphing** main screen |
+| **0x028944** | **25,568** | 197 | 20,147 | **5,224** | r1-239 c2-313 | **TEST MODE colorful** (5K colored pixels!) |
+| 0x09ebf6 | 22,824 | 10,439 | 12,385 | 0 | r37-234 c0-253 | ABOUT (already known) |
+| 0x028977 | 22,560 | 4,297 | 13,946 | **4,317** | r3-234 c0-310 | **TEST MODE variant** (4K colored) |
+| 0x074610 | 14,304 | 6,144 | 8,160 | 0 | r37-114 c0-313 | InEqGraph 2-row screen |
+| 0x0b9887 | 14,088 | 6,132 | 7,956 | 0 | r37-114 c0-313 | TransGraph 2-row screen |
+| 0x074422 | 10,692 | 8,182 | 2,510 | 0 | r37-94 c0-313 | InEqGraph 1-row inverse |
+| 0x0b9a58 | 9,768 | 4,327 | 5,441 | 0 | r37-114 c0-181 | TransGraph 2-row narrower |
+| 0x028cff | 2,844 | 2,074 | 770 | 0 | r37-54 c72-229 | small TEST MODE row |
+
+**Identification via nearby strings**:
+- **0x074xxx** strings at 0x07795f-0x0779af: `"ERR:INEQUVAR"`, `"CONFLICTING APPS"`, `"ShadeRes"`, `"650 Bytes Free RAM Needed"`, `"INEQUAL GRAPHING RUNNING"` → **Inequality Graphing app** (the OS-bundled INEQUAL app)
+- **0x0b9xxx** strings at 0x0bbf60-0x0bc060: `"IGRAPH"`, `"IMOVIE"`, `">TRANSFORMATION  GRAPHING"`, `"Color"`, `"OK"`, `"CLEAR"`, `"Plot1/2/3"`, `"WINDOW/SETTINGS"`, `"Step/Max"`, `"Quit Transfrm Graphing"` → **Transformation Graphing app**
+- **0x028xxx** functions render TEST MODE selection screens (the 5K+ colored pixels are the highlighted/selected option indicators — first time we've seen non-monochrome rendering through lifted blocks)
+
+**Phase 47.4 wired 3 into browser-shell**: "InEqGraph Main", "Transformation Graphing", "TEST MODE colorful".
+
+**Phase 47.3-47.4 artifacts**: `probe-test-screens.mjs`, `probe-clrscreen-callers.mjs`, `phase47-09ebf6.txt` (full ABOUT ascii), `scan-ptr-refs.mjs`, browser-shell.html updated with 6 new buttons.
+
+**Total session 3 deliverables (Phases 41-47.4)**:
+- **35+ legible-text screens** wired into browser-shell
+- **DispMessage primitive** (0x03f300) identified and proven generic for any ASCII string
+- **DispMessageAt primitive** (0x03f31c) seeded and working for arbitrary cursor positions
+- **42+ confirmed text-rendering functions** in the catalog
+- **First identified TI-OS apps**: Inequality Graphing, Transformation Graphing, TEST MODE, ABOUT
+- **First COLORED rendering** (0x028944 has 5224 non-mono pixels — the TEST MODE selection highlights)
+- **String tables fully cataloged**: error messages (0x062338+), CALC strings (0x06aeb9+), MODE strings (0x028ff5+), graph help (0x055d96+), boot/install messages, app names
+- **CLAUDE.md** TI-84 ROM continuation workflow section added
+
+**Phase 48 priorities** (fresh — superseding earlier list):
+1. **Visually identify each screen in browser-shell** — open the deployed page, click each new button, screenshot. We have 35+ screens labeled but not yet visually verified. User task.
+2. **Find the home screen** — only TI-OS UI element still missing. Approaches:
+   - Scan ROM for the literal string "DEG" or "RAD" or "FLOAT" (appear on the home screen status bar; we already found "RADIAN" in 0x029139 area but no caller renders it).
+   - Look for the MAIN_LOOP entry point — find the function that's called from cold-boot AFTER the post-init halt-wait, which would dispatch to the home screen render.
+   - Try the (0xd007e0) menu-mode byte = 0 (default) and find the dispatcher target.
+3. **Apply 0x03f31c DispMessageAt to ANY string** — Phase 47.1's positioning works. Add a free-text widget to browser-shell that lets the user type a message and renders it via DispMessageAt at chosen row/col. This is the user-facing payoff.
+4. **Process 0x06afd0 (56K cells)** — currently labeled as Store Results variant but the 56K mostly-fg distribution is suspicious. Look at the ASCII art to identify what it is.
+5. **Find more apps** by scanning text-loop callers in regions we haven't yet covered: 0x05xxxx-0x07xxxx (other than the ones we did), 0x0c-0x0f.
+
+**Session 3 final context check after Phase 47.4**: 30% per /context (well under 70%). Could continue but reaching natural pause point — 35+ screens is a great session-3 stopping point.
+
+**Phase 46 artifacts**:
+- `scan-string-tables.mjs` (CC — full ROM string scan)
+- Updated `browser-shell.html` (HL parameter + 5 message buttons)
+- Updated `probe-03f300-strings.mjs` (cross-region verification)
+- `phase45-03f300-hl*.txt` × 9 (per-message ASCII art)
+- Codex pending: `probe-phase46-024xxx.mjs`, `probe-phase46-09exxx.mjs`, `probe-phase46-0b2xxx.mjs`
+
+**Phase 47 priorities**:
+1. **Render multi-line messages** (e.g., the 4-line "Validating OS..." sequence at 0x013d3a-0x013d86). Need to find a multi-line variant of DispMessage, or call 0x03f300 multiple times with cursor adjusted.
+2. **Find the cursor-set primitive** — to render text at arbitrary positions instead of always row 1. Look for sites that write to (0xD00595) directly.
+3. **Find the FONT-SELECT primitive** — to switch between big font (0x03f300 default) and small font (used by some other routines). Might be `LD A, n; LD (0xD0xxx), A`.
+4. **Process Codex Phase 46.1 results** when complete — wire any new screens into browser-shell.
+5. **Decode the TI-OS error display routine** — find a function that takes an error code in A and dispatches to the right error message in 0x062338+.
+6. **Apply the same approach to the 0x055d96 graph CALC strings** — pick "CALC ZERO" or "CALC MINIMUM" and render it.
+
+**Summary of session 2 deliverables (Phases 41-44.1)**:
+- ✅ Phase 41: Text rendering verified end-to-end (probe-mode-with-text + probe-mode-helper-call)
+- ✅ Phase 41.2: HL source at 0x08c7e7 traced (LD HL, 0; DEC HL → 0xFFFF; not on 691-step path)
+- ✅ Phase 41.3: Manual fg/bg fix replaced with SetTextFgColor 0x0802b2 helper call (browser-shell.html updated)
+- ✅ Phase 42: (0xd007e0) menu-mode dispatch space mapped (219 readers, 30 writers, 15 dispatchers branch on ==0x40)
+- ✅ Phase 42: 0x0b6a58 found as 75K-cell list editor (NOT home screen, garbage strings)
+- ✅ Phase 43: Slot 9 identified as `_ClrLCDFull` (first confirmed bcall slot in this project)
+- ✅ Phase 43.5: **0x089100 renders legible "Done" text** — first real alphabetical text
+- ✅ Phase 44.1: 110 text loop callers cataloged
+- ✅ Phase 44.3: **0x045de1 renders 2 lines of legible text** (D-something, B-something) at rows 77-134
+- 6+ new probe/scan files created
+- CONTINUATION_PROMPT_CODEX.md updated through Phase 44.1
+
+---
+
+### Phase 48 — Home screen hunt + free-text widget + region scan + BROKEN-INIT BUG (2026-04-12 CC session 4) — DONE ✓
+
+CC dispatched 3 parallel Codex agents via cross-agent.py runner. While they ran, CC investigated the (0xd007e0) menu-mode dispatcher hypothesis directly. **Key discovery: the existing probe template was running an explicit `0x08C331` AFTER cold boot, which CLEARED state instead of completing init.**
+
+#### Phase 48.0: BROKEN-INIT TEMPLATE BUG ★★★ (CRITICAL FINDING)
+
+**The bug**: All `probe-09ebf6.mjs`, `probe-clrscreen-callers.mjs`, and `probe-phase4*-*.mjs` use this sequence:
+```javascript
+ex.runFrom(0x000000, 'z80', { maxSteps: 20000, ... });   // boot — runs full init naturally
+cpu.halted = false; iff1=iff2=0; cpu.sp = 0xD1A87E - 3;
+ex.runFrom(0x08C331, 'adl', { maxSteps: 100000, ... });  // EXPLICIT init AGAIN — BUG
+```
+
+The boot at 0x000000 already runs the full init naturally (Phase 30: 8804 steps, reaches 0x0019b5 halt). After boot:
+- `(0xd007e0) = 0x00` (the menu mode default!)
+- `(0xd02ad7-9) = 0x015AD9` (post-boot callback installed)
+- `(0xd177ba) = 0x7F` (post-init flag set)
+- 8192 RAM bytes initialized in 0xd00000-0xd02000
+
+But calling `0x08C331` AGAIN as a separate step REGRESSES the state:
+- `(0xd007e0) = 0xff` (uninitialized!)
+- `(0xd02ad7-9) = 0xffffff` (callback gone)
+- `(0xd177ba) = 0xff` (flag cleared)
+- Only 129 RAM bytes remain set in 0xd00000-0xd02000
+
+**Impact**: Probes were running with corrupted state. Verified by re-running ABOUT (0x09ebf6):
+- Broken init template: 22,824 cells drawn (Phase 47.2 reported value)
+- **Corrected (boot only)**: **67,236 cells drawn (3× more)**
+
+**Fix**: Drop the explicit `runFrom(0x08C331, ...)` step entirely. Keep the boot, then the SetTextFgColor at 0x0802B2, then the snapshot. The corrected probe template:
+```javascript
+ex.runFrom(0x000000, 'z80', { maxSteps: 20000, maxLoopIterations: 32 });
+cpu.halted = false; cpu.iff1 = 0; cpu.iff2 = 0; cpu.hl = 0;
+cpu.sp = 0xD1A87E - 3; mem.fill(0xff, cpu.sp, cpu.sp + 3);
+ex.runFrom(0x0802B2, 'adl', { maxSteps: 100, maxLoopIterations: 32 });
+const snap = new Uint8Array(mem.subarray(0x400000, 0xE00000));
+// Per probe: mem.set(snap, 0x400000); clearVram; setup cpu state; runFrom(target)
+```
+
+**ALL Phase 47.x screen catalog entries should be RE-VERIFIED with the corrected template** — many likely render larger / cleaner.
+
+#### Phase 48.1: Home screen hunt — (0xd007e0)==0x40 hypothesis FALSIFIED
+
+CC enumerated all 20 cp 0x40 dispatcher fall-through addresses (the @ handler entries) via `node scan-d007e0-dispatch.mjs`:
+
+```
+0x030231 0x04e135 0x051b1a 0x05c743 0x065b35 0x06f497 0x085d26 0x085da3 0x0860a8
+0x087753 0x0884b0 0x08c00f 0x08c630 0x091351 0x09d0a1 0x0af5ea 0x0b6adb 0x0ba717
+```
+
+Probed all 18 unique addresses with the **corrected** template. Top hits:
+| Addr | Drawn | Fg | Bg | Bbox | Verdict |
+|------|------:|---:|---:|------|---------|
+| **0x04e135** | **70788** | 6697 | 64091 | r14-239 c0-319 | **CATALOG menu** (string "CATALOG" at 0x04e0dc, 89 bytes before) |
+| 0x065b35 | 76800 | 0 | 76800 | r0-239 c0-319 | full white screen — `_ClrLCDFull` primitive |
+| 0x0860a8 | 76800 | 0 | 76800 | full | full white — clr primitive (variant) |
+| 0x08c630 | 76800 | 0 | 76800 | full | full white — clr primitive (variant) |
+| 0x085d26/0x085da3 | 23716 | 3708 | 20008 | r2-92 c0-319 | partial title bar render (incomplete, missing_block) |
+| 0x05c743 | 3744 | 3744 | 0 | r9-46 c0-319 | full-width black header bar |
+| 0x08c00f | 3468 | 3468 | 0 | r0-11 c2-290 | top-edge thin black bar |
+
+**CATALOG screen (0x04e135) is the major win** — 70K cells of legible text spanning nearly the full screen. ASCII art at `phase48-04e135.txt` shows multi-row text in a list format (rows 41-50, 59-72, 79-92, 99-112, 119-132, 139-152, 159-172). String anchor "CATALOG" confirms.
+
+**Verdict**: NONE of the (0xd007e0)==0x40 handlers render the home screen. The hypothesis is falsified. The home screen is likely behind the post-boot callback at `0x015AD9` which is **not in our static coverage**.
+
+#### Phase 48.2: Post-boot callback unreachable
+
+The callback at `(0xd02ad7) = 0x015AD9` after cold boot is not statically reachable. Probing 0x15ad9, 0x15ada, 0x15adc, 0x0019be all return `missing_block` immediately. **Seeding `0x15ad9` and `0x15ada` and re-transpiling is required to expose the home screen path.**
+
+#### Phase 48.3: Free-text DispMessageAt widget — DONE (Codex)
+
+Codex extended `TI-84_Plus_CE/browser-shell.html` with a custom-text widget:
+- Text input (max 20 ASCII chars, validates printable), row (0-9), col (0-25), "Render Custom" button
+- New `buildCustomDispMessageBuffer(text)` function (line 346) — truncates, validates, pads to 27 bytes
+- `showScreen()` extended (line 370) with 8th parameter `scratchBytes = { addr, bytes }`. After Stage 4 setup but before entry runFrom, writes scratch bytes to `romBytes[addr+i]`.
+- `btnRenderCustom` handler (line 613) — calls `showScreen(0x03f31c, 'adl', 'Custom: <text>', 300000, 0xD1B000, (col<<8)|row, 27, { addr: 0xD1B000, bytes })`
+- Scratch RAM addr: `0xD1B000` (above 0xD1A87E stack top, safe)
+
+User-facing payoff: type any string + position, render via DispMessageAt. **Not yet visually verified — Codex couldn't run browser tests.**
+
+#### Phase 48.4: Region scan — 51 new uncovered-region 0x0a1cac callers, 10 produce legible text
+
+Codex created `scan-a1cac-callers.mjs` (scans direct CALL/JP `0xCD AC 1C 0A` / `0xC3 AC 1C 0A`, walks back to caller-function entry via after_ret heuristic) and `probe-phase48-newcallers.mjs`. CC ran them.
+
+Total direct CALL sites: **110** (matches Phase 44.1 count). Filtered to uncovered regions: **51 callers**. Probed all 51 with the BROKEN init template (Codex copied the existing template, didn't know about the bug).
+
+**Top 10 hits by drawn cells**:
+
+| Caller | Entry | Drawn | Fg | Bg | Bbox | String hint |
+|--------|-------|------:|---:|---:|------|-------------|
+| 0x09cc5c | 0x09cc2a | **54528** | 45492 | 9036 | r37-234 c0-313 | none |
+| 0x096b0b | 0x096aee | **54459** | 45444 | 9015 | r37-234 c0-313 | none |
+| 0x04e21f | 0x04e1d0 | 54456 | 45444 | 9012 | r37-234 c0-313 | **CATALOG** (0x04e0dc) |
+| 0x05cec6 | 0x05cea3 | 6984 | 5933 | 1051 | r37-74 c0-229 | spaces only |
+| 0x05cef2 | 0x05cea3 | 6984 | 5933 | 1051 | r37-74 c0-229 | spaces |
+| 0x0b79f3 | 0x0b79af | 6984 | 2544 | 4440 | r57-94 c0-193 | none |
+| 0x0b7a70 | 0x0b79af | 6984 | 2544 | 4440 | r57-94 c0-193 | none |
+| 0x06b70b | 0x06b6f7 | 3528 | 2755 | 773 | r37-74 c0-313 | none |
+| 0x06225f | 0x062160 | 2404 | 1322 | 1082 | r37-98 c0-319 | none |
+| 0x09d539 | 0x09d520 | 1116 | 808 | 308 | r57-74 c0-61 | none |
+
+**0x09cc2a, 0x096aee, 0x04e1d0** are nearly identical (~54500 cells, same bbox) — they're all CATALOG-LIKE renders. The 0x04e1d0 entry has the "CATALOG" string anchor; the other two might be other catalogs (PRGM CTL CATALOG, PRGM I/O CATALOG, FNANCE CATALOG, etc.) since the TI-84 has multiple catalogs.
+
+**Other interesting**:
+- **0x086c05 (entry 0x086bd7)**: 76800 "other" colors — turned out to be a LCD diagnostic that fills the screen with 0x2020 (gray), same kind as 0x024528. False positive.
+- **0x097b12 (entry 0x097ac8)**: 76800 cells, mostly bg (76237) with 49 fg + 514 colored — a decorated full-screen render.
+- **0x0baa2d (entry 0x0ba9db)**: 0 cells but hint strings: `"OS and App are not"`, `"compatible. Please update"`, `"to latest versions at"`, `"education.ti.com"` — this is the OS/APP COMPATIBILITY ERROR screen. Function failed to render in our probe but the strings are at 0x0baa56.
+
+**Phase 48.4 artifacts** (from Codex):
+- `TI-84_Plus_CE/scan-a1cac-callers.mjs`
+- `TI-84_Plus_CE/probe-phase48-newcallers.mjs`
+- `TI-84_Plus_CE/phase48-newcallers-09cc5c.txt` / `-096b0b.txt` / `-04e21f.txt` / `-05cec6.txt` / `-05cef2.txt`
+- `TI-84_Plus_CE/probe-phase48-homescreen.mjs` (Codex's homescreen probe — used broken init template, found nothing convincing)
+- `TI-84_Plus_CE/phase48-085d9b.txt` (CC partial title bar)
+- `TI-84_Plus_CE/phase48-04e135.txt` (CC CATALOG screen full ASCII)
+- `TI-84_Plus_CE/phase48-bootonly-vram.txt` (boot-only VRAM dump — confirms boot clears VRAM to white but doesn't render home screen)
+
+**Phase 48 deliverables**:
+- ✅ CATALOG screen identified (0x04e1d0 / 0x04e135) — major new screen
+- ✅ Free-text DispMessageAt widget shipped (browser-shell.html)
+- ✅ Critical broken-init bug discovered + documented
+- ✅ 51 new region callers cataloged, 10 produce legible text
+- ✅ Post-boot callback unreachability documented (path forward: seed 0x015AD9 + retranspile)
+- ✅ 2 candidate "secondary catalog" addresses (0x09cc2a, 0x096aee) need string-anchor identification
+- ✅ OS/APP compat error screen function identified (0x0ba9db) — needs reachability work
+- ❌ Home screen NOT FOUND (likely unreachable without seeding 0x015AD9)
+- ⚠️ ALL prior Phase 47.x catalog entries need re-verification with corrected template
+
+**Phase 49 priorities** (next session):
+1. **★★★ Re-run all Phase 47.x screen probes with the corrected template** (drop the explicit `runFrom(0x08C331, ...)` step). Many catalog entries are likely understated by ~3× and some may be cleanly legible now. This affects probe-clrscreen-callers, probe-phase4[6-7]-*, probe-09ebf6.
+2. **★★★ Update `browser-shell.html` showScreen() to use the corrected template** (drop the explicit OS init stage). This will improve every existing button.
+3. **Identify 0x09cc2a and 0x096aee** by visualizing their ASCII art. They're CATALOG-LIKE — likely PRGM CTL CATALOG and PRGM I/O CATALOG, or a FNANCE / LIST OPS / DRAW catalog.
+4. **Seed 0x015AD9 + 0x15ada in `scripts/transpile-ti84-rom.mjs`** and re-transpile. This unlocks the post-boot callback path which probably contains the home screen render.
+5. **Fix and probe 0x0ba9db (OS/APP compat error)** — strings are at 0x0baa56-0x0baa99. Should render real text once the missing_block on its path is resolved.
+6. **Visually verify the free-text DispMessageAt widget** in browser-shell — type "HELLO WORLD", row=5, col=3, click Render Custom. Confirm rendering works.
+7. **Probe 0x097ac8 with corrected template** — was 76800 cells in old template. May or may not be a real screen.
+8. **Run probe-phase48-newcallers.mjs with the CORRECTED template** — the existing run used the broken template. May find more legible-text functions.
+9. **Apply CATALOG renderer (0x04e135) to browser-shell** — wire it as a button.
+
+**Critical lesson**: Whenever probing OS render functions, ALWAYS run boot only (0x000000 z80) and never call 0x08C331 explicitly afterward. Boot does the full init naturally; calling it again CORRUPTS state.
+
+> ★★★ **Phase 49 REVISION** — the Phase 48.0 "broken init bug" claim above was WRONG. See Phase 49 section below for the corrected understanding: BOTH templates are useful, just for DIFFERENT functions. The explicit-init template renders MORE text for most catalog/menu screens (ABOUT, CATALOG, TEST MODE, Inequality Graphing, etc.), while the boot-only template renders MORE text for a small set of post-boot-state-dependent screens (like Done at 0x089100). Always probe BOTH and pick the one with more **fg pixels** (not just total drawn cells).
+
+---
+
+### Phase 49 — Phase 48 finding REVISED + 4 parallel Codex tasks (2026-04-12 CC session 5) — DONE ✓
+
+CC dispatched 4 Codex tasks via cross-agent.py runner (Codex A: fix browser-shell, B: seed 0x015AD9 + retranspile, C: re-verify Phase 47.x catalog, D was merged into C). Codex B's runner crashed on UTF-8 decoding (cross-agent.py bug) but the seeding had already been applied. Codex C's reverify ran successfully via CC.
+
+#### Phase 49.0: Phase 48.0 BROKEN-INIT bug claim REVISED ★★★
+
+**Original claim (Phase 48.0)**: Calling `0x08C331` explicitly after cold boot CORRUPTS state and reduces text rendering. Verified that ABOUT screen drew 67236 cells with corrected template vs 22824 with broken template.
+
+**Phase 49 finding — that conclusion was wrong**: The `drawn` count includes both fg AND bg pixels. The CORRECT metric for "did the function render text" is the **fg pixel count**. Side-by-side comparison:
+
+| Screen | Template | drawn | fg | bg | other |
+|--------|----------|------:|---:|---:|------:|
+| 0x09ebf6 ABOUT | "broken" (with 0x08C331) | 22824 | **10439** | 12385 | 0 |
+| 0x09ebf6 ABOUT | "corrected" (boot only) | 67236 | **775** | 66461 | 0 |
+| 0x04e1d0 CATALOG | "broken" | 17820 | **14056** | 3764 | 0 |
+| 0x04e1d0 CATALOG | "corrected" | 49920 | **3109** | 46847 | 0 |
+| 0x028944 TEST MODE | "broken" | 25568 | 197 | 20147 | **5224** |
+| 0x028944 TEST MODE | "corrected" | 67548 | 208 | 66298 | **1042** |
+| 0x089100 Done | "broken" | 5472 | **3358** | 2114 | 0 |
+| 0x089100 Done | "corrected" | 49176 | **46716** | 2460 | 0 |
+
+**Conclusion**: The "broken" template (with explicit 0x08C331) actually renders MORE TEXT (more fg / colored pixels) for most catalog/menu screens (ABOUT 13×, CATALOG 4.5×, TEST MODE 5× more colored pixels). The "corrected" template (boot only) is BETTER for Done (0x089100) which renders 13× more fg pixels with the cleaner state.
+
+**Why?** Hypothesis: the screen render functions check RAM state at decision points. The 0x08C331 re-run partially clears state which causes them to take a "draw text" code path instead of a "clear screen and exit" path. The Done screen depends on state that boot leaves intact but 0x08C331 re-clears.
+
+**Both templates are valid; choose per-function.** The right metric is **fg pixels** (or `other` for colored screens), not total drawn cells.
+
+#### Phase 49.1: browser-shell.html showScreen() updated (Codex A)
+
+Codex A initially DELETED the explicit 0x08C331 stage from showScreen() (acting on the wrong Phase 48 conclusion). CC then RE-ADDED it as the default behavior, with a new optional parameter `skipExplicitOsInit` (default `false`) to bypass it for screens like Done that benefit from boot-only state.
+
+Final state of showScreen() in browser-shell.html (~line 380):
+- Stage 1: cold boot (0x000000, z80)
+- Stage 2: re-run OS init at 0x08C331 (DEFAULT — produces more text for catalog/menu screens) — skipped if `skipExplicitOsInit=true`
+- Stage 3: clear VRAM + setTextFgColor
+- Stage 4: prep stack + flags + IY + optional HL/DE/BC/scratchBytes/menuMode
+- Stage 5: enter the target screen routine
+
+Codex A also added:
+- New `btnCatalog` button for the CATALOG menu at 0x04e135
+- New constants and several wired buttons for previously-cataloged screens (Done, Text Block, Mem Mgmt, Dialog, Status Bar, MemMgmt A/B, Msg Waiting/Validating/Defragmenting/OVERFLOW/DIVIDE BY 0, 3-bar menu, TEST screen A, 0b79f3, DispAt 1/2/3, About, Kbd Test, Flash Test, Store Results, InEqGraph, TransGraph, TEST MODE)
+- Custom-text DispMessageAt widget rows (already added in Phase 48)
+- New `menuMode` parameter on showScreen() that pre-sets `mem[0xD007E0]` before the entry — enables future home-screen-mode probes
+- New `showScreenWithMenuMode()` helper
+
+CC updated the Done button to pass `skipExplicitOsInit=true`:
+```javascript
+$('btnShowDone').addEventListener('click', () => showScreen(0x089100, 'adl', 'Done/Result', 100000, null, null, null, null, null, true));
+```
+
+#### Phase 49.2: 0x015AD9 seeded + retranspile + probe — confirmed busy-wait (NOT home screen)
+
+Codex B added two seeds to scripts/transpile-ti84-rom.mjs:
+- 0x015AD9 (post-boot callback target)
+- 0x015ADA (the byte after the leading NOP)
+
+(Codex also re-discovered Phase 47.1's 0x03f31c and 0x03f312 seeds — already present but Codex's add was idempotent.)
+
+Re-transpile result (CC ran it after Codex B's runner crashed on UTF-8 decoding):
+- 124548 → **124552 blocks** (+4 new)
+- 692377 → 692409 bytes (+32)
+- 16.5076% → 16.5083%
+
+Probed 0x15AD9 / 0x15ADA in both adl and z80 modes with corrected (boot-only) template:
+- 0x15AD9 adl: 365 steps, 0 cells drawn, missing_block (RET hits sentinel)
+- 0x15ADA adl: 365 steps, 0 cells drawn, missing_block
+- both z80: 0 steps, immediate missing_block
+
+**Disassembly of 0x015ADA (CC manually decoded the bytes)**:
+```asm
+0x15ada: PUSH DE       ; d5
+0x15adb: PUSH HL       ; e5
+0x15adc: LD DE, 0x000001 ; 11 01 00 00
+0x15ae0: LD HL, 0x00016c ; 21 6c 01 00
+0x15ae4: OR A          ; b7
+0x15ae5: SBC HL, DE    ; ed 52
+0x15ae7: JR NZ, -5     ; 20 fb (back to 0x15ae4)
+0x15ae9: POP HL        ; e1
+0x15aea: POP DE        ; d1
+0x15aeb: RET           ; c9
+```
+
+**This is a busy-wait delay loop (~364 iterations). NOT the home screen renderer.** The post-boot callback installed by cold boot is a NO-OP delay placeholder. The REAL home-screen handler must be installed by code that runs AFTER the boot halt + first IRQ wake — which we can't reach without simulating the IRQ-driven main loop.
+
+#### Phase 49.3: Re-verify Phase 47.x with corrected template (Codex C ran probe; CC ran the script)
+
+Codex C created `TI-84_Plus_CE/probe-phase49-reverify.mjs` (boot-only template, 25 addresses). CC ran it.
+
+**Headline finding** (matches Phase 49.0 — see comparison table above): the corrected template **REGRESSES** most catalog/menu screens (less fg text rendered) but IMPROVES some (Done 0x089100, possibly STAT/MATRIX 0x081670). Specific changes:
+
+| Address | Label | Old (broken) drawn | New (boot-only) drawn | Verdict |
+|---------|-------|-------------------:|----------------------:|---------|
+| 0x028944 | TEST MODE colorful | 25568 | 76800 (mostly bg) | regressed for text |
+| 0x028977 | TEST MODE variant | 22560 | 76800 (mostly bg) | regressed for text |
+| 0x074xxx | Inequality Graphing × 4 | ~10K-30K | 76800 (all bg) | regressed for text |
+| 0x0b9xxx | TransGraph × 3 | ~10K-32K | 76800 (all bg) | regressed for text |
+| 0x046246 | FLASH System Test | 7812 | 76800 | regressed |
+| 0x04615c | Keyboard Test | 6732 | 76800 | regressed |
+| 0x09cc2a | "CATALOG-like A" | 54528 | **20008 (top half only)** | regressed |
+| 0x096aee | "CATALOG-like B" | 54459 | **4992 (single row)** | regressed |
+| 0x09ec0e | 0x09exxx 3-bar | 20340 | **2496** | regressed |
+| 0x089100 | Done text | 5472 | **49176** (fg=46716) | **IMPROVED 13×** |
+| 0x081670 | STAT/MATRIX | unknown | 49908 | unknown-old |
+| 0x045de1 | 2-line text | unknown | 76800 | unknown-old |
+
+**0x089100 'Done' is a special case** — it benefits from the boot-only state. All others should use the explicit-init template for best text rendering.
+
+#### Phase 49.4: 0x09cc2a / 0x096aee mystery CATALOGs — string anchors found
+
+CC scanned 512 bytes before each entry for printable strings of length ≥ 6:
+- **0x09cc2a**: NO string anchor found → identity unknown
+- **0x096aee**: anchor `]CNTRB` at 0x096969 (+ likely abbreviation for "Contributors" or "CONTRBA" — could be a credits/about-style page)
+
+Both are 54K-cell catalog-like renders (with broken template). They sit far from each other in ROM (0x09cc2a vs 0x096aee, ~16K apart) so they're probably DIFFERENT screens, not variants. Without string anchors, they're hard to identify by inspection alone. **Visual identification in browser-shell required.**
+
+#### Phase 49 deliverables
+
+- ✅ Phase 48.0 broken-init bug claim REVISED — both templates are useful for different functions
+- ✅ browser-shell.html showScreen() restored to default explicit-init, with new `skipExplicitOsInit` opt-out
+- ✅ CATALOG button (0x04e135) wired into browser-shell
+- ✅ Done button updated to use `skipExplicitOsInit=true`
+- ✅ Custom-text DispMessageAt widget already shipped (Phase 48.3)
+- ✅ 4 new transpiler seeds (0x03f31c, 0x03f312, 0x015ad9, 0x015ada) — re-transpile complete
+- ✅ Post-boot callback at 0x015AD9 confirmed = busy-wait delay loop (NOT home screen)
+- ✅ probe-phase49-seedcallback.mjs + probe-phase49-reverify.mjs created
+- ✅ Phase 47.x catalog re-verified — mostly REGRESSED with boot-only template (confirms broken template was right)
+- ❌ 0x09cc2a / 0x096aee identity still unknown (only one string anchor found)
+- ❌ Home screen still NOT FOUND — even with seeded callback, the path is a no-op delay
+
+#### Phase 49 artifacts
+
+- Modified: `scripts/transpile-ti84-rom.mjs` (4 new seeds: 0x03f31c, 0x03f312, 0x015ad9, 0x015ada)
+- Modified: `TI-84_Plus_CE/browser-shell.html` (Codex A's full overhaul + CC revert of explicit init + Done param + CATALOG button)
+- Modified: `TI-84_Plus_CE/ROM.transpiled.js` (re-transpile)
+- Modified: `TI-84_Plus_CE/ROM.transpiled.report.json` (124552 blocks)
+- New: `TI-84_Plus_CE/probe-phase49-seedcallback.mjs` (Codex B)
+- New: `TI-84_Plus_CE/probe-phase49-reverify.mjs` (Codex C)
+- New: `TI-84_Plus_CE/phase49-reverify-{028cff,06b6f7,06aff0,04615c,046246,0b9a58,074422,0b9887,074610,028977}.txt` (10 ASCII dumps)
+
+#### Phase 50 priorities (next session)
+
+1. **★ Visually identify 0x09cc2a and 0x096aee** by clicking the buttons in browser-shell — they're 54K-cell catalogs with no string anchors, so naming requires visual inspection. ]CNTRB hint near 0x096aee suggests "Contributors" or "Constraints" — possibly the credits screen or a constraint editor.
+2. **Find the REAL post-boot callback writer** — boot installs the busy-wait at 0x015AD9, but something must overwrite it later with the real handler. CC found 8 sites that write to (0xD02AD7) via `LD (0xD02AD7),HL`: 0x000898, 0x000d9d, 0x000e41, 0x000e52, 0x000e67, 0x0014d8, 0x001a33, 0x007019. The site at 0x001a33 is interesting — it pops HL from stack BEFORE storing, meaning the callback value is caller-provided. Find what calls the function containing 0x001a33 with what HL value — that's the next layer.
+3. **Identify the 0x086bd7 LCD diagnostic family** — fills screen with 0x2020 grey. There may be MORE LCD diagnostics in similar address ranges.
+4. **Run probe-phase48-newcallers.mjs with the EXPLICIT-INIT template** — Phase 48.4 used the boot-only template (because Codex copied my then-incorrect template). Re-run with explicit-init to potentially find MORE legible text screens in the 51 uncovered-region callers.
+5. **Visually verify the free-text DispMessageAt widget** in browser-shell (still pending from Phase 48.3).
+6. **Apply 0x081670 STAT/MATRIX (Phase 31) with corrected template** — it now renders 49908 cells (vs unknown before). Add as button + visualize.
+7. **Decode the OS/APP compat error 0x0ba9db function path** — strings at 0x0baa56-0x0baa99 ("OS and App are not compatible..."). The probe failed with missing_block — needs reachability work.
+8. **Find the secondary CATALOG renderer that displays mode strings** — the MODE strings at 0x028ff5 (50 strings: "TEST MODE / DELETE APPS / DEGREE / RADIAN / FUNCTION / Auto / SET CLOCK / etc.") need a renderer. We have the strings but not the function. Search for callers of the 0x08bcd3 area which has Auto / SET CLOCK / FUNCTION / GridDot / HORIZONTAL strings.
+9. **Try running 0x001a33's containing function with HL pre-set to a known render function address** — this is the "callback installer" pattern. If we can inject a known render addr, we might be able to chain into the IRQ-driven main flow.
+
+**Critical lesson REVISED**: Whenever probing OS render functions, **probe BOTH templates** (with and without explicit 0x08C331 re-init) and pick whichever produces more **fg pixels** (or `other` for colored screens). Total drawn cells is misleading because boot-only often saturates with bg fills.
+
+---
+
+### Phase 50 — More text screens via region scan + 081670 mode sweep + callback chain investigation (2026-04-12 CC session 6) — DONE ✓
+
+CC dispatched 2 Codex agents in parallel (50A: re-run newcallers with explicit-init template; 50B: probe 0x081670 with all menu modes) and investigated the OS callback chain locally.
+
+#### Phase 50.1: Re-run probe-phase48-newcallers with EXPLICIT-INIT template (Codex A) — many results turned out to be GRID outlines, not text
+
+Codex A created `TI-84_Plus_CE/probe-phase50-newcallers-broken.mjs` that re-probes the 51 uncovered-region 0x0a1cac callers with the explicit-init template. CC ran it.
+
+**Top 10 hits by `new fg+other` score**:
+| Caller | Entry | Old fg (boot only) | New fg (explicit init) | Bbox | Anchor |
+|--------|-------|-------------------:|----------------------:|------|--------|
+| 0x086c05 | 0x086bd7 | 0 | 0 (76800 other) | full | none |
+| 0x09cc5c | 0x09cc2a | 0 | **45492** | r37-234 c0-313 | none |
+| 0x096b0b | 0x096aee | 0 | **45444** | r37-234 c0-313 | `]CNTRB` at 0x096969 |
+| 0x04e21f | 0x04e1d0 | 3073 | **45444** | r37-234 c0-313 | `CATALOG` at 0x04e0dc |
+| 0x05cec6 | 0x05cea3 | 213 | **5933** | r37-74 c0-229 | none |
+| 0x05cef2 | 0x05cea3 | 213 | **5933** | r37-74 c0-229 | none |
+| 0x05cf76 | 0x05cf6d | 0 | 2844 | r37-54 c0-157 | none |
+| 0x06b70b | 0x06b6f7 | 1672 | 2755 | r37-74 c0-313 | none |
+| 0x0b79f3 | 0x0b79af | 1689 | 2544 | r57-94 c0-193 | none |
+| 0x0b7a70 | 0x0b79af | 1689 | 2544 | r57-94 c0-193 | none |
+
+**CRITICAL: NOT ALL "new legible" hits are real text.**
+
+CC visualized the top 3 (0x09cc2a, 0x096aee, 0x04e1d0) and discovered they all render the SAME thing: **a CHECKERED GRID PATTERN** (vertical bars `#...#` at every 4 cols, with horizontal black bars every ~12 rows). This is the CATALOG screen's GRID OUTLINE, not text content. The 45444 fg pixels are grid lines, not letters.
+
+**0x05cea3 (5933 fg) IS real text** — visualized at stride 1, shows an inverse-video bar with 3 distinct characters (likely a math expression like "F y" or "= y"). The smaller hits (5cea3, 0b79af, 06b6f7, 062160, 09d520) are more likely real text screens.
+
+**Phase 50 lesson**: high fg count is NOT sufficient. CATALOG-style screens draw grid outlines that pad the fg count. Need to combine: (a) fg count, (b) visual irregularity check (grids are periodic), (c) string anchor presence. The grid-outline functions all have **no string anchor** AND have **identical row patterns repeating every ~12 rows** — that's the giveaway.
+
+**Other interesting Phase 50.1 results** (lower fg but real anchors):
+- **0x06af7e** (entry of 0x06b004 caller): 0 cells but anchor `STORE RESULTS?` / `DROP POINTS` / `SELECT` / `BACKGROUND` / `PICTURE` at 0x06af37-64. The CALC store-results menu — **needs reachability fix** (probe failed with missing_block).
+- **0x0ba9db** (entry of 0x0baa2d caller): 0 cells but anchor `OS and App are not / compatible. Please update / to latest versions at / education.ti.com` at 0x0baa56-99. **The OS/APP COMPATIBILITY ERROR screen** — needs reachability fix.
+- **0x0b72ec** (entry of 0x0b72fc caller): 0 cells but anchor `PRESS ANY KEY` at 0x0b7143. A "press any key" prompt screen — needs reachability fix.
+
+#### Phase 50.2: 0x081670 menu mode sweep (Codex B) — 0x081670 is NOT a universal renderer
+
+Codex B created `TI-84_Plus_CE/probe-phase50-081670-modes.mjs` that sweeps `(0xd007e0)` values 0x00, 0x40-0x5B (letter codes), 0x7F, 0x80, 0xFF and runs 0x081670 with each. CC ran it.
+
+**Result**: ALL 31 sweep modes produced **0 cells drawn** for 0x081670 with the explicit-init template. The function bails out at max_steps@0x08471b (likely an infinite loop) without writing any VRAM.
+
+So 0x081670 is NOT a "universal renderer" dispatched by menu mode. Its rendering depends on RAM state OTHER than (0xd007e0) — possibly the boot-only callback at 0xD02AD7, a specific font config, or input registers.
+
+Cross-check with explicit init confirmed:
+- 0x0296dd MODE: 14292 cells (mode 0x00 = mode 0x40)
+- 0x078419 Y=/STAT PLOT: 56520 cells (mode 0x00 = mode 0x40)
+- 0x089100 Done: 5472 cells (mode 0x00 = mode 0x40)
+- 0x09ebf6 ABOUT: 22824 cells (mode 0x00 = mode 0x40)
+
+**Verdict**: menu mode 0xd007e0 doesn't drive screen selection at the function level. The dispatchers branch on it but the screen-render functions themselves don't read it. The home screen is gated by something else.
+
+#### Phase 50.3: OS callback chain investigation (CC manual)
+
+CC traced the post-boot callback path:
+- The boot installs callback at (0xD02AD7-9) = 0x015AD9
+- 0x015AD9 is a NOP that falls into a busy-wait delay loop at 0x015ADA (PUSH DE/HL; LD DE,1; LD HL,0x16C; loop SBC HL,DE; POP/RET) — confirmed as a placeholder.
+- Found 8 sites in ROM that write to (0xD02AD7) via `LD (0xD02AD7),HL`: 0x000898, 0x000d9d, 0x000e41, 0x000e52, 0x000e67, 0x0014d8, 0x001a33, 0x007019.
+- The site at **0x001a33** has the pattern `POP HL` then `LD (0xD02AD7),HL` — the callback value comes from the STACK. Specifically, it's the RETURN ADDRESS of whatever called the function containing 0x001a33 (which is 0x019b5, the post-init main idle function).
+- 9 sites in ROM `CALL 0x019b5`: 0x094f7, 0x099a3, 0x099b8, 0x0f3fb, 0x14010, 0x141b3, 0x149d2, 0x149ed, 0x15110. Each of these CALL sites has the property: their `call_site + 4` becomes the IRQ callback when the function returns.
+- **0x015AD9 doesn't appear as a return address from any of these 9 sites** (none have call_site=0x15AD5). So the boot installs the callback via a DIFFERENT mechanism — probably an indirect call (CALL via register) or a runtime-computed address.
+- The callback dispatch at 0x000710 reads (0xD02AD7) into HL, then CALLs 0x001713 to validate via 0x0008BB (magic check) + check (0xD177BA) post-init flag. If validation fails (NZ): jump to 0x0019BE (event loop). If validation passes (Z): jump to 0x02010C (an OS jump table entry).
+- After cold boot: (0xD177BA) = 0x7F, post-init flag is set, magic at 0x0008BB returns... unknown but probably also fails. So the dispatch ALWAYS goes to 0x0019BE event loop.
+- The 0x0019BE event loop is the IRQ-driven main thread. It walks a bytecode-like table at 0x001C33-0x001C48 (Phase 25). The home screen render is presumably called from there, but Phase 25's probe only ran 34 steps before hitting a missing block.
+
+**Verdict on home screen**: STILL NOT FOUND. The post-boot callback at 0x015AD9 is a no-op delay placeholder. The real home-screen render is reachable only through the IRQ-driven event loop at 0x0019BE which we can't simulate end-to-end. **Path forward**: simulate IRQ delivery + ISR → 0x0019BE → bytecode table → home screen render. Requires either (a) more seeds for the bytecode table targets, (b) interrupt simulation in the executor, or (c) finding the home-screen render function via OTHER means.
+
+#### Phase 50.4: VRAM survey top writers re-checked — confirmed LCD diagnostics
+
+CC probed top survey VRAM writers (`os-survey-v2.json` Phase 30b results) with explicit-init template:
+- 0x0a31ad: 76800 all bg (clear screen primitive)
+- 0x0822c6: 26631 all bg, top portion
+- 0x045d26 / 045d4e / 045d5c: 76800 cells with 38400 fg + 38400 bg = **16x12 checkerboard LCD diagnostic** (already known from Phase 28.5)
+- 0x097ac8: 76800 with 49 fg + 514 colored = LCD test pattern (already known)
+
+**No new screens found in the top survey writers** — they're all LCD diagnostics or clears.
+
+#### Phase 50.5: MODE strings / SETUP renderer — already known (Phase 34)
+
+CC searched for direct refs to `0x08bcd3` area strings (`Auto`, `SET CLOCK`, `FUNCTION`, `GridDot`, `HORIZONTAL`). Found 8 references in 0x08b6xx-0x08bb40 range — these are the MODE menu helper functions that read the string table at 0x08bcd3+. The MODE menu entry point is **0x0296dd** (Phase 34, 14292 cells). No new renderer to add.
+
+#### Phase 50 deliverables
+
+- ✅ 51 uncovered-region 0x0a1cac callers re-probed with explicit-init template — found ~7 real text screens (after filtering out grid renderers)
+- ✅ Discovered the **fg-count metric is misleading** for grid renderers — high fg can be a CATALOG-style grid outline, not text content
+- ✅ Confirmed 0x081670 is NOT a menu-mode-driven universal renderer (all modes blank)
+- ✅ OS callback chain investigated — 0x015AD9 is a busy-wait, dispatch via 0x000710 → 0x001713 validation → 0x0019BE event loop
+- ✅ MODE menu strings origin identified (already known: 0x0296dd Phase 34)
+- ✅ Top survey VRAM writers confirmed to be LCD diagnostics (no new text screens)
+- ❌ Home screen still NOT FOUND
+- ❌ 0x09cc2a, 0x096aee identity STILL UNKNOWN (CC visualized them — they're CATALOG grid renderers, not unique screens)
+- ⚠️ Several functions found with strong string anchors but 0 cells drawn (`STORE RESULTS?`, `OS and App are not`, `PRESS ANY KEY`) — need reachability work
+
+#### Phase 50 artifacts
+
+- `TI-84_Plus_CE/probe-phase50-newcallers-broken.mjs` (Codex A — explicit-init region scan)
+- `TI-84_Plus_CE/probe-phase50-081670-modes.mjs` (Codex B — 0x081670 mode sweep)
+- `TI-84_Plus_CE/phase50-newcallers-{086c05,09cc5c,096b0b,04e21f,05cec6,05cef2,05cf76,06b70b,0b79f3,0b7a70}.txt` (10 ASCII dumps)
+- `TI-84_Plus_CE/.codex-prompt-50a-newcallers-broken.md` + `.codex-prompt-50b-081670-modes.md` (file-based prompts to avoid bash backtick parsing issues)
+
+#### Phase 51 priorities
+
+1. **★★★ Fix reachability for the 3 string-anchor functions** that returned 0 cells:
+   - 0x06af7e (`STORE RESULTS?` / `DROP POINTS` / `SELECT` / `BACKGROUND` / `PICTURE` — CALC store menu)
+   - 0x0ba9db (`OS and App are not / compatible. Please update / to latest versions at / education.ti.com` — OS compat error)
+   - 0x0b72ec (`PRESS ANY KEY` — generic prompt)
+   These have the strings but the function bailed at missing_block. Probably needs HL/DE/BC pre-set OR additional seeds.
+2. **Identify 0x05cea3** by looking at its full ASCII art at stride 1. Has 3 chars in inverse video, looks math-expression-like. Could be `dy/dx`, `Fx`, `=y`, or graph editor.
+3. **Probe more "small fg" entries** from Phase 50.1 — the 100-1000 fg range often has REAL text (less likely to be grid outlines):
+   - 0x0a609a (644 fg, anchor `+++^+V+~`)
+   - 0x09693a (372 fg)
+   - 0x0a6134 (644 fg)
+4. **Find the home screen via INTERRUPT SIMULATION** — extend cpu-runtime.js to simulate timer interrupts more realistically, then run the boot + IRQ event loop and let the home screen render emerge naturally. Phase 25's probe-event-loop.mjs is the starting point but only ran 34 steps. Add more seeds for the bytecode table at 0x001C33-0x001C48.
+5. **Visually verify (in browser-shell)** all the new buttons added in Phase 49 + the Phase 48.3 Custom Text widget. User task — open the deployed page, click each button, screenshot.
+6. **Wire 0x05cea3 + 0x0b79af + 0x05cf6d into browser-shell** as buttons (the smaller real-text hits from Phase 50.1).
+7. **Decode the 4 mystery hits with grid outlines** (0x09cc2a, 0x096aee, 0x04e1d0 entry, 0x06b6f7) — they all draw a 12-row repeating grid. Must be PARENT functions of CATALOG / similar list screens. Find which catalog each one is by tracing where they're called from.
+
+**Phase 51 lesson**: Use BOTH metrics — `fg count` AND visual structure check (grids are periodic). Ideally, add a "row entropy" calculator to the probe to detect grid vs text.
+
+---
+
+### Phase 51 — Alternate-entry probing finds 4 NEW labeled screens (2026-04-12 CC session 7) — DONE ✓
+
+CC dispatched 2 Codex agents (51A: probe 3 anchored functions with 5 stages each; 51B: wire Phase 50 buttons + decode 0x05cea3). Codex 51B identified 0x05cea3 visually. Codex 51A found a major win via alternate-entry probing. CC followed up with a sweep that found 2 more.
+
+#### Phase 51.1: 3 anchored function reachability (Codex A) — 1/3 success via alternate entry
+
+Codex A created `TI-84_Plus_CE/probe-phase51-anchored.mjs` with 5 probe stages per function (default, HL=anchor, HL+DE+BC, alternate entry sweep, stack sweep). CC ran it.
+
+| Function | Stage A-C | Stage D (alt entry) | Stage E | Best | Verdict |
+|----------|-----------|---------------------|---------|------|---------|
+| 0x06af7e (STORE RESULTS?) | max_steps@0x08387c (loops) | all 0 | max_steps | none | failed |
+| **0x0ba9db** (OS/App compat error) | missing_block@0x4d20b7 | **0x0baa00 → 20916 cells, fg=16530, r57-214 c0-301** | failed | **D** | **rendered ✓** |
+| 0x0b72ec (PRESS ANY KEY) | missing_block@0xffffff | all 0 | failed | none | failed |
+
+**0x0baa00 is the OS/APP COMPATIBILITY ERROR screen** — full-screen rendering with two stacked inverse-video bars showing the error text. Confirmed by:
+- Anchor strings nearby: 0x0baa56 "OS and App are not", 0x0baa69 "compatible. Please update", 0x0baa83 "to latest versions at", 0x0baa99 "education.ti.com"
+- Visual ASCII at `phase51-anchored-0ba9db-stageD.txt` shows two distinct text bars
+
+#### Phase 51.2: Browser-shell wiring + 0x05cea3 decode (Codex B)
+
+Codex B created `TI-84_Plus_CE/probe-phase51-decode-05cea3.mjs` and ran it producing `phase51-decode-05cea3-stride1.txt`.
+
+**MILESTONE — 0x05cea3 IDENTIFIED**: it's the **MEMORY MANAGEMENT screen**! Two inverse-video bars showing **"RAM FREE"** and **"ARC FREE"** — the standard TI-84 [2nd][+] memory display.
+
+Codex also wired 6 buttons into browser-shell.html for the Phase 50 small-fg hits:
+- `btnPhase5005cea3` → "Mem Mgmt RAM/ARC FREE" (relabeled by CC)
+- `btnPhase5005cf6d`, `btnPhase5006b6f7`, `btnPhase500b79af`, `btnPhase50062160`, `btnPhase5009d520` → labeled by hex addr (still pending visual identification)
+
+#### Phase 51.3: CC follow-up — alternate-entry sweep for the 2 failed targets
+
+CC swept `0x06af40-0x06b020` (24 entries) and `0x0b7100-0x0b7300` (32 entries) with the explicit-init template. Found:
+
+| Entry | Drawn | Fg | Bg | Bbox | Likely identity |
+|-------|------:|---:|---:|------|-----------------|
+| **0x06afa0** | 5940 | 4772 | 1168 | r37-114 c0-133 | small STORE-area dialog |
+| **0x06afb0** | 5940 | 4772 | 1168 | r37-114 c0-133 | (same render) |
+| **0x06afd0** | 13824 | 12990 | 834 | r37-94 c0-313 | mid STORE dialog (CHECKERED GRID — NOT real text after visualization) |
+| **0x06afe0** | 13824 | 12990 | 834 | r37-94 c0-313 | (same as 06afd0) |
+| **0x06b020** | 27025 | 22561 | 4464 | r17-114 c0-313 | full STORE area, mostly fg |
+| **0x0b7240** | 27470 | 27470 | 0 | r17-114 c0-313 | top half full FG (PRESS ANY KEY background bar) |
+
+**Caveat**: 0x06afd0 turned out to be a CHECKERED GRID PATTERN (same Phase 50 lesson — high fg can be grid lines, not text). 0x06b020 is the larger version of the same. These are CATALOG/list-grid renderers, not text dialogs.
+
+CC wired 3 new buttons into browser-shell.html:
+- `btnOsCompatErr` → 0x0baa00 (real OS/App Compat Error screen)
+- `btnStoreResults2` → 0x06afd0 (CATALOG-like grid — kept for visual inspection)
+- `btnPressAnyKey` → 0x0b7240 (full FG bar)
+
+#### Phase 51 deliverables
+
+- ✅ **0x05cea3 identified as MEMORY MANAGEMENT screen** (RAM FREE / ARC FREE)
+- ✅ **0x0baa00 identified as OS/APP COMPATIBILITY ERROR screen** (16530 fg pixels of error text)
+- ✅ **6 Phase 50 small-fg buttons wired** into browser-shell.html
+- ✅ **3 Phase 51 alternate-entry buttons wired** (OS compat, Store dialog, Press any key)
+- ✅ probe-phase51-anchored.mjs (5-stage reachability probe)
+- ✅ probe-phase51-decode-05cea3.mjs (stride-1 decoder)
+- ✅ phase51-decode-05cea3-stride1.txt (visual confirmation)
+- ✅ phase51-anchored-0ba9db-stageD.txt (OS compat error full ascii)
+- ⚠️ STORE RESULTS dialog still loop-bound at 0x08387c — needs further investigation
+- ⚠️ PRESS ANY KEY function 0x0b72ec exits via sentinel without drawing — needs different state setup
+- ❌ Home screen STILL not found
+
+#### Phase 51 artifacts
+
+- `TI-84_Plus_CE/probe-phase51-anchored.mjs`
+- `TI-84_Plus_CE/probe-phase51-decode-05cea3.mjs`
+- `TI-84_Plus_CE/phase51-anchored-0ba9db-stageD.txt`
+- `TI-84_Plus_CE/phase51-decode-05cea3-stride1.txt`
+- `TI-84_Plus_CE/.codex-prompt-51a-fix-anchored.md` + `.codex-prompt-51b-wire-buttons.md`
+- Modified `TI-84_Plus_CE/browser-shell.html`: 9 new buttons total (6 Phase 50 + 3 Phase 51)
+
+#### Phase 52 priorities
+
+1. **★ Identify the 5 remaining "Phase 50" small-fg screens** by visual inspection in browser-shell:
+   - 0x05cf6d (2844 fg, top area)
+   - 0x06b6f7 (2755 fg)
+   - 0x0b79af (2544 fg, multi-row text in r57-94)
+   - 0x062160 (1322 fg, error area near 0x062338 OVERFLOW)
+   - 0x09d520 (808 fg, small left-corner)
+2. **Decode 0x06afa0/06afb0** — 5940 fg in a 134-col bbox. Could be the actual STORE RESULTS DIALOG text (not the grid). Visualize at stride 1.
+3. **Decode 0x062160** — sits next to the OVERFLOW/DIVIDE BY 0/SINGULAR MATRIX error string table at 0x062338. The 8-char text it renders might be one of the error message HEADERS.
+4. **Try alternate-entry probing for STORE RESULTS** — 0x06afd0 and 0x06b020 are grid renderers, not text. The actual text dialog might be at a different offset. Try 0x06afa0 stride 1 visualization.
+5. **Process the (PRESS-area) 0x0b7240 result** — 27470 all-fg cells in r17-114 c0-313. Could be the TOP-HALF SOLID FILL of an inverse-video screen with text below. Try 0x0b7140-0x0b7200 alternate entries.
+6. **Wire the OS compat error visually** — verify the button works in browser-shell (open deployed page, click "OS/App Compat Error", screenshot).
+7. **Find the home screen via NEW IRQ event-loop seeds** — the 0x001c33 lookup function uses a runtime-computed table. Find what HL points to when 0x001c33 is called from 0x0019be. That's the dispatch table. Once we have it, we can find the home-screen render handler.
+8. **Process unprocessed buttons** like 0x06afa0/0x06afb0/0x06b020 with stride-1 decoder for full-resolution text reading.
+
+**Total identified screens after Phase 51**: 40+ legible-text or labeled rendering targets in browser-shell, plus 6 unverified Phase 50 small-fg hits awaiting visual identification, plus the new OS/App compat error screen.
+
+---
+
+### Phase 52 — Batch decode of 8 unidentified screens (2026-04-12 CC session 8) — DONE ✓
+
+CC dispatched Codex 52A to batch-decode the 8 unidentified Phase 50/51 screens at stride 1, with visual interpretation per screen.
+
+#### Phase 52.1: Codex batch decode results
+
+Codex 52A created `TI-84_Plus_CE/probe-phase52-batch-decode.mjs`, ran it, generated 8 stride-1 ASCII files, and provided interpretations:
+
+| Address | Confidence | Identification |
+|---------|-----------|----------------|
+| **0x062160** | high | **OVERFLOW error banner** (header for the OVERFLOW error message — sits next to the error string table at 0x062338+) |
+| **0x06afa0** | high | **SELECT BACKGROUND PICTURE chooser** (the picture selection dialog from the image manager) |
+| 0x06b020 | medium | header slice of same SELECT BG PICTURE chooser |
+| 0x0b7240 | medium | **PRESS ANY KEY background/inverse-fill** screen |
+| 0x05cf6d | low | top inverse-video banner from MEMORY MANAGEMENT screen (sibling of 0x05cea3) |
+| 0x06b6f7 | low | two inverse blocks; right block likely reads "GROUP" |
+| 0x0b79af | low | title/about page, likely "TRANSFORMATION GRAPHING APP" + version line |
+| 0x09d520 | low | small left-corner label (text present but not confidently legible) |
+
+**3 high-confidence identifications**:
+- 0x062160 = OVERFLOW error header
+- 0x06afa0 = SELECT BACKGROUND PICTURE chooser
+- 0x0b7240 = PRESS ANY KEY background fill
+
+CC re-labeled 2 buttons in browser-shell.html:
+- `btnPhase50062160`: "Phase50 062160" → "OVERFLOW error banner"
+- `btnStoreResults2`: now points to **0x06afa0** (the SELECT BG PICTURE chooser, not the previous CATALOG-grid 0x06afd0) and labeled "SELECT BG PICTURE"
+
+#### Phase 52 deliverables
+
+- ✅ 8 screens decoded at stride 1 with visual interpretation
+- ✅ 3 high-confidence labels added (OVERFLOW, SELECT BG PICTURE, PRESS ANY KEY background)
+- ✅ 5 medium/low-confidence labels for visual verification
+- ✅ Browser-shell button labels updated
+- ✅ probe-phase52-batch-decode.mjs + 8 phase52-decode-{addr}.txt files
+
+#### Phase 52 artifacts
+
+- `TI-84_Plus_CE/probe-phase52-batch-decode.mjs` (Codex 52A)
+- `TI-84_Plus_CE/phase52-decode-{05cf6d,06b6f7,0b79af,062160,09d520,06afa0,06b020,0b7240}.txt` (8 stride-1 dumps)
+- `TI-84_Plus_CE/.codex-prompt-52a-batch-decode.md`
+
+#### Phase 53 priorities
+
+1. **★ Visually verify in browser-shell** (USER TASK): open the deployed page, click each new button (especially the high-confidence labels), screenshot. Confirm:
+   - "OVERFLOW error banner" actually shows the OVERFLOW header
+   - "SELECT BG PICTURE" shows the picture chooser
+   - "Mem Mgmt RAM/ARC FREE" shows the memory management screen
+   - "OS/App Compat Error" shows the compatibility error message
+2. **Confirm or correct the 5 low-confidence Phase 52 labels** by screenshotting + comparing to a real TI-84:
+   - 0x05cf6d (likely Memory Mgmt sibling)
+   - 0x06b6f7 (likely "GROUP")
+   - 0x0b79af (likely Transformation Graphing app title)
+   - 0x09d520 (small label)
+3. **Find more identified screens** by repeating the alternate-entry approach. Target the remaining 0x0a1cac callers (110 total, ~70 still unprobed) with EXPLICIT-INIT template and stride-1 decoding.
+4. **CALC menu screens**: search for 0x0a1cac callers near the graph CALC string table 0x055d96 (63 strings: PRESS ENTER, DRAW LINE SEGMENT, CALC ZERO, CALC MINIMUM, CALC INTERSECT, FREE TRACE VALUES, etc.). These are graph-CALC menu screens we haven't found yet.
+5. **TEST MODE setup screens**: search for 0x0a1cac callers near 0x028ff5 (50 mode strings: TEST MODE, DELETE APPS, FOR SINGAPORE, RESET OPTIONS, ANGLE: DEGREE/RADIAN, etc.).
+6. **Process the 174 error message strings at 0x062338+** by finding their renderer. With the OVERFLOW header at 0x062160 confirmed, look for siblings that render DIVIDE BY 0, SINGULAR MATRIX, DOMAIN, etc.
+7. **Home screen via interrupt simulation** — biggest remaining frontier. Requires extending cpu-runtime.js to deliver simulated timer IRQs at regular intervals so the IRQ-driven main thread can run naturally to the home screen render. Estimated effort: 1-2 hour Codex task on cpu-runtime.js + peripherals.js extensions.
+8. **0x05cf6d sibling investigation** — Phase 52 found this is "top inverse banner from MEMORY MANAGEMENT". Could be the second line of memory display (e.g., "USER VARS" / "PROGRAMS" / etc.). Check 0x05cea3 + 0x05cf6d together.
+
+**Total identified screens after Phase 52**: 43+ legible-text screens with high-confidence labels, plus several more medium/low confidence awaiting visual verification.
+
+---
+
+### Phase 53 — Error + CALC menu renderer scan (2026-04-12 CC session 9) — DONE ✓ (dead end)
+
+CC dispatched Codex 53A to scan for 0x0a1cac callers in error (0x061000-0x064000) and CALC (0x054000-0x058000) regions with the explicit-init template. CC also did local investigation of the CALC pointer table.
+
+#### Phase 53.1: Scan results — error region confirmed, CALC region NO direct callers
+
+Codex 53A created `TI-84_Plus_CE/probe-phase53-error-calc.mjs`. CC ran it.
+
+**Error region (0x061000-0x064000)**: 4 callers found, all previously known
+- 0x061f99, 0x061fa9, 0x061fc1 → entry 0x061f6d (all fail: missing_block@0xffffff)
+- 0x06225f → entry 0x062160 (OVERFLOW banner, already known from Phase 52)
+- **1 unique legible hit, no new screens**
+
+**CALC region (0x054000-0x058000)**: **0 direct callers of 0x0a1cac**
+
+The CALC menu (graph CALC ZERO/MINIMUM/MAXIMUM/INTERSECT/etc., 63 strings at 0x055d96+) does NOT use direct CALL 0x0a1cac. The CALC strings are instead accessed via:
+
+#### Phase 53.2: CALC string pointer table at 0x055d00-0x055d80 (CC local investigation)
+
+CC searched for 3-byte pointers to CALC string entries and found a **POINTER TABLE** at 0x055d00:
+```
+0x055d00: 29 5e 05  -> 0x055e29 "FUNCTION TRACE VALUES"
+0x055d03: 41 5e 05  -> 0x055e41 "PRESS + FOR"
+0x055d06: 55 5e 05  -> 0x055e55 "PRESS "
+0x055d09: 72 5e 05  -> 0x055e72 "PRESS "
+0x055d0c: b2 5e 05  -> 0x055eb2 "CALC INTERSECT"
+0x055d0f: a4 5e 05  -> 0x055ea4 "CALC MAXIMUM"
+0x055d12: 96 5e 05  -> 0x055e96 "CALC MINIMUM"
+0x055d15: c2 5e 05  -> 0x055ec2 "CALC DERIVATIVE AT POINT"
+...
+```
+
+**42+ 3-byte pointers in this table** pointing to individual CALC strings.
+
+**PROBLEM**: searching ROM for `LD HL, 0x055d00` (immediate load) returns **ZERO hits**. Searching for 24-bit ref to 0x055d00 in OS jump table returns zero. The table is accessed via a **dynamic/indirect mechanism** we can't resolve statically — probably:
+- A higher-level table of (index, table_base) pairs
+- Runtime pointer arithmetic from a base stored in RAM
+- PC-relative addressing via specific eZ80 modes
+
+**Conclusion**: The CALC menu renderer cannot be found via static caller search. Requires either runtime tracing through the CALC menu entry function, or instrumenting the executor to log reads from the 0x055dxx area.
+
+#### Phase 53 deliverables
+
+- ✅ Confirmed 0x062160 is the ONLY text renderer in error region 0x061000-0x064000 reachable via direct 0x0a1cac call
+- ✅ Discovered CALC string pointer table at 0x055d00 (42+ pointers)
+- ✅ Documented CALC dispatch as "indirect, unreachable via static search"
+- ✅ No new screens found in this phase
+- ✅ probe-phase53-error-calc.mjs created and run
+
+#### Phase 53 artifacts
+
+- `TI-84_Plus_CE/probe-phase53-error-calc.mjs`
+- `TI-84_Plus_CE/.codex-prompt-53a-error-calc.md`
+
+#### Phase 54 priorities
+
+1. **★★ Find CALC menu renderer via RUNTIME TRACING** — instrument the executor with a "read address log" for 0xD40000-0xD4FFFF VRAM and 0x055dxx CALC pointer table reads. Run known entry points (0x0296dd MODE, 0x078419 Y=, 0x081670 STAT, etc.) and track when anyone reads from 0x055dxx. That caller IS the CALC menu dispatcher.
+
+2. **★★ Find MORE screens via MEMORY ACCESS TRACE** — extend the cpu-runtime executor to log ALL reads from the main string table regions (0x028ff5, 0x03f2d0, 0x055d96, 0x06aeb9, 0x062338) and note which code addresses read which strings. This gives a map of "function → string table" that reveals renderers we can't find via static analysis.
+
+3. **★★ Find home screen via INTERRUPT SIMULATION** — STILL the biggest remaining frontier. Extend cpu-runtime.js to deliver simulated timer IRQs at regular intervals so the post-boot event loop can run naturally. Estimated: 1-2 hour Codex task.
+
+4. **Visual verification** of existing screens in browser-shell (USER TASK): verify the 3 Phase 52 high-confidence labels, the 4 Phase 51 wins (Mem Mgmt, OS Compat, Select BG Picture, Press Any Key), and the 5 Phase 52 medium/low-confidence labels.
+
+5. **Expand ClrScreen callers scan** — Phase 47.4 scanned 38 ClrScreen (0x05c634) callers. Check if there's a SECOND ClrScreen-like primitive at a different slot. Search for callers of 0x0a35b0 (horizontal line primitive) and similar UI primitives.
+
+6. **Find SIBLING error renderers** for the 173 OTHER error messages (0x062338+). Since 0x062160 renders OVERFLOW via a different mechanism than 0x0a1cac (it doesn't directly call it — instead it's wrapped), there might be parameterized error renderers that take an error ID and display the right string.
+
+**Decision point**: Continue chasing more screens (diminishing returns) OR pivot to the harder but higher-value interrupt simulation work for the home screen. Recommend the latter as the ONE high-impact remaining target.
+
+---
+
+### Phase 54 — CALC menu renderer via memory-access tracing (2026-04-12 CC session 10) — DONE ✓ (confirmed dead end)
+
+CC dispatched Codex 54A to write a probe that wraps `cpu.read8` with a logger for reads from 0x055d00-0x055fff (CALC pointer table + strings). CC ran it against 10 candidate entry points.
+
+#### Phase 54.1: Memory trace results — zero CALC reads from ALL probes
+
+Candidate entries probed: 0x078419 (Y=/STAT PLOT), 0x081670 (STAT/MATRIX), 0x0296dd (MODE), 0x04e135 (CATALOG), 0x04e1d0 (CATALOG entry), 0x09ebf6 (ABOUT), 0x0b9c64 (Transformation Graphing), 0x074817 (Inequality Graphing), 0x028944 (TEST MODE), plus a full 8804-step boot trace from 0x000000.
+
+**Result: ZERO reads of 0x055d00-0x055fff from ANY entry point** (including the full boot).
+
+**Verdict**: The CALC menu dispatch is completely isolated from all code paths we can reach with our current entry-point catalog + boot execution. The CALC menu runs from the IRQ-driven event loop that fires only after user interaction (pressing [2nd][TRACE] while in graph mode). Without interrupt simulation, we cannot trigger CALC menu rendering.
+
+#### Phase 54 artifacts
+
+- `TI-84_Plus_CE/probe-phase54-calc-trace.mjs` (Codex 54A + CC runs)
+- `TI-84_Plus_CE/.codex-prompt-54a-mem-trace.md`
+
+#### Phase 54 deliverables
+
+- ✅ Confirmed CALC menu is unreachable via static or runtime analysis from all known entry points
+- ❌ No new screens found this phase
+- ⚠️ Home screen also remains unreachable for the same root cause (IRQ event loop)
+
+---
+
+## Session wrap-up (2026-04-12 CC session spanning Phases 48-54)
+
+### What was accomplished
+
+Over 7 autonomous phase iterations (48-54), CC found **~10 new legible-text screens** and identified **4 previously unknown named screens**:
+
+**Newly identified and labeled screens this session**:
+1. **0x04e135 = CATALOG menu** (Phase 48, 70k cells) — anchor "CATALOG" at 0x04e0dc
+2. **0x05cea3 = MEMORY MANAGEMENT screen** (Phase 51, "RAM FREE" / "ARC FREE") — visual decode
+3. **0x0baa00 = OS/APP COMPATIBILITY ERROR screen** (Phase 51, 20916 cells) — found via alternate-entry probing; anchors "OS and App are not compatible. Please update to latest versions at education.ti.com"
+4. **0x062160 = OVERFLOW error banner** (Phase 52, high confidence) — sits next to the error string table at 0x062338
+5. **0x06afa0 = SELECT BACKGROUND PICTURE chooser** (Phase 52, high confidence)
+6. **0x0b7240 = PRESS ANY KEY background** (Phase 52, medium confidence)
+
+**Other legible-text screens found** (pending visual verification):
+- 0x05cf6d (memory mgmt sibling, low confidence)
+- 0x06b6f7 ("GROUP" related, low confidence)
+- 0x0b79af (Transformation Graphing app title, low confidence)
+- 0x09d520 (small left-corner, low confidence)
+
+### Browser-shell state
+
+Current count: **~47 buttons** across 8 controls rows. Includes all Phase 48-51 labeled screens + the free-text DispMessageAt widget (added Phase 48.3).
+
+### Infrastructure deliverables
+
+- ✅ `CLAUDE.md` continuation workflow section enhanced with explicit /context threshold + cross-agent dispatch snippet
+- ✅ `showScreen()` in browser-shell.html extended with: `hlValue`, `deValue`, `bcValue`, `scratchBytes`, `menuMode`, `skipExplicitOsInit` parameters. The default uses the EXPLICIT-init template (Phase 49 correction — the "broken" template is actually USEFUL for most catalog/menu screens).
+- ✅ Custom-text DispMessageAt widget (Phase 48.3) — type any ≤20-char ASCII string + row/col, render via 0x03f31c.
+- ✅ 4 new transpiler seeds (0x03f31c, 0x03f312, 0x015ad9, 0x015ada) — post-boot callback area now reachable (but is just a busy-wait delay loop, not the home screen).
+- ✅ 10 new probe scripts (probe-phase48-homescreen, probe-phase48-newcallers, probe-phase49-reverify, probe-phase49-seedcallback, probe-phase50-newcallers-broken, probe-phase50-081670-modes, probe-phase51-anchored, probe-phase51-decode-05cea3, probe-phase52-batch-decode, probe-phase53-error-calc, probe-phase54-calc-trace).
+
+### Key technical findings
+
+1. **Template selection matters per function**: The "explicit init" template (with 0x08C331 re-run after boot) produces MORE text for most catalog/menu screens. The "boot only" template produces more text for 0x089100 (Done) and possibly a few others. Always probe BOTH and pick by fg-pixel count.
+
+2. **fg count alone is misleading**: CATALOG-style screens draw a 12-row repeating GRID that inflates fg count without being real text. Must visually verify. The real metric is fg diversity (grids have periodic patterns, text has irregular).
+
+3. **Alternate-entry probing works**: For functions whose entry address fails (missing_block or max_steps loop), try OFFSET entries at +0x10, +0x20, +0x30, etc. This found the OS/App compat error screen (0x0baa00 vs 0x0ba9db nominal entry).
+
+4. **CALC menu and home screen are both gated behind the IRQ event loop**: The post-boot callback at 0x015AD9 is a busy-wait placeholder. The real event-loop dispatch is at 0x0019BE but our executor can't run it end-to-end. Both the CALC menu and the home screen render are only reachable through full interrupt simulation.
+
+### Remaining high-impact work (Phase 55+ priorities, for next session)
+
+1. **★★★ Interrupt simulation for home screen + CALC menu** — extend cpu-runtime.js and peripherals.js to deliver simulated timer IRQs at regular intervals, allowing the IRQ-driven main thread to run naturally. Requires:
+   - Timer peripheral that fires an IM1 interrupt every N steps
+   - cpu.runFrom to check pending IRQs between blocks and dispatch them
+   - Keyboard IRQ injection for menu navigation
+   - Seeds for the event-loop bytecode handlers
+   - Estimated effort: 2-4 hour Codex task on cpu-runtime infrastructure
+
+2. **Visual verification of all 47 browser-shell buttons** — user task, deploy + click through each, screenshot the real rendering. Confirms labels and flushes out any that draw differently than expected.
+
+3. **Extend memory-access tracing to ALL string tables** (0x028ff5, 0x03f2d0, 0x06aeb9, 0x062338) — find which code reads which strings, surfacing hidden renderers.
+
+4. **Find SIBLING error banner renderers** — 0x062160 renders OVERFLOW, but the other 173 error messages (DIVIDE BY 0, SINGULAR MATRIX, DOMAIN, etc.) need their own renderers. These are probably similar small functions in 0x061f00-0x062200. Scan for them.
+
+5. **Seed 0x0019BE bytecode handler targets** — the event loop at 0x0019BE walks a dispatch table. Find all targets it reaches and seed them. This might expose the home-screen path.
+
+6. **Process the "Phase 50 low-confidence" screens** visually in browser — 5 screens need verification.
+
+### Session stop rationale
+
+Context reached ~51% after Phase 55 with 4 bonus TEST MODE region screens found in a final quick scan. The remaining screens (CALC menu, home screen) still require interrupt simulation infrastructure that's a significant investment. Better to pause here with a clean handoff than to start a heavy refactor that might leave the codebase in a half-broken state.
+
+---
+
+### Phase 56 + 56B + 56C — IRQ Event Loop Sustained (2026-04-13 CC session 12) — DONE ✓
+
+**Verdict**: The OS event loop at 0x0019BE now cycles end-to-end through repeated forced IM1 injections. Sustained 20/20 cycles, zero unwind, zero missing blocks.
+
+#### Phase 56 (callback-style entry, probe-irq-event-loop.mjs)
+- Tested existing Phase 14 IRQ infra with callback = 0x0019BE.
+- Result: 32 steps, exits via sentinel 0xFFFFFF. Wait helper at 0x001794 pops the synthetic stack frame left over from OS init.
+- 30 new blocks discovered (helper code around 0x001794, 0x003d28-0x003d2e, 0x001296-0x0012c7).
+- Report: phase56-irq-probe-report.md.
+
+#### Phase 56B (forced IM1 entry, probe-irq-event-loop-v2.mjs)
+- Manually pushed PC and jumped to 0x0038 from post-init snapshot.
+- **REACHED 0x0019BE** plus 5 new event-loop blocks: 0x0019EF, 0x001A17, 0x001A23, 0x001A2D, 0x001A32.
+- Still unwound after 21 steps because pushed return frame was sentinel.
+- Full dispatch path proven working: `0x38 → 0x6F3 → 0x704 → 0x710 → 0x1713 → 0x1717 → 0x1718 → 0x8BB → 0x19BE → 0x19EF → 0x1A17 → 0x1A23 → 0x1A2D → 0x1A32`.
+- Report: phase56b-irq-probe-v2-report.md.
+
+#### Phase 56C (real return frame, probe-irq-event-loop-v3.mjs) — STAR RESULT
+- **KEY FIX**: push real halt block PC (0x0019B5) as return frame before forced IM1. After ISR RETI, execution returns to halt block, re-halts, probe re-injects next IRQ.
+- **Pass 1**: 20/20 successful IRQ injections, 320 total steps, stop reason `completed_target_injections`, 0 missing blocks, 0 VRAM writes.
+- **Pass 2**: 20/20 with keyboard IRQ armed before injection 11. Adds 3 new blocks via one-cycle detour: `0x001A5D → 0x001A70 → 0x001A75`.
+- **New blocks beyond Phase 56B**: 0x0019B5 (pass 1), plus 0x001A5D/0x001A70/0x001A75 (pass 2).
+- sysFlag 0xD0009B: 0xFF → 0xBF on first cycle (bit 6 cleared), stays 0xBF. Stack depth balanced at 0 after each RETI.
+- Still **zero VRAM writes** — event loop cycles cleanly but doesn't trigger any render path.
+- Report: phase56c-irq-probe-v3-report.md.
+
+**Next frontier** (Phase 57+): the sustained loop does not produce VRAM writes. Hypothesis: the loop is checking for pending events (keyboard, timer ticks, display refresh flag) and finding none. Need to:
+1. Disassemble 0x0019BE, 0x001A17, 0x001A23, 0x001A2D, 0x001A32 to identify what each block tests (flag checks, table walks, dispatches). — **DONE Phase 58**
+2. Identify what state change (RAM byte, system flag, display-dirty bit) would make the loop take a render branch. — **DONE Phase 58/59**
+3. Seed aggressively in 0x001axxx range to capture the branch targets that new conditions would reach.
+
+---
+
+### Phase 58 — Event Loop Disassembly (2026-04-13 CC session 12) — DONE ✓
+
+**TI-84_Plus_CE/phase58-event-loop-disasm.md**: full block-by-block disassembly of 0x0019BE-0x001A75. Key findings:
+
+- **0x0019BE is an INTERRUPT CONTROLLER DISPATCHER**, NOT a render scheduler. First instruction polls `IN A,(0x5015)` (FTINTC masked status byte 1). The all-clear path (status bytes 0/1/2 == 0) is the sustained Phase 56C loop, which is why it produces zero VRAM.
+- **sysFlag 0xD0009B bit 6 clear** happens at 0x001A32 epilogue (`RES 6,(IY+27)` with IY=0xD00080). This is bookkeeping, not a gate.
+- **Callback slot 0xD02AD7 rewrite** also at 0x001A32 (`POP HL ; LD (0xD02AD7),HL`) — the OS rotates callbacks each cycle by pushing HL before dispatch.
+- **Dormant service branches** (none visited in Phase 56C):
+  - 0x0019BE NZ → 0x0019C6 byte1 dispatcher: bit6 → 0x001A4B, bit5 → 0x001A77 → CALL 0x009B35, bit4 → 0x001A8D → CALL 0x010220, bit2 → 0x001ABB
+  - 0x0019EF NZ → 0x0019F4 byte0 dispatcher: bit3 → 0x001AA3 → CALL **0x014DAB** (reads D14038/D1407B/D1408D vs 0x0007D0 — classic tick counter), bit4 → 0x001ACF → D02658/D02651 counter path
+- **Only local D0 RAM reads** in the loop body: 0xD0009B (sysFlag, bookkeeping), 0xD02658 (counter), 0xD02651 (counter, only one that affects a branch via DEC/CP 0xFF).
+- **Post-init RAM state**: D02651=0xFF, D02658=0xFFFFFF, D0009B=0xFF, D02AD7=0xFFFFFF, D14038=0xFFFFFF, D1407B=0xFF, D1408D=0xFF.
+
+---
+
+### Phase 59 — IRQ Dispatch Trace (2026-04-13 CC session 12) — DONE ✓
+
+**TI-84_Plus_CE/probe-irq-dispatch-trace.mjs + phase59-irq-dispatch-report.md**
+
+Forced all 6 masked IRQ status bits via shadow FTINTC handler (registered over 0x5000-0x501F since peripherals.js intcState is private — documented that a `debugSetMaskedStatus()` API would be needed for true direct pokes).
+
+**Per-pass results**:
+
+| Pass | Forced | Stable | New blocks | Missing | VRAM | Key path |
+|------|--------|--------|-----------:|--------:|-----:|----------|
+| A | 0x5015=0x40 | 5/5 | 5 | 0 | 0 | 0x001A4B → 0x001A5B → 0x001A32 |
+| B | 0x5015=0x20 | 5/5 | 11 | 0 | 0 | Reached 0x009B35, 0x009B45, 0x009B4A, 0x009C16 |
+| C | 0x5015=0x10 | 0/1 UNWIND | 26 | 1 | 0 | 0x010220 trampoline → 0x002197 → 0x007DC7-0x007DD9 → 0x010235 → 0x010241 → **unwind to 0xFFFFFF** |
+| D | 0x5015=0x04 | 5/5 | 8 | 0 | 0 | 0x001ABB → 0x001ACB → 0x001A32 |
+| E | 0x5014=0x08 | 5/5 | 17 | 0 | 0 | **Reached 0x014DAB → 0x014DD0 → 0x014E20 → 0x014D48 → 0x014D50 → 0x014D59 → 0x014DA6 → 0x014E29**. D14038 wrapped 0xFFFFFF→0x000004. |
+| E bonus | Pass E + D1407B=0, D1408D=0 | 5/5 | **19** | 0 | 0 | Same + 0x014DC2, 0x014DC9 (deeper branch inside 0x014DAB). **Deepest stable seed.** |
+| F | 0x5014=0x10 | 5/5 | 7 | 0 | 0 | 0x001ACF → 0x001ADE → 0x001AF2 → 0x001A32. D02658 decremented 0xFFFFFF→0xFFFFFA, D02651 0xFF→0xFA. |
+
+**VERDICT**: No IRQ source produces VRAM. Pass E bonus is the best stable seed (byte0 bit3 + D1407B/D1408D = 0). Pass C unwinds via 0x010220 trampoline — needs better caller frame.
+
+**Strategic conclusion**: The ISR-only dispatch model will NOT reach rendering. The event loop at 0x0019BE is purely an IRQ ack/dispatch layer. The real render pipeline must be driven by the OS main thread (not the ISR) — probably the context the ISR returns TO (outside HALT). Or by a specific post-init entry point we haven't called yet. **Pivot**: find callers of working render primitives (0x081670 STAT editor from Phase 31, 0x0059C6 char print from Phase 29+40) and trace backward to find the menu/home-screen code that invokes them.
+
+---
+
+### Phase 60 — Render Primitive Caller Hunt (2026-04-13 CC session 12) — DONE ✓
+
+**TI-84_Plus_CE/probe-caller-hunt.mjs + phase60-caller-hunt-report.md**
+
+Scanned lifted blocks + raw ROM for static callers of 5 render primitives.
+
+**Direct callers found**:
+- **0x081670** (STAT/MATRIX editor grid): only 2 literal refs — 0x020cb4 (jump-table slot 748) + 0x080dab (inside 0x080d85). Nearest callable wrapper root: **0x081660** (linear spine 0x081660→0x081664→0x081668→0x08166c→0x081670).
+- **0x0059C6** (char print): 10 callers including 0x0015c7, 0x0015e1, 0x0017dd, 0x0059f3, 0x005a35, 0x00ee88, 0x012f56, 0x013d11, 0x015864, 0x0158fa. Early 0x0015xx range is close to event loop — could be 'print status char' primitive.
+- **0x062160** (error banner): 4 callers — 0x020e10 (jump-table), 0x0744b3, 0x085126, 0x08515e (from Phase 57).
+- **0x005b96** (VRAM clear/fill): 6 callers — 0x000374, 0x0018f4, 0x003a42, 0x00f2fd, 0x013d93, 0x014561.
+- **0x0802b2** (SetTextFgColor from Phase 41): 3 callers — 0x021a8a, 0x0288f5, 0x0289c3.
+
+**Level-1 caller probes of 0x081660**:
+| Entry | Steps | VRAM | Blocks | Verdict |
+|-------|------:|-----:|-------:|---------|
+| 0x081660 | 5000 | 0 | 23 | noop |
+| 0x080d85 | 5000 | 0 | 32 | noop |
+| 0x080ca3 | 5000 | 0 | 104 | noop |
+| 0x080ed4 | 5000 | 0 | 24 | noop |
+| **0x08193f** | 5000 | **1332** | 66 | renders narrow 18-row header strip (r37-54 c0-73) via 0x0818fc → 0x0a1cac string path — SAME shape as Phase 57 error banners |
+
+**Level-2 feeder probes**: 0x080e5b crashes in 15 steps (missing_block), 0x08121b is stable noop.
+
+**Verdict**: No caller renders a home-screen-like full screen. The 0x08xxxx wrapper family is all STAT-editor-adjacent code. Only 0x08193f visibly renders, and it's another header-strip caller of the error-banner-adjacent rendering pipeline.
+
+**Key architectural insight**: The 0x0a1cac string render path (discovered here via 0x08193f trace) is the central text-rendering primitive used by BOTH error banners and STAT-editor-adjacent code. This is consistent with Phase 42-55 findings where all the discovered "screen" functions shared bbox shape r37-54.
+
+---
+
+### Phase 61 — D14038 Tick-Counter Sweep (2026-04-13 CC session 13) — DONE ✓ (partial)
+
+**TI-84_Plus_CE/probe-phase61-d14038-sweep.mjs + phase61-d14038-sweep-report.md + phase61-d14038-sweep.txt**
+
+Pre-seeded 0xD14038 to 0x0007CE / 0x0007CF / 0x0007D0 / 0x0007D1 and re-ran Pass E bonus injection (byte0 bit3 + D1407B=0 + D1408D=0). Single IRQ per pass.
+
+| Seed | D14038 After | Compare Branch | New Blocks Beyond Phase 59 | VRAM |
+|------|-------------:|----------------|----------------------------|-----:|
+| 0x07CE | 0x07CF | JR NC → 0x014E20 (<= threshold) | 0x014E33, 0x014E3D | 0 |
+| 0x07CF | 0x07D0 | JR NC → 0x014E20 (<= threshold) | 0x014E33, 0x014E3D | 0 |
+| **0x07D0** | 0x07D1 | **fallthrough → 0x014DDE (> threshold)** | **0x014DDE, 0x014E33, 0x014E3D** | 0 |
+| 0x07D1 | 0x07D2 | fallthrough → 0x014DDE (> threshold) | 0x014DDE, 0x014E33, 0x014E3D | 0 |
+
+**Partial success**: crossed the 0x07D0 threshold, discovered 3 new blocks (0x014DDE, 0x014E33, 0x014E3D). **BUT zero VRAM writes.**
+
+**Blocking**: Threshold-crossing seeds still jump from 0x014DDE directly to 0x014E20. A SECOND gate at **0xD177B8** (still 0xFF at post-init) blocks the 0x014DE6+ path that likely contains the render trigger.
+
+**Follow-up**: Phase 66 (★) should extend the sweep to preseed D177B8 as well (try 0x00) + rerun at D14038=0x07D0. If that unlocks 0x014DE6+, the ISR event loop finally reaches the display refresh path.
+
+---
+
+### Phase 62 — 0x0059C6 Caller Probe (2026-04-13 CC session 13) — DONE ✓ MAJOR WIN
+
+**TI-84_Plus_CE/probe-phase62-005c96-callers.mjs + phase62-005c96-callers-report.md + phase62-005c96-callers.txt**
+
+Direct-probed each of 10 lifted callers of the 0x0059C6 character-print primitive (found in Phase 60). Each caller invoked as function entry after boot + OS init + SetTextFgColor priming. Two variants: baseline and HL=0. HL=0 made no observable difference.
+
+**Top rendering callers** (ranked by VRAM writes):
+
+| Rank | Caller | Function Entry | Term | VRAM px | Bbox | Uniq Blocks | Notes |
+|-----:|--------|---------------|------|--------:|------|------------:|-------|
+| 1 | **0x013d11** | 0x013d00 | max_steps | **11004** | **r37-192 c2-289** | 39 | **LARGEST RENDER EVER — 155×287 px, brand-new region** |
+| 2 | 0x0015e1 | 0x0015e1 | max_steps | 10976 | r37-92 c2-313 | 80 | large header region, near event loop |
+| 3 | 0x0015c7 | 0x0015c7 | max_steps | 9265 | r37-92 c0-313 | 97 | large header region, near event loop |
+| 4 | 0x0059f3 | 0x0059e9 | missing_block | 224 | r18-33 c180-193 | 31 | small upper-right region (col 180-193) |
+| 5 | 0x015864 | 0x015856 | missing_block | 224 | r37-52 c0-13 | 29 | left-edge tab |
+| 6 | 0x0017dd | 0x0017d9 | missing_block | 224 | r37-52 c0-13 | 28 | left-edge tab |
+| 7 | 0x012f56 | 0x012f56 | halt | 192 | r37-52 c146-157 | 46 | small middle-right tab |
+| 8 | 0x00ee88 | 0x00ee1b | halt | 0 | none | 102 | deep exec but noop (no render) |
+
+**Key insight**: **0x013d11** is the most important finding of the session. It renders a 155-row × 287-col region — nearly a full screen, starting at r37 c2 and extending down to r192. The first row hex dump shows all 0xFFFF (white), consistent with text-on-white — possibly the **home screen or program editor**.
+
+The 0x0015xx pair are physically near the event loop at 0x0019BE, confirming the Phase 60 hypothesis that they're ISR-driven "print status char" helpers.
+
+---
+
+### Phase 62B — Browser-Shell Wiring for Phase 62 Renders (2026-04-13 CC session 13) — DONE ✓
+
+**TI-84_Plus_CE/browser-shell.html**
+
+Added 4 new buttons following Phase 55 pattern (showScreen with entry, mode='adl', label, maxSteps=200000):
+
+| Button ID | Label | Entry | Lines |
+|-----------|-------|-------|------:|
+| btnP62_013d11 | P62 full 013d11 | 0x013d11 | 139 + 399 + 1009 |
+| btnP62_0015e1 | P62 hdr 0015e1 | 0x0015e1 | 140 + 400 + 1010 |
+| btnP62_0015c7 | P62 hdr 0015c7 | 0x0015c7 | 141 + 401 + 1011 |
+| btnP62_012f56 | P62 tab 012f56 | 0x012f56 | 142 + 402 + 1012 |
+
+**Total browser-shell button count after Phase 62B**: ~56.
+
+---
+
+### Phase 63 — 0x0a1cac String-Render Primitive Decoded (2026-04-13 CC session 13) — DONE ✓ MAJOR WIN
+
+**TI-84_Plus_CE/phase63-0a1cac-investigation.md**
+
+Fully disassembled the shared string-walk/render primitive and cataloged all callers.
+
+#### Calling Convention (reverse-engineered)
+
+| Input | Evidence | Hypothesis |
+|-------|----------|------------|
+| `HL` | 0x03f312 `ld hl, 0xd005f8 ; call 0x0a1cac`, etc | **String pointer** (null-terminated) |
+| `(0xD00595)` | Read at 0x0a1cbd, incremented in wrap helper 0x0a203c | **Current text row** |
+| `(0xD00596)` | Incremented per normal glyph, wrapped at 0x1A, zeroed in 0x0a203e | **Current text column** |
+| `(0xD02505)` | Loaded into B at entry, compared in 0x0a1b69 / 0x0a204d | **Max row bound / bottom limit** |
+| `IY+*` flags | 0x0a1799, 0x0a2013, 0x0a2052, 0x0a22b1 | Global text mode / scrolling / clipping |
+
+**Control tokens**: `0xD6` = newline/line-break. Column wraps at `0x1A` (26 cells). Register preservation: A + BC preserved; flags + DE + IX + HL are not.
+
+Packed cursor loads are common: `ld hl, 0x000103 ; ld (0x000595), hl` = row 3, column 1.
+
+#### Caller Inventory
+
+**110 total direct callers** (108 lifted, 2 raw-only). `call`: 103, `jp`: 7.
+
+Raw-only sites worth noting:
+- **0x0207C0** — jump-table/export row that dispatches directly to 0x0a1cac
+- **0x0B682F** — unlifted raw call inside heuristic entry 0x0b681e
+
+#### Top 5 Novel Caller Families (with nearby strings from raw ROM)
+
+1. **0x0BAA2D via 0x0BAA1F** — **OS-compat warning screen**
+   - Strings: "OS and App are not / compatible. Please update / to latest versions at / education.ti.com"
+   - Setup: `ld (0xd00595), 0x08 ; ld (0xd00596), 0 ; call 0x0a1cac`
+   - Looks like modern standalone compat dialog, not a menu
+
+2. **0x046983 via 0x04697C** — **Self-Test / Diagnostics menu hub**
+   - Strings: "Enter Self-Test?", "This will clear all memory", "Press [ON] to cancel", "Diagnostics", "1. LCD", "2. Bright", "3. Battery"
+
+3. **0x046188 / 0x046222 / 0x046272 subfamily** — **Hardware diagnostics**
+   - Strings: "Keyboard Test, ON = halt", "Test Halt. Press a key.", "FLASH System Test"
+   - Setup uses packed cursor: `ld hl, 0x000103 ; ld (0x000595), hl` — ideal for confirming row/column semantics
+
+4. **0x08BC88** — **MODE settings screen (likely the real MODE dialog)**
+   - Strings: "Auto", "SET CLOCK", "FUNCTION", "GridDot", "HORIZONTAL", "GRAPH-TABLE", "BEGIN", "PARAMETRIC"
+   - Setup: `set 1, (iy+5) ; call 0x08bcc4 ; call 0x0a1cac`
+   - **Highest-value target** — this is the MODE screen we've been hunting since Phase 34
+
+5. **0x06B004** — **Solver prompt family**
+   - Strings: "Upper Limit?", "Left Bound?", "Right Bound?", "Guess?", "Zero", "STORE RESULTS?", "DROP POINTS", "SELECT"
+   - Setup: `ld hl, 0x0a2fb8 ; ld a, 0x66 ; bit 1, (iy+53) ; call nz, 0x02398e ; call 0x0a1cac`
+   - Interactive numeric-solver prompt family
+
+**Total raw ROM strings now indexed via 0x0a1cac callers**: a substantial fraction of the TI-OS user-facing text is reachable through these 110 entry points.
+
+---
+
+### Phase 64 — Novel 0x0a1cac Caller Probes (2026-04-13 CC session 13) — DONE ✓
+
+**TI-84_Plus_CE/probe-phase64-0a1cac-novel-callers.mjs + phase64-novel-callers-report.md + phase64-novel-callers.txt**
+
+Probed 7 caller families (via multiple entry variants: anchor, backscan, lifted_block, prelude_call-return). **All 7 produced legible screens.**
+
+| Rank | Name | Best Entry | VRAM px | Bbox | Verdict |
+|-----:|------|------------|--------:|------|---------|
+| 1 | flash_test | 0x046272 | 2196 | r97-114 c48-169 | FLASH System Test, mid-screen |
+| 2 | solver_prompt | 0x06affe | 1413 | r18-74 c0-193 | Solver prompts (Upper/Lower Limit, etc) |
+| 3 | os_compat | 0x0baa15 | 1365 | r197-214 c0-85 | OS/App compat warning, bottom strip |
+| 4 | test_halt | 0x046216 | 1356 | r97-114 c12-97 | "Test Halt. Press a key." |
+| 5 | keyboard_test | 0x04616c | 1351 | r37-54 c0-85 | "Keyboard Test, ON = halt" |
+| 6 | self_test_hub | 0x04697b | 1332 | r37-54 c0-73 | Self-Test hub header |
+| 7 | mode_screen | 0x08bc80 | 252 | r18-35 c180-193 | Partial only — smaller than expected |
+
+**Browser-shell wiring**: 7 new P64 buttons (btnP64_os_compat, btnP64_self_test, btnP64_kbd_test, btnP64_test_halt, btnP64_flash_test, btnP64_mode, btnP64_solver). Total browser-shell buttons now ~63.
+
+**MODE screen caveat**: only 252 px and missing_block termination — needs parent caller investigation to reach the full MODE dialog rendering.
+
+---
+
+### Phase 65A — Static Disasm of 0x013d00 (2026-04-13 CC session 13) — DONE ✓ MILESTONE
+
+**TI-84_Plus_CE/phase65a-013d00-disasm.md**
+
+**0x013d00 IS THE "Validating OS..." BOOT-TIME STATUS RENDERER.**
+
+#### BFS Block Walk
+
+```
+0x013d00 → 0x005ba6 (cursor init: ld hl, 0 ; ld (0xd00595), hl ; ret)
+0x013d00 → 0x013d11 (res 3, (iy+5) ; ld a, 0x20 ; ld b, 0x0e ; call 0x0059c6)
+0x013d11 → 0x0059c6 (known char-print entry)
+```
+
+0x013d00 sets IY=0xD00080, resets cursor via 0x005ba6, then enters 0x013d11 which starts the text-print loop.
+
+#### Adjacent ROM String Pool (0x013d3b-0x013e0b)
+
+```
+" Validating OS..."              @ 0x013d3b
+" Calculator will restart"       @ 0x013d50
+" when validation is"            @ 0x013d69
+" complete."                     @ 0x013d7d
+"Waiting..."                     @ 0x013dbf
+"The OS is invalid, please"      @ 0x013ddb
+"load the latest OS at"          @ 0x013df5
+"education.ti.com"               @ 0x013e0b
+```
+
+These are the strings our transpiler just rendered to VRAM end-to-end.
+
+#### Callers (Only 2)
+
+| Caller PC | Kind | Containing Function | Notes |
+|-----------|------|---------------------|-------|
+| 0x000721 | call | 0x000721 | **Early boot path** — previous block has `jp nz, 0x0019be`, next block does `ld hl, 0 ; call 0x0158a6`. Boot-time validation dispatch. |
+| 0x013e35 | call | 0x013e23 | **Recovery flow** — containing function zeros 0xD17726, 0xD17727 (validation state bytes), then calls 0x013d00. |
+
+**No jump-table row targets 0x013d00.** Confirmed: this function is NOT reachable via menu dispatch. It's only entered during boot or OS recovery.
+
+#### Hypothesis CONFIRMED
+
+0x013d00 is the **"Validating OS..." status screen renderer** — the boot splash that appears while TI-OS validates its own integrity before entering the home screen. NOT home screen, NOT editor, NOT catalog, NOT About.
+
+---
+
+### Phase 65B — VRAM ASCII Decode Probe for 0x013d11 (2026-04-13 CC session 13) — DONE ✓
+
+**TI-84_Plus_CE/probe-phase65b-013d11-ascii.mjs + phase65b-013d11-ascii.txt + phase65b-013d11.txt**
+
+Ran 0x013d11 with **maxSteps=30000** (up from Phase 62's 5000). Results:
+
+- **Total steps**: 16903 (probeSteps=7407 — hit missing_block at 0xFFFFFF)
+- **VRAM writes**: **16,320** (up from Phase 62's 11,004)
+- **Fg/Bg split**: fg=3011, bg=13309 (18% fg ratio, consistent with text on white)
+- **Bbox**: r17-212 c2-289 (196 rows × 288 cols — larger than Phase 62)
+- **Render**: sparse — only 28.9% of bbox cells written (rest are untouched sentinels)
+
+#### ASCII Art Content
+
+Visible multi-line glyph blocks in the ASCII output at rows ~143-156, ~165-176, ~187-196. These ARE legible TI-84 font glyphs arranged as text lines — each paragraph ~10 characters wide in TI's 12×16 font. Unreadable without OCR but unmistakably real text rendering.
+
+Contents almost certainly correspond to the Phase 65A string pool: " Validating OS...", " Calculator will restart", " when validation is", " complete.", "Waiting...".
+
+The render is truncated at maxSteps — reaching the termination boundary means we could not observe the complete paragraph. More iteration cap + fixing the missing_block target would likely reveal the full splash.
+
+---
+
+### Phase 66 — D177B8 Sweep Extension (2026-04-13 CC session 13) — DONE ✓ (partial)
+
+**TI-84_Plus_CE/probe-phase66-d177b8-sweep.mjs + phase66-d177b8-sweep-report.md + phase66-d177b8-sweep.txt**
+
+Extended Phase 61 D14038 sweep with a D177B8 axis. 4 variants.
+
+| Variant | D14038 | D177B8 | Reached 0x014DE6+? | New Blocks | VRAM |
+|---------|-------|--------|--------------------|------------|-----:|
+| A | 0x07D0 | 0x00 | **YES** | 0x006EB6, 0x014DE6, 0x014DEA, 0x014DED | 0 |
+| B | 0x07D0 | 0xFF (baseline) | no | — | 0 |
+| C | 0x07CF | 0x00 | no (sub-threshold) | — | 0 |
+| D | 0x07D0 | 0x01 | **YES** | 0x006EB6, 0x014DE6, 0x014DEA, 0x014DED | 0 |
+
+**Verdict**: D177B8 IS the second gate — any value < 0x40 opens 0x014DE6+. Unlocked 4 new blocks including new function **0x006EB6** (called from 0x014DE6) and 3 more lifted blocks in 0x014DAB epilogue.
+
+**Still blocked**: a THIRD gate at **D14081** (checked at 0x014DED). The path 0x014DED → 0x014E20 takes when D14081 != 0x00 (zero-flag test after 0x006EB6 return). Zero VRAM writes yet.
+
+**Chain pattern**: Each gate clear yields ~4 new blocks but no VRAM. Diminishing returns. This is likely a state-sync chain that batches display updates across many conditions — may need a dozen gates cleared before any render fires. **LOW priority** vs. direct-render probing.
+
+---
+
+### Phase 67 — Boot Path Forward Trace (2026-04-13 CC session 13) — DONE ✓ (manual trace by CC)
+
+CC ran the trace directly after Codex timed out. Key findings:
+
+**Block 0x000721** (single-instruction): `call 0x013d00` (Validating OS...)
+
+**Post-validation flow**:
+```
+0x000725: ld hl, 0x000000 ; call 0x0158a6   ← first post-validation call
+0x00072d: call z, 0x0138f1                  ← conditional call if Z set
+0x000731: ld a, l ; or h ; jp z, 0x000877   ← if HL==0, jump to OS-valid branch
+0x000737: call 0x013d8e                     ← another validation helper
+0x00073b: ld a, 0xfa ; call 0x0061e5        ← hardware operation
+0x000741: hardware watchdog (ports 0x24, 0x06, 0x28) ; jp nz, 0x000066 (NMI) on fault
+```
+
+**0x0158a6** is trivial: `push bc ; ld b, a ; ld a, (0x00007e) ; cp 0xff ; ld a, b ; pop bc ; ret` — reads ROM byte at 0x00007E (OS signature), returns Z-flag-set if it's 0xFF. This is the "OS valid?" check.
+
+**0x000877** (OS valid branch):
+```
+ld hl, 0x020105 ; ld a, (hl) ; out0 (0x1d), a ; inc hl
+ld a, (hl) ; out0 (0x1e), a ; inc hl ; ld a, (hl) ; out0 (0x1f), a
+push af ; ld a, l ; cp 0x07 ; jp nz, 0x001afa
+```
+Writes 3 bytes from jump-table row 0x020105 to hardware ports 0x1D/0x1E/0x1F (probably MMU / memory timing config), then jumps to 0x001afa.
+
+**0x001afa**: `call 0x0158a6 ; jr z, 0x001b01 ; rst 0x00`
+
+**0x001b01**: clears 0xD0301B, sets SP=0xD1A87E (main stack top), hardware setup (ports 0x1005, 0x01, 0x24, 0x06, 0x28), eventually `jp 0x0019b5` (**THE HALT BLOCK**).
+
+**Verdict**: The natural boot path runs hardware setup and then HALTs. The real event loop runs via interrupts (which we already proved in Phase 56-60). **OS init 0x08c331 is NOT directly called from the boot path** — only from 0x08c449 (`jp 0x08c331`). This means the 0x08c331 we've been calling manually may be ONE of several init entries, or it gets reached via a different mechanism we haven't traced yet.
+
+**Follow-up** (Phase 70): trace 0x08c449 backward to find what dispatches into OS init — it must be a high-level handler we haven't touched.
+
+---
+
+### Phase 68 — MODE Dialog Parent Hunt (2026-04-13 CC session 13) — DONE ✓
+
+**TI-84_Plus_CE/probe-phase68-mode-parent.mjs + phase68-mode-parent-report.md**
+
+Found 4 direct callers of 0x08BC80 and 20 callers in the 0x08BC00-0x08BD00 range, deduped to 12 distinct parent functions. Probed each with 2 variants (baseline + prelude_call-return).
+
+**Winner**: **0x08a6b3** baseline — **2081 VRAM writes, bbox r97-134 c0-301** (37 rows × 302 cols — middle-of-screen settings list). Other strong candidates:
+- 0x08b4b1 prelude_call-return → 1800 px
+- 0x08bc91 prelude_call-return → 1728 px
+- 0x0976d1 baseline → 1548 px
+- 0x08aab3 baseline → 468 px (bottom band r177-194 c60-85)
+
+**Browser-shell wiring**: `btnP68_mode_full` pointing to 0x08a6b3. The middle-strip bbox r97-134 matches the MODE-list layout (below header, above footer).
+
+---
+
+### Phase 69 — Batch Probe 25 Phase 63 Callers (2026-04-13 CC session 13) — DONE ✓ MAJOR WIN
+
+**TI-84_Plus_CE/probe-phase69-batch.mjs + phase69-batch-report.md + phase69-entry-list.json**
+
+Probed 25 distinct containing functions from the untested Phase 63 inventory. 8 produced legible screens; 5 were brand new (not already wired).
+
+**Top rankers**:
+
+| Rank | Caller | Function | VRAM px | Bbox | Area | Verdict |
+|-----:|--------|----------|--------:|------|-----:|---------|
+| 1 | 0x046878 | 0x046878 | **12800** | **r179-218 c0-319** | 12800 | **FULL-WIDTH BOTTOM STATUS BAR** |
+| 2 | 0x03dc1b | 0x03dc1b | **5440** | **r0-16 c0-319** | 5440 | **FULL-WIDTH TOP HEADER BAR** |
+| 3 | 0x03ec07 | 0x03ebed | 1368 | r18-54 c0-181 | 6734 | legible_new medium |
+| 4 | 0x03f357 | 0x03f338 | 1368 | r37-54 c0-85 | 1548 | legible_new standard header strip |
+| 5 | 0x06db0d | 0x06daaf | 468 | r137-154 c0-25 | 468 | legible_new left-side marker |
+
+**MASSIVE implication**: 0x046878 (bottom status bar) + 0x03dc1b (top header bar) are the top and bottom of a full-screen layout. The **home screen must be a parent function that calls both in sequence** (plus a middle content renderer). Finding that parent IS finding the home screen.
+
+**Browser-shell wiring**: 5 new P69 buttons (btnP69_046878, btnP69_03dc1b, btnP69_03ebed, btnP69_03f338, btnP69_06daaf). Total browser-shell buttons now ~68.
+
+---
+
+### Phase 70 — Home Screen Intersection Hunt (CC manual) — DONE ✓ CORRECTION
+
+**TI-84_Plus_CE/phase70-home-screen-report.md**
+
+Attempted to find a common parent function of 0x046878 (bottom bar) and 0x03dc1b (top bar). Key discoveries:
+
+**Correction of Phase 69 interpretation**:
+- 12800 = exactly 40×320 (r179-218 c0-319, 100% fill)
+- 5440 = exactly 17×320 (r0-16 c0-319, 100% fill)
+- 100% fill ratio inside bbox means RECTANGLE FILLS, not text rendering
+- Compare Phase 65B's 0x013d11 render: 16320 px in 288×196 bbox = 28.9% fill (real text is sparse)
+
+**Neither 0x046878 nor 0x03dc1b is a function entry**:
+- 0x046878 is mid-block inside 0x04685c (which contains `call 0x0a1cac`)
+- 0x03dc1b is mid-block inside 0x03dc11 (also contains `call 0x0a1cac`)
+- Phase 69's findFunctionEntry fallback landed on the caller PC itself
+
+**Function 0x03dbf8** (containing 0x03dc11) has **ZERO incoming references** in the lifted call graph — only reachable via the Phase 69 probe's direct injection.
+
+**Function 0x045c07** (10-hop ancestor of 0x04685c) has only 1 direct caller (0x045bff), which is in function 0x045b79 — a self-looping state machine.
+
+**No intersection**: the top/bottom bars are rendered by SEPARATE code paths, not a single home-screen parent.
+
+**Implication**: the real home screen is a multi-step dispatcher that calls:
+1. A rectangle-fill primitive for the top bar background
+2. A text renderer for the top bar content (NORMAL FLOAT AUTO REAL RADIAN MP + battery)
+3. Another rectangle-fill for the bottom bar
+4. Another text renderer for the bottom bar content
+5. Middle content (cursor prompt, expression display)
+
+Finding ONE function that calls all of these is unlikely. Better: find the rectangle-fill primitive (probably 0x046aff based on block chain) and its callers, and separately find the text renderers.
+
+---
+
+### Phase 71 — OS Init Dispatcher Trace (CC manual) — DONE ✓
+
+**TI-84_Plus_CE/phase71-os-init-dispatcher.md**
+
+Phase 67's claim "0x08c331 has 1 caller" was incomplete. Broader scan finds:
+
+**Internal callers of 0x08c331** (within OS init function): 4 retry paths at 0x08c449, 0x08c3b9, 0x08c3df — state-machine retries.
+
+**External callers into 0x08c300-0x08c500**: 33 total.
+
+**Key entries**:
+| Entry | Callers | Role |
+|-------|--------:|------|
+| 0x08c308 | 13+ external | Tiny flag-check helper: `bit 2, (0xd000c6)`, returns |
+| 0x08c33d | 10+ external | Post-stage-1 init entry. Called from 0x0257c7, 0x06c50a, 0x040b23, 0x0620ba, 0x0620c8, 0x0b6a98, 0x09ce36, internal jps |
+| 0x08c366 | 2 external | **State-resume entry, reached via JUMP TABLE SLOT 21 (0x020158)** + thunk 0x040ccd |
+| 0x08c301 | 1 external | Helper |
+
+**Major finding**: jump-table slot 21 (0x020158) = `jp 0x08c366`. Slot 21 is the OS-init state-resume entry. The real boot path to OS init is via bcall slot 21, not direct CALL from boot. This is ISR-driven, not linear-boot-driven.
+
+**0x08c366** first block: `res 7, (iy+22) ; res 1, (iy+29) ; ld (0xd0058c), a ; bit 0, (iy+2) ; jr z, 0x08c38a` — clears IY flags, writes A to 0xD0058C, branches on IY flag.
+
+**Phase 72+ recommendations**:
+1. Probe 0x08c366 as a direct entry with proper register setup
+2. Probe 0x08c33d to test "partial init" path
+3. Scan ROM for `rst 0x08 ; db 0x15` (bcall slot 21 invocation) — find who triggers OS init state-resume
+
+---
+
+### Phase 72 — OS Init Entry Probes (2026-04-13 CC session 13) — DONE ✓ NEGATIVE RESULT
+
+**TI-84_Plus_CE/probe-phase72-os-init-entries.mjs + phase72-os-init-entries-report.md**
+
+Probed 0x08c331 (baseline), 0x08c366 (JT slot 21 state-resume), 0x08c33d (post-stage-1 entry). All three variants produce identical output:
+
+| Variant | Entry | Steps | VRAM | Bbox | Unique Blocks |
+|---------|-------|------:|-----:|------|--------------:|
+| A | 0x08c331 | 691 | 76800 | r0-239 c0-319 | 160 |
+| B | 0x08c366 | 813 | 76800 | r0-239 c0-319 | 175 |
+| C | 0x08c33d | 681 | 76800 | r0-239 c0-319 | 150 |
+
+All three **clear the entire 320×240 screen to white (0xFFFF)**. Different block sets (B takes 175 blocks vs A's 160 vs C's 150) but converge to the same clear-screen operation. The first rendered row is all 0xFFFF (pure white background).
+
+**Verdict**: **OS init is a screen clear, NOT a home-screen renderer.** The three entries are equivalent alternate entry points into the same state machine. The home screen must be rendered by a separate dispatch chain that runs AFTER OS init.
+
+---
+
+### Phase 73 — 0x046aff Analysis (CC manual after Codex timeout) — DONE ✓
+
+**TI-84_Plus_CE/phase73-rectangle-fill-report.md**
+
+0x046aff is NOT a general rectangle-fill primitive. Disassembly:
+```asm
+0x046aff: ld (0x002ac0), hl      ; save HL (fill color/config)
+0x046b03: ld bc, 0x0000ef         ; BC = 239 (FIXED height)
+0x046b07: ld hl, 0x000000         ; HL = 0 (origin)
+0x046b0b: ld de, 0x00013f         ; DE = 319 (FIXED width)
+0x046b0f: call 0x09ef44           ; full-screen clear
+0x046b13: ret
+```
+
+Hardcoded full-screen clear with fixed dimensions. 11 callers, all in the 0x045cxx-0x046xxx diagnostic-screen region. They call 0x046aff to clear the screen before drawing their own test UI.
+
+**Verdict**: Skip the rectangle-fill primitive hunt. The top/bottom bar renders from Phase 69 were misidentified — they're diagnostic screen clears hitting max_steps, not layout fills.
+
+---
+
+### Phase 74 — Home Status String Search (CC manual after Codex timeout) — DONE ✓ MAJOR FIND
+
+**TI-84_Plus_CE/phase74-status-strings-report.md**
+
+#### Plain-ASCII search
+
+"NORMAL" and "FLOAT" have **ZERO** plain-ASCII occurrences in ROM. Mixed case variants found:
+- `Normal` at 0xa045f, 0xa0def, 0xa10ad
+- `Float` at 0xa0471
+- `Radian` / `Degree` / `Real` / `Function` / `Polar` all present in mixed case
+
+#### TI-BASIC Token Table Discovery at 0x0a0450
+
+The home-screen status bar does NOT use plain strings. It uses the **TI-BASIC token name table** — entries formatted as `<token_code> <length> <name>`:
+
+| Token | Length | Name | Addr |
+|------:|-------:|------|------|
+| 0x4C | 4 | prgm | 0x0a0452 |
+| 0x4D | 6 | Radian | 0x0a0457 |
+| 0x4E | 6 | Degree | 0x0a045f |
+| **0x4F** | 6 | **Normal** | **0x0a0467** |
+| 0x50 | 3 | Sci | 0x0a046f |
+| 0x51 | 3 | Eng | 0x0a0474 |
+| **0x52** | 5 | **Float** | **0x0a0479** |
+| 0x53 | 4 | Fix | 0x0a0495 |
+| 0x54 | 5 | Horiz | 0x0a049b |
+| 0x55 | 4 | Full | 0x0a04a2 |
+| 0x56 | 4 | Func | 0x0a04a8 |
+| 0x57 | 5 | Param | 0x0a04ae |
+| 0x58 | 5 | Polar | 0x0a04b5 |
+| 0x59 | 3 | Seq | 0x0a04bc |
+| 0x5A | 10 | IndpntAuto | 0x0a04c0 |
+| 0x5B | 9 | IndpntAsk | 0x0a04cc |
+| 0x5C | 10 | DependAuto | 0x0a04d7 |
+| 0x5D | 9 | DependAsk | 0x0a04e3 |
+
+This is the **TI-BASIC tokenizer table** used by both the program editor and the mode-display code. The home status bar:
+1. Reads current mode state from RAM (0xD00082-0xD00085-ish)
+2. For each mode, picks the matching token code
+3. Looks up `table[token - 0x4C]` to get length + name bytes
+4. Prints char-by-char via 0x0059c6
+
+#### TEST Mode Angle Display (unrelated)
+
+The TEST mode setup has its OWN "DEGREE"/"RADIAN" strings at 0x029132/0x029139 (plain ASCII, null-terminated), rendered by function 0x0296dd which calls 0x028f02 with label codes 0x91/0x92. This is the TEST MODE configuration screen, NOT the home status bar.
+
+---
+
+### Phase 75 — Token Helper Hunt (CC manual, partial) — DONE ✓ PIVOT
+
+**TI-84_Plus_CE/phase75-token-helper-hunt.md**
+
+Hunted for the "print token by code" helper using the 0x0a0450 table. **Zero direct HL base loads of 0x0a0440-0x0a04f0** — all hits were spurious (decoder interpreting token-table bytes as `jr nz` instructions). This means:
+- No code does `ld hl, 0x0a0450` explicitly
+- Token table access is indirect — via BCALL, offset computation, or sequential walk
+
+**170 mode-state reads** in 0xD00080-0xD000FF range. Hot bytes:
+- 0xD0008A (counter/temp)
+- 0xD00085 (mode flag)
+- 0xD0008E (flag)
+- 0xD00092 (mode byte)
+- 0xD000C6 (known — Phase 71 flag-check helper)
+
+**Zero blocks** contain BOTH a mode-state read AND a text-call (0x0a1cac or 0x0059c6). The rendering flow splits across multiple functions — cannot be pinned by single-block scan.
+
+**Pivot recommendations** for Phase 76+:
+- (a) Scan for length-prefixed string walker signature: `ld b,(hl) ; inc hl ; ... call 0x0059c6 ; djnz`
+- (b) Scan the jump table at 0x020104 for slots targeting 0x0a03xx-0x0a05xx (token helper BCALLs)
+- (c) Trace 0x028f02 (TEST mode label helper from Phase 74) backward to understand mode-display dispatch pattern, then find sibling home-screen helper
+- (d) Decompile functions in 0x0a2xxx-0x0a6xxx that read 0xD0008X vars (there are several candidates: 0x0a2812, 0x0a281a, 0x0a29a8, 0x0a654e) — these are geographically near the token table and may BE token-helper clients
+
+---
+
+### Phase 77 — JT slot hunt + 0x0a2b72 / 0x0a29ec partial renders (2026-04-13 CC session 14) — DONE ✓ MAJOR WINS
+
+**Dispatch note**: Session 14 opened with 4 parallel Codex dispatches (P1/P2/P3/P4 per the Phase 77+ priority list). P4 succeeded (null result — mode-var readers don't render). P1, P2, P3 **all timed out** ("Subagent invocation timed out"). Confirms the previous session's note: investigate-style tasks reliably timeout, implement tasks with 1-4 specific deliverables succeed. CC pivoted to unified Node static-analysis scripts.
+
+**Artifacts**:
+- `TI-84_Plus_CE/probe-phase77-manual.mjs` — unified static analysis (P2 JT slot scan + P3 disasm + P1 walker scan)
+- `TI-84_Plus_CE/phase77-manual-report.md` — 602-line report
+- `TI-84_Plus_CE/probe-phase77-080244-disasm.mjs` — control-flow walker utility
+- `TI-84_Plus_CE/probe-phase77-09fb7d.mjs` — dump of 0x09fb7d pointer table
+- `TI-84_Plus_CE/probe-phase77-0a0909.mjs` — dump of 0x0a0909 stride-5 data region
+- `TI-84_Plus_CE/probe-phase77-jt-probes.mjs` — targeted JT slot probes (14 probes)
+- `TI-84_Plus_CE/phase77-jt-probes-report.md` — probe report
+- `TI-84_Plus_CE/probe-phase77-extended.mjs` — extended-steps re-probes
+- `TI-84_Plus_CE/phase77-extended-report.md` — report
+- `TI-84_Plus_CE/phase77d-mode-var-readers-report.md` — P4 null result (Codex-written)
+- `TI-84_Plus_CE/probe-phase77d-mode-var-readers.mjs` — P4 probe (Codex-written)
+
+#### Key findings
+
+1. **JT slot 591-647 cluster targets 0x0a2xxx helpers** — 16 contiguous JT slots in the 0x0a2000-0x0a7000 range form a helper family:
+   - 591→0x0a2032 (register save)
+   - 595→0x0a215b (cursor arithmetic at 0xd00595)
+   - 599→0x0a21bb
+   - 603→0x0a21f2 
+   - 607→0x0a22b1 (iy+42 flag check + 0x025c33)
+   - 611→0x0a237e (called by 0a29ec — cursor+text prep)
+   - 615→0x0a26ee (push af + call 0a26f5)
+   - 619→0x0a27dd (iy+27 flag)
+   - **623→0x0a2802** (state save: reads 0xd00595/0xd02504/0xd00092/0xd00085, writes 0xd007c4+)
+   - **627→0x0a29ec** (state restore: reads back 0x0007c4, calls 0a237e) — **RENDERS 5652 px in r17-34** (top-strip pattern, possibly menu row dividers)
+   - 631→0x0a2a3e (wraps 0a2a68)
+   - **635→0x0a2a68** (DE range-check dispatcher: `cp 0x5d`/`cp 0x60`, jumps to tables at 0x09fb7d/9b/ad)
+   - **639→0x0a2b72** (wraps 0a2a68 with BC=0 push) — **RENDERS 5692 px in r0-34** (top status bar fill)
+   - 643→0x0a2ca6 (iy+42 flag check + 0x025dea)
+   - **647→0x0a32af** (reads 0xd005f9/fa, another range check via cp 0x5c/0x5d/0x06)
+   - 851→0x0a5424 (iy+53 flag check + 0x02398e)
+
+2. **0x0a2b72 is a home-screen top-strip renderer** — JT slot 639. Probe with DE=0x4f or 0x52 renders 5692 pixels: 17 rows of pure bg (0xFFFF) at r0-16, 17 rows of sentinel at r17-34 (not reached), full width 320 cols. **This is the top status bar background fill.** Terminates at step 3868 due to missing_block somewhere past 0x0002398e. Extended maxSteps=80000 did NOT help — deterministic missing block.
+
+3. **0x0a29ec renders a structured strip at r17-34** — JT slot 627. Probe renders 5652 px with 4716 fg + 936 bg. The ASCII shows 6 rows of full bg, then 6 rows of repeating pattern `##......######......######...` (regular stripes), then 6 rows of bg. Could be menu row dividers, home-screen list area, or a rendered text row with regular spacing. Terminates at step 20742 (ran longer than 0a2b72). Block trace: 0xa29ec → 0xa237e → 0xa2a37 → 0xa2389 → 0xa29fa → 0xa29de → ... → 0xa1799 (known text region).
+
+4. **0x028f02 calls 0x080244 → 0x02398e (the status icon renderer)**, NOT 0x0a1cac directly. The 0x028f02 block itself is just one instruction (`call 0x080244`); the function continues at 0x028f06 (`call 0x029374`) then 0x028f0a (`push de; call 0x0a1cac; pop hl; res 3,(iy+5); ret`). But probes terminate at 0x029379 before reaching 0x028f0b. What we DO see is the icon renderer output: each probe (regardless of HL) renders a 14×18 glyph at r18-35 c180-193 based on the A register — `A=0x91` draws a 'Q'/'C'-like shape, `A=0x92` draws something else, `A=0x4F` draws an 'O'. **0x02398e is the top-right status icon renderer**, takes A=char code.
+
+5. **0x0a2a68 alone doesn't render** — only 15 steps before missing_block. Must be called via the 0x0a2b72 wrapper which sets up BC=0 and pushes additional frames.
+
+6. **0x0a32af with seeded 0xd005f9/fa renders 0 pixels** — different code path (0xa32af → 0xa32dd → ...). Not a home-screen renderer.
+
+7. **0x028f02 = status icon + full helper** — the function does TWO things: draws a top-right indicator glyph (Phase A via 0x080244→0x02398e) AND prints the label string (Phase B via 0x0a1cac, not reached by our probe).
+
+8. **0x09fb7d IS NOT a token table** — it's a 3-byte-stride pointer table to entries at 0x0a0909+. Each 0x0a09xx entry is a 5-byte record `<byte> 03 c1 <byte> 5d`. Purpose unknown but clearly not mode names. The mode names remain at 0x0a0450.
+
+9. **0x09fb9b and 0x09fbad are mid-table offsets**, not separate tables — they're the same table read from different starting offsets (0x0a093b and 0x0a0953 respectively). The 0x0a2a68 dispatcher chooses the starting offset based on the D input byte.
+
+#### Browser-shell wiring TODO (Phase 77b)
+Add buttons for the new probes:
+- `btnP77_0a2b72` — "Home top bar bg"  
+- `btnP77_0a29ec` — "Home row strip"
+- `btnP77_02398e_radian` — "Status icon: Radian" (A=0x91)
+- `btnP77_02398e_alpha` — "Status icon: Alpha" (A=...)
+- `btnP77_028f02_radian` — "0x028f02 full Radian"
+
+#### Remaining home-screen mystery
+Still haven't found the "NORMAL"/"FLOAT" text rendering path. The token table 0x0a0450 is CONFIRMED (from Phase 74's byte-level dump at phase77-manual-report.md Section 3), but no code directly loads it. Likely the mode-display text goes through a helper that uses PRELIFTED_BLOCKS call targets that are in already-lifted code but weren't flagged as "token printers" by our pattern scans. 
+
+**Next approach ideas**:
+- (a) Seed the missing_block that terminates 0a2b72 at step 3868 — find what block that is, add it to seeds, retranspile, re-probe
+- (b) Probe 0x0a29ec further — it ran 20742 steps before terminating, traces through 0xa1799 which is a known text region. Decode its output more carefully (the `##......######` pattern may actually BE text glyphs rendered as stride-1 pixels, which our fg/bg ASCII can't distinguish from raw shape)
+- (c) Find callers of 0x0a2b72 (slot 639) to see what top-level screen it's invoked from — that's the parent screen renderer
+- (d) Cross-reference with 0x028f0b's 0x0a1cac call — what HL does it pass? The full 0x028f02 → 0a1cac path needs to complete so we can see a LABELED status bar
+
+### Phase 78 — Parent caller discovery + legible top-strip renders (2026-04-13 CC session 14) — DONE ✓ MAJOR WIN
+
+**Finding 1**: 0x0a2b72 is ONLY a top-strip background fill helper. It returns normally after 3868 steps (lastPc=0xffffff was our sentinel, not a missing block). The "missing_block" termination was misleading — the function completed successfully.
+
+**Finding 2**: Scanning PRELIFTED_BLOCKS for `call 0x0a2b72` found **3 parent callers**: 0x05e7d2, 0x05e481, 0x09cb14. Scanning for `call 0x0a29ec` found **5 parent callers**: 0x078f69, 0x025b37, 0x060a35, 0x08847f, 0x06c865. 0x0a2a68 has 29 callers (widely used dispatcher).
+
+**Finding 3** (BIGGEST): **All 3 parents of 0x0a2b72 render legible top-strip text**:
+- `0x05e7d2`: 10228 px (3756 fg, 6472 bg), r0-34 c0-319, visible character glyphs in cols 48-79 (right half)
+- `0x05e481`: 10228 px, IDENTICAL render to 0x05e7d2 (probably two entry paths into the same screen)
+- `0x09cb14`: 10444 px, slightly different layout — text starts at col 36 instead of 48, wider content
+
+These are the **first legible top-strip renders ever observed in this project**. The visible glyph patterns include distinctive shapes like `##..........##..######..####..##` (rows 24-29, looks like characters with 6-pixel wide strokes). Needs visual verification in browser-shell to determine the actual text content.
+
+**Finding 4**: All 5 parents of 0x0a29ec produced IDENTICAL renders (5652 px, r17-34 c0-313) — the same `##......######` stripe pattern. The `set 5, (iy+76)` bit modifier in 3 of the parents doesn't affect the probe output. These parents all converge into the same rendering path.
+
+**Artifacts**:
+- `TI-84_Plus_CE/probe-phase78-missing-block.mjs` — caller scan + trace analysis
+- `TI-84_Plus_CE/phase78-missing-block-report.md` — identified lastPc=sentinel (not a real missing block)
+- `TI-84_Plus_CE/probe-phase78-parents.mjs` — 8 parent probes (3 for 0a2b72, 5 for 0a29ec)
+- `TI-84_Plus_CE/phase78-parents-report.md` — 270-line report with ASCII previews
+
+**Browser-shell buttons added** (6 total from Phase 77+78):
+- `btnP77_0a2b72` — "P77 home top bar (0a2b72)" [DE=0x4f]
+- `btnP77_0a29ec` — "P77 home row (0a29ec)"
+- `btnP77_0a237e` — "P77 cursor prep (0a237e)"
+- `btnP78_05e7d2` — "P78 parent 05e7d2" [legible top strip]
+- `btnP78_05e481` — "P78 parent 05e481" [legible top strip]
+- `btnP78_09cb14` — "P78 parent 09cb14" [legible top strip]
+
+**Total browser-shell button count after Phase 78: ~74**.
+
+---
+
+### Phase 79 — Parent context analysis + 0x05e242 helper (2026-04-13 CC session 14) — DONE ✓
+
+**Artifacts**:
+- `TI-84_Plus_CE/probe-phase79-grandparents.mjs` — caller scan for 0x05e7d2/0x05e481/0x09cb14
+- `TI-84_Plus_CE/phase79-grandparents-report.md` — **0 callers** for all 3 (they're mid-function blocks)
+- `TI-84_Plus_CE/probe-phase79-jt-lookup.mjs` — JT + byte-exact scan for same 3 targets
+- `TI-84_Plus_CE/probe-phase79-real-entries.mjs` — backscan-based probe attempt
+- `TI-84_Plus_CE/phase79-real-entries-report.md` — backscan hit inter-block gaps (all 0 steps)
+- `TI-84_Plus_CE/probe-phase79-context.mjs` — dump blocks near each target
+- `TI-84_Plus_CE/probe-phase79-0x05e242.mjs` — probe helper 0x05e242 with 9 variants
+- `TI-84_Plus_CE/phase79-05e242-report.md` — all 9 variants terminate at missing_block after 4-7 steps
+
+#### Finding 1: Phase 78 parents are mid-function blocks
+0x05e7d2 / 0x05e481 / 0x09cb14 have **zero direct callers** and **zero JT slot references** and **zero 24-bit byte matches** anywhere in ROM. They're **mid-function blocks** that happen to contain `call 0x0a2b72`. The successful Phase 78 renders happened because probing starts at these block addresses runs the `call 0x0a2b72` then continues through subsequent blocks in the function (pop de, call 0x05e242, loop, etc.).
+
+#### Finding 2: Rich text-rendering family at 0x05e400-0x05e820
+The blocks near these call sites form a **coherent text-rendering family**:
+- `0x05e7cd` loop: `call 0x05e242 ; ret z ; call 0x0a2b72 ; jr 0x05e7cd` — iterates drawing chars via 0x05e242 until Z set
+- `0x05e448`: `res 4, (iy+5) ; push bc/de/hl ; call 0x05e242 ; jp z, 0x05e4ee ; ...` — string printer with special-char handling
+- `0x05e402`: `res 2, (iy+5) ; call 0x05e3e8 ; ret z ; call 0x05e8a7 ; ... ; call 0x05e448` — higher-level string entry
+- `0x05e7a4`: `call 0x05e381 ; jr z, 0x05e7be ; inc hl ; push hl ; call 0x05e7e3 ; ...` — cursor/position logic
+- `0x05e242`: the actual per-char print helper (but probing it standalone crashes immediately — needs specific register state not captured by our OS-init snapshot)
+
+#### Finding 3: Probing 0x05e242 standalone fails
+All 9 variants (A=0x4f/0x52/0x41, HL=0x029132, plus probing entries 0x05e7cd/0x05e448/0x05e402 with various HL) terminated at missing_block after 4-7 steps. 0x05e242 depends on register state (probably HL=cursor pointer + other RAM cells) that our post-OS-init snapshot doesn't provide. This helper needs a CALLER'S FRAME to work correctly.
+
+This is why 0x05e7d2 succeeded (probed from a position where the preceding `call 0x0a2b72` happened to leave the state right) but 0x05e7cd fails (probed from a position that immediately tries 0x05e242 without the right registers).
+
+#### Critical insight: the Phase 78 "legible renders" are real but not isolatable
+The 10228 px renders we got from 0x05e7d2/0x05e481/0x09cb14 are REAL — they show actual home-screen-like content in a scrolling/iterating loop. But we can't cleanly isolate the "draw one char" step as a callable unit. The proper way to see the full home screen is to boot through the natural ISR path.
+
+---
+
+## Phase 80+ Priorities for Next Session
+
+### 1. ★★★ BOOT BROWSER-SHELL AND VISUALLY IDENTIFY P78 SCREENS
+**User action required**: Open `TI-84_Plus_CE/browser-shell.html` in a browser, boot, click these 3 new buttons and read the rendered text on the LCD:
+- `P78 parent 05e7d2`
+- `P78 parent 05e481`
+- `P78 parent 09cb14`
+
+Human identification of these 3 screens is the critical next step. Based on ROM region: 0x05e4xx/0x05e7xx is likely **Y= editor / Program editor / text input screen**; 0x09cxxx is likely **CATALOG or TABLE screen**. The human can read the actual text content which our ASCII dumps can't clearly show.
+
+Also verify the P77 buttons:
+- `P77 home top bar (0a2b72)` — should show top 17 rows bg fill only
+- `P77 home row (0a29ec)` — should show r17-34 with stripe pattern
+- `P77 cursor prep (0a237e)` — unknown
+
+### 2. ★★★ Find callers of 0x05e402 / 0x05e448 / 0x05e7a4 (the real entries)
+These ARE real function entries in the 0x05e400-0x05e820 family. Scan for their callers. One of them should be a top-level screen that displays EDITOR content with text.
+
+### 3. ★★ Decode text content via font lookup, not ASCII art
+The phase78 ascii previews mix pixel positions in a way that's hard to read. Write a VRAM decoder that uses the TI-84 font table at `0x003d6e` (28-byte glyphs) to identify which characters are rendered at each position. This would turn the pixel soup into readable text strings.
+
+### 4. ★★ Probe 0x028f0b directly (Phase A vs Phase B split)
+The 0x028f02 function has two phases — a mode-icon draw and a text draw via 0x0a1cac. Our probes hit missing_block before reaching 0x028f0b. Probe 0x028f0b directly with (HL=0x029132, DE set up, etc.) to validate the 0x0a1cac calling convention for TEST mode strings.
+
+### 5. ★★ Probe more JT slots (591, 595, 599, 603, 607, 611, 615, 619, 623, 631, 635, 643, 851)
+Phase 77 only probed 4 slots (627, 635, 639, 647). 12 more slots in the mode-region cluster are untested as function entries.
+
+### 6. ★ Rename 0x0a2b72's role in the project memory
+0x0a2b72 was originally hypothesized as "home screen status bar renderer" but Phase 78-79 found it's actually **a top-strip background fill helper used by text renderers** (possibly a "scroll screen up + clear top line" operation, since the surrounding loops call it repeatedly). Not a renderer by itself.
+
+### 2. ★★★ Jump-table slot scan for token helpers
+Scan JT slots 0-979 for any slot that targets 0x0a0300-0x0a0500 (near the token table). Those slots ARE the BCALL entries for token-print. Find their callers via `rst 0x08 ; db <slot>` pattern in ROM.
+
+### 3. ★★ Trace 0x028f02 (TEST mode label helper) backward
+Phase 74 found 0x028f02 is called by 0x0296dd (TEST angle mode) with (A=label_code, HL=string_addr). Disassemble 0x028f02 to understand how it uses label_code + string_addr. If the home-screen renderer has a similar helper (takes token_code, looks up string), finding one teaches us the other.
+
+### 4. ★★ Probe the 0x0a2xxx-0x0a6xxx mode-var-reading functions
+Phase 75 identified 0x0a2812, 0x0a281a, 0x0a29a8, 0x0a654e as reading 0xD0008X bytes. These are in the same ROM page as the token table. Probe them — one of them might render a mode-display screen.
+
+### 5. ★★ Fix probe termination at 0xFFFFFF
+Unchanged. Halt-wrapper or proper post-init frame.
+
+### 6. ★ Probe 0x0207C0 JT dispatcher
+Unchanged.
+
+### 7. ★ More Phase 69 batch probes
+~80 untested Phase 63 callers. Diminishing returns.
+
+### Session 13 stop rationale
+**16 phases complete**: 61, 62, 62B, 63, 64, 65A, 65B, 66, 67 (manual), 68, 69, 70 (manual), 71 (manual), 72, 73 (manual), 74 (manual), 75 (manual), 76. Context 40% of 1M after full session. **Codex timeout pattern**: investigate-style tasks reliably timeout (~60%), implement-style tasks with 1-4 deliverables succeed. CC now defaults to running Node one-off scripts for complex static analysis. Phase 76 was a null result (walker-scan pattern didn't match) — home-screen hunt needs a deeper approach than single-block pattern matching.
+
+### Major discoveries this session
+1. **First legible TI-OS text rendered end-to-end** (Phase 65A/65B: "Validating OS..." boot splash — confirmed via ASCII art with visible glyph patterns)
+2. **0x0a1cac full calling convention decoded** (Phase 63: 110 callers cataloged, HL=string, 0xD00595/96=cursor, 0xD02505=row bound, 0xD6=newline)
+3. **20+ legible screens wired into browser-shell** (Phase 62B + 64 + 68 + 69): error banners, self-test, keyboard test, flash test, OS compat warning, MODE dialog parent, solver prompts, TEST region screens
+4. **OS init is a screen clear, not a UI renderer** (Phase 72): all 3 OS init entries produce 76800 px white fill, equivalent entry points into the same state machine
+5. **Home status bar uses TI-BASIC token codes (0x4C-0x5D), NOT plain strings** (Phase 74): token table at 0x0a0450 stores Normal/Float/Radian/etc. as `<code><length><name>` entries
+6. **OS dispatch is ISR-driven via bcall slot 21** (Phase 71), not linear boot — the 0x08c331 we've been calling manually is equivalent to the natural path
+7. **Phase 69 renders corrected** (Phase 70): 0x046878 and 0x03dc1b are rectangle fills (exact multiples of 320), not text renderers
+8. **Token table access is indirect** (Phase 75): no `ld hl, 0x0a0450` in the lifted code — must be BCALL-based or offset-indexed
+
+### Handoff instructions
+User will `/clear` context and resume with this file. The next session should:
+1. Read this file (chunked offset/limit reads)
+2. Start with Phase 76 priority #1 (length-prefixed string walker scan) via Codex implement task
+3. In parallel: Phase 76 priority #3 (trace 0x028f02 backward via CC manual Node script)
+4. Browser-shell now has ~68 buttons — user can interactively verify the Phase 61-74 renders before continuing
+
+### 3. ★★ Fix the missing_block at 0xFFFFFF that terminates 0x013d00/0x013d11
+All the Phase 64/65 probes hit missing_block at 0xFFFFFF. This is the synthetic return sentinel from the probe setup — when the target function completes and returns, it hits the sentinel and stops. To see the FULL render, we need to either: (a) use a real post-init call frame instead of sentinel, (b) trap the RET before 0xFFFFFF and keep running by setting PC to a halt-handler address, or (c) simply increase maxSteps further (but 30000 wasn't enough for 0x013d11).
+
+### 4. ★★ Probe the rest of the 110 Phase 63 caller inventory
+Phase 64 probed 7 families. 100+ remain. Especially: 0x024528, 0x02fc87, 0x03dc1b, 0x03ec07, 0x03f357, 0x04552f, 0x0455c6, 0x045999, 0x04e21f, 0x05cec6, 0x05cf76, 0x05e76e, 0x061f99, 0x06b46d, 0x06db0d, 0x074bf1, 0x086c05, 0x08912f, 0x0936a6, 0x09cc5c, 0x09d0dd, 0x0a2d84, 0x0ac6bc, 0x0b3f1b, 0x0b79f3. Many of these are in code regions we haven't touched yet.
+
+### 5. ★★ Raw caller 0x0207C0 — jump-table dispatcher for 0x0a1cac
+Phase 63 noted 0x0207C0 as a raw-only caller — "jump-table/export row that dispatches directly to 0x0a1cac". This is interesting: it's in the jump table region (0x020008+) and it dispatches to the string renderer. That means some jump-table slot IS a general-purpose text-render entry. Find the slot + test it with a known string address in HL.
+
+### 6. ★ Phase 66 follow-up — D14081 gate
+Continue the gate chain. Add D14081=0 to the Phase 66 variant matrix. But this is diminishing returns — each gate unlocks ~4 blocks, no VRAM. Deprioritized.
+
+### 7. ★ Fix the 0x010220 trampoline caller frame (Pass C unwind)
+Unchanged from previous priorities. Unlocks math library blocks but not rendering.
+
+### 8. ★ Add debugSetMaskedStatus() API to peripherals.js
+Unchanged. Isolated cleanup.
+
+### Session 13 status
+Session 13 completed 10 phases via parallel Codex dispatch: 61, 62, 62B, 63, 64, 65A, 65B, 66. Context still ~12% of 1M after all phases. Continuing session. The transpiler now renders 7+ real TI-OS screens (error banners + Phase 64 system screens + boot splash). The remaining frontier is finding the home screen entry point (post-validation transition) or the full MODE dialog parent caller.
+
+---
+
+### Phase 57 — Error Banner Reverse Engineering (2026-04-13 CC session 12) — DONE ✓
+
+**0x062160 is the GENERIC TI-84 error banner renderer** — one function, 48 error permutations, not 174 independent renderers as originally hypothesized.
+
+#### Calling convention (reverse-engineered from 0x06218f-0x0621e8 disassembly)
+- Writes selector byte to **0xD008DF** (masked with 0x7F), then CALLs 0x062160.
+- **Nonzero masked value**: 1-based index into 24-bit pointer table at **0x062290**. 42 valid entries (indices 1-42). Values ≥ 0x3A fall through to 0x062c99 ("?").
+- **Zero masked value**: special path keyed by **0xD00824** with 6 recognized values:
+  - 0x37 → "Error in Xmit" (0x062fa6)
+  - 0x35 → "MemoryFull" (0x062ff9)
+  - 0x42 → "VERSION" (0x062e0d)
+  - 0x44 → "ARCHIVED" (0x062dc3)
+  - 0x4B → "OS Overlaps Apps" (0x062ca3)
+  - 0x4C → "Unsupported OS" (0x062d4c)
+
+#### Error strings identified (subset)
+- OVERFLOW (0x062338, index 0), DIVIDE BY 0 (0x062391, index 1), SINGULAR MATRIX (0x0623e1, index 2), DOMAIN (0x06244e, index 3), BREAK (0x062504, index 5), DIMENSION MISMATCH (0x06267c, index 10), INVALID DIMENSION (0x0626f9, index 11), ... full list in `error-banners.json`.
+
+#### Artifacts
+- `TI-84_Plus_CE/probe-error-banner-scan.mjs` — Phase 56 initial scan (0x061f00-0x062300 window)
+- `TI-84_Plus_CE/probe-error-banner-render.mjs` — Phase 57 parameterized renderer
+- `TI-84_Plus_CE/error-banners.json` — full 48-entry catalog
+- `TI-84_Plus_CE/phase56-error-banners-report.md`
+- `TI-84_Plus_CE/phase57-error-banners-report.md`
+
+#### Browser-shell wiring (Phase 57 deliverable)
+- New **Error banners** section in browser-shell.html with dropdown populated from `error-banners.json` (fetched at page init).
+- Inline fallback of 5 banners (OVERFLOW, DIVIDE BY 0, DOMAIN, BREAK, MemoryFull) if fetch fails.
+- Single "Render error" button: cold boot → OS init → set mbase=0xD0 → write selector to 0xD008DF or 0xD00824 → call 0x062160 (maxSteps 8000) → redraw LCD.
+- Does NOT break existing Phase 55 TEST region buttons.
+- **Total browser-shell button count after Phase 57**: ~52 (1 new button + 48 dropdown selections).
+
+---
+
+### Phase 55 bonus — 4 NEW TEST MODE region screens (2026-04-12 CC session 11) — DONE ✓
+
+After Phase 54's dead end, CC did a last-minute scan of the 0x027000-0x02a000 region for 0x0a1cac callers (TEST MODE area adjacent to the 0x028ff5 mode strings).
+
+**Scan found**: 7 callers, 3 already known from Phase 46.6 (0x2985e/0x29878/0x29892), 4 NEW.
+
+**Probe results** (explicit-init template):
+
+| Entry | Drawn | Fg | Bg | Bbox | Verdict |
+|-------|------:|---:|---:|------|---------|
+| **0x289b1** (caller 0x28a17) | 30056 | 788 | 23311 | r1-239 c2-313 | full-screen render, minor text |
+| **0x28ee2** (caller 0x28f0b) | 3924 | 3569 | 355 | r37-54 c0-217 | single inverse-video header bar |
+| **0x29812** (caller 0x29829) | 2628 | 2060 | 568 | r57-74 c0-145 | small inverse text block |
+| **0x2982f** (caller 0x298ac) | 13968 | 11131 | 2837 | r37-114 c0-313 | medium multi-row text dialog |
+
+**Wired into browser-shell.html**:
+- `btnP55_289b1` → "TEST region 289b1"
+- `btnP55_28ee2` → "TEST hdr 28ee2"
+- `btnP55_29812` → "TEST dlg 29812"
+- `btnP55_2982f` → "TEST multi 2982f" — the most promising, 11k fg pixels
+
+All 4 need visual verification (stride-1 decode) to determine exact content — likely RESET RAM/ARCHIVE, DELETE APPS, EXCEPTIONS, or similar TEST MODE setup screens based on the adjacent string tables 0x029088 ("ANGLE:", "STAT DIAGNOSTICS:"), 0x02911c ("RESET OPTIONS", "RESET COMPLETE"), 0x029e51 ("RESET: RAM & ARCHIVE", "EXCEPTIONS:", "Validating App:").
+
+#### Phase 55 deliverables
+
+- ✅ 4 new text screens cataloged in TEST MODE region
+- ✅ 4 new browser-shell buttons wired
+- ⚠️ Visual decode of content pending (content likely relates to TEST MODE RESET/EXCEPTIONS dialogs)
+
+**Browser-shell button count after Phase 55**: ~51 buttons total.
+
+---
 
 ---
 

@@ -16,6 +16,15 @@ button { background: #2a2a4a; color: #e0e0e0; border: 1px solid #555; padding: 6
 button:hover { background: #3a3a6a; }
 button:disabled { opacity: 0.4; cursor: not-allowed; }
 button.active { background: #2a5a2a; border-color: #4a8a4a; }
+.controls input { background: #141428; color: #e0e0e0; border: 1px solid #555; padding: 6px 10px; font-family: inherit; font-size: 12px; border-radius: 3px; }
+.controls select { background: #141428; color: #e0e0e0; border: 1px solid #555; padding: 6px 10px; font-family: inherit; font-size: 12px; border-radius: 3px; }
+.controls input::placeholder { color: #777; }
+.controls input[type="number"] { width: 64px; }
+.control-label { color: #888; display: flex; align-items: center; }
+.control-section-title { color: #6cb4ee; font-size: 12px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+.control-note { color: #888; margin-bottom: 12px; font-size: 11px; }
+#customDispText { flex: 1 1 220px; min-width: 220px; }
+#errorBannerSelect { flex: 1 1 220px; min-width: 220px; }
 .regs { background: #0d0d1a; border: 1px solid #333; padding: 10px; margin-bottom: 12px; font-size: 12px; line-height: 1.6; border-radius: 4px; }
 .regs .label { color: #888; }
 .regs .val { color: #6cb4ee; }
@@ -68,6 +77,104 @@ button.active { background: #2a5a2a; border-color: #4a8a4a; }
       <button id="btnShowE" disabled>Scr E (tall)</button>
       <button id="btnShowF" disabled>Scr F (full)</button>
       <button id="btnShowG" disabled>Scr G (half)</button>
+    </div>
+    <div class="controls">
+      <button id="btnShowDone" disabled>Done/Result</button>
+      <button id="btnShowTextBlk" disabled>Text Block</button>
+      <button id="btnShowMemMgmt" disabled>Mem Mgmt</button>
+      <button id="btnShowDialog" disabled>Dialog</button>
+      <button id="btnShowStatus" disabled>Status Bar</button>
+    </div>
+    <div class="controls">
+      <button id="btnShowMemA" disabled>MemMgmt A</button>
+      <button id="btnShowMemB" disabled>MemMgmt B</button>
+    </div>
+    <div class="controls">
+      <button id="btnMsgWaiting" disabled>Msg: Waiting</button>
+      <button id="btnMsgValidating" disabled>Msg: Validating</button>
+      <button id="btnMsgDefrag" disabled>Msg: Defragmenting</button>
+      <button id="btnMsgOverflow" disabled>Msg: OVERFLOW</button>
+      <button id="btnMsgDivide" disabled>Msg: DIVIDE BY 0</button>
+    </div>
+    <div class="controls">
+      <button id="btnShow09ec0e" disabled>3-bar menu</button>
+      <button id="btnShow02985e" disabled>TEST screen A</button>
+      <button id="btnShow0b79f3" disabled>0b79f3</button>
+    </div>
+    <div class="controls">
+      <button id="btnDispAt1" disabled>DispAt(0,2) Defrag</button>
+      <button id="btnDispAt2" disabled>DispAt(2,5) Validate</button>
+      <button id="btnDispAt3" disabled>DispAt(4,8) Wait</button>
+      <button id="btnCatalog" disabled>CATALOG Menu</button>
+      <button id="btnAbout" disabled>About Screen</button>
+    </div>
+    <div class="controls">
+      <button id="btnHome05c743">Home? 05c743</button>
+      <button id="btnHome085d9b">Home? 085d9b</button>
+    </div>
+    <div class="controls">
+      <button id="btnKbdTest" disabled>Kbd Test</button>
+      <button id="btnFlashTest" disabled>Flash Test</button>
+      <button id="btnStoreResults" disabled>Store Results?</button>
+    </div>
+    <div class="controls">
+      <button id="btnInEqMain" disabled>InEqGraph Main</button>
+      <button id="btnTransGraph" disabled>TransGraph Main</button>
+      <button id="btnTestMode" disabled>TEST MODE (color)</button>
+    </div>
+    <div class="controls">
+      <button id="btnPhase5005cea3" disabled>Mem Mgmt (RAM/ARC FREE)</button>
+      <button id="btnPhase5005cf6d" disabled>Phase50 05cf6d</button>
+      <button id="btnPhase5006b6f7" disabled>Phase50 06b6f7</button>
+      <button id="btnPhase500b79af" disabled>Phase50 0b79af</button>
+      <button id="btnPhase50062160" disabled>OVERFLOW error banner</button>
+      <button id="btnPhase5009d520" disabled>Phase50 09d520</button>
+      <button id="btnOsCompatErr" disabled>OS/App Compat Error</button>
+      <button id="btnStoreResults2" disabled>SELECT BG PICTURE</button>
+      <button id="btnPressAnyKey" disabled>Press Any Key bg</button>
+      <button id="btnP55_289b1" disabled>TEST region 289b1</button>
+      <button id="btnP55_28ee2" disabled>TEST hdr 28ee2</button>
+      <button id="btnP55_29812" disabled>TEST dlg 29812</button>
+      <button id="btnP55_2982f" disabled>TEST multi 2982f</button>
+      <button id="btnP62_013d11" disabled>P62 full 013d11</button>
+      <button id="btnP62_0015e1" disabled>P62 hdr 0015e1</button>
+      <button id="btnP62_0015c7" disabled>P62 hdr 0015c7</button>
+      <button id="btnP62_012f56" disabled>P62 tab 012f56</button>
+      <button id="btnP64_os_compat" disabled>P64 compat baa1f</button>
+      <button id="btnP64_self_test" disabled>P64 self 4697c</button>
+      <button id="btnP64_kbd_test" disabled>P64 kbd 46188</button>
+      <button id="btnP64_test_halt" disabled>P64 halt 46216</button>
+      <button id="btnP64_flash_test" disabled>P64 flash 46272</button>
+      <button id="btnP64_mode" disabled>P64 mode 8bc80</button>
+      <button id="btnP64_solver" disabled>P64 solver 6b004</button>
+      <button id="btnP68_mode_full" disabled>P68 MODE full 8a6b3</button>
+      <button id="btnP69_046878" disabled>P69 046878</button>
+      <button id="btnP69_03dc1b" disabled>P69 03dc1b</button>
+      <button id="btnP69_03ebed" disabled>P69 03ebed</button>
+      <button id="btnP69_03f338" disabled>P69 03f338</button>
+      <button id="btnP69_06daaf" disabled>P69 06daaf</button>
+      <button id="btnP77_0a2b72" disabled>P77 home top bar (0a2b72)</button>
+      <button id="btnP77_0a29ec" disabled>P77 home row (0a29ec)</button>
+      <button id="btnP77_0a237e" disabled>P77 cursor prep (0a237e)</button>
+      <button id="btnP78_05e7d2" disabled>P78 parent 05e7d2</button>
+      <button id="btnP78_05e481" disabled>P78 parent 05e481</button>
+      <button id="btnP78_09cb14" disabled>P78 parent 09cb14</button>
+    </div>
+    <div class="control-section-title">Error banners</div>
+    <div class="controls">
+      <select id="errorBannerSelect" aria-label="Error banners" disabled>
+        <option>Loading error banners...</option>
+      </select>
+      <button id="btnRenderError" disabled>Render error</button>
+    </div>
+    <div id="errorBannerStatus" class="control-note">Last rendered: none.</div>
+    <div class="controls">
+      <input id="customDispText" type="text" maxlength="20" placeholder="Custom text (max 20 ASCII chars)">
+      <label class="control-label" for="customDispRow">Row</label>
+      <input id="customDispRow" type="number" min="0" max="9" value="1">
+      <label class="control-label" for="customDispCol">Col</label>
+      <input id="customDispCol" type="number" min="0" max="25" value="0">
+      <button id="btnRenderCustom">Render Custom</button>
     </div>
     <div id="status" class="status">Ready. Click Boot to start.</div>
     <div class="regs" id="regs">
@@ -190,6 +297,38 @@ let kbdUp = null;
 let lcd = null;
 let autoRunning = false;
 const STEPS_PER_FRAME = 500;
+const SET_TEXT_FG_ENTRY = 0x0802b2;
+const SCREEN_STACK_TOP = 0xD1A87E;
+const SCREEN_RENDER_STACK_BYTES = 12;
+const TEXT_FG_COLOR = 0x000000;
+const MENU_MODE_STATE_ADDR = 0xD007E0;
+const CUSTOM_TEXT_ADDR = 0xD1B000;
+const CUSTOM_TEXT_MAX_LEN = 20;
+const CUSTOM_TEXT_BUFFER_LEN = 27;
+const LCD_VRAM_BASE = 0xD40000;
+const LCD_VRAM_BYTES = 320 * 240 * 2;
+const ERROR_BANNER_ENTRY = 0x062160;
+const ERROR_BANNER_SELECTOR_ADDR = 0xD008DF;
+const ERROR_BANNER_SELECTOR_ADDR_HEX = '0xD008DF';
+const ERROR_BANNER_MODE_ADDR = 0xD00824;
+const ERROR_BANNER_MODE_ADDR_HEX = '0xD00824';
+const ERROR_BANNER_RENDER_STEPS = 8000;
+const ERROR_BANNER_SPECIAL_CASES = [
+  { label: 'Error in Xmit', selectorByte: 0x00, selectorRamAddr: ERROR_BANNER_MODE_ADDR_HEX, selectorValue: 0x37 },
+  { label: 'MemoryFull', selectorByte: 0x00, selectorRamAddr: ERROR_BANNER_MODE_ADDR_HEX, selectorValue: 0x35 },
+  { label: 'VERSION', selectorByte: 0x00, selectorRamAddr: ERROR_BANNER_MODE_ADDR_HEX, selectorValue: 0x42 },
+  { label: 'ARCHIVED', selectorByte: 0x00, selectorRamAddr: ERROR_BANNER_MODE_ADDR_HEX, selectorValue: 0x44 },
+  { label: 'OS Overlaps Apps', selectorByte: 0x00, selectorRamAddr: ERROR_BANNER_MODE_ADDR_HEX, selectorValue: 0x4B },
+  { label: 'Unsupported OS', selectorByte: 0x00, selectorRamAddr: ERROR_BANNER_MODE_ADDR_HEX, selectorValue: 0x4C },
+];
+const ERROR_BANNER_FALLBACKS = [
+  { label: 'OVERFLOW', selectorByte: 0x01, selectorRamAddr: ERROR_BANNER_SELECTOR_ADDR_HEX, selectorValue: 0x01 },
+  { label: 'DIVIDE BY 0', selectorByte: 0x02, selectorRamAddr: ERROR_BANNER_SELECTOR_ADDR_HEX, selectorValue: 0x02 },
+  { label: 'DOMAIN', selectorByte: 0x04, selectorRamAddr: ERROR_BANNER_SELECTOR_ADDR_HEX, selectorValue: 0x04 },
+  { label: 'BREAK', selectorByte: 0x06, selectorRamAddr: ERROR_BANNER_SELECTOR_ADDR_HEX, selectorValue: 0x06 },
+  { label: 'MemoryFull', selectorByte: 0x00, selectorRamAddr: ERROR_BANNER_MODE_ADDR_HEX, selectorValue: 0x35 },
+];
+let shellBooted = false;
 
 function log(html) {
   const line = document.createElement('div');
@@ -237,6 +376,349 @@ function enableButtons(booted) {
   $('btnShowE').disabled = !booted;
   $('btnShowF').disabled = !booted;
   $('btnShowG').disabled = !booted;
+  $('btnShowDone').disabled = !booted;
+  $('btnShowTextBlk').disabled = !booted;
+  $('btnShowMemMgmt').disabled = !booted;
+  $('btnShowDialog').disabled = !booted;
+  $('btnShowStatus').disabled = !booted;
+  $('btnShowMemA').disabled = !booted;
+  $('btnShowMemB').disabled = !booted;
+  $('btnMsgWaiting').disabled = !booted;
+  $('btnMsgValidating').disabled = !booted;
+  $('btnMsgDefrag').disabled = !booted;
+  $('btnMsgOverflow').disabled = !booted;
+  $('btnMsgDivide').disabled = !booted;
+  $('btnShow09ec0e').disabled = !booted;
+  $('btnShow02985e').disabled = !booted;
+  $('btnShow0b79f3').disabled = !booted;
+  $('btnDispAt1').disabled = !booted;
+  $('btnDispAt2').disabled = !booted;
+  $('btnDispAt3').disabled = !booted;
+  $('btnCatalog').disabled = !booted;
+  $('btnAbout').disabled = !booted;
+  $('btnKbdTest').disabled = !booted;
+  $('btnFlashTest').disabled = !booted;
+  $('btnStoreResults').disabled = !booted;
+  $('btnInEqMain').disabled = !booted;
+  $('btnTransGraph').disabled = !booted;
+  $('btnTestMode').disabled = !booted;
+  $('btnPhase5005cea3').disabled = !booted;
+  $('btnPhase5005cf6d').disabled = !booted;
+  $('btnPhase5006b6f7').disabled = !booted;
+  $('btnPhase500b79af').disabled = !booted;
+  $('btnPhase50062160').disabled = !booted;
+  $('btnPhase5009d520').disabled = !booted;
+  $('btnOsCompatErr').disabled = !booted;
+  $('btnStoreResults2').disabled = !booted;
+  $('btnPressAnyKey').disabled = !booted;
+  $('btnP55_289b1').disabled = !booted;
+  $('btnP55_28ee2').disabled = !booted;
+  $('btnP55_29812').disabled = !booted;
+  $('btnP55_2982f').disabled = !booted;
+  $('btnP62_013d11').disabled = !booted;
+  $('btnP62_0015e1').disabled = !booted;
+  $('btnP62_0015c7').disabled = !booted;
+  $('btnP62_012f56').disabled = !booted;
+  $('btnP64_os_compat').disabled = !booted;
+  $('btnP64_self_test').disabled = !booted;
+  $('btnP64_kbd_test').disabled = !booted;
+  $('btnP64_test_halt').disabled = !booted;
+  $('btnP64_flash_test').disabled = !booted;
+  $('btnP64_mode').disabled = !booted;
+  $('btnP64_solver').disabled = !booted;
+  $('btnP68_mode_full').disabled = !booted;
+  $('btnP69_046878').disabled = !booted;
+  $('btnP69_03dc1b').disabled = !booted;
+  $('btnP69_03ebed').disabled = !booted;
+  $('btnP69_03f338').disabled = !booted;
+  $('btnP69_06daaf').disabled = !booted;
+  $('btnP77_0a2b72').disabled = !booted;
+  $('btnP77_0a29ec').disabled = !booted;
+  $('btnP77_0a237e').disabled = !booted;
+  $('btnP78_05e7d2').disabled = !booted;
+  $('btnP78_05e481').disabled = !booted;
+  $('btnP78_09cb14').disabled = !booted;
+}
+
+function fillSentinel(mem, start, bytes) {
+  mem.fill(0xFF, start, start + bytes);
+}
+
+function callSetTextFgColor(ex, cpu, mem, fgColor) {
+  cpu.halted = false;
+  cpu.iff1 = 0;
+  cpu.iff2 = 0;
+  cpu._iy = 0xD00080;
+  cpu.hl = fgColor;
+  cpu.sp = SCREEN_STACK_TOP - 3;
+  fillSentinel(mem, cpu.sp, 3);
+
+  ex.runFrom(SET_TEXT_FG_ENTRY, 'adl', {
+    maxSteps: 100,
+    maxLoopIterations: 32,
+  });
+}
+
+function buildCustomDispMessageBuffer(rawText) {
+  const truncated = rawText.slice(0, CUSTOM_TEXT_MAX_LEN);
+
+  for (let i = 0; i < truncated.length; i++) {
+    const code = truncated.charCodeAt(i);
+    if (code < 0x20 || code > 0x7E) {
+      return { error: 'Custom text only supports printable ASCII characters.' };
+    }
+  }
+
+  const bytes = new Uint8Array(CUSTOM_TEXT_BUFFER_LEN);
+  for (let i = 0; i < truncated.length; i++) bytes[i] = truncated.charCodeAt(i);
+
+  return { text: truncated, bytes };
+}
+
+function formatHexByte(value) {
+  return `0x${hex(value & 0xFF, 2).toUpperCase()}`;
+}
+
+function parseByte(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value & 0xFF;
+  }
+
+  if (typeof value !== 'string' || value.trim() === '') {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? (parsed & 0xFF) : null;
+}
+
+function normalizeErrorBannerAddr(value) {
+  if (typeof value === 'string') {
+    const normalized = value.trim().toUpperCase();
+    if (normalized === ERROR_BANNER_SELECTOR_ADDR_HEX) return ERROR_BANNER_SELECTOR_ADDR_HEX;
+    if (normalized === ERROR_BANNER_MODE_ADDR_HEX) return ERROR_BANNER_MODE_ADDR_HEX;
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    if (value === ERROR_BANNER_SELECTOR_ADDR) return ERROR_BANNER_SELECTOR_ADDR_HEX;
+    if (value === ERROR_BANNER_MODE_ADDR) return ERROR_BANNER_MODE_ADDR_HEX;
+  }
+
+  return null;
+}
+
+function buildErrorBannerEntry(label, selectorByte, selectorRamAddr, selectorValue) {
+  return {
+    label,
+    selectorByte: selectorByte & 0xFF,
+    selectorRamAddr,
+    selectorValue: selectorValue & 0xFF,
+  };
+}
+
+function getErrorBannerLabel(entry) {
+  const label = entry?.label ?? entry?.stringText ?? entry?.name ?? entry?.text ?? entry?.title;
+  return typeof label === 'string' ? label : '';
+}
+
+function normalizeErrorBannerEntries(data) {
+  const rawEntries = Array.isArray(data) ? data : data?.entries ?? data?.banners ?? [];
+  const normalized = [];
+  const seen = new Set();
+
+  for (const rawEntry of rawEntries) {
+    const label = getErrorBannerLabel(rawEntry);
+    if (!label) continue;
+
+    const selectorRamAddr = normalizeErrorBannerAddr(
+      rawEntry?.selectorRamAddr ?? rawEntry?.selectorAddr ?? rawEntry?.selectorAddress,
+    );
+    const selectorValue = parseByte(rawEntry?.selectorValue ?? rawEntry?.selector ?? rawEntry?.value);
+    const selectorByte = parseByte(rawEntry?.selectorByte);
+
+    if (selectorRamAddr && selectorValue !== null) {
+      const entry = buildErrorBannerEntry(
+        label,
+        selectorByte ?? (selectorRamAddr === ERROR_BANNER_SELECTOR_ADDR_HEX ? selectorValue : 0x00),
+        selectorRamAddr,
+        selectorValue,
+      );
+      const key = `${entry.selectorRamAddr}:${entry.selectorValue}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      normalized.push(entry);
+      continue;
+    }
+
+    const index = parseByte(rawEntry?.index ?? rawEntry?.pointerIndex ?? rawEntry?.tableIndex);
+    if (index === null) continue;
+
+    const entry = buildErrorBannerEntry(label, index + 1, ERROR_BANNER_SELECTOR_ADDR_HEX, index + 1);
+    const key = `${entry.selectorRamAddr}:${entry.selectorValue}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    normalized.push(entry);
+  }
+
+  for (const specialCase of ERROR_BANNER_SPECIAL_CASES) {
+    const key = `${specialCase.selectorRamAddr}:${specialCase.selectorValue}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    normalized.push({ ...specialCase });
+  }
+
+  return normalized;
+}
+
+function syncErrorBannerControls() {
+  $('btnRenderError').disabled = !shellBooted || $('errorBannerSelect').disabled || $('errorBannerSelect').options.length === 0;
+}
+
+function populateErrorBannerSelect(entries) {
+  const selectEl = $('errorBannerSelect');
+  selectEl.innerHTML = '';
+
+  if (entries.length === 0) {
+    const option = document.createElement('option');
+    option.textContent = 'No error banners available';
+    option.value = '';
+    selectEl.appendChild(option);
+    selectEl.disabled = true;
+    syncErrorBannerControls();
+    return;
+  }
+
+  for (const entry of entries) {
+    const option = document.createElement('option');
+    option.textContent = entry.label;
+    option.value = JSON.stringify({
+      selectorByte: entry.selectorByte,
+      selectorRamAddr: entry.selectorRamAddr,
+      selectorValue: entry.selectorValue,
+    });
+    selectEl.appendChild(option);
+  }
+
+  selectEl.disabled = false;
+  syncErrorBannerControls();
+}
+
+function setLastRenderedErrorBanner(label, config) {
+  $('errorBannerStatus').textContent = `Last rendered: ${label} (${config.selectorRamAddr}=${formatHexByte(config.selectorValue)})`;
+}
+
+async function loadErrorBannerOptions() {
+  try {
+    const resp = await fetch('./error-banners.json');
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+    const entries = normalizeErrorBannerEntries(await resp.json());
+    if (entries.length === 0) throw new Error('No usable error banner entries found.');
+
+    populateErrorBannerSelect(entries);
+  } catch (error) {
+    populateErrorBannerSelect(ERROR_BANNER_FALLBACKS.map(entry => ({ ...entry })));
+    log(`<span class="info">--- error-banners.json unavailable, using inline fallback (${error.message}) ---</span>`);
+  }
+}
+
+function getSelectedErrorBanner() {
+  const selectEl = $('errorBannerSelect');
+  const option = selectEl.options[selectEl.selectedIndex];
+  if (!option || !option.value) return null;
+
+  try {
+    return {
+      label: option.textContent,
+      config: JSON.parse(option.value),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function renderErrorBanner(config, label) {
+  if (!PRELIFTED_BLOCKS) {
+    setStatus('Boot first so the ROM module is loaded.', true);
+    return;
+  }
+
+  if (config.selectorRamAddr !== ERROR_BANNER_SELECTOR_ADDR_HEX && config.selectorRamAddr !== ERROR_BANNER_MODE_ADDR_HEX) {
+    setStatus('Selected banner has an invalid selector address.', true);
+    return;
+  }
+
+  autoRunning = false;
+  $('btnAutoRun').textContent = 'AutoRun';
+  $('btnAutoRun').classList.remove('active');
+
+  setStatus(`${label}: cold boot + render setup (this can take a second)...`);
+
+  const romBytes = decodeEmbeddedRom();
+  const p2 = createPeripheralBus({ pllDelay: 2, timerInterrupt: false });
+  const ex2 = createExecutor(PRELIFTED_BLOCKS, romBytes, { peripherals: p2 });
+  const cpu2 = ex2.cpu;
+  const memory = {
+    write(addr, value) {
+      romBytes[addr] = value & 0xFF;
+    },
+  };
+
+  ex2.runFrom(0x000000, 'z80', { maxSteps: 20000, maxLoopIterations: 32 });
+
+  cpu2.halted = false;
+  cpu2.iff1 = 0;
+  cpu2.iff2 = 0;
+  cpu2.sp = SCREEN_STACK_TOP - 3;
+  fillSentinel(romBytes, cpu2.sp, 3);
+  ex2.runFrom(0x08C331, 'adl', { maxSteps: 100000, maxLoopIterations: 500 });
+
+  cpu2.mbase = 0xD0;
+  romBytes.fill(0x00, LCD_VRAM_BASE, LCD_VRAM_BASE + LCD_VRAM_BYTES);
+  callSetTextFgColor(ex2, cpu2, romBytes, TEXT_FG_COLOR);
+
+  if (config.selectorRamAddr === ERROR_BANNER_SELECTOR_ADDR_HEX) {
+    memory.write(ERROR_BANNER_SELECTOR_ADDR, config.selectorValue);
+    memory.write(ERROR_BANNER_MODE_ADDR, 0x00);
+  } else {
+    memory.write(ERROR_BANNER_MODE_ADDR, config.selectorValue);
+    memory.write(ERROR_BANNER_SELECTOR_ADDR, 0x00);
+  }
+
+  cpu2.halted = false;
+  cpu2.iff1 = 0;
+  cpu2.iff2 = 0;
+  cpu2.mbase = 0xD0;
+  cpu2._iy = 0xD00080;
+  cpu2.sp = SCREEN_STACK_TOP - SCREEN_RENDER_STACK_BYTES;
+  fillSentinel(romBytes, cpu2.sp, SCREEN_RENDER_STACK_BYTES);
+  cpu2.f = 0x40;
+
+  const t0 = performance.now();
+  const r = ex2.runFrom(ERROR_BANNER_ENTRY, 'adl', {
+    maxSteps: ERROR_BANNER_RENDER_STEPS,
+    maxLoopIterations: 2000,
+  });
+  const dt = Math.round(performance.now() - t0);
+
+  executor = ex2;
+  cpu = cpu2;
+  peripherals = p2;
+  totalSteps = r.steps;
+  lastPc = r.lastPc;
+  lastMode = r.lastMode;
+
+  if (lcd) lcd.destroy();
+  lcd = createLCDRenderer($('lcd'), romBytes);
+  syncLCDState();
+  lcd.renderFrame();
+
+  updateRegs();
+  updateKeyStateDisplay();
+  updateKeyboardOverlay();
+  setLastRenderedErrorBanner(label, config);
+  setStatus(`${label}: ${r.steps} steps → ${r.termination} at ${hex(r.lastPc, 6)} (${dt} ms)`);
+  log(`<span class="info">--- Error banner rendered: ${label} (${r.steps} steps, ${dt} ms) ---</span>`);
 }
 
 // Phase 37: freshly boot → run OS init → runFrom(screen entry) and swap the
@@ -247,7 +729,7 @@ function enableButtons(booted) {
 //   0x081670  STAT/MATRIX editor grid  (Phase 31)
 //   0x0296dd  MODE screen              (Phase 34, 14292 cells)
 //   0x078419  Y= / STAT PLOT editor    (Phase 36, 56520 cells)
-function showScreen(entryAddr, entryMode, name, maxSteps = 300000) {
+function showScreen(entryAddr, entryMode, name, maxSteps = 300000, hlValue = null, deValue = null, bcValue = null, scratchBytes = null, menuMode = null, skipExplicitOsInit = false) {
   if (!PRELIFTED_BLOCKS) {
     setStatus('Boot first so the ROM module is loaded.', true);
     return;
@@ -256,7 +738,7 @@ function showScreen(entryAddr, entryMode, name, maxSteps = 300000) {
   $('btnAutoRun').textContent = 'AutoRun';
   $('btnAutoRun').classList.remove('active');
 
-  setStatus(`${name}: booting + OS init (this can take a second)...`);
+  setStatus(`${name}: cold boot + render setup (this can take a second)...`);
 
   const romBytes = decodeEmbeddedRom();
   // Screen render paths need timer IRQ disabled — the default 200-tick timer
@@ -265,32 +747,54 @@ function showScreen(entryAddr, entryMode, name, maxSteps = 300000) {
   const ex2 = createExecutor(PRELIFTED_BLOCKS, romBytes, { peripherals: p2 });
   const cpu2 = ex2.cpu;
 
-  // Stage 1: cold boot (reaches 0x0019b5 halt after ~8800 steps)
+  // Stage 1: cold boot (reaches 0x0019b5 halt after ~8800 steps).
   ex2.runFrom(0x000000, 'z80', { maxSteps: 20000, maxLoopIterations: 32 });
 
-  // Stage 2: OS init handler with sentinel return frame
-  cpu2.halted = false; cpu2.iff1 = 0; cpu2.iff2 = 0;
-  cpu2.sp = 0xD1A87E - 3;
-  romBytes[cpu2.sp] = 0xFF; romBytes[cpu2.sp + 1] = 0xFF; romBytes[cpu2.sp + 2] = 0xFF;
-  ex2.runFrom(0x08C331, 'adl', { maxSteps: 100000, maxLoopIterations: 500 });
+  // Stage 2: re-run OS init handler at 0x08C331 with a sentinel return frame.
+  // Phase 49 finding: this re-run actually MATTERS for most catalog/menu screens.
+  // Boot leaves d00000-d02000 fully initialized (8192 bytes set, callback at 0x015AD9),
+  // but those screens render BETTER text (more fg pixels) when 0x08C331 is re-run
+  // and the post-init RAM is partially cleared. Empirically: ABOUT 10439 fg with
+  // re-run vs 775 fg without; CATALOG 14056 vs 3109; TEST MODE 5224 colored vs 1042.
+  // Pass skipExplicitOsInit=true for screens like 'Done' (0x089100) that benefit
+  // from the cleaner post-boot state instead.
+  if (!skipExplicitOsInit) {
+    cpu2.halted = false; cpu2.iff1 = 0; cpu2.iff2 = 0;
+    cpu2.sp = SCREEN_STACK_TOP - 3;
+    fillSentinel(romBytes, cpu2.sp, 3);
+    ex2.runFrom(0x08C331, 'adl', { maxSteps: 100000, maxLoopIterations: 500 });
+  }
 
   // Clear VRAM so the render is visible on a black background
   for (let i = 0xD40000; i < 0xD40000 + 320 * 240 * 2; i++) romBytes[i] = 0x00;
 
-  // Stage 3: prep stack + flags + IY for the screen-render call
+  // Stage 3: let the OS helper set fg=black and bg=white for text rasterization.
+  callSetTextFgColor(ex2, cpu2, romBytes, TEXT_FG_COLOR);
+
+  // Phase 48: optionally override the shell/menu state byte before entering
+  // a mode-sensitive screen routine.
+  if (menuMode !== null) {
+    romBytes[MENU_MODE_STATE_ADDR] = menuMode & 0xFF;
+  }
+
+  // Stage 4: prep stack + flags + IY for the screen-render call
   cpu2.halted = false; cpu2.iff1 = 0; cpu2.iff2 = 0;
   cpu2._iy = 0xD00080;
-  cpu2.sp = 0xD1A87E - 12;
-  for (let i = 0; i < 12; i++) romBytes[cpu2.sp + i] = 0xFF;
+  cpu2.sp = SCREEN_STACK_TOP - SCREEN_RENDER_STACK_BYTES;
+  fillSentinel(romBytes, cpu2.sp, SCREEN_RENDER_STACK_BYTES);
   cpu2.f = 0x40; // Z flag set — avoids taking RET NZ at function entry
+  // Phase 46.2: optional HL parameter (string pointer for DispMessage routines)
+  if (hlValue !== null) cpu2.hl = hlValue;
+  // Phase 47.1: optional DE (cursor pos) and BC (string length) for DispMessageAt
+  if (deValue !== null) cpu2.de = deValue;
+  if (bcValue !== null) cpu2.bc = bcValue;
+  if (scratchBytes?.bytes?.length) {
+    for (let i = 0; i < scratchBytes.bytes.length; i++) {
+      romBytes[scratchBytes.addr + i] = scratchBytes.bytes[i];
+    }
+  }
 
-  // Phase 40: text-glyph fg/bg color RAM vars (read by 0x0a1a3b inner writer
-  // via LD DE,(0x002688)/LD DE,(0x00268a) which resolve through MBASE=0xD0).
-  // Defaults are 0xFFFF/0xFFFF → glyphs invisible. Set fg=black, bg=white
-  // so MODE/Y=/etc render real letter shapes.
-  romBytes[0xD02688] = 0x00; romBytes[0xD02689] = 0x00; // fg = 0x0000 black
-  romBytes[0xD0268A] = 0xFF; romBytes[0xD0268B] = 0xFF; // bg = 0xFFFF white
-
+  // Stage 5: enter the target screen routine
   const t0 = performance.now();
   const r = ex2.runFrom(entryAddr, entryMode, { maxSteps, maxLoopIterations: 2000 });
   const dt = Math.round(performance.now() - t0);
@@ -313,6 +817,10 @@ function showScreen(entryAddr, entryMode, name, maxSteps = 300000) {
   updateKeyboardOverlay();
   setStatus(`${name}: ${r.steps} steps → ${r.termination} at ${hex(r.lastPc, 6)} (${dt} ms)`);
   log(`<span class="info">--- ${name} rendered (${r.steps} steps, ${dt} ms) ---</span>`);
+}
+
+function showScreenWithMenuMode(entryAddr, entryMode, name, menuMode, maxSteps = 300000) {
+  showScreen(entryAddr, entryMode, name, maxSteps, null, null, null, null, menuMode);
 }
 
 function syncLCDState() {
@@ -431,6 +939,8 @@ $('btnBoot').addEventListener('click', async () => {
   $('activeKeys').textContent = 'none';
   $('scanCode').textContent = '0x00';
   updateKeyboardOverlay();
+  shellBooted = true;
+  syncErrorBannerControls();
 
   log(`<span class="info">--- Boot from 0x000000:z80 ---</span>`);
   enableButtons(true);
@@ -460,6 +970,114 @@ $('btnShowD').addEventListener('click', () => showScreen(0x08aac3, 'adl', 'Scree
 $('btnShowE').addEventListener('click', () => showScreen(0x09e312, 'adl', 'Screen E', 400000));
 $('btnShowF').addEventListener('click', () => showScreen(0x0863b9, 'adl', 'Screen F', 400000));
 $('btnShowG').addEventListener('click', () => showScreen(0x08aa67, 'adl', 'Screen G', 200000));
+// Phase 43/44: legible-text screens (first real alphabetical rendering)
+// Phase 49: 'Done' renders ~13× more text with skipExplicitOsInit=true (boot-only template)
+$('btnShowDone').addEventListener('click', () => showScreen(0x089100, 'adl', 'Done/Result', 100000, null, null, null, null, null, true));
+$('btnShowTextBlk').addEventListener('click', () => showScreen(0x045de1, 'adl', 'Text Block', 400000));
+// Phase 44.4: Memory Management family (largest text renders found via 0x045xxx caller scan)
+$('btnShowMemMgmt').addEventListener('click', () => showScreen(0x0458bf, 'adl', 'Mem Mgmt (2-bar)', 400000));
+$('btnShowDialog').addEventListener('click', () => showScreen(0x046272, 'adl', '2-Word Dialog', 400000));
+// Status Line: pass HL=0x03f2f1 ("Defragmenting" string) to render legible inverse-video text
+$('btnShowStatus').addEventListener('click', () => showScreen(0x03f300, 'adl', 'Status: Defragmenting', 300000, 0x03f2f1));
+// Phase 46.3: DispMessage primitive at 0x03f300 with various ROM string pointers
+$('btnMsgWaiting').addEventListener('click', () => showScreen(0x03f300, 'adl', 'Msg: Waiting', 300000, 0x03f2d0));
+$('btnMsgValidating').addEventListener('click', () => showScreen(0x03f300, 'adl', 'Msg: Validating', 300000, 0x03f2e5));
+$('btnMsgDefrag').addEventListener('click', () => showScreen(0x03f300, 'adl', 'Msg: Defragmenting', 300000, 0x03f2f1));
+$('btnMsgOverflow').addEventListener('click', () => showScreen(0x03f300, 'adl', 'Msg: OVERFLOW', 300000, 0x062338));
+$('btnMsgDivide').addEventListener('click', () => showScreen(0x03f300, 'adl', 'Msg: DIVIDE BY 0', 300000, 0x062391));
+// Phase 46.6 (Codex batch scan results): top hits across 0x024/0x09e/0x0b2 regions
+$('btnShow09ec0e').addEventListener('click', () => showScreen(0x09ec0e, 'adl', '3-bar menu', 200000));
+$('btnShow02985e').addEventListener('click', () => showScreen(0x02985e, 'adl', 'TEST screen A', 100000));
+$('btnShow0b79f3').addEventListener('click', () => showScreen(0x0b79f3, 'adl', '0b79f3', 100000));
+// Phase 47.1: DispMessageAt at 0x03f31c — DE = (col<<8)|row, HL = string ptr, BC = 27 (copy length)
+$('btnDispAt1').addEventListener('click', () => showScreen(0x03f31c, 'adl', 'DispAt(0,2) Defragmenting', 100000, 0x03f2f1, 0x000002, 0x1B));
+$('btnDispAt2').addEventListener('click', () => showScreen(0x03f31c, 'adl', 'DispAt(2,5) Validating', 100000, 0x03f2e5, 0x000205, 0x1B));
+$('btnDispAt3').addEventListener('click', () => showScreen(0x03f31c, 'adl', 'DispAt(4,8) Waiting', 100000, 0x03f2d0, 0x000408, 0x1B));
+$('btnCatalog').addEventListener('click', () => showScreen(0x04e135, 'adl', 'CATALOG menu', 200000));
+// Phase 47.2: ABOUT SCREEN at 0x09ebf6 — renders TEXAS INSTRUMENTS / (C)1990-2024 / Help:education.ti.com
+$('btnAbout').addEventListener('click', () => showScreen(0x09ebf6, 'adl', 'ABOUT screen', 200000));
+$('btnHome05c743').addEventListener('click', () => showScreenWithMenuMode(0x05c743, 'adl', 'Home? 05c743', 0x40, 200000));
+$('btnHome085d9b').addEventListener('click', () => showScreenWithMenuMode(0x085d9b, 'adl', 'Home? 085d9b', 0x40, 200000));
+$('btnRenderCustom').addEventListener('click', () => {
+  const { text, bytes, error } = buildCustomDispMessageBuffer($('customDispText').value);
+  if (error) {
+    setStatus(error, true);
+    return;
+  }
+
+  const row = Number.parseInt($('customDispRow').value, 10);
+  const col = Number.parseInt($('customDispCol').value, 10);
+  const safeRow = Number.isNaN(row) ? 1 : row;
+  const safeCol = Number.isNaN(col) ? 0 : col;
+
+  showScreen(
+    0x03f31c,
+    'adl',
+    `Custom: ${text}`,
+    300000,
+    CUSTOM_TEXT_ADDR,
+    (safeCol << 8) | safeRow,
+    CUSTOM_TEXT_BUFFER_LEN,
+    { addr: CUSTOM_TEXT_ADDR, bytes },
+  );
+});
+// Phase 47.3: test/info screens identified via strings-near-callers scan
+$('btnKbdTest').addEventListener('click', () => showScreen(0x04615c, 'adl', 'Kbd Test', 400000));
+$('btnFlashTest').addEventListener('click', () => showScreen(0x046246, 'adl', 'FLASH System Test', 400000));
+$('btnStoreResults').addEventListener('click', () => showScreen(0x06aff0, 'adl', 'Store Results?', 400000));
+// Phase 47.4: ClrScreen-callers scan top hits — apps and TEST MODE
+$('btnInEqMain').addEventListener('click', () => showScreen(0x074817, 'adl', 'InEqGraph Main', 200000));
+$('btnTransGraph').addEventListener('click', () => showScreen(0x0b9c64, 'adl', 'Transformation Graphing', 200000));
+$('btnTestMode').addEventListener('click', () => showScreen(0x028944, 'adl', 'TEST MODE colorful', 200000));
+$('btnPhase5005cea3').addEventListener('click', () => showScreen(0x05cea3, 'adl', 'Mem Mgmt RAM/ARC FREE', 200000));
+$('btnPhase5005cf6d').addEventListener('click', () => showScreen(0x05cf6d, 'adl', 'Phase50 0x05cf6d', 200000));
+$('btnPhase5006b6f7').addEventListener('click', () => showScreen(0x06b6f7, 'adl', 'Phase50 0x06b6f7', 200000));
+$('btnPhase500b79af').addEventListener('click', () => showScreen(0x0b79af, 'adl', 'Phase50 0x0b79af', 200000));
+$('btnPhase50062160').addEventListener('click', () => showScreen(0x062160, 'adl', 'OVERFLOW error banner', 200000));
+$('btnPhase5009d520').addEventListener('click', () => showScreen(0x09d520, 'adl', 'Phase50 0x09d520', 200000));
+// Phase 51 alternate-entry wins
+$('btnOsCompatErr').addEventListener('click', () => showScreen(0x0baa00, 'adl', 'OS/App Compat Error', 200000));
+$('btnStoreResults2').addEventListener('click', () => showScreen(0x06afa0, 'adl', 'SELECT BG PICTURE', 200000));
+$('btnPressAnyKey').addEventListener('click', () => showScreen(0x0b7240, 'adl', 'Press Any Key bg', 200000));
+// Phase 55: TEST MODE region new hits
+$('btnP55_289b1').addEventListener('click', () => showScreen(0x289b1, 'adl', 'TEST 289b1', 200000));
+$('btnP55_28ee2').addEventListener('click', () => showScreen(0x28ee2, 'adl', 'TEST hdr 28ee2', 200000));
+$('btnP55_29812').addEventListener('click', () => showScreen(0x29812, 'adl', 'TEST dlg 29812', 200000));
+$('btnP55_2982f').addEventListener('click', () => showScreen(0x2982f, 'adl', 'TEST multi 2982f', 200000));
+$('btnP62_013d11').addEventListener('click', () => showScreen(0x013d11, 'adl', 'P62 013d11 full screen', 200000));
+$('btnP62_0015e1').addEventListener('click', () => showScreen(0x0015e1, 'adl', 'P62 0015e1 header', 200000));
+$('btnP62_0015c7').addEventListener('click', () => showScreen(0x0015c7, 'adl', 'P62 0015c7 header', 200000));
+$('btnP62_012f56').addEventListener('click', () => showScreen(0x012f56, 'adl', 'P62 012f56 tab', 200000));
+$('btnP64_os_compat').addEventListener('click', () => showScreen(0x0baa1f, 'adl', 'P64 compat 0baa1f', 200000));
+$('btnP64_self_test').addEventListener('click', () => showScreen(0x04697c, 'adl', 'P64 self 04697c', 200000));
+$('btnP64_kbd_test').addEventListener('click', () => showScreen(0x046188, 'adl', 'P64 kbd 046188', 200000));
+$('btnP64_test_halt').addEventListener('click', () => showScreen(0x046216, 'adl', 'P64 halt 046216', 200000));
+$('btnP64_flash_test').addEventListener('click', () => showScreen(0x046272, 'adl', 'P64 flash 046272', 200000));
+$('btnP64_mode').addEventListener('click', () => showScreen(0x08bc80, 'adl', 'P64 mode 08bc80', 200000));
+$('btnP64_solver').addEventListener('click', () => showScreen(0x06b004, 'adl', 'P64 solver 06b004', 200000));
+$('btnP68_mode_full').addEventListener('click', () => showScreen(0x08a6b3, 'adl', 'P68 MODE full 08a6b3', 200000));
+$('btnP69_046878').addEventListener('click', () => showScreen(0x046878, 'adl', 'P69 046878', 200000));
+$('btnP69_03dc1b').addEventListener('click', () => showScreen(0x03dc1b, 'adl', 'P69 03dc1b', 200000));
+$('btnP69_03ebed').addEventListener('click', () => showScreen(0x03ebed, 'adl', 'P69 03ebed', 200000));
+$('btnP69_03f338').addEventListener('click', () => showScreen(0x03f338, 'adl', 'P69 03f338', 200000));
+$('btnP69_06daaf').addEventListener('click', () => showScreen(0x06daaf, 'adl', 'P69 06daaf', 200000));
+$('btnP77_0a2b72').addEventListener('click', () => showScreen(0x0a2b72, 'adl', 'P77 home top 0a2b72', 200000, null, 0x004f));
+$('btnP77_0a29ec').addEventListener('click', () => showScreen(0x0a29ec, 'adl', 'P77 home row 0a29ec', 200000));
+$('btnP77_0a237e').addEventListener('click', () => showScreen(0x0a237e, 'adl', 'P77 cursor 0a237e', 200000));
+$('btnP78_05e7d2').addEventListener('click', () => showScreen(0x05e7d2, 'adl', 'P78 parent 05e7d2', 500000));
+$('btnP78_05e481').addEventListener('click', () => showScreen(0x05e481, 'adl', 'P78 parent 05e481', 500000));
+$('btnP78_09cb14').addEventListener('click', () => showScreen(0x09cb14, 'adl', 'P78 parent 09cb14', 500000));
+$('btnRenderError').addEventListener('click', () => {
+  const selected = getSelectedErrorBanner();
+  if (!selected) {
+    setStatus('Select an error banner first.', true);
+    return;
+  }
+
+  renderErrorBanner(selected.config, selected.label);
+});
+$('btnShowMemA').addEventListener('click', () => showScreen(0x045e7c, 'adl', 'MemMgmt A (inverse)', 200000));
+$('btnShowMemB').addEventListener('click', () => showScreen(0x045e9c, 'adl', 'MemMgmt B (normal)', 200000));
 $('btnAutoRun').addEventListener('click', () => {
   autoRunning = !autoRunning;
   $('btnAutoRun').textContent = autoRunning ? 'Stop' : 'AutoRun';
@@ -490,11 +1108,14 @@ $('btnReset').addEventListener('click', () => {
   lastPc = 0;
   lastMode = 'z80';
   logEl.innerHTML = '';
+  shellBooted = false;
   enableButtons(false);
+  syncErrorBannerControls();
   updateRegs();
   setStatus('Ready. Click Boot to start.');
 });
 
+loadErrorBannerOptions();
 log(`<span class="info">Click Boot to load ROM (~15 MB compressed)</span>`);
 </script>
 </body>
