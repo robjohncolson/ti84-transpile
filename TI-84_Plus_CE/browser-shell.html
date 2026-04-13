@@ -655,12 +655,14 @@ function renderErrorBanner(config, label) {
   setStatus(`${label}: cold boot + render setup (this can take a second)...`);
 
   const romBytes = decodeEmbeddedRom();
+  const mem = new Uint8Array(0x1000000);
+  mem.set(romBytes);
   const p2 = createPeripheralBus({ pllDelay: 2, timerInterrupt: false });
-  const ex2 = createExecutor(PRELIFTED_BLOCKS, romBytes, { peripherals: p2 });
+  const ex2 = createExecutor(PRELIFTED_BLOCKS, mem, { peripherals: p2 });
   const cpu2 = ex2.cpu;
   const memory = {
     write(addr, value) {
-      romBytes[addr] = value & 0xFF;
+      mem[addr] = value & 0xFF;
     },
   };
 
@@ -670,12 +672,12 @@ function renderErrorBanner(config, label) {
   cpu2.iff1 = 0;
   cpu2.iff2 = 0;
   cpu2.sp = SCREEN_STACK_TOP - 3;
-  fillSentinel(romBytes, cpu2.sp, 3);
+  fillSentinel(mem, cpu2.sp, 3);
   ex2.runFrom(0x08C331, 'adl', { maxSteps: 100000, maxLoopIterations: 500 });
 
   cpu2.mbase = 0xD0;
-  romBytes.fill(0x00, LCD_VRAM_BASE, LCD_VRAM_BASE + LCD_VRAM_BYTES);
-  callSetTextFgColor(ex2, cpu2, romBytes, TEXT_FG_COLOR);
+  mem.fill(0x00, LCD_VRAM_BASE, LCD_VRAM_BASE + LCD_VRAM_BYTES);
+  callSetTextFgColor(ex2, cpu2, mem, TEXT_FG_COLOR);
 
   if (config.selectorRamAddr === ERROR_BANNER_SELECTOR_ADDR_HEX) {
     memory.write(ERROR_BANNER_SELECTOR_ADDR, config.selectorValue);
@@ -691,7 +693,7 @@ function renderErrorBanner(config, label) {
   cpu2.mbase = 0xD0;
   cpu2._iy = 0xD00080;
   cpu2.sp = SCREEN_STACK_TOP - SCREEN_RENDER_STACK_BYTES;
-  fillSentinel(romBytes, cpu2.sp, SCREEN_RENDER_STACK_BYTES);
+  fillSentinel(mem, cpu2.sp, SCREEN_RENDER_STACK_BYTES);
   cpu2.f = 0x40;
 
   const t0 = performance.now();
@@ -709,7 +711,7 @@ function renderErrorBanner(config, label) {
   lastMode = r.lastMode;
 
   if (lcd) lcd.destroy();
-  lcd = createLCDRenderer($('lcd'), romBytes);
+  lcd = createLCDRenderer($('lcd'), mem);
   syncLCDState();
   lcd.renderFrame();
 
@@ -741,10 +743,12 @@ function showScreen(entryAddr, entryMode, name, maxSteps = 300000, hlValue = nul
   setStatus(`${name}: cold boot + render setup (this can take a second)...`);
 
   const romBytes = decodeEmbeddedRom();
+  const mem = new Uint8Array(0x1000000);
+  mem.set(romBytes);
   // Screen render paths need timer IRQ disabled — the default 200-tick timer
   // hijacks execution mid-OS-init and corrupts state (Phase 28 / Phase 33).
   const p2 = createPeripheralBus({ pllDelay: 2, timerInterrupt: false });
-  const ex2 = createExecutor(PRELIFTED_BLOCKS, romBytes, { peripherals: p2 });
+  const ex2 = createExecutor(PRELIFTED_BLOCKS, mem, { peripherals: p2 });
   const cpu2 = ex2.cpu;
 
   // Stage 1: cold boot (reaches 0x0019b5 halt after ~8800 steps).
@@ -761,27 +765,27 @@ function showScreen(entryAddr, entryMode, name, maxSteps = 300000, hlValue = nul
   if (!skipExplicitOsInit) {
     cpu2.halted = false; cpu2.iff1 = 0; cpu2.iff2 = 0;
     cpu2.sp = SCREEN_STACK_TOP - 3;
-    fillSentinel(romBytes, cpu2.sp, 3);
+    fillSentinel(mem, cpu2.sp, 3);
     ex2.runFrom(0x08C331, 'adl', { maxSteps: 100000, maxLoopIterations: 500 });
   }
 
   // Clear VRAM so the render is visible on a black background
-  for (let i = 0xD40000; i < 0xD40000 + 320 * 240 * 2; i++) romBytes[i] = 0x00;
+  for (let i = 0xD40000; i < 0xD40000 + 320 * 240 * 2; i++) mem[i] = 0x00;
 
   // Stage 3: let the OS helper set fg=black and bg=white for text rasterization.
-  callSetTextFgColor(ex2, cpu2, romBytes, TEXT_FG_COLOR);
+  callSetTextFgColor(ex2, cpu2, mem, TEXT_FG_COLOR);
 
   // Phase 48: optionally override the shell/menu state byte before entering
   // a mode-sensitive screen routine.
   if (menuMode !== null) {
-    romBytes[MENU_MODE_STATE_ADDR] = menuMode & 0xFF;
+    mem[MENU_MODE_STATE_ADDR] = menuMode & 0xFF;
   }
 
   // Stage 4: prep stack + flags + IY for the screen-render call
   cpu2.halted = false; cpu2.iff1 = 0; cpu2.iff2 = 0;
   cpu2._iy = 0xD00080;
   cpu2.sp = SCREEN_STACK_TOP - SCREEN_RENDER_STACK_BYTES;
-  fillSentinel(romBytes, cpu2.sp, SCREEN_RENDER_STACK_BYTES);
+  fillSentinel(mem, cpu2.sp, SCREEN_RENDER_STACK_BYTES);
   cpu2.f = 0x40; // Z flag set — avoids taking RET NZ at function entry
   // Phase 46.2: optional HL parameter (string pointer for DispMessage routines)
   if (hlValue !== null) cpu2.hl = hlValue;
@@ -790,7 +794,7 @@ function showScreen(entryAddr, entryMode, name, maxSteps = 300000, hlValue = nul
   if (bcValue !== null) cpu2.bc = bcValue;
   if (scratchBytes?.bytes?.length) {
     for (let i = 0; i < scratchBytes.bytes.length; i++) {
-      romBytes[scratchBytes.addr + i] = scratchBytes.bytes[i];
+      mem[scratchBytes.addr + i] = scratchBytes.bytes[i];
     }
   }
 
@@ -808,7 +812,7 @@ function showScreen(entryAddr, entryMode, name, maxSteps = 300000, hlValue = nul
   lastMode = r.lastMode;
 
   if (lcd) lcd.destroy();
-  lcd = createLCDRenderer($('lcd'), romBytes);
+  lcd = createLCDRenderer($('lcd'), mem);
   syncLCDState();
   lcd.renderFrame();
 
@@ -912,7 +916,10 @@ $('btnBoot').addEventListener('click', async () => {
 
   log(`<span class="info">--- Decoding ROM (${TRANSPILATION_META.blockCount} blocks, ${TRANSPILATION_META.coveragePercent}% coverage) ---</span>`);
 
-  const romBytes = decodeEmbeddedRom();
+  let romBytes = decodeEmbeddedRom();
+  const mem = new Uint8Array(0x1000000);
+  mem.set(romBytes);
+  romBytes = mem;
   peripherals = createPeripheralBus({ pllDelay: 2, timerMode: 'nmi', timerInterval: 100 });
   executor = createExecutor(PRELIFTED_BLOCKS, romBytes, { peripherals });
   cpu = executor.cpu;
