@@ -11,7 +11,7 @@
 - 2026-04-13 (CC session 13 Phase 75): Hunted for the token-print helper. **Zero direct loads of 0x0a0450 as HL base** — the token table is accessed indirectly via BCALL or offset computation. Found 170 mode-state reads from 0xD00080-0xD000FF range with hot bytes at 0xD0008A, 0xD00085, 0xD0008E, 0xD00092. **Zero blocks** contain BOTH a mode read AND a text call — the rendering flow is split across multiple blocks in ways that require deeper graph traversal to trace.
 - 2026-04-13 (CC session 13 Phase 76): Length-prefixed string walker signature scan. **Zero strict pattern matches** for `ld b,(hl) ; inc hl ; ... call 0x0059c6 ; djnz loop`. Found 3 supporting print loops but all in already-known locations (0x005a35/0x005a38 char-print family, 0x013d19 "Validating OS..." function). The token-print helper uses a different calling convention than the naive pattern — probably inline-unrolled, uses a helper, or uses `ldir` for batch copy followed by a separate draw pass.
 
-**Last updated**: 2026-04-13T17:00Z (Phases 77 + 78 + 79 complete, browser-shell verification attempted and BLOCKED by a session-13 regression. Session 14 committed (5893e60). Rebuilt `.gz` from current `ROM.transpiled.js` pushed (0875276) then REVERTED (4e73a9b) because **the session-13 transpiler rebuild (blockCount 124552, 2026-04-12T22:13Z) regressed cold-boot behavior** — boot terminates at step 104 with `missing_block at 0xffffff` instead of reaching the 8800+ step HALT state, breaking ALL browser-shell showScreen buttons (including pre-existing MODE, CATALOG, error banners — all fail at 3-20 steps). The pre-session-13 `.gz` (1012f48, 124543 blocks, Phase 29, 2026-04-12T13:28Z) still works for AutoRun (144676 natural boot steps). Root cause unknown — something in session 13's Phase 30-76 seed/rebuild work changed lifted code in a way that breaks cold-boot with sentinel-return stack frames. Needs dedicated debug session.)
+**Last updated**: 2026-04-13T17:15Z (Phases 77 + 78 + 79 complete. Session 14 committed. Browser-shell visual verification attempted and BLOCKED — **the issue is NOT a session-13 regression; it's pre-existing since Phase 40b (2329783, 2026-04-12 13:34)**. ALL browser-shell showScreen buttons (MODE, CATALOG, error banners, P62/P64/P68/P69/P77/P78) fail at 3-20 steps with `missing_block at 0xffffff`. Pattern: `runFrom(0x000000, 'z80', maxSteps=20000)` terminates at step 104 inside the NMI handler path (0x000066 → 0x000047 → 0x0008bb → ??). Both old .gz (1012f48, 124543 blocks) and new .gz (124552 blocks) exhibit the same failure — confirmed by rebuilding/deploying both versions and testing. The Phase 40b commit message says "should NOW show actual text content" (future tense) — it was theoretically wired but never verified in-browser. All browser-shell button work in sessions 12-14 was committed without visual verification. CC-side Node probes (probe-*.mjs files) still work because they use local ROM.transpiled.js directly via import() and bypass the browser's boot path entirely.)
 **Focus**: TI-84 Plus CE ROM transpilation (CC-led this session, Codex continues). The trainer app pivoted to Physical Calculator Mode on 2026-04-11 evening — see `CONTINUATION_PROMPT.md` for trainer work, this file is the ROM-side source of truth.
 
 **ROM transpiler current state** (after 2026-04-12 Phase 31):
@@ -3502,23 +3502,29 @@ The 10228 px renders we got from 0x05e7d2/0x05e481/0x09cb14 are REAL — they sh
 
 ## Phase 80+ Priorities for Next Session
 
-### 0. ★★★ CRITICAL: Debug browser-shell boot regression
-Session 14 visual verification attempt discovered that the latest `ROM.transpiled.js` (22:13Z, 124552 blocks) breaks cold-boot in browser-shell. Symptoms:
-- `showScreen()` calls `runFrom(0x000000, 'z80', { maxSteps: 20000, maxLoopIterations: 32 })`
-- Boot trace reaches step 103 (0x0008bb `ld hl, (0x020100)`) — inside the NMI handler path via 0x000066 → 0x000047 → 0x0008bb
-- Step 104 terminates at `missing_block at 0xffffff`
-- All subsequent OS-init / render calls fail because CPU state is broken
-- Effect: MODE, CATALOG, error banners, P62/P64/P68/P69 buttons, P77/P78 buttons ALL fail at 3-20 steps
+### 0. ★★★ CRITICAL: Debug browser-shell showScreen cold-boot path
+Session 14 visual verification attempt discovered **showScreen has never worked in browser** — it was wired in Phase 40b (commit 2329783, 2026-04-12 13:34) but the commit message says "should NOW show actual TI-84 text content" (future tense, aspirational) and no one visually verified it until this session.
 
-Working baseline: the `.gz` from commit `1012f48` (Phase 29, 124543 blocks, 2026-04-12T13:28Z) lets boot run naturally via AutoRun NMI wake loop to 144676 total steps and reaches HALT at 0x0019b5. That's the CURRENTLY-DEPLOYED version after the revert (commit `4e73a9b`).
+**Symptoms** (reproduced with both old gz 124543 and new gz 124552):
+- `runFrom(0x000000, 'z80', maxSteps=20000)` terminates at step 104 with `missing_block at 0xffffff`
+- Last blocks: step 99 is `0x001359 djnz 0x001359` (timing loop), step 101 is `0x000066 push af` (NMI handler), step 102 is `0x000047 push hl`, step 103 is `0x0008bb ld hl, (0x020100)`. After that: missing_block.
+- Register state at termination: A=00 F=42 BC=a55a DE=0000 HL=ff0000 SP=d1a873 PC=ffffff
+- Every showScreen button (MODE, CATALOG, P62/P64/P68/P69, P77/P78) then fails at 3-20 steps because the following OS-init + render calls start from corrupted CPU state.
+
+**AutoRun works** only because it runs `runSteps(STEPS_PER_FRAME)` repeatedly from whatever `lastPc` is, and NMI wakes accumulate steps. The initial page-load state showed `Total: 144676` — that's AutoRun ticking from PC=0x0019b5 (halt) + NMI wakes, not a successful cold boot.
+
+**Key discrepancy vs CC-side probes**: CC's probe-phase64 harness uses `createExecutor(blocks, mem, { peripherals })` (positional arg order: blocks, mem, options), while browser-shell uses the same signature. Both call `runFrom(0x000000, 'z80', ...)` for boot. Yet CC probes complete 20000+ step boot, browser terminates at 104. Possible causes:
+- **cpu-runtime.js differences**: local Node and deployed browser both read from the same cpu-runtime.js file, but Node loads ROM.transpiled.js directly (has 124552 blocks) while browser loads ROM.transpiled.js.gz. Compare block contents at addresses 0x001359, 0x000066, 0x000047, 0x0008bb to see if code differs.
+- **Memory allocation**: CC probe does `new Uint8Array(0x1000000)` (16MB) then `mem.set(romBytes)`. Browser does `decodeEmbeddedRom()` which returns whatever `embed.js` returns — possibly only 4MB ROM bytes, not a 16MB address space. If peripherals/cpu-runtime writes to >4MB addresses, they'd hit out-of-bounds.
+- **Peripheral config**: CC passes `{ trace: false, pllDelay: 2, timerInterrupt: false }`; browser passes `{ pllDelay: 2, timerInterrupt: false }`. Shouldn't matter, but verify.
 
 **Debug approach**:
-- (a) Diff PRELIFTED_BLOCKS between old gz and new gz at addresses 0x0008bb, 0x000047, 0x000066, 0x001359 — find the first block where the code differs
-- (b) Check which seeds / transpiler changes between 2026-04-12T13:28Z and 22:13Z modified those blocks
-- (c) The Phase 30 OTIMR fix (commit 206f375) is a prime suspect — it changed how the walker processes loop boundaries, which may have affected NMI/boot block generation
-- (d) Alternative: maybe the issue isn't the .gz itself — maybe it's a cpu-runtime.js / ez80-decoder.js change in session 13 that interacts with the lifted code. Those files are NOT gzipped — they're fetched as-is from the repo. Check git log for cpu-runtime.js and ez80-decoder.js changes between 1012f48 and session 13 end.
+1. Add a `console.log(romBytes.length)` at the top of showScreen and check in browser devtools — confirms memory size
+2. If memory is <16MB, wrap it: `const mem = new Uint8Array(0x1000000); mem.set(romBytes);`
+3. Test if step 104 boot regression disappears when memory is expanded
+4. Alternative: make browser-shell use `probe-phase64` style harness exactly (copy CC's harness code into browser-shell)
 
-Until this is fixed, **browser-shell visual verification is BLOCKED**. CC-side Node probes (using local `ROM.transpiled.js` directly via `import()`) still work — that's how Phase 77-79 produced their reports.
+Until this is fixed, **browser-shell visual verification is BLOCKED**. All verification of Phase 56-79 work should be done via CC-side Node probes (probe-*.mjs files) against local `ROM.transpiled.js`. The CC-side reports (phase78-parents-report.md etc.) are the authoritative source.
 
 ### 1. ★★ Visually identify the 3 new legible top-strip renders (BLOCKED on P80#0)
 Once browser-shell boot is fixed: click P78_05e7d2, P78_05e481, P78_09cb14 and read the rendered text. ROM region guess: 0x05e4xx/0x05e7xx ≈ Y= or program editor, 0x09cxxx ≈ catalog or memory management.
