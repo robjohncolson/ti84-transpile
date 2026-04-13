@@ -14,7 +14,7 @@
 - 2026-04-13 (CC session 17 — Phase 90 a/b/c/d/e): **Home screen composite render achieved**. Confirmed all 5 callers of 0x0a29ec and 3 callers of 0x0a2b72 have ZERO static callers (confirmed via ROM scan for CALL/JP instructions) — full dead end for static analysis. Correct composite sequence: (1) 0x0a2b72 → r0-34 status bar background (10228px, r0-34 all white in r0-16 + content in r17-34), (2) 0x0a29ec → r17-34 home row strip (adds +864px to give 11092px total). r35-239 is empty for fresh-boot (no history entries). The "8 callers of 0x088471" drew a MENU LIST renderer (r37-114→r37-234 at 200k steps), NOT the home screen history — that was a false lead from a heuristic fn-start estimate. Key bug found+fixed: `mem.set(ramSnap, 0x400000)` also resets VRAM (VRAM_BASE=0xD40000 is within 0x400000-0xE00000). Mode text in r0-16 NOT rendered — 0x0a2b72 fills r0-16 with white only, mode indicator text needs separate function call with proper mode RAM state. 0x0a29ec renders 26 chars all 0xFF (TI two-byte token prefix) = 0xFF glyph blocks visible in ASCII art. Phase 91: set mode RAM bytes and find mode text renderer.
 - 2026-04-13 (CC session 18 — Phase 91 a/b/c): **Mode display buffer found and home screen rendered with real text**. Phase 91a scanned 0xD00080-0xD001FF — zero bytes affect char output. Phase 91b (memory read trace via cpu.read8 wrapping): HL steps through 0xD020A6-0xD020BF on each 0x0a1799 call — confirmed mode display buffer = **26 bytes at 0xD020A6**, all 0xFF in boot snapshot (uninit). 0xD00595=curRow, 0xD00596=curCol (CE standard memory map). Two-byte token intercept: ALL 26 calls pass 0xFF prefix — no second bytes, buffer is genuinely uninitialized not encoded. Binary search confirmed buffer in 0xD01E00-0xD021FF. Phase 91c (seed experiments): seeding 0xD020A6 with ASCII bytes confirmed format — 0x0a1799 renders raw ASCII chars. ASCII "ABCDEFGHIJKLMNOPQRSTUVWXYZ" → text="ABCDE...Z". "Normal Float Radian       " (26 chars) → mode text renders correctly with letter-shaped glyph patterns in r17-34. **Browser-shell wired**: new "P91 Home Screen ★" button runs composite (0x0a2b72 → seed 0xD020A6 with "Normal Float Radian       " → 0x0a29ec). No static LD HL,0xD020A6 reference in ROM — buffer is populated by computed-address OS function not yet found.
 
-**Last updated**: 2026-04-13 session 18 (Phase 91a/b/c complete. Mode buffer = 0xD020A6 (26 bytes ASCII). Home screen "P91 Home Screen ★" button wired in browser-shell. Next: find OS function that populates 0xD020A6 from mode settings, then explore what renders r0-16 top area and history area r35-239.)
+**Last updated**: 2026-04-13 session 18 (Phase 91a/b/c + Phase 92 partial complete. Mode buffer = 0xD020A6 (26 bytes ASCII), hardcoded "Normal Float Radian       " works. Home screen "P91 Home Screen ★" button working in browser-shell. Phase 92 traced write8 path — populator not findable without deeper OS state. Next: explore JT slots 460-485, what renders r0-16, or other unexplored screens.)
 **Focus**: TI-84 Plus CE ROM transpilation (CC-led this session, Codex continues). The trainer app pivoted to Physical Calculator Mode on 2026-04-11 evening — see `CONTINUATION_PROMPT.md` for trainer work, this file is the ROM-side source of truth.
 
 **ROM transpiler current state** (after 2026-04-12 Phase 31):
@@ -3635,17 +3635,16 @@ Top-level Y= editor entry is NOT in 0x09c000-0x09cfff. Must find external caller
 - JP 0x0a29ec at 0x02085c (JT slot 470) — CONFIRMED
 - JP 0x0a2b72 at 0x020880 (JT slot 479) — CONFIRMED
 
-### 5c. ★★★ NEXT: Phase 92 — Find the OS function that populates 0xD020A6
+### ★★ PARTIAL: Phase 92 — Mode buffer populator partially traced
 
-**Goal**: Find the OS function that writes the mode text into 0xD020A6-0xD020BF. When found, we can call it after boot to get correct mode text automatically (instead of hardcoding "Normal Float Radian").
+**Write8 trace findings (probe-phase92-find-populator.mjs)**:
+- 0x001881 → zeros mode buffer (26×0x00) during OS init
+- 0x00287D → resets buffer to 0xFF (same OS init, runs after 0x1881)
+- 0x0A17AE → char write helper called during Y= editor callers (0x05e481/0x05e7d2 of 0x0a2b72): writes Y= mode text "eqnname,color#,[0] li" into buffer. For home screen callers, writes 0xFF (buffer already 0xFF = write-back of consumed chars).
+- Key addresses 0xD008D2-D4 (pointer), 0xD001AE, 0xD02709 all = 0xFFFFFF (uninitialized) in boot snapshot.
+- Seeding 0xD008D2→0xD020A6 and running 0x025A9F or 0x0266FD = 0 writes. Populator needs more OS state.
 
-**Approach**:
-1. Wrap cpu.write8 to log writes to 0xD020A6-0xD020BF during a longer boot or during mode-change operations
-2. Run longer boot sequences (more than 100k steps for OS init) and capture first write to 0xD020A6
-3. The block PC at the write is the mode-buffer populate function entry (or inside it)
-4. Once found: call it from browser-shell before 0x0a29ec to get real mode text from OS mode settings
-
-**Bonus**: The write trace will also reveal what mode-setting bytes control the actual mode (Normal/Sci/Float/Radian etc.), not just the display buffer.
+**Conclusion**: Home screen mode text populator requires deeper OS state not reached in 100k-step snapshot. Hardcoding "Normal Float Radian       " in browser-shell is the correct working solution. 0x0a17ae is the char write helper used by mode-display update (different contexts write different content).
 
 ### 5d. ★★ Phase 92 — What renders r0-16 (status bar top portion)?
 
