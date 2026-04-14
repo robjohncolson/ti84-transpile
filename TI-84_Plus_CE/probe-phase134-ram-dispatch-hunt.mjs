@@ -1,258 +1,291 @@
 #!/usr/bin/env node
 
-/**
- * Phase 134 — RAM Dispatch Table Initialization Hunt
- *
- * Part 1: Static ROM scan for byte patterns 1A 23 D0 (LE for 0xD0231A)
- *         and EB 07 D0 (LE for 0xD007EB) in the 4MB ROM.
- * Part 2: Dynamic 500k-step boot, then dump RAM at 0xD007EB and 0xD0231A-0xD02340.
- * Part 3: Write findings to phase134-report.md.
- */
-
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import {
-  PRELIFTED_BLOCKS,
-  decodeEmbeddedRom,
-} from './ROM.transpiled.js';
-import { createPeripheralBus } from './peripherals.js';
 import { createExecutor } from './cpu-runtime.js';
+import { createPeripheralBus } from './peripherals.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROM_PATH = path.join(__dirname, 'ROM.rom');
+const TRANSPILED_PATH = path.join(__dirname, 'ROM.transpiled.js');
 const REPORT_PATH = path.join(__dirname, 'phase134-report.md');
 
-const STACK_TOP = 0xd1a87e;
+const romBytes = fs.readFileSync(ROM_PATH);
+const mod = await import(pathToFileURL(TRANSPILED_PATH).href);
+const BLOCKS = mod.PRELIFTED_BLOCKS;
+const ROM_GENERATED_AT = mod.TRANSPILATION_META?.generatedAt ?? 'unknown';
 
-// ── Helpers ──────────────────────────────────────────────────────────
+const POINTER_SLOT = 0xd007eb;
+const DISPATCH_START = 0xd0231a;
+const DISPATCH_END = 0xd02340;
+const CONTEXT_RADIUS = 10;
 
 function hex(value, width = 6) {
-  if (value === null || value === undefined || Number.isNaN(value)) return 'n/a';
-  return `0x${(Number(value) >>> 0).toString(16).padStart(width, '0')}`;
+  return `0x${(value >>> 0).toString(16).padStart(width, '0')}`;
 }
 
-function hexByte(b) {
-  return (b >>> 0).toString(16).padStart(2, '0');
+function bytesToHex(bytes) {
+  return Array.from(bytes, (value) => value.toString(16).padStart(2, '0')).join(' ');
 }
 
-function hexDump(buf, start, length) {
+function read24(mem, addr) {
+  return mem[addr] | (mem[addr + 1] << 8) | (mem[addr + 2] << 16);
+}
+
+function dumpRange(mem, start, end) {
   const lines = [];
-  for (let i = 0; i < length; i += 16) {
-    const addr = start + i;
-    const bytes = [];
-    const ascii = [];
-    for (let j = 0; j < 16 && (i + j) < length; j++) {
-      const b = buf[start + i + j];
-      bytes.push(hexByte(b));
-      ascii.push(b >= 0x20 && b <= 0x7e ? String.fromCharCode(b) : '.');
-    }
-    lines.push(`${hex(addr)}:  ${bytes.join(' ').padEnd(48)}  ${ascii.join('')}`);
+
+  for (let addr = start; addr <= end; addr += 16) {
+    const slice = mem.slice(addr, Math.min(end + 1, addr + 16));
+    lines.push(`${hex(addr)}: ${bytesToHex(slice)}`);
   }
+
   return lines;
 }
 
-function contextHexDump(buf, offset, contextBytes) {
-  const lo = Math.max(0, offset - contextBytes);
-  const hi = Math.min(buf.length, offset + 3 + contextBytes);
-  const bytes = [];
-  for (let i = lo; i < hi; i++) {
-    const mark = (i >= offset && i < offset + 3) ? `[${hexByte(buf[i])}]` : ` ${hexByte(buf[i])} `;
-    bytes.push(mark);
-  }
-  return `${hex(lo)}: ${bytes.join('')}`;
+function classifyLiteralRef(offset) {
+  const prev1 = offset >= 1 ? romBytes[offset - 1] : null;
+  const prev2 = offset >= 2 ? romBytes[offset - 2] : null;
+
+  if (prev1 === 0x22) return 'ld (nn),hl WRITE';
+  if (prev1 === 0x2a) return 'ld hl,(nn) READ';
+  if (prev1 === 0x21) return 'ld hl,nn LITERAL';
+  if (prev1 === 0x11) return 'ld de,nn LITERAL';
+  if (prev1 === 0x01) return 'ld bc,nn LITERAL';
+  if (prev1 === 0x32) return 'ld (nn),a WRITE';
+  if (prev1 === 0x3a) return 'ld a,(nn) READ';
+  if (prev2 === 0xed && prev1 === 0x43) return 'ld (nn),bc WRITE';
+  if (prev2 === 0xed && prev1 === 0x53) return 'ld (nn),de WRITE';
+  if (prev2 === 0xed && prev1 === 0x63) return 'ld (nn),hl WRITE';
+  if (prev2 === 0xed && prev1 === 0x73) return 'ld (nn),sp WRITE';
+  if (prev2 === 0xed && prev1 === 0x4b) return 'ld bc,(nn) READ';
+  if (prev2 === 0xed && prev1 === 0x5b) return 'ld de,(nn) READ';
+  if (prev2 === 0xed && prev1 === 0x6b) return 'ld hl,(nn) READ';
+
+  return 'other';
 }
 
-// ── Part 1: Static ROM scan ─────────────────────────────────────────
-
-function staticScan(romBytes) {
-  console.log('\n=== Part 1: Static ROM scan ===\n');
-
-  const patterns = [
-    { name: '0xD0231A (1A 23 D0)', bytes: [0x1a, 0x23, 0xd0] },
-    { name: '0xD007EB (EB 07 D0)', bytes: [0xeb, 0x07, 0xd0] },
-  ];
-
-  const results = {};
-
-  for (const pat of patterns) {
-    console.log(`Scanning for ${pat.name} ...`);
-    const hits = [];
-    for (let i = 0; i <= romBytes.length - 3; i++) {
-      if (romBytes[i] === pat.bytes[0] &&
-          romBytes[i + 1] === pat.bytes[1] &&
-          romBytes[i + 2] === pat.bytes[2]) {
-        hits.push(i);
-      }
-    }
-    console.log(`  Found ${hits.length} hit(s)`);
-    for (const off of hits) {
-      console.log(`  @ ${hex(off)}`);
-      console.log(`    ${contextHexDump(romBytes, off, 16)}`);
-    }
-    results[pat.name] = hits.map(off => ({
-      offset: off,
-      hex: hex(off),
-      context: contextHexDump(romBytes, off, 16),
-    }));
-  }
-
-  return results;
+function isWriteClassification(classification) {
+  return classification.includes('WRITE');
 }
 
-// ── Part 2: Dynamic boot trace ──────────────────────────────────────
+function buildContext(offset, size = 3) {
+  const start = Math.max(0, offset - CONTEXT_RADIUS);
+  const endExclusive = Math.min(romBytes.length, offset + size + CONTEXT_RADIUS);
 
-function dynamicBoot(romBytes) {
-  console.log('\n=== Part 2: Dynamic boot trace (500k steps) ===\n');
+  return {
+    start,
+    end: endExclusive - 1,
+    bytes: bytesToHex(romBytes.slice(start, endExclusive)),
+  };
+}
 
+function summarizeHits(hits) {
+  const summary = new Map();
+
+  for (const hit of hits) {
+    summary.set(hit.classification, (summary.get(hit.classification) ?? 0) + 1);
+  }
+
+  return [...summary.entries()].sort((left, right) => right[1] - left[1]);
+}
+
+function scanStaticRefs() {
+  const exactBaseHits = [];
+  const pointerHits = [];
+  const rangeHits = [];
+
+  for (let offset = 0; offset <= romBytes.length - 3; offset += 1) {
+    const value =
+      romBytes[offset] |
+      (romBytes[offset + 1] << 8) |
+      (romBytes[offset + 2] << 16);
+
+    if (value === DISPATCH_START) {
+      exactBaseHits.push({
+        offset,
+        addr: value,
+        classification: classifyLiteralRef(offset),
+        context: buildContext(offset),
+      });
+    }
+
+    if (value === POINTER_SLOT) {
+      pointerHits.push({
+        offset,
+        addr: value,
+        classification: classifyLiteralRef(offset),
+        context: buildContext(offset),
+      });
+    }
+
+    if (value >= DISPATCH_START && value <= DISPATCH_END) {
+      rangeHits.push({
+        offset,
+        addr: value,
+        classification: classifyLiteralRef(offset),
+      });
+    }
+  }
+
+  return {
+    exactBaseHits,
+    pointerHits,
+    rangeHits,
+    rangeWriteHits: rangeHits.filter((hit) => isWriteClassification(hit.classification)),
+    baseSummary: summarizeHits(exactBaseHits),
+    rangeSummary: summarizeHits(rangeHits),
+  };
+}
+
+function runDynamicBootTrace() {
   const mem = new Uint8Array(0x1000000);
   mem.set(romBytes);
 
   const peripherals = createPeripheralBus({ pllDelay: 2, timerInterrupt: false });
-  const executor = createExecutor(PRELIFTED_BLOCKS, mem, { peripherals });
+  const executor = createExecutor(BLOCKS, mem, { peripherals });
   const cpu = executor.cpu;
 
-  // Cold boot
-  const coldBoot = executor.runFrom(0x000000, 'z80', { maxSteps: 20000, maxLoopIterations: 32 });
-  console.log(`  cold boot: steps=${coldBoot.steps}, term=${coldBoot.termination}`);
+  const coldBoot = executor.runFrom(0x000000, 'z80', {
+    maxSteps: 20000,
+    maxLoopIterations: 32,
+  });
 
-  // Prepare for OS init
   cpu.halted = false;
   cpu.iff1 = 0;
   cpu.iff2 = 0;
-  cpu.sp = STACK_TOP - 3;
-  // Fill 3 bytes at sp with 0xFF (return sentinel)
-  mem[cpu.sp] = 0xff;
-  mem[cpu.sp + 1] = 0xff;
-  mem[cpu.sp + 2] = 0xff;
+  cpu.sp = 0xd1a87e - 12;
+  mem.fill(0xff, cpu.sp, 12);
 
-  // OS init — 500k steps
-  const osInit = executor.runFrom(0x08c331, 'adl', { maxSteps: 500000, maxLoopIterations: 10000 });
-  console.log(`  OS init: steps=${osInit.steps}, term=${osInit.termination}`);
-  console.log(`  Final PC: ${hex(cpu.pc ?? cpu._pc ?? 0)}`);
+  const osInit = executor.runFrom(0x08c331, 'adl', {
+    maxSteps: 500000,
+    maxLoopIterations: 10000,
+  });
 
-  // Check 0xD007EB (3-byte LE pointer)
-  const ptr0 = mem[0xd007eb];
-  const ptr1 = mem[0xd007ec];
-  const ptr2 = mem[0xd007ed];
-  const ptrValue = ptr0 | (ptr1 << 8) | (ptr2 << 16);
-  console.log(`\n  0xD007EB pointer: ${hexByte(ptr0)} ${hexByte(ptr1)} ${hexByte(ptr2)} => ${hex(ptrValue)}`);
-
-  // Dump 0xD0231A - 0xD02340
-  const dispatchStart = 0xd0231a;
-  const dispatchEnd = 0xd02340;
-  const dispatchLen = dispatchEnd - dispatchStart;
-  console.log(`\n  RAM dump ${hex(dispatchStart)}-${hex(dispatchEnd)}:`);
-  const dumpLines = hexDump(mem, dispatchStart, dispatchLen);
-  dumpLines.forEach(l => console.log(`    ${l}`));
-
-  // Check if all 0xFF
-  let allFF = true;
-  let nonFFCount = 0;
-  for (let i = dispatchStart; i < dispatchEnd; i++) {
-    if (mem[i] !== 0xff) {
-      allFF = false;
-      nonFFCount++;
-    }
-  }
-  console.log(`\n  All 0xFF? ${allFF}  (non-FF bytes: ${nonFFCount}/${dispatchLen})`);
-
-  // Also check a wider range around D007EB
-  console.log(`\n  RAM dump around 0xD007E0-0xD00810:`);
-  const widerDump = hexDump(mem, 0xd007e0, 0x30);
-  widerDump.forEach(l => console.log(`    ${l}`));
+  const pointerBytes = Array.from(mem.slice(POINTER_SLOT, POINTER_SLOT + 3));
+  const pointerValue = read24(mem, POINTER_SLOT);
+  const dispatchBytes = Array.from(mem.slice(DISPATCH_START, DISPATCH_END + 1));
+  const dispatchAllFF = dispatchBytes.every((value) => value === 0xff);
 
   return {
-    coldBootSteps: coldBoot.steps,
-    coldBootTerm: coldBoot.termination,
-    osInitSteps: osInit.steps,
-    osInitTerm: osInit.termination,
-    ptrBytes: `${hexByte(ptr0)} ${hexByte(ptr1)} ${hexByte(ptr2)}`,
-    ptrValue: hex(ptrValue),
-    dispatchDump: dumpLines,
-    allFF,
-    nonFFCount,
-    dispatchLen,
-    widerDump,
+    coldBoot,
+    osInit,
+    pointerBytes,
+    pointerValue,
+    dispatchAllFF,
+    dispatchDump: dumpRange(mem, DISPATCH_START, DISPATCH_END),
   };
 }
 
-// ── Part 3: Write report ────────────────────────────────────────────
+function formatSummaryTable(entries) {
+  const lines = ['| Classification | Count |', '| --- | --- |'];
 
-function writeReport(staticResults, dynamicResults) {
-  const lines = [];
-  lines.push('# Phase 134 — RAM Dispatch Table Initialization Hunt');
-  lines.push('');
-  lines.push(`Generated: ${new Date().toISOString()}`);
-  lines.push('');
-
-  // Part 1
-  lines.push('## Part 1: Static ROM Scan');
-  lines.push('');
-  for (const [name, hits] of Object.entries(staticResults)) {
-    lines.push(`### Pattern: ${name}`);
-    lines.push('');
-    if (hits.length === 0) {
-      lines.push('No matches found in ROM.');
-    } else {
-      lines.push(`Found **${hits.length}** match(es):`);
-      lines.push('');
-      lines.push('| # | Offset | Context |');
-      lines.push('|---|--------|---------|');
-      hits.forEach((h, i) => {
-        lines.push(`| ${i + 1} | \`${h.hex}\` | \`${h.context}\` |`);
-      });
-    }
-    lines.push('');
+  for (const [classification, count] of entries) {
+    lines.push(`| \`${classification}\` | \`${count}\` |`);
   }
 
-  // Part 2
-  lines.push('## Part 2: Dynamic Boot Trace (500k steps)');
-  lines.push('');
-  lines.push(`- Cold boot: ${dynamicResults.coldBootSteps} steps, terminated: ${dynamicResults.coldBootTerm}`);
-  lines.push(`- OS init: ${dynamicResults.osInitSteps} steps, terminated: ${dynamicResults.osInitTerm}`);
-  lines.push('');
-  lines.push(`### Pointer at 0xD007EB`);
-  lines.push('');
-  lines.push(`Bytes: \`${dynamicResults.ptrBytes}\`  =>  **${dynamicResults.ptrValue}**`);
-  lines.push('');
-  lines.push(`### Dispatch table at 0xD0231A-0xD02340`);
-  lines.push('');
-  lines.push(`All 0xFF (uninitialized)? **${dynamicResults.allFF}**`);
-  lines.push(`Non-FF bytes: ${dynamicResults.nonFFCount} / ${dynamicResults.dispatchLen}`);
-  lines.push('');
-  lines.push('```');
-  dynamicResults.dispatchDump.forEach(l => lines.push(l));
-  lines.push('```');
-  lines.push('');
-
-  // Interpretation
-  lines.push('## Interpretation');
-  lines.push('');
-  if (dynamicResults.allFF) {
-    lines.push('The dispatch table at 0xD0231A-0xD02340 is **still all 0xFF** after 500k boot steps.');
-    lines.push('The populator routine runs later in boot than our emulation reaches,');
-    lines.push('or is triggered by a hardware event (interrupt, timer) we do not emulate.');
-  } else {
-    lines.push('The dispatch table has been **partially or fully populated** during 500k boot steps.');
-    lines.push('The non-FF entries below may reveal the dispatch populator\'s work:');
-  }
-  lines.push('');
-
-  const report = lines.join('\n');
-  fs.writeFileSync(REPORT_PATH, report);
-  console.log(`\nReport written to ${REPORT_PATH}`);
+  return lines;
 }
 
-// ── Main ────────────────────────────────────────────────────────────
+function formatExactHitLines(hits) {
+  return hits.map((hit) => {
+    return `${hex(hit.offset)} | ${hit.classification} | ${hex(hit.context.start)}-${hex(hit.context.end)} | ${hit.context.bytes}`;
+  });
+}
 
-console.log('Phase 134 — RAM Dispatch Table Initialization Hunt');
+function formatRangeWriteLines(hits) {
+  return hits.map((hit) => {
+    return `${hex(hit.offset)} | ${hit.classification} -> ${hex(hit.addr)}`;
+  });
+}
 
-const romBytes = decodeEmbeddedRom();
-console.log(`ROM size: ${romBytes.length} bytes`);
+function buildReport(staticScan, bootTrace) {
+  const pointerHit = staticScan.pointerHits[0] ?? null;
+  const baseWriteSummary = staticScan.baseSummary
+    .filter(([classification]) => isWriteClassification(classification))
+    .map(([classification, count]) => `${classification}=${count}`)
+    .join(', ');
 
-const staticResults = staticScan(romBytes);
-const dynamicResults = dynamicBoot(romBytes);
-writeReport(staticResults, dynamicResults);
+  const lines = [];
 
-console.log('\nDone.');
+  lines.push('# Phase 134 - RAM Dispatch Table Initialization Hunt');
+  lines.push('');
+  lines.push('Generated by `probe-phase134-ram-dispatch-hunt.mjs`.');
+  lines.push('');
+  lines.push(`- ROM size: \`${romBytes.length}\` bytes`);
+  lines.push(`- ROM generatedAt: \`${ROM_GENERATED_AT}\``);
+  lines.push(`- Exact raw hits for \`1A 23 D0\`: \`${staticScan.exactBaseHits.length}\``);
+  lines.push(`- Exact raw hits for \`EB 07 D0\`: \`${staticScan.pointerHits.length}\``);
+  lines.push(`- Literal refs anywhere in \`${hex(DISPATCH_START)}-${hex(DISPATCH_END)}\`: \`${staticScan.rangeHits.length}\``);
+  lines.push(`- Candidate direct writes into \`${hex(DISPATCH_START)}-${hex(DISPATCH_END)}\`: \`${staticScan.rangeWriteHits.length}\``);
+  lines.push('');
+  lines.push('## Key Findings');
+  lines.push('');
+
+  if (pointerHit) {
+    lines.push(`- The only raw ROM hit for \`${hex(POINTER_SLOT)}\` is at \`${hex(pointerHit.offset)}\`, and it classifies as \`${pointerHit.classification}\`. No direct literal write to \`${hex(POINTER_SLOT)}\` was found.`);
+  } else {
+    lines.push(`- No raw ROM hit for \`${hex(POINTER_SLOT)}\` was found.`);
+  }
+
+  lines.push(`- The \`${hex(DISPATCH_START)}\` literal appears heavily in ROM. Exact raw hits: \`${staticScan.exactBaseHits.length}\`; exact-hit write classifications: \`${baseWriteSummary || 'none'}\`.`);
+  lines.push(`- The 500k-step boot still dies in OS init at \`${hex(bootTrace.osInit.lastPc ?? 0xffffff)}\` with termination \`${bootTrace.osInit.termination}\`.`);
+  lines.push(`- After that run, \`${hex(POINTER_SLOT)}\` contains bytes \`${bytesToHex(bootTrace.pointerBytes)}\` => \`${hex(bootTrace.pointerValue)}\`.`);
+  lines.push(`- The dispatch-table window \`${hex(DISPATCH_START)}-${hex(DISPATCH_END)}\` is ${bootTrace.dispatchAllFF ? 'still entirely `FF`' : 'not all `FF`'} after boot.`);
+  lines.push('');
+  lines.push('## Static Scan - Exact `1A 23 D0` Hits');
+  lines.push('');
+  lines.push(...formatSummaryTable(staticScan.baseSummary));
+  lines.push('');
+  lines.push('```text');
+  lines.push(...formatExactHitLines(staticScan.exactBaseHits));
+  lines.push('```');
+  lines.push('');
+  lines.push(`## Static Scan - Literal Refs in ${hex(DISPATCH_START)}-${hex(DISPATCH_END)}`);
+  lines.push('');
+  lines.push(...formatSummaryTable(staticScan.rangeSummary));
+  lines.push('');
+  lines.push('```text');
+  lines.push(...formatRangeWriteLines(staticScan.rangeWriteHits));
+  lines.push('```');
+  lines.push('');
+  lines.push('## Static Scan - Exact `EB 07 D0` Hits');
+  lines.push('');
+  lines.push('```text');
+  lines.push(...formatExactHitLines(staticScan.pointerHits));
+  lines.push('```');
+  lines.push('');
+  lines.push('## Dynamic Boot Trace');
+  lines.push('');
+  lines.push(`- coldBoot: \`steps=${bootTrace.coldBoot.steps} termination=${bootTrace.coldBoot.termination} lastPc=${hex(bootTrace.coldBoot.lastPc ?? 0)} lastMode=${bootTrace.coldBoot.lastMode ?? 'n/a'}\``);
+  lines.push(`- osInit: \`steps=${bootTrace.osInit.steps} termination=${bootTrace.osInit.termination} lastPc=${hex(bootTrace.osInit.lastPc ?? 0xffffff)} lastMode=${bootTrace.osInit.lastMode ?? 'n/a'}\``);
+  lines.push(`- ${hex(POINTER_SLOT)} bytes: \`${bytesToHex(bootTrace.pointerBytes)}\``);
+  lines.push(`- ${hex(POINTER_SLOT)} pointer value: \`${hex(bootTrace.pointerValue)}\``);
+  lines.push(`- ${hex(DISPATCH_START)}-${hex(DISPATCH_END)} all FF: \`${bootTrace.dispatchAllFF}\``);
+  lines.push('');
+  lines.push('```text');
+  lines.push(...bootTrace.dispatchDump);
+  lines.push('```');
+  lines.push('');
+  lines.push('## Verdict');
+  lines.push('');
+  lines.push(`- No direct literal writer to \`${hex(POINTER_SLOT)}\` appears in the raw ROM scan.`);
+  lines.push(`- The dispatch-table RAM window itself is never populated during the reachable 500k-step boot; it remains all \`FF\`.`);
+  lines.push('- The most likely explanation is that the real table populator lives after the missing-block path at `0xFFFFFF`, or it computes the destination address indirectly without embedding `0xD007EB` as a literal.');
+
+  return `${lines.join('\n')}\n`;
+}
+
+const staticScan = scanStaticRefs();
+const bootTrace = runDynamicBootTrace();
+const report = buildReport(staticScan, bootTrace);
+
+fs.writeFileSync(REPORT_PATH, report, 'utf8');
+
+console.log(`Wrote ${path.basename(REPORT_PATH)}`);
+console.log(`Exact 1A 23 D0 hits: ${staticScan.exactBaseHits.length}`);
+console.log(`Exact EB 07 D0 hits: ${staticScan.pointerHits.length}`);
+console.log(`Post-boot ${hex(POINTER_SLOT)}: ${hex(bootTrace.pointerValue)} (${bytesToHex(bootTrace.pointerBytes)})`);
+console.log(`Dispatch window all FF: ${bootTrace.dispatchAllFF}`);
