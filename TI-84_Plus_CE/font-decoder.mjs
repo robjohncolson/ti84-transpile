@@ -54,8 +54,10 @@ export function buildFontSignatures(romBytes) {
   return signatures;
 }
 
-/** Extract an 8×14 cell from VRAM at pixel (row, col). Returns binary bitmap. */
-export function extractCell(mem, row, col) {
+/** Extract an 8×14 cell from VRAM at pixel (row, col). Returns binary bitmap.
+ * @param {boolean} inverse if true, treat white as foreground (for inverse-video text on black)
+ */
+export function extractCell(mem, row, col, inverse = false) {
   const cell = new Uint8Array(GLYPH_WIDTH * GLYPH_HEIGHT);
   for (let dy = 0; dy < GLYPH_HEIGHT; dy++) {
     for (let dx = 0; dx < GLYPH_WIDTH; dx++) {
@@ -64,8 +66,9 @@ export function extractCell(mem, row, col) {
       if (r >= VRAM_HEIGHT || c >= VRAM_WIDTH) continue;
       const off = VRAM_BASE + (r * VRAM_WIDTH + c) * 2;
       const px = mem[off] | (mem[off + 1] << 8);
-      // Treat any non-white, non-sentinel pixel as fg
-      cell[dy * GLYPH_WIDTH + dx] = (px !== 0xFFFF && px !== VRAM_SENTINEL) ? 1 : 0;
+      if (px === VRAM_SENTINEL) continue;
+      const isWhite = px === 0xFFFF;
+      cell[dy * GLYPH_WIDTH + dx] = inverse ? (isWhite ? 1 : 0) : (isWhite ? 0 : 1);
     }
   }
   return cell;
@@ -94,19 +97,30 @@ export function matchCell(cell, signatures) {
 }
 
 /** Decode a VRAM row strip into a string.
+ * Tries both normal and inverse-video modes per cell and keeps the best match.
  * @param {Uint8Array} mem full memory buffer
  * @param {number} startRow top VRAM row of the text strip
  * @param {number} startCol left VRAM col of the first cell
  * @param {number} numCells how many 8-wide cells to decode
  * @param {Array} signatures from buildFontSignatures
  * @param {number} maxDist only accept matches with hamming distance ≤ this (default 20)
+ * @param {string} mode 'normal' | 'inverse' | 'auto' (default 'auto')
  */
-export function decodeTextStrip(mem, startRow, startCol, numCells, signatures, maxDist = 20) {
+export function decodeTextStrip(mem, startRow, startCol, numCells, signatures, maxDist = 20, mode = 'auto') {
   const chars = [];
   for (let c = 0; c < numCells; c++) {
-    const cell = extractCell(mem, startRow, startCol + c * GLYPH_WIDTH);
-    const match = matchCell(cell, signatures);
-    chars.push(match.dist <= maxDist ? match.char : '?');
+    const col = startCol + c * GLYPH_WIDTH;
+    let best;
+    if (mode === 'normal') {
+      best = matchCell(extractCell(mem, startRow, col, false), signatures);
+    } else if (mode === 'inverse') {
+      best = matchCell(extractCell(mem, startRow, col, true), signatures);
+    } else {
+      const n = matchCell(extractCell(mem, startRow, col, false), signatures);
+      const i = matchCell(extractCell(mem, startRow, col, true), signatures);
+      best = i.dist < n.dist ? i : n;
+    }
+    chars.push(best.dist <= maxDist ? best.char : '?');
   }
   return chars.join('');
 }

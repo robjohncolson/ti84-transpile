@@ -97,21 +97,26 @@ for (let row = 17; row <= 30; row++) {
 const signatures = buildFontSignatures(romBytes);
 console.log(`\n${signatures.length} font signatures built`);
 
-// Try decoding at several row offsets to find the right baseline
-console.log('\n=== Decode attempts ===');
-for (const startRow of [15, 16, 17, 18, 19, 20, 21]) {
-  for (const startCol of [0, 1, 2, 3, 4, 5, 6, 7, 8]) {
-    const text = decodeTextStrip(mem, startRow, startCol, 26, signatures, 30);
-    if (text.replace(/\?/g, '').replace(/ /g, '').length > 5) {
-      console.log(`  r${startRow} c${startCol}: "${text}"`);
-    }
+// Scan all plausible baselines in both modes; rank by non-? chars.
+console.log('\n=== Decode attempts (all inverse) ===');
+const best = [];
+for (let startRow = 17; startRow <= 22; startRow++) {
+  for (let startCol = 0; startCol <= 8; startCol++) {
+    const text = decodeTextStrip(mem, startRow, startCol, 26, signatures, 30, 'inverse');
+    const score = 26 - (text.match(/\?/g) || []).length;
+    best.push({ startRow, startCol, score, text });
   }
 }
+best.sort((a, b) => b.score - a.score);
+for (const b of best.slice(0, 10)) {
+  console.log(`  r${b.startRow} c${b.startCol} score=${b.score}: "${b.text}"`);
+}
 
-// Dump a single cell raw at the best-guess position for debugging
-console.log('\n=== Raw cell at r17 c4 (first char) ===');
+// Dump the highest-score inverse extraction at its first char for visual check
+console.log('\n=== Raw inverse cell at best position, first char ===');
 {
-  const cell = extractCell(mem, 17, 4);
+  const { startRow, startCol } = best[0];
+  const cell = extractCell(mem, startRow, startCol, true);
   for (let row = 0; row < GLYPH_HEIGHT; row++) {
     let line = '  ';
     for (let col = 0; col < GLYPH_WIDTH; col++) {
