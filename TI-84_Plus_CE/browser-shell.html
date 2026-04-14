@@ -256,6 +256,7 @@ button.active { background: #2a5a2a; border-color: #4a8a4a; }
 import { createExecutor } from './cpu-runtime.js';
 import { createPeripheralBus } from './peripherals.js';
 import { KEY_MAP, createKeyboardManager } from './ti84-keyboard.js';
+import { scanCodeToKeyCode } from './scancode-translate.js';
 import { createLCDRenderer } from './ti84-lcd.js';
 
 const hex = (v, w) => v.toString(16).padStart(w, '0');
@@ -307,6 +308,10 @@ const STEPS_PER_FRAME = 2000;
 const KEY_BURST_STEPS = 2000;
 const KEYBOARD_IRQ_ENABLE_HIGH_PORT = 0x5006;
 const KEYBOARD_IRQ_ENABLE_HIGH_BIT = 0x08; // bit 3 of the high byte = interrupt 19 overall
+const KEY_EVENT_BUFFER_ADDR = 0xD0058E;
+const MODIFIER_STATE_ADDR = 0xD00092; // IY(0xD00080) + 0x12
+const MODIFIER_ALPHA_MASK = 0x10;
+const MODIFIER_2ND_MASK = 0x20;
 const SET_TEXT_FG_ENTRY = 0x0802b2;
 const SCREEN_STACK_TOP = 0xD1A87E;
 const SCREEN_RENDER_STACK_BYTES = 12;
@@ -342,6 +347,98 @@ const ERROR_BANNER_FALLBACKS = [
   { label: 'MemoryFull', selectorByte: 0x00, selectorRamAddr: ERROR_BANNER_MODE_ADDR_HEX, selectorValue: 0x35 },
 ];
 let shellBooted = false;
+const GETCSC_SCAN_CODE_BY_PC_CODE = Object.freeze({
+  ArrowDown: 0x01,
+  ArrowLeft: 0x02,
+  ArrowRight: 0x03,
+  ArrowUp: 0x04,
+  Enter: 0x09,
+  Equal: 0x0A,
+  NumpadAdd: 0x0A,
+  Minus: 0x0B,
+  NumpadSubtract: 0x0B,
+  NumpadMultiply: 0x0C,
+  Slash: 0x0D,
+  NumpadDivide: 0x0D,
+  KeyE: 0x0E,
+  Escape: 0x0F,
+  KeyN: 0x11,
+  Digit3: 0x12,
+  Numpad3: 0x12,
+  Digit6: 0x13,
+  Numpad6: 0x13,
+  Digit9: 0x14,
+  Numpad9: 0x14,
+  BracketRight: 0x15,
+  KeyT: 0x16,
+  KeyV: 0x17,
+  Period: 0x19,
+  NumpadDecimal: 0x19,
+  Digit2: 0x1A,
+  Numpad2: 0x1A,
+  Digit5: 0x1B,
+  Numpad5: 0x1B,
+  Digit8: 0x1C,
+  Numpad8: 0x1C,
+  BracketLeft: 0x1D,
+  KeyC: 0x1E,
+  KeyP: 0x1F,
+  Digit0: 0x21,
+  Numpad0: 0x21,
+  Digit1: 0x22,
+  Numpad1: 0x22,
+  Digit4: 0x23,
+  Numpad4: 0x23,
+  Digit7: 0x24,
+  Numpad7: 0x24,
+  Comma: 0x25,
+  NumpadComma: 0x25,
+  KeyS: 0x26,
+  KeyA: 0x27,
+  KeyX: 0x28,
+  KeyO: 0x2A,
+  KeyL: 0x2B,
+  KeyG: 0x2C,
+  KeyQ: 0x2D,
+  KeyI: 0x2E,
+  KeyM: 0x2F,
+  CapsLock: 0x30,
+  F5: 0x31,
+  F4: 0x32,
+  F3: 0x33,
+  F2: 0x34,
+  F1: 0x35,
+  Tab: 0x36,
+  Home: 0x37,
+  Backspace: 0x38,
+});
+
+function getScanCodeForPcCode(code) {
+  return GETCSC_SCAN_CODE_BY_PC_CODE[code] ?? null;
+}
+
+function getKeyboardModifierIndex(memory) {
+  const flags = memory?.[MODIFIER_STATE_ADDR] ?? 0;
+  const second = (flags & MODIFIER_2ND_MASK) !== 0 ? 1 : 0;
+  const alpha = (flags & MODIFIER_ALPHA_MASK) !== 0 ? 2 : 0;
+  return alpha | second;
+}
+
+function writeTranslatedKeyEvent(code) {
+  if (!cpu?.memory) return;
+
+  const scanCode = getScanCodeForPcCode(code);
+  if (scanCode == null) return;
+
+  const modifier = getKeyboardModifierIndex(cpu.memory);
+  const keyCode = scanCodeToKeyCode[modifier]?.[scanCode] ?? 0;
+
+  // Modifier-only slots stay on the matrix/IRQ path; only non-zero OS key codes
+  // should be seeded into the shared key-event buffer.
+  if (keyCode === 0) return;
+
+  cpu.write8(KEY_EVENT_BUFFER_ADDR, keyCode);
+}
 
 function log(html) {
   const line = document.createElement('div');
@@ -1014,8 +1111,10 @@ function updateKeyStateDisplay() {
     return;
   }
 
-  const key = state.tiKeys[0];
-  $('scanCode').textContent = `0x${((key.group << 4) | key.bit).toString(16).padStart(2, '0')}`;
+  const scanCode = getScanCodeForPcCode(state.pressedKeys[0]);
+  $('scanCode').textContent = scanCode == null
+    ? '0x00'
+    : `0x${hex(scanCode, 2)}`;
 }
 
 function updateKeyboardOverlay() {
@@ -1102,6 +1201,7 @@ $('btnBoot').addEventListener('click', async () => {
   kbd = createKeyboardManager(peripherals);
   kbdDown = (e) => {
     kbd.handleKeyDown(e);
+    writeTranslatedKeyEvent(e.code);
     updateKeyStateDisplay();
     updateKeyboardOverlay();
     const mappedKey = KEY_MAP[e.code];
