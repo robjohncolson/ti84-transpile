@@ -828,8 +828,8 @@ function showScreen(entryAddr, entryMode, name, maxSteps = 300000, hlValue = nul
   log(`<span class="info">--- ${name} rendered (${r.steps} steps, ${dt} ms) ---</span>`);
 }
 
-// Phase 91/93/96: Composite home screen render.
-// Sequence: 0x0a2b72 (status bar bg r0-34) → seed mode buffer → 0x0a29ec (home row r17-34) → 0x0a2854 (history area r37-74) → direct fill (entry line r220-239).
+// Phase 91/93/96/102: Composite home screen render.
+// Sequence: 0x0a2b72 (status bar bg r0-34) → 0x0a3301 (status dots r3-6) → seed mode buffer → 0x0a29ec (home row r17-34) → 0x0a2854 (history area r37-74) → direct fill (entry line r220-239).
 // Phase 91b/c finding: mode text buffer at 0xD020A6 (26 bytes ASCII). Default "Normal Float Radian       ".
 // Phase 93 finding: 0x0a2854 (JT slot 468) = history area renderer, draws bordered empty rows in r37-74.
 // Phase 96 finding: 0x0a2106 (entry line bg) has RAM side effects that break 0x0a29ec — using direct VRAM fill instead.
@@ -842,7 +842,7 @@ function showHomeScreen() {
   $('btnAutoRun').textContent = 'AutoRun';
   $('btnAutoRun').classList.remove('active');
 
-  setStatus('P91 Home Screen: cold boot + golden-regression parity render...');
+  setStatus('P102 Home Screen: cold boot + golden-regression parity render...');
 
   const romBytes = decodeEmbeddedRom();
   const mem = new Uint8Array(0x1000000);
@@ -901,21 +901,24 @@ function showHomeScreen() {
   restoreCpu(cpuSnap);
   const r1 = ex2.runFrom(0x0a2b72, 'adl', { maxSteps: 30000, maxLoopIterations: 500 });
 
-  // Stage 4b: seed mode display buffer — Phase 91c confirmed format is 26 ASCII chars
+  restoreCpu(cpuSnap);
+  const rDots = ex2.runFrom(0x0a3301, 'adl', { maxSteps: 30000, maxLoopIterations: 500 });
+
+  // Stage 4c: seed mode display buffer — Phase 91c confirmed format is 26 ASCII chars
   for (let i = 0; i < HOME_SCREEN_MODE_TEXT.length && i < 26; i++) {
     mem[HOME_SCREEN_MODE_BUF + i] = HOME_SCREEN_MODE_TEXT.charCodeAt(i);
   }
 
-  // Stage 4c: render home row content (r17-34, mode text + borders) — NO VRAM clear
+  // Stage 4d: render home row content (r17-34, mode text + borders) — NO VRAM clear
   restoreCpu(cpuSnap);
   const r2 = ex2.runFrom(0x0a29ec, 'adl', { maxSteps: 50000, maxLoopIterations: 500 });
 
-  // Stage 4d: render history area (r37-74, empty bordered rows) — Phase 93 finding: JT slot 468
+  // Stage 4e: render history area (r37-74, empty bordered rows) — Phase 93 finding: JT slot 468
   // Phase 97A finding: maxSteps=50000 produces 9432 fg px (vs ~7000 at 30000) — more complete borders.
   restoreCpu(cpuSnap);
   const r3 = ex2.runFrom(0x0a2854, 'adl', { maxSteps: 50000, maxLoopIterations: 500 });
 
-  // Stage 4e: entry line background (rows 220-239) — direct VRAM fill (white).
+  // Stage 4f: entry line background (rows 220-239) — direct VRAM fill (white).
   // Phase 96 finding: 0x0a2106 draws this area but has RAM side effects that break 0x0a29ec.
   // Direct fill is identical output (pure white rectangle) without the side effects.
   for (let row = 220; row <= 239; row++) {
@@ -930,7 +933,7 @@ function showHomeScreen() {
   executor = ex2;
   cpu = cpu2;
   peripherals = p2;
-  totalSteps = r1.steps + r2.steps + r3.steps;
+  totalSteps = r1.steps + rDots.steps + r2.steps + r3.steps;
   lastPc = r3.lastPc;
   lastMode = r3.lastMode;
 
@@ -942,8 +945,8 @@ function showHomeScreen() {
   updateRegs();
   updateKeyStateDisplay();
   updateKeyboardOverlay();
-  setStatus(`P91/96 Home Screen: ${totalSteps} steps -> ${r3.termination} (${dt} ms) - golden-regression parity: status bg, mode text, history (r37-74), entry line (r220-239)`);
-  log(`<span class="info">--- P91/96 Home Screen rendered for golden-regression parity (${totalSteps} steps, ${dt} ms) ---</span>`);
+  setStatus(`P91/96/102 Home Screen: ${totalSteps} steps -> ${r3.termination} (${dt} ms) - golden-regression parity: status bg, status dots, mode text, history (r37-74), entry line (r220-239)`);
+  log(`<span class="info">--- P91/96/102 Home Screen rendered for golden-regression parity (${totalSteps} steps, ${dt} ms) ---</span>`);
 }
 
 function showScreenWithMenuMode(entryAddr, entryMode, name, menuMode, maxSteps = 300000) {

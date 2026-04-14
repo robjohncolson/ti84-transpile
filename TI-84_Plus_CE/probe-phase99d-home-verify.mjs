@@ -30,6 +30,7 @@ const STACK_RESET_TOP = 0xD1A87E;
 const KERNEL_INIT_ENTRY = 0x08C331;
 const POST_INIT_ENTRY = 0x0802B2;
 const STAGE_1_ENTRY = 0x0A2B72;
+const STAGE_2_ENTRY = 0x0A3301;
 const STAGE_3_ENTRY = 0x0A29EC;
 const STAGE_4_ENTRY = 0x0A2854;
 const STAGE_MAX_LOOP_ITERATIONS = 500;
@@ -156,6 +157,22 @@ function fillEntryLineWhite(mem) {
       mem[offset + 1] = 0xFF;
     }
   }
+}
+
+function countColoredPixels(mem, rowStart, rowEnd, colStart, colEnd) {
+  let count = 0;
+
+  for (let row = rowStart; row <= rowEnd; row++) {
+    for (let col = colStart; col <= colEnd; col++) {
+      const pixel = readPixel(mem, row, col);
+
+      if (pixel !== VRAM_SENTINEL && pixel !== WHITE_PIXEL) {
+        count++;
+      }
+    }
+  }
+
+  return count;
 }
 
 function countComposite(mem) {
@@ -350,7 +367,7 @@ function formatPass(value) {
   return value ? 'PASS' : 'FAIL';
 }
 
-function buildIssues({ totals, best }) {
+function buildIssues({ totals, best, statusDots }) {
   const issues = [];
 
   if (totals.drawn === 0 || totals.drawn >= 40000) {
@@ -369,6 +386,10 @@ function buildIssues({ totals, best }) {
     issues.push('Leading words decode cleanly, but some trailing cells still decode as unknown.');
   }
 
+  if (!statusDots.assertions.left || !statusDots.assertions.right) {
+    issues.push('Status-dot assertion failed in one or both top-bar clusters.');
+  }
+
   if (issues.length === 0) {
     issues.push('None.');
   }
@@ -380,6 +401,7 @@ function buildReport({
   bootResult,
   stages,
   totals,
+  statusDots,
   strip,
   attempts,
   best,
@@ -413,6 +435,11 @@ function buildReport({
     );
   }
 
+  lines.push('');
+  lines.push('## Status Dots');
+  lines.push('');
+  lines.push(`- Left cluster \`r3-6 c146-150\`: \`before=${statusDots.leftBeforeStage} afterStage=${statusDots.leftAfterStage} final=${statusDots.leftFinal}\` -> ${formatPass(statusDots.assertions.left)}`);
+  lines.push(`- Right cluster \`r3-6 c306-310\`: \`before=${statusDots.rightBeforeStage} afterStage=${statusDots.rightAfterStage} final=${statusDots.rightFinal}\` -> ${formatPass(statusDots.assertions.right)}`);
   lines.push('');
   lines.push('## Mode Strip Scan');
   lines.push('');
@@ -509,8 +536,21 @@ async function main() {
   const stages = [];
   stages.push(runStage(executor, 'stage 1 status bar background', STAGE_1_ENTRY, 30000));
 
+  restoreCpu(cpu, cpuSnap, mem);
+  const statusDots = {
+    leftBeforeStage: countColoredPixels(mem, 3, 6, 146, 150),
+    rightBeforeStage: countColoredPixels(mem, 3, 6, 306, 310),
+  };
+  stages.push(runStage(executor, 'stage 2 status dots', STAGE_2_ENTRY, 30000));
+  statusDots.leftAfterStage = countColoredPixels(mem, 3, 6, 146, 150);
+  statusDots.rightAfterStage = countColoredPixels(mem, 3, 6, 306, 310);
+  statusDots.assertions = {
+    left: statusDots.leftAfterStage > statusDots.leftBeforeStage,
+    right: statusDots.rightAfterStage > statusDots.rightBeforeStage,
+  };
+
   seedModeBuffer(mem);
-  console.log(`stage 2 seed mode buffer: "${MODE_BUF_TEXT}"`);
+  console.log(`stage 3 seed mode buffer: "${MODE_BUF_TEXT}"`);
 
   restoreCpu(cpu, cpuSnap, mem);
   stages.push(runStage(executor, 'stage 3 home row strip', STAGE_3_ENTRY, 50000));
@@ -520,9 +560,13 @@ async function main() {
 
   fillEntryLineWhite(mem);
   console.log(`stage 5 entry line fill: rows ${ENTRY_FILL_ROW_START}-${ENTRY_FILL_ROW_END} -> 0xFFFF`);
+  statusDots.leftFinal = countColoredPixels(mem, 3, 6, 146, 150);
+  statusDots.rightFinal = countColoredPixels(mem, 3, 6, 306, 310);
 
   const totals = countComposite(mem);
   console.log(`drawn=${totals.drawn} fg=${totals.fg} bg=${totals.bg} rMin=${totals.rMin ?? 'n/a'} rMax=${totals.rMax ?? 'n/a'}`);
+  console.log(`assert status dots left: ${formatPass(statusDots.assertions.left)} before=${statusDots.leftBeforeStage} after=${statusDots.leftAfterStage} final=${statusDots.leftFinal}`);
+  console.log(`assert status dots right: ${formatPass(statusDots.assertions.right)} before=${statusDots.rightBeforeStage} after=${statusDots.rightAfterStage} final=${statusDots.rightFinal}`);
 
   const strip = scanTextStrip(mem);
   console.log('stripScan:');
@@ -575,11 +619,12 @@ async function main() {
     console.log('decodeAttempts: skipped because the composite sanity check failed.');
   }
 
-  const issues = buildIssues({ totals, best });
+  const issues = buildIssues({ totals, best, statusDots });
   const report = buildReport({
     bootResult,
     stages,
     totals,
+    statusDots,
     strip,
     attempts,
     best,
@@ -588,6 +633,13 @@ async function main() {
   });
 
   fs.writeFileSync(REPORT_PATH, report);
+  const probePassed = Boolean(
+    best?.assertions.normal &&
+    best?.assertions.float &&
+    best?.assertions.radian &&
+    statusDots.assertions.left &&
+    statusDots.assertions.right
+  );
 
   if (best) {
     console.log(`bestMatch=row${best.startRow} col${best.startCol}`);
@@ -595,7 +647,7 @@ async function main() {
     console.log(`assert Normal: ${formatPass(best.assertions.normal)}`);
     console.log(`assert Float: ${formatPass(best.assertions.float)}`);
     console.log(`assert Radian: ${formatPass(best.assertions.radian)}`);
-    process.exitCode = best.assertions.normal && best.assertions.float && best.assertions.radian ? 0 : 1;
+    process.exitCode = probePassed ? 0 : 1;
   } else {
     console.log('decoded="(skipped)"');
     console.log('assert Normal: FAIL');

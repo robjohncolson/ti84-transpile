@@ -7,6 +7,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'
 const romPath = path.join(repoRoot, 'TI-84_Plus_CE', 'ROM.rom');
 const outPath = path.join(repoRoot, 'TI-84_Plus_CE', 'ROM.transpiled.js');
 const reportPath = path.join(repoRoot, 'TI-84_Plus_CE', 'ROM.transpiled.report.json');
+const phase100cSeedsPath = path.join(repoRoot, 'TI-84_Plus_CE', 'phase100c-seeds.txt');
 
 const romBytes = fs.readFileSync(romPath);
 const romBase64 = romBytes.toString('base64');
@@ -25,6 +26,20 @@ function bytesToHex(address, length) {
   return Array.from(romBytes.slice(address, address + length))
     .map((byte) => byte.toString(16).padStart(2, '0'))
     .join(' ');
+}
+
+function loadSeedFile(filePath) {
+  if (!fs.existsSync(filePath)) return [];
+
+  return fs.readFileSync(filePath, 'utf8')
+    .split(/\r?\n/)
+    .map((line) => line.replace(/#.*/, '').trim())
+    .filter(Boolean)
+    .map((value) => ({
+      pc: Number.parseInt(value.replace(/^0x/i, ''), 16),
+      mode: 'adl',
+    }))
+    .filter((entry) => Number.isFinite(entry.pc));
 }
 
 function wrap24(value) {
@@ -738,6 +753,7 @@ function buildBlock(startPc, mode, options) {
 
 function walkBlocks() {
   const seedEntries = [];
+  const phase100cSeeds = loadSeedFile(phase100cSeedsPath);
   const knownEntryAnchors = [
     { pc: 0x000100, mode: 'adl' },
     { pc: 0x000658, mode: 'adl' },
@@ -22020,6 +22036,8 @@ function walkBlocks() {
     // Phase 49.2: post-boot callback target discovered at (0xd02ad7-9) after cold boot.
     { pc: 0x015ad9, mode: 'adl' },
     { pc: 0x015ada, mode: 'adl' },
+    // Phase 100C: explicit mode-display chain anchors used by the 0x0b2d8a reprobe.
+    ...phase100cSeeds,
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {

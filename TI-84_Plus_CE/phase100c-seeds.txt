@@ -1,0 +1,15 @@
+# Phase 100C explicit mode-display chain anchors
+# Current static walk found no uncovered direct successors inside the
+# 0x0b2d8a -> 0x0b485e -> 0x0b5394 chain, so these addresses pin the
+# observed runtime path explicitly in the transpiler seed list.
+0x0b2d8a
+0x0b485e
+0x0b5394
+0x0b3d37
+0x0b341a
+0x0b538f
+0x0b3f75
+0x0b410d
+0x082961
+0x082bb5
+0x082266
