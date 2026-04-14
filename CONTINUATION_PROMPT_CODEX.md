@@ -13,8 +13,10 @@
 - 2026-04-13 (CC session 16 — Phase 87b/88/89): **CE OS architecture revealed**: uses direct CALL instructions internally, not BCALL, for rendering. Slot numbers corrected: **470→0x0a29ec**, **479→0x0a2b72** (Phase 77 had wrong slots 627/639). Found 5 direct CALL callers of 0x0a29ec (0x25b37/0x60a39/0x6c865/0x78f6d/0x8847f) and 3 for 0x0a2b72 (0x5e481/0x5e7d2/0x09cb14); all have 0 static callers — called via computed indirect dispatch. Event loop 0x0019BE IS transpiled (blocks exist) but execution loops in hardware poll at 0x690-0x69a. Event dispatch mechanism at 0x001C33 decoded: bytecode table walker, compares D/E event-code against table at HL. Phase 90: scan that table to find home-screen event code. Commit: 70433e0.
 - 2026-04-13 (CC session 17 — Phase 90 a/b/c/d/e): **Home screen composite render achieved**. Confirmed all 5 callers of 0x0a29ec and 3 callers of 0x0a2b72 have ZERO static callers (confirmed via ROM scan for CALL/JP instructions) — full dead end for static analysis. Correct composite sequence: (1) 0x0a2b72 → r0-34 status bar background (10228px, r0-34 all white in r0-16 + content in r17-34), (2) 0x0a29ec → r17-34 home row strip (adds +864px to give 11092px total). r35-239 is empty for fresh-boot (no history entries). The "8 callers of 0x088471" drew a MENU LIST renderer (r37-114→r37-234 at 200k steps), NOT the home screen history — that was a false lead from a heuristic fn-start estimate. Key bug found+fixed: `mem.set(ramSnap, 0x400000)` also resets VRAM (VRAM_BASE=0xD40000 is within 0x400000-0xE00000). Mode text in r0-16 NOT rendered — 0x0a2b72 fills r0-16 with white only, mode indicator text needs separate function call with proper mode RAM state. 0x0a29ec renders 26 chars all 0xFF (TI two-byte token prefix) = 0xFF glyph blocks visible in ASCII art. Phase 91: set mode RAM bytes and find mode text renderer.
 - 2026-04-13 (CC session 18 — Phase 91 a/b/c): **Mode display buffer found and home screen rendered with real text**. Phase 91a scanned 0xD00080-0xD001FF — zero bytes affect char output. Phase 91b (memory read trace via cpu.read8 wrapping): HL steps through 0xD020A6-0xD020BF on each 0x0a1799 call — confirmed mode display buffer = **26 bytes at 0xD020A6**, all 0xFF in boot snapshot (uninit). 0xD00595=curRow, 0xD00596=curCol (CE standard memory map). Two-byte token intercept: ALL 26 calls pass 0xFF prefix — no second bytes, buffer is genuinely uninitialized not encoded. Binary search confirmed buffer in 0xD01E00-0xD021FF. Phase 91c (seed experiments): seeding 0xD020A6 with ASCII bytes confirmed format — 0x0a1799 renders raw ASCII chars. ASCII "ABCDEFGHIJKLMNOPQRSTUVWXYZ" → text="ABCDE...Z". "Normal Float Radian       " (26 chars) → mode text renders correctly with letter-shaped glyph patterns in r17-34. **Browser-shell wired**: new "P91 Home Screen ★" button runs composite (0x0a2b72 → seed 0xD020A6 with "Normal Float Radian       " → 0x0a29ec). No static LD HL,0xD020A6 reference in ROM — buffer is populated by computed-address OS function not yet found.
+- 2026-04-13 (CC session 21 — Phase 97 A/C/D): **3 priorities investigated, 2 null results + 1 dead-end disproof.** Dispatched 3 parallel Codex agents (A/C/D); A and D completed with null results, C timed out and CC did a narrower follow-up. **Phase 97A (500k boot)**: OS init from 0x08C331 terminates at **step 691** regardless of maxSteps — hits `missing_block` at 0xffffff (synthetic RET sentinel). 500k = 100k in current transpiler state. mem[0xD02ACC] stays 0xFF. Status icons still invisible. Priority B (transpiler seeds for 0x96xxx/0xAFxxx/0xBxxx regions) is the real unlock. **Phase 97D (mode-var readers)**: all 4 candidates (0x0a2812/281a/29a8/654e) immediately `missing_block` on runFrom — they are **not valid block entry points** in current ROM.transpiled.js; also 0 direct CALL/JP callers in ROM scan. Dead end — these were Phase 75 "mode state read" guesses, not real function starts. **Phase 97C (font decoder)**: Codex timed out, CC did narrow font-dump. Critical finding — **0x003d6e is NOT a font table**. Only 2 ROM refs to 0x003d6e (both `LD HL,0x003d6e`): at 0x3d85 (which is INSIDE the supposed font data itself — it's a self-reference inside a function body) and 0x59a6 (external caller passing the address). Disassembly of bytes at 0x3d6e shows Z80/eZ80 instructions (JR NZ / POP BC / DJNZ / LD A,(0xd00587) / etc.) forming an OS function — Phase 80+ item #9 heuristic was wrong. Real font table still unknown — must trace cpu.read8 from within 0x0a1799 during a char print to find it.
+- 2026-04-13 (CC session 22 — Phase 98 A/C/D/E): **FONT TABLE FOUND + 2 null results + 1 trivial fix.** Dispatched 3 parallel Codex agents (A/C/E); D applied directly by CC. **Phase 98A (REAL FONT HUNT — WIN)**: Codex probe `probe-phase98a-font-hunt.mjs` seeded mode buffer with single chars 'A'/'B'/'0' against space background, trapped cpu.read8 on 0x000000-0x3FFFFF. All 3 experiments showed identical top hit **0x0040ee-0x004109** (700 reads = 25 reads × 28 bytes) plus secondary 28-byte delta per character variant. **Font table = 0x0040ee, stride 28 bytes, 8×14 glyphs, 2 bits per pixel (anti-aliased), idx = char_code - 0x20**. CC wrote `font-decoder.mjs` with `decodeGlyph`/`buildFontSignatures`/`extractCell`/`matchCell`/`decodeTextStrip`. Self-test cleanly decodes 'A'/'B'/'C'/'N'/'0' as readable glyph patterns. Static decode works. Dynamic decode of the rendered mode row requires **inverse-video handling** (mode row is white text on black bg inside the black status bar) — noted for Phase 99 follow-up. **Phase 98C (alt boot entries)**: `probe-phase98c-alt-boot-entries.mjs` ran 6 experiments (0x08c331/0x08c366/0x08c33d × timerInterrupt off/on). Initial interpretation flagged 0x08c366 as a "big win" (500000 steps, 0xD02ACC populated), but follow-up probe `probe-phase98c-followup.mjs` revealed it renders **full-white screen** (drawn=76800 fg=0) — EQUIVALENT to 0x08c331, not progress. lastPc=**0x006138** = hardware poll loop `ed 78 e6 f0 20 fa 0d ed 78 cb 57 20 fa c1 c9` (`in a,(c); and 0xF0; jr nz,-5`) — 0x006138 is NOT in PRELIFTED_BLOCKS. Conclusion: **0x006138 is the post-boot hardware poll wait**; bumping maxSteps won't cross it, needs real port response. **Phase 98D (maxSteps bump)**: `browser-shell.html:891` 0x0a2854 bumped 30000→50000. Applied, committed implicitly via diff. **Phase 98E (ISR populator hunt)**: `probe-phase98e-isr-populator.mjs` tried 4 options to trigger ISR-driven mode buffer populator (re-run OS init with interrupts, event loop 0x0019BE, HALT recovery 0x0019B5, resume 0x08C366 from post-boot state). **0 writes to 0xD020A6 in any option** — populator is not reachable from any of these. Also discovered Option D only ran 29 steps vs Phase 98C's 500k at the SAME entry 0x08C366 — 0x08C366 is cold-boot-only viable, not re-entrant.
 
-**Last updated**: 2026-04-13 session 18 (Phase 91a/b/c + Phase 92 partial complete. Mode buffer = 0xD020A6 (26 bytes ASCII), hardcoded "Normal Float Radian       " works. Home screen "P91 Home Screen ★" button working in browser-shell. Phase 92 traced write8 path — populator not findable without deeper OS state. Next: explore JT slots 460-485, what renders r0-16, or other unexplored screens.)
+**Last updated**: 2026-04-13 session 22 (Phase 98 A/C/D/E complete. **FONT TABLE FOUND**: 0x0040ee, 28-byte stride, 8×14 glyphs, 2bpp anti-aliased, idx=code-0x20. `font-decoder.mjs` added with static self-test passing for A/B/C/N/0. Alt boot entries 0x08c331/0x08c366/0x08c33d all produce equivalent full-white screens — 0x006138 hardware poll is the post-boot wait, not in PRELIFTED_BLOCKS. ISR populator hunt null. Phase 98D trivial maxSteps bump applied to browser-shell. Phase 99 priorities: **(1) font decoder inverse-video mode** for end-to-end decode verification on the mode row, **(2) transpile 0x006138 via Phase 98B seed batch** to cross the hardware poll, **(3) Phase 98B transpiler seed batch** for 0x96xxx/0xAFxxx/0xBxxx regions — the real post-boot unlock.)
 **Focus**: TI-84 Plus CE ROM transpilation (CC-led this session, Codex continues). The trainer app pivoted to Physical Calculator Mode on 2026-04-11 evening — see `CONTINUATION_PROMPT.md` for trainer work, this file is the ROM-side source of truth.
 
 **ROM transpiler current state** (after 2026-04-12 Phase 31):
@@ -3531,6 +3533,179 @@ The 10228 px renders we got from 0x05e7d2/0x05e481/0x09cb14 are REAL — they sh
 
 ## Phase 80+ Priorities for Next Session
 
+### ★★ DONE Phase 96 — Battery icon investigation + entry line added
+
+**Findings (session 20):**
+
+**Battery/icon architecture decoded:**
+- 0x0a349a = status bar UPDATER (called at 0x08c33d during boot). Draws 9 icon slots via loop.
+- 0x0a32f9 = per-icon renderer. Takes HL=icon_slot (0-9), reads icon data from table at 0x0a344a (8 bytes/entry).
+- 0x08c308 = icon type selector: BIT 2, (0xD000c6). If bit2=0 → battery path (0x0a336f). If bit2=1 → mode dots path (0x0a3320).
+- 0x0a342f = pixel writer: iterates icon data bits, writes E (background) or C (foreground) bytes to VRAM.
+- **WHY ICONS ARE INVISIBLE**: For HL=9 (Normal mode), the icon data entry at 0x0a344a+72=0x0a3492 is ALL ZEROS → only E bytes written. E=mem[0xD02ACC]=0xFF (white, after 100k boot). Both E and C write white → white-on-white = invisible. Real colors require 500k+ step boot to initialize 0xD02ACC.
+- **Battery path**: 0x0a33ca (when Z=1) does NOT draw pixels — it just updates RAM counters (0xD005f5/f6) for battery animation frame. The pixel drawing for battery bars is in a DIFFERENT function called separately.
+- **Mode dots**: 0x0a3320 writes VRAM bytes at r3-r6 cols 146-147 and 306-307. All white because data byte 0x0A3492=0x00.
+- **0x0a2106 (entry line bg)**: IS the function but has side effects — sets bit 6 of (IY+0x4c)=0xD000CC which breaks subsequent 0x0a29ec rendering (fg pixels disappear).
+
+**What was wired:**
+- **Stage 4e added**: Direct VRAM fill of rows 220-239 with 0xFFFF (white). Same visual output as 0x0a2106, no side effects.
+- **5-stage composite**: 0x0a2b72 → seed 0xD020A6 → 0x0a29ec → 0x0a2854 → direct fill r220-239
+- **Result**: drawn=25686, fg=11516, bg=14170, rMin=0, rMax=239. Full-height coverage.
+- **Browser-shell button**: "P91/96 Home Screen ★"
+
+### ★★ DONE Phase 97 A/C/D — Null/dead-end results (session 21)
+
+Dispatched 3 parallel Codex agents. Outcomes:
+
+**Phase 97A — 500k boot snapshot: NULL**. Probe `probe-phase97a-500k-boot.mjs`.
+OS init from 0x08C331 terminates at **step 691** regardless of `maxSteps` — hits
+`missing_block` at 0xffffff (synthetic RET sentinel stack guard). 500k maxSteps =
+100k maxSteps. `mem[0xD02ACC]` stays 0xFF, `0xD02AD0..0xD02AD8` all 0xFF, mode
+buffer 0xD020A6..0xD020BF all 0xFF, mode state hot bytes 0xD00085/8A/8E/92 all
+0xFF. Status icons still invisible. **Composite produced more pixels than 100k
+baseline** (drawn=31138 fg=16062 bg=15076 vs 25686/11516/14170) because probe
+used maxSteps=50000 for 0x0a2854 instead of 30000 — the extra steps let the
+history area renderer draw more. **Action item**: browser-shell `showHomeScreen`
+uses 30000 for 0x0a2854 — worth bumping to 50000 to match this render.
+
+**Phase 97D — Mode-var reader probes: DEAD END**. Probe
+`probe-phase97d-mode-var-readers.mjs`. All 4 candidates
+(0x0a2812/281a/29a8/654e) immediately `missing_block` on `runFrom` — **not valid
+block entry points** in current ROM.transpiled.js. 0 steps executed across all
+16 (target × variant) combinations. 0 direct CALL/JP callers found in full ROM
+scan. Conclusion: Phase 75 "mode state read" addresses were data references or
+mid-function bytes, not function starts. Remove from active priorities.
+
+**Phase 97C — Font decoder: 0x003d6e DISPROVEN as font table**. Codex timed out.
+CC ran narrower font-dump probes (`probe-phase97c-font-dump.mjs`,
+`probe-phase97c-verify.mjs`). Layout experiments (14×16, 28×8, header+11×16,
+14×8 paired) all failed to produce clean ASCII glyphs. **ROM scan for
+references** found only 2 hits: `0x3d85` (which is **inside** the supposed font
+data itself — a self-reference inside a function body) and `0x59a6` (external
+caller). Disassembly of bytes at 0x3d6e: `JR NZ -5 / POP BC / DJNZ -23 / XOR A /
+RET / LD A,(0xD00587) / LD B,A / XOR A / LD (0xD00587),A / LD A,B / RES 3,(IY+0) /
+RET / LD HL,0x003d6e / RET` — this is a **function**, not glyph data. Phase 80+
+item #9 heuristic was wrong.
+
+Artifacts: `probe-phase97a-500k-boot.mjs`, `phase97a-500k-report.md`,
+`probe-phase97d-mode-var-readers.mjs`, `phase97d-report.md`,
+`probe-phase97c-font-dump.mjs`, `probe-phase97c-verify.mjs`,
+`phase97c-font-dump.txt`, `phase97c-report.md`.
+
+### ★★ DONE Phase 98 A/C/D/E — Font table found + 2 null results + 1 trivial fix (session 22)
+
+**Outcomes:**
+
+**Phase 98A — REAL FONT HUNT: WIN ★★★**. Codex probe
+`probe-phase98a-font-hunt.mjs` seeded mode buffer with single characters
+'A'/'B'/'0' against space backgrounds, then trapped `cpu.read8` on all ROM
+accesses (0x000000-0x3FFFFF) during the 0x0a29ec render. All 3 experiments
+showed identical top hit **0x0040ee-0x004109 (700 reads = 25×28 bytes)** plus
+secondary 28-byte delta per character. **Confirmed: font table base =
+0x0040ee, stride = 28 bytes, 8×14 glyphs, 2 bits per pixel (anti-aliased),
+idx = char_code - 0x20.** CC wrote `font-decoder.mjs` with `decodeGlyph`,
+`buildFontSignatures`, `extractCell`, `matchCell`, `decodeTextStrip`.
+Self-test cleanly decodes 'A'/'B'/'C'/'N'/'0' as recognizable glyph patterns
+(static decode works). Dynamic end-to-end decode via
+`probe-phase98a-decode-verify.mjs` found all drawn rows but returned "?" for
+all cells — **the mode row uses INVERSE VIDEO (white text on black status
+bar background)**, which the naive extractCell (treats white as bg) misses.
+Phase 99 follow-up needs inverse-video mode in the decoder.
+
+**Phase 98C — Alt boot entries: NULL (corrected)**. Codex probe
+`probe-phase98c-alt-boot-entries.mjs` ran 6 experiments
+(0x08c331/0x08c366/0x08c33d × timerInterrupt off/on). Initial interpretation
+flagged 0x08c366 as a "MAJOR WIN" (steps=500000, 0xD02ACC populated, more
+composite pixels) but CC follow-up probe `probe-phase98c-followup.mjs`
+revealed the truth: 0x08c366 from cold boot produces
+**drawn=76800 fg=0 = FULL-WHITE SCREEN** — equivalent to 0x08c331, not
+progress. "More pixels" in composite was a RENDERING FAILURE after the
+additional steps, not new content. 0xD02ACC=0x00 isn't a "real color"
+either — just a different uninitialized state. `lastPc=0x006138` is the
+hardware poll loop: `ed 78 e6 f0 20 fa 0d ed 78 cb 57 20 fa c1 c9` =
+`in a,(c); and 0xF0; jr nz,-5; dec c; in a,(c); bit 2,a; jr nz,-5` —
+waiting for an I/O port to clear bits 0xF0 and bit 2. **0x006138 is NOT
+in PRELIFTED_BLOCKS**; the transpiler never compiled it. Bumping maxSteps
+can't cross this; needs either the block compiled + real port response,
+or the ISR to preempt this poll.
+
+**Phase 98D — maxSteps bump: APPLIED**.
+`browser-shell.html:891` changed `maxSteps: 30000` → `maxSteps: 50000` for
+the 0x0a2854 history area render stage. Trivial fix.
+
+**Phase 98E — ISR populator hunt: NULL**. Codex probe
+`probe-phase98e-isr-populator.mjs` tried 4 options to trigger ISR-driven
+mode buffer populator: (A) re-run OS init with interrupts enabled, (B)
+drive event loop at 0x0019BE, (C) HALT recovery at 0x0019B5, (D) resume
+0x08C366 from post-boot state. **All 4 options: 0 writes to 0xD020A6.**
+Option D exposed an unexpected fact: 0x08C366 called from **post-OS-init
+state** only ran 29 steps (vs Phase 98C's 500k from cold boot at the same
+entry). Conclusion: **0x08c366 is cold-boot-only viable, not re-entrant**.
+The populator isn't in any of these paths.
+
+Artifacts: `probe-phase98a-font-hunt.mjs`, `phase98a-font-hunt-report.md`,
+`font-decoder.mjs`, `probe-phase98a-decode-verify.mjs`,
+`probe-phase98c-alt-boot-entries.mjs`, `phase98c-alt-boot-report.md`,
+`probe-phase98c-followup.mjs`, `probe-phase98e-isr-populator.mjs`,
+`phase98e-isr-populator-report.md`, `.phase98-prompt-a.md`,
+`.phase98-prompt-c.md`, `.phase98-prompt-e.md`, `.phase98b-jt-targets.md`.
+
+### ★★★ ACTIVE Phase 99 — Next priorities
+
+**Current home screen state** (session 22, unchanged visual from session 21):
+- 5-stage composite: 0x0a2b72 → seed 0xD020A6 → 0x0a29ec → 0x0a2854 → direct fill r220-239
+- drawn=25686 fg=11516 bg=14170. rMin=0, rMax=239.
+- Status bar r0-16: all white. Mode text r17-34 visible **and now statically decodable via font-decoder.mjs**. History r37-74 bordered/empty. Entry line r220-239 white.
+- **Font table location & format CONFIRMED**. `font-decoder.mjs` produces readable glyph bitmaps for any ASCII char.
+
+**Phase 99 priorities (pick any):**
+
+**A. ★★ Inverse-video decoder mode** — Extend `font-decoder.mjs` with a
+second `extractCellInverse()` (treat white as fg, non-white/non-sentinel as
+bg) and dual-mode match in `decodeTextStrip`. Then run
+`probe-phase98a-decode-verify.mjs` again and confirm the mode row decodes
+to "Normal Float Radian      " (or whatever text the composite actually
+renders). Unlocks automated verification for every visual change going
+forward — no more eyeballing ASCII previews. Low complexity, ~30 lines.
+
+**B. ★★★ Transpiler seeds for status icon regions + 0x006138 hardware
+poll** — Unchanged from Phase 98B. Add seeds in
+`scripts/transpile-ti84-rom.mjs` for JT slots 616/645/647/648/666/675/696
+(targets 0x06306a/0x0af966/0x0afd2d/0x0afd41/0x0b15a0/0x056ab2/0x0bcffa —
+see `.phase98b-jt-targets.md`) PLUS seed 0x006138 (the hardware poll at
+end of cold boot). Regenerate ROM.transpiled.js (+.gz). Requires slow
+retranspile (~several minutes) and ~175MB file regen. Best for a dedicated
+session. Unlocks: (1) status icon renderers, (2) possible post-boot
+continuation past 0x006138.
+
+**C. ★★ Hardware poll response** — 0x006138 polls I/O port (C) for bit
+clear on 0xF0 and bit 2. Find which port C is (likely LCD/GPIO status) and
+implement a response in `peripherals.js` so the poll returns quickly with
+the expected value. This might let the cold boot path run past 691 steps
+(if transpiled blocks exist beyond 0x006138) and populate real state at
+0xD02ACC / 0xD020A6 et al. Requires: (a) disasm context around 0x006138 to
+identify port C value at entry, (b) port registration in peripherals, (c)
+re-run probe-phase98a-500k-boot to confirm progress.
+
+**D. ★ Visual end-to-end verification** — Once Phase 99A is done, write a
+probe that: (1) runs the full 5-stage composite, (2) decodes the mode row
+to text, (3) asserts text contains substrings from 'Normal', 'Float',
+'Radian'. This becomes the golden regression test for every subsequent
+home-screen change. Stop having to parse ASCII art by eye.
+
+**Key addresses quick reference:**
+- 0x0040ee: **font table base** (Phase 98A, 28 bytes/glyph, 8×14 2bpp anti-aliased)
+- 0x0a2b72: status bar bg (r0-34 white, JT slot 479)
+- 0x0a29ec: home row renderer (r17-34, JT slot 470), reads 0xD020A6 (26-byte mode text buf)
+- 0x0a2854: history area renderer (r37-74, JT slot 468)
+- 0x0a349a: status bar UPDATER (9-icon loop). Guard: bit6 of 0xD0009b must be clear.
+- 0x0a344a: icon data table (8 bytes/entry × 9 entries, entries 0-8 have bit patterns, entry 9 = zeros)
+- 0x006138: **hardware poll** at end of cold boot (Phase 98C). NOT in PRELIFTED_BLOCKS. `in a,(c); and 0xF0; jr nz,-5; ...`
+- 0xD02ACC: color data for status icons (0xFF=white in 100k boot; needs 500k boot for real colors)
+- 0xD000c6: icon type selector (bit2=0→battery path, bit2=1→mode dots path)
+- 0xD00595/96: curRow/curCol cursor position bytes
+- 0xD020A6: 26-byte mode text buffer (seed with ASCII "Normal Float Radian       ")
+
 ### 0. ★★★ RESOLVED: 16MB memory fix verified (Phase 80-4/80-5)
 **Fix**: P80-4 (commit a762e4a) allocates `new Uint8Array(0x1000000)` in browser-shell's showScreen, renderErrorBanner, and Boot handler. This was the root cause — `decodeEmbeddedRom()` returns 4MB, but the NMI handler at step 101-104 writes to 0xffffff (out-of-bounds for 4MB buffer).
 
@@ -3627,7 +3802,7 @@ Top-level Y= editor entry is NOT in 0x09c000-0x09cfff. Must find external caller
 - Phase 91c experiments confirmed: seeding 0xD020A6 with ASCII chars works. "Normal Float Radian       " (26 chars) renders legible letter-shaped glyphs in r17-34.
 - No static LD HL,0xD020A6 in ROM — buffer is populated by a computed-address OS function that runs after full OS boot (not reached in our snapshot).
 
-**Browser-shell**: "P91 Home Screen ★" button added — runs 0x0a2b72 (bg), seeds 0xD020A6 with "Normal Float Radian       ", runs 0x0a29ec (content).
+**Browser-shell**: "P91/93 Home Screen ★" button added — runs 0x0a2b72 (bg), seeds 0xD020A6 with "Normal Float Radian       ", runs 0x0a29ec (content), then 0x0a2854 (history area).
 
 **Key reference addresses** (phase 90 confirmed):
 - CALL 0x0a29ec at: 0x025b37, 0x060a39, 0x06c865, 0x078f6d, 0x088483
@@ -3646,14 +3821,102 @@ Top-level Y= editor entry is NOT in 0x09c000-0x09cfff. Must find external caller
 
 **Conclusion**: Home screen mode text populator requires deeper OS state not reached in 100k-step snapshot. Hardcoding "Normal Float Radian       " in browser-shell is the correct working solution. 0x0a17ae is the char write helper used by mode-display update (different contexts write different content).
 
-### 5d. ★★ Phase 92 — What renders r0-16 (status bar top portion)?
+### ★★★ RESOLVED: Phase 93 — History area renderer found (0x0a2854), full home screen composite complete
 
-0x0a2b72 fills r0-34 with white background but no text. The real TI-84 CE shows battery indicator, clock, and other status icons in r0-16. What function renders those?
+**JT cluster probe (probe-phase93-jt-cluster.mjs)**: Batch-probed slots 455-495 standalone + composite with 0x0a2b72.
 
-**Approach**: Look for callers of 0x0a2b72 that ALSO call something that renders in r0-16 (a rectangle fill or bitmap renderer). Or run longer after 0x0a2b72 to see if the caller itself continues rendering.
+**Key finding — 0x0a2854 (JT slot 468) = history area renderer**:
+- Draws bordered empty rows in r37-74 (full-width r37-54, half-width r57-74 — TI-84 history format)
+- Pattern: 6px solid border / 6px empty / 6px solid divider / 6px empty / 6px solid border
+- Full-width rows span all 320 cols; partial rows cover ~cols 0-135 (shorter expressions)
+- 0 fg pixels when drawn standalone — it draws borders in the HOME COLOR (VRAM_SENTINEL color) but with content area left as VRAM_SENTINEL (transparent). Visible only over background.
 
-### 6. ★★ Probe more JT slots in the 0x0a mode-region cluster
-Phase 77 only probed slots 627/635/639/647 (with wrong slot numbers). Corrected nearby slots to probe: **slots 460-485** (4-byte stride from JT_BASE=0x020104, verify targets with the fixed JT formula). Each is a potential mode-screen entry point.
+**Slot 480 (0x0a2c2a)**: Draws a diamond/oval glyph at r18-35 col ~220. 252px. Possibly cursor or a specific UI element rendered at cursor position. NOT wired into composite yet (unclear purpose).
+
+**Full 3-stage composite** (0x0a2b72 + 0x0a29ec + 0x0a2854):
+- Total: drawn=19286 fg=11516
+- r0-16: All white (status bg, no icons)
+- r17-34: Mode text "Normal Float Radian       " + borders (from seeded 0xD020A6)
+- r35-36: Empty gap
+- r37-74: History area bordered rows (empty — no prior calculations)
+- r75-239: Empty
+
+**Browser-shell**: "P91/93 Home Screen ★" button now runs 4-stage composite: 0x0a2b72 → seed mode buf → 0x0a29ec → 0x0a2854. This is the most complete TI-84 CE home screen render achieved so far.
+
+**Remaining home screen gaps**:
+- r0-16 top status: All white — no battery icon, clock, 2nd/alpha indicators
+- Entry line (bottom): No cursor rendered yet — slot 480 (0x0a2c2a) may be the cursor but needs investigation
+- Mode text is hardcoded — real OS populates 0xD020A6 via a function not reachable in 100k-step snapshot
+
+### ★ PARTIAL: Phase 94 — r0-16 status icon investigation
+
+**JT probe results (slots 380-454 + 496-560)**:
+
+| slot | target | drawn | fg | bbox | notes |
+|------|--------|-------|-----|------|-------|
+| 422 | 0x61e20 | 76800 | 0 | r0-239 | Full screen white clear |
+| 428 | 0x0a1799 | 252 | 216 | r18-35 | Single char printer (known) |
+| 431 | 0x0a1cac | 252 | 188 | r18-35 | String printer (known) |
+| 432 | 0x0a1cc8 | 5130 | 4012 | r17-35 | Multi-char renderer (known) |
+| 445 | 0x0a2106 | 6400 | 0 | r220-239 | Entry line bg (CURSOR-DEPENDENT — see below) |
+| 447 | 0x0a2172 | 5440 | 0 | r0-16 | Top status bar bg only (no icons) |
+| 448 | 0x0a321d | 5440 | 0 | r0-16 | Same — alternate entry for r0-16 bg |
+| 501 | 0x085e16 | 24 | 24 | r3-r6 | STATUS ICON candidate — hits max_steps |
+| 507 | 0x086977 | 1152 | 901 | r17-35 | Partial home row cols 0-48 + diamond |
+| 508 | 0x087508 | 1152 | 901 | r17-35 | Same as 507 |
+
+**Slot 501 (0x085e16)**: Initially draws 24 colored-pixel icons at r3-r6 (cols 147-150 AND 307-310, 4×4 diamond pattern). BUT: after 200k steps it's STILL running (max_steps), lastPc=0x0a1b7b, drawn=49524 across r3-r234. This is a FULL SCREEN RENDERER (probably the complete OS home screen dispatch loop), NOT a simple status icon function. The first 24px in r3-r6 are just the first 2 loop iterations before cutoff. DO NOT use as a simple status icon renderer.
+
+**Slot 445 (0x0a2106) — CURSOR-DEPENDENT**: Do NOT add to composite naively. Standalone (curRow=0) it fills r220-239. In composite AFTER 0x0a2854 (which sets curRow=1, curCol=11), it fills from row 1 — ERASING the home row. Must reset curRow=0 or use a different entry point for the entry line background.
+
+**curRow/curCol state after each composite stage**:
+- After 0x0a2b72: curRow=255, curCol=4
+- After 0x0a29ec: curRow=255, curCol=255
+- After 0x0a2854: curRow=1, curCol=11
+
+**Conclusion**: r0-16 status icons are NOT in slots 380-560 as simple standalone renderers. Slot 501 is the best candidate but requires longer run. Try: `executor.runFrom(0x085e16, 'adl', { maxSteps: 200000, maxLoopIterations: 5000 })` to get full output, then add to composite AFTER 0x0a2b72.
+
+**Composite-C result** (0x0a2b72 → 0x0a2b66 → 0x085e16 → 0x0a29ec → 0x0a2854): drawn=19451 fg=13063. The two `+++` icon dots appear at r3-r6 in the top status area.
+
+### 5d. ★★ Phase 94 Next — Complete r0-16 status icons
+
+**Phase 94 conclusion**: Status icons are in ROM regions NOT transpiled (0x96xxx, 0xAFxxx, 0xB1xxx, 0xBCxxx). JT slots 616/645/647/648/666/675/696 write 1 pixel to row 0 then hit `missing_block`. Need new transpiler seeds to unlock.
+
+**New slots found in 560-700 for other uses**:
+- Slot 618 (0x96af2): 1548px fg=1181 r37-54 — history row component
+- Slot 619 (0x96c26): 468px fg=428 r17-34 — partial home row content
+- Slot 630 (0x9735e): 252px fg=216 r37-54 — single char in history area
+
+**Phase 95 — Status icon functions found in 0x0a33xx region**:
+
+Ran VRAM write trace during 500k OS init. Block 0x0a3408 writes BLACK pixels to r6-r13 cols 293-301 — this is the **battery icon** (rectangular outline with solid top/bottom and open sides).
+
+Entry points in 0x0a33xx range (Phase 95):
+- **0x0a3365**: drawn=3 fg=3 (tiny, partial draw, returns at 0xFFFFFF)
+- **0x0a3320**: drawn=24 fg=12 bg=12, r3-r6 — draws 12 COLORED pixels at TWO positions: cols ~147 AND ~307. This is the STATUS INDICATOR DOTS renderer (same first action as slot 501). Returns cleanly.
+- **0x0a336f**: drawn=36 fg=0 bg=36, r6-r13 — draws 36 WHITE pixels in battery icon shape (background/clear step). Returns cleanly.
+
+**Battery icon structure**:
+- 0x0a336f: draws battery icon BACKGROUND (white, clears old icon)
+- 0x0a3408 (called during OS init from a different path): draws battery LEVEL BARS (black)
+- The full battery icon render requires a caller that calls BOTH
+- 0x0a3408 is a mid-block in a function we haven't isolated as a clean entry point
+
+**0x0a3320 colored pixels (fg=12)**: Two symmetric icon positions at r3-r6:
+- Position 1: around col 147 (left-of-center)
+- Position 2: around col 307 (far right, same area as battery in different rows)
+- The 12 colored pixels appear to be a "mode dot" indicator or "key lock" symbol
+- NOTE: Adding 0x0a3320 to composite doesn't appear to change fg count (colored pixels might be overwritten by 0xa2b72 when called second time, or require specific call ordering)
+
+**Phase 95 options for next session**:
+1. **Accept current state**: White status bar. 4-stage composite is the best achievable.
+2. **Explore 0x0a33xx callers**: Find which function calls both 0xa336f and 0x0a3408 in sequence (would give full battery icon). Look for ROM functions that CALL both.
+3. **Add transpiler seeds** for 0x96af2, 0x96c26 to unlock more home screen components.
+
+**Entry line approach**: To add entry line bg (slot 445 / 0x0a2106) to composite, reset curRow=0 before calling it. curRow addr = 0xD00595. `mem[0xD00595] = 0; mem[0xD00596] = 0;` before calling 0x0a2106.
+
+### 6. ★★ RESOLVED: Probe more JT slots in the 0x0a mode-region cluster (Phase 93)
+Phase 77 only probed slots 627/635/639/647 (with wrong slot numbers). Phase 93 probed **slots 455-495** — found: slot 468 (0x0a2854) = history area, slot 480 (0x0a2c2a) = small diamond glyph at home row (cursor?). Slots 455-467/469/472-476/481-485 all hit missing_block (not transpiled).
 
 ### Slot number corrections (Phase 88)
 
