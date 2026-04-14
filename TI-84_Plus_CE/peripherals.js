@@ -133,10 +133,12 @@ function createTimerHandler(state) {
   };
 }
 
-function createPhase99CPollUnlockHandler() {
+function createPhase99CPollUnlockHandler(readValue = 0x00) {
+  const normalizedReadValue = normalizeValue(readValue);
+
   return {
     read() {
-      return 0x00;
+      return normalizedReadValue;
     },
 
     write() {},
@@ -382,10 +384,9 @@ export function createPeripheralBus(options = {}) {
   register(0x06, createFlashHandler(state));
   register([0x10, 0x18], createTimerHandler(state));
   register(0x28, createPllHandler(state));
-  const phase99cPollUnlockHandler = createPhase99CPollUnlockHandler();
-  // Phase 99C: 0x006138 poll loop unlock — TODO confirm real hardware semantics
-  register(0xd00c, phase99cPollUnlockHandler);
-  register(0xd00d, phase99cPollUnlockHandler);
+  // Phase 103 report: TI-84_Plus_CE/phase103-port-d00c-d00d-report.md says idle SPI status is D00C=0x02 and D00D=0x00.
+  register(0xd00c, createPhase99CPollUnlockHandler(0x02));
+  register(0xd00d, createPhase99CPollUnlockHandler(0x00));
   // Memory controller / flash wait states (ports 0x1000-0x1005)
   // Port 0x1005: flash wait states (OS default 0x04 → 9 wait states per flash read)
   const memCtrlState = { waitStates: 0x04, bankCtrl: 0x00 };
