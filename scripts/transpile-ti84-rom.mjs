@@ -148,6 +148,8 @@ function buildDasm(d) {
     case 'ld-reg-ixd': return `ld ${d.dest}, ${ixd(d.indexRegister, d.displacement)}`;
     case 'ld-ixd-reg': return `ld ${ixd(d.indexRegister, d.displacement)}, ${d.src}`;
     case 'ld-ixd-imm': return `ld ${ixd(d.indexRegister, d.displacement)}, ${hex(d.value)}`;
+    case 'ld-pair-indexed': return `ld ${d.pair}, (${d.indexRegister}+${d.displacement})`;
+    case 'ld-indexed-pair': return `ld (${d.indexRegister}+${d.displacement}), ${d.pair}`;
 
     case 'alu-reg': {
       const prefix = (d.op === 'add' || d.op === 'adc' || d.op === 'sbc') ? `${d.op} a, ` : `${d.op} `;
@@ -405,6 +407,8 @@ function emitInstructionJs(instruction) {
   if (tag === 'ld-reg-ixd') return [`cpu.${instruction.dest} = cpu.readIndexed8('${instruction.indexRegister}', ${instruction.displacement});`];
   if (tag === 'ld-ixd-reg') return [`cpu.writeIndexed8('${instruction.indexRegister}', ${instruction.displacement}, cpu.${instruction.src});`];
   if (tag === 'ld-ixd-imm') return [`cpu.writeIndexed8('${instruction.indexRegister}', ${instruction.displacement}, ${hex(instruction.value)});`];
+  if (tag === 'ld-pair-indexed') return [`cpu.${instruction.pair} = cpu.read24((cpu.${instruction.indexRegister} + ${instruction.displacement}) & cpu.addressMask);`];
+  if (tag === 'ld-indexed-pair') return [`cpu.write24((cpu.${instruction.indexRegister} + ${instruction.displacement}) & cpu.addressMask, cpu.${instruction.pair});`];
 
   // --- ALU 8-bit ---
   if (tag === 'alu-reg') {
@@ -7703,6 +7707,7 @@ function walkBlocks() {
     { pc: 0x048960, mode: 'adl' },
     { pc: 0x049a7e, mode: 'adl' },
     { pc: 0x049a9e, mode: 'adl' },
+    { pc: 0x049aa7, mode: 'adl' },
     { pc: 0x049abe, mode: 'adl' },
     { pc: 0x049af1, mode: 'adl' },
     { pc: 0x049b11, mode: 'adl' },
@@ -7720,6 +7725,7 @@ function walkBlocks() {
     { pc: 0x049c91, mode: 'adl' },
     { pc: 0x049cb1, mode: 'adl' },
     { pc: 0x049d72, mode: 'adl' },
+    { pc: 0x049d77, mode: 'adl' },
     { pc: 0x049d92, mode: 'adl' },
     { pc: 0x049db2, mode: 'adl' },
     { pc: 0x049e57, mode: 'adl' },

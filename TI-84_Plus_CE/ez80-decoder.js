@@ -618,6 +618,15 @@ function decodeDDFD(romBytes, startPc, prefixPc, indexReg, mode, modePrefix, imm
     return decodeED(romBytes, startPc, prefixPc + 1, mode, modePrefix, immW);
   }
 
+  // eZ80 indexed 24-bit pair loads: DD/FD 07/17/27 d = LD BC/DE/HL, (IX/IY+d)
+  if (op === 0x07) return emit(2, { tag: 'ld-pair-indexed', pair: 'bc', indexRegister: indexReg, displacement: d() });
+  if (op === 0x17) return emit(2, { tag: 'ld-pair-indexed', pair: 'de', indexRegister: indexReg, displacement: d() });
+  if (op === 0x27) return emit(2, { tag: 'ld-pair-indexed', pair: 'hl', indexRegister: indexReg, displacement: d() });
+
+  // eZ80 indexed 24-bit pair stores: DD/FD 01/11 d = LD (IX/IY+d), BC/DE
+  if (op === 0x01) return emit(2, { tag: 'ld-indexed-pair', pair: 'bc', indexRegister: indexReg, displacement: d() });
+  if (op === 0x11) return emit(2, { tag: 'ld-indexed-pair', pair: 'de', indexRegister: indexReg, displacement: d() });
+
   // Fallback: DD/FD prefix on non-IX/IY opcodes — prefix is consumed silently,
   // opcode executes as-is (e.g., DD 2F = CPL, DD AF = XOR A).
   // For stacked prefixes (DD DD, FD FD, etc.) or CB, treat as NOP.
