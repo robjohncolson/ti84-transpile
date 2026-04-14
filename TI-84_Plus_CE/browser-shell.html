@@ -155,6 +155,8 @@ button.active { background: #2a5a2a; border-color: #4a8a4a; }
       <button id="btnP69_03f338" disabled>P69 03f338</button>
       <button id="btnP69_06daaf" disabled>P69 06daaf</button>
       <button id="btnP91_homeScreen" disabled>P91/96 Home Screen ★</button>
+      <button id="btnP111_menuA" disabled>P111 Menu A (0x0b6a58)</button>
+      <button id="btnP111_menuB" disabled>P111 Menu B (0x0b6b48)</button>
       <button id="btnP77_0a2b72" disabled>P77 home top bar (0a2b72)</button>
       <button id="btnP77_0a29ec" disabled>P77 home row (0a29ec)</button>
       <button id="btnP77_0a237e" disabled>P77 cursor prep (0a237e)</button>
@@ -465,6 +467,8 @@ function enableButtons(booted) {
   $('btnP69_03f338').disabled = !booted;
   $('btnP69_06daaf').disabled = !booted;
   $('btnP91_homeScreen').disabled = !booted;
+  $('btnP111_menuA').disabled = !booted;
+  $('btnP111_menuB').disabled = !booted;
   $('btnP77_0a2b72').disabled = !booted;
   $('btnP77_0a29ec').disabled = !booted;
   $('btnP77_0a237e').disabled = !booted;
@@ -1247,6 +1251,8 @@ $('btnP69_03ebed').addEventListener('click', () => showScreen(0x03ebed, 'adl', '
 $('btnP69_03f338').addEventListener('click', () => showScreen(0x03f338, 'adl', 'P69 03f338', 200000));
 $('btnP69_06daaf').addEventListener('click', () => showScreen(0x06daaf, 'adl', 'P69 06daaf', 200000));
 $('btnP91_homeScreen').addEventListener('click', showHomeScreen);
+$('btnP111_menuA').addEventListener('click', () => showScreenWithMenuMode(0x0b6a58, 'adl', 'P111 Menu A', 0, 300000));
+$('btnP111_menuB').addEventListener('click', () => showScreenWithMenuMode(0x0b6b48, 'adl', 'P111 Menu B', 0, 300000));
 $('btnP77_0a2b72').addEventListener('click', () => showScreen(0x0a2b72, 'adl', 'P77 home top 0a2b72', 200000, null, 0x004f));
 $('btnP77_0a29ec').addEventListener('click', () => showScreen(0x0a29ec, 'adl', 'P77 home row 0a29ec', 200000));
 $('btnP77_0a237e').addEventListener('click', () => showScreen(0x0a237e, 'adl', 'P77 cursor 0a237e', 200000));

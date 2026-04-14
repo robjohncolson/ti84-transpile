@@ -111,6 +111,16 @@ function fillEntryLineWhite(mem) {
   }
 }
 
+function fillWorkspaceWhite(mem) {
+  for (let row = 75; row <= 219; row += 1) {
+    for (let col = 0; col < LCD_WIDTH; col += 1) {
+      const offset = LCD_VRAM_BASE + (row * LCD_WIDTH + col) * 2;
+      mem[offset] = 0xFF;
+      mem[offset + 1] = 0xFF;
+    }
+  }
+}
+
 function runHomeScreenPipeline() {
   const romBytes = decodeEmbeddedRom();
   const mem = new Uint8Array(0x1000000);
@@ -182,6 +192,7 @@ function runHomeScreenPipeline() {
     maxLoopIterations: 500,
   });
 
+  fillWorkspaceWhite(mem);
   fillEntryLineWhite(mem);
 
   return { mem, stages };
