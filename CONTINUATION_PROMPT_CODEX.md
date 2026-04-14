@@ -1,5 +1,7 @@
 # Continuation Prompt — TI-84 Plus CE ROM Transpilation
 
+> ⚠ **Auto-continuation loop active** (as of 2026-04-14). Windows Task Scheduler task `TI84-AutoContinuation` fires a headless Opus session every 2h that reads this file, dispatches Codex/Sonnet work, commits+pushes to master, and updates this file. **Before editing this file in a human session**, check `git log --oneline` for recent `auto-session N` commits and consider `schtasks /change /tn "TI84-AutoContinuation" /disable` to prevent merge conflicts during long interactive edits. Re-enable with `/enable`. Launcher: `scripts/auto-continuation.bat` + `.auto-continuation-prompt.md`. Logs: `logs/auto-session-*.log` (gitignored).
+
 **Session context log**:
 - 2026-04-12 (CC session resume): ~5% of 1M-context window after reading this file. Budget is green; continuing Phase 32 work (home-screen hunt via 0x081670 callers).
 - 2026-04-12 (CC session 2, autonomous loop): completed Phases 41 + 42. Phase 41 verified end-to-end text rendering with the Phase 40 fg/bg fix and replaced manual mem writes with the real `SetTextFgColor` helper at `0x0802b2`. Phase 42 mapped the (0xd007e0) menu-mode dispatch space and discovered `0x0b6a58` as a major shell screen render entry (75K cells, 84% black/16% white — likely the home screen with inverted colors or list editor with garbage strings). Context at ~25-30% of 1M after Phase 42 wrap-up.
