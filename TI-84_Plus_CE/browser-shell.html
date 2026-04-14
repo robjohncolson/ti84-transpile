@@ -842,7 +842,7 @@ function showHomeScreen() {
   $('btnAutoRun').textContent = 'AutoRun';
   $('btnAutoRun').classList.remove('active');
 
-  setStatus('P91 Home Screen: cold boot + composite render...');
+  setStatus('P91 Home Screen: cold boot + golden-regression parity render...');
 
   const romBytes = decodeEmbeddedRom();
   const mem = new Uint8Array(0x1000000);
@@ -850,6 +850,27 @@ function showHomeScreen() {
   const p2 = createPeripheralBus({ pllDelay: 2, timerInterrupt: false });
   const ex2 = createExecutor(PRELIFTED_BLOCKS, mem, { peripherals: p2 });
   const cpu2 = ex2.cpu;
+  const cpuSnapshotFields = [
+    'a', 'f', '_bc', '_de', '_hl', '_a2', '_f2', '_bc2', '_de2', '_hl2',
+    'sp', '_ix', '_iy', 'i', 'im', 'iff1', 'iff2', 'madl', 'mbase', 'halted', 'cycles',
+  ];
+
+  function snapshotCpu(cpuState) {
+    return Object.fromEntries(cpuSnapshotFields.map((field) => [field, cpuState[field]]));
+  }
+
+  function restoreCpu(snapshot) {
+    for (const field of cpuSnapshotFields) {
+      cpu2[field] = snapshot[field];
+    }
+    cpu2.halted = false;
+    cpu2.iff1 = 0;
+    cpu2.iff2 = 0;
+    cpu2._iy = 0xD00080;
+    cpu2.f = 0x40;
+    cpu2.sp = SCREEN_STACK_TOP - SCREEN_RENDER_STACK_BYTES;
+    fillSentinel(mem, cpu2.sp, SCREEN_RENDER_STACK_BYTES);
+  }
 
   // Stage 1: cold boot
   ex2.runFrom(0x000000, 'z80', { maxSteps: 20000, maxLoopIterations: 32 });
@@ -858,23 +879,26 @@ function showHomeScreen() {
   cpu2.halted = false; cpu2.iff1 = 0; cpu2.iff2 = 0;
   cpu2.sp = SCREEN_STACK_TOP - 3;
   fillSentinel(mem, cpu2.sp, 3);
-  ex2.runFrom(0x08C331, 'adl', { maxSteps: 100000, maxLoopIterations: 500 });
+  ex2.runFrom(0x08C331, 'adl', { maxSteps: 100000, maxLoopIterations: 10000 });
 
-  // Stage 3: clear VRAM to black, then set text colors
-  for (let i = LCD_VRAM_BASE; i < LCD_VRAM_BASE + LCD_VRAM_BYTES; i++) mem[i] = 0x00;
-  callSetTextFgColor(ex2, cpu2, mem, TEXT_FG_COLOR);
+  cpu2.mbase = 0xD0;
+  cpu2._iy = 0xD00080;
+  cpu2._hl = 0;
+  cpu2.halted = false;
+  cpu2.iff1 = 0;
+  cpu2.iff2 = 0;
+  cpu2.sp = SCREEN_STACK_TOP - 3;
+  fillSentinel(mem, cpu2.sp, 3);
+  ex2.runFrom(0x0802B2, 'adl', { maxSteps: 100, maxLoopIterations: 32 });
 
-  // Helper: reset CPU to render-ready state (does NOT touch VRAM or RAM)
-  function resetForRender() {
-    cpu2.halted = false; cpu2.iff1 = 0; cpu2.iff2 = 0;
-    cpu2._iy = 0xD00080; cpu2.f = 0x40;
-    cpu2.sp = SCREEN_STACK_TOP - SCREEN_RENDER_STACK_BYTES;
-    fillSentinel(mem, cpu2.sp, SCREEN_RENDER_STACK_BYTES);
-  }
+  const ramSnap = new Uint8Array(mem.slice(0x400000, 0xE00000));
+  const cpuSnap = snapshotCpu(cpu2);
 
-  // Stage 4a: render status bar background (r0-34, all white)
+  mem.set(ramSnap, 0x400000);
+  mem.fill(0xAA, LCD_VRAM_BASE, LCD_VRAM_BASE + LCD_VRAM_BYTES);
+
   const t0 = performance.now();
-  resetForRender();
+  restoreCpu(cpuSnap);
   const r1 = ex2.runFrom(0x0a2b72, 'adl', { maxSteps: 30000, maxLoopIterations: 500 });
 
   // Stage 4b: seed mode display buffer — Phase 91c confirmed format is 26 ASCII chars
@@ -883,12 +907,12 @@ function showHomeScreen() {
   }
 
   // Stage 4c: render home row content (r17-34, mode text + borders) — NO VRAM clear
-  resetForRender();
-  const r2 = ex2.runFrom(0x0a29ec, 'adl', { maxSteps: 30000, maxLoopIterations: 500 });
+  restoreCpu(cpuSnap);
+  const r2 = ex2.runFrom(0x0a29ec, 'adl', { maxSteps: 50000, maxLoopIterations: 500 });
 
   // Stage 4d: render history area (r37-74, empty bordered rows) — Phase 93 finding: JT slot 468
   // Phase 97A finding: maxSteps=50000 produces 9432 fg px (vs ~7000 at 30000) — more complete borders.
-  resetForRender();
+  restoreCpu(cpuSnap);
   const r3 = ex2.runFrom(0x0a2854, 'adl', { maxSteps: 50000, maxLoopIterations: 500 });
 
   // Stage 4e: entry line background (rows 220-239) — direct VRAM fill (white).
@@ -918,8 +942,8 @@ function showHomeScreen() {
   updateRegs();
   updateKeyStateDisplay();
   updateKeyboardOverlay();
-  setStatus(`P91/96 Home Screen: ${totalSteps} steps → ${r3.termination} (${dt} ms) — 5-stage composite: status bg, mode text, history (r37-74), entry line (r220-239)`);
-  log(`<span class="info">--- P91/96 Home Screen rendered (${totalSteps} steps, ${dt} ms) ---</span>`);
+  setStatus(`P91/96 Home Screen: ${totalSteps} steps -> ${r3.termination} (${dt} ms) - golden-regression parity: status bg, mode text, history (r37-74), entry line (r220-239)`);
+  log(`<span class="info">--- P91/96 Home Screen rendered for golden-regression parity (${totalSteps} steps, ${dt} ms) ---</span>`);
 }
 
 function showScreenWithMenuMode(entryAddr, entryMode, name, menuMode, maxSteps = 300000) {

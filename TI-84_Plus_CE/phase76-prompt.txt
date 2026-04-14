@@ -1,0 +1,82 @@
+PHASE 76: Scan the TI-84 CE ROM for length-prefixed string walker signature. Find functions that read a length byte and print that many characters — the token-name renderer pattern.
+
+# CONTEXT (you have NO prior conversation)
+
+Phase 74 (TI-84_Plus_CE/phase74-status-strings-report.md) discovered the TI-BASIC token table at 0x0a0450. Entries are [token_code][length][name]. The home-screen status bar uses this table to render 'Normal', 'Float', 'Radian', etc.
+
+Phase 75 (TI-84_Plus_CE/phase75-token-helper-hunt.md) found NO direct "ld hl, 0x0a0450" loads — the table is accessed indirectly. We need to find the 'print N chars starting at HL' helper. Its signature is:
+
+```
+ld b, (hl)        ; read length byte
+inc hl            ; advance past length
+loop:
+  ld a, (hl)      ; read char
+  call 0x0059c6   ; print char (we already know this is the char-print entry)
+  inc hl
+  djnz loop       ; decrement B, repeat if not zero
+  ret
+```
+
+Or with variant:
+```
+ld a, (hl)        ; read length
+ld b, a
+inc hl
+loop: ld a, (hl) / inc hl / call 0x0059c6 / djnz loop
+ret
+```
+
+# GOAL
+
+Create TI-84_Plus_CE/probe-phase76-walker-scan.mjs that:
+
+## Step 1: Scan lifted blocks for the pattern
+
+For each block in PRELIFTED_BLOCKS, check if its instructions match one of these patterns (use dasm string matching):
+- Pattern A: an "ld b, (hl)" followed within 5 instructions by "inc hl" AND "call 0x0059c6" AND "djnz"
+- Pattern B: an "ld a, (hl)" followed within 3 instructions by "ld b, a" AND "inc hl" AND then "call 0x0059c6" AND "djnz"
+
+Report all matches with block start PC and which pattern matched.
+
+## Step 2: Find callers of each matching function
+
+For each matched block, walk backward (via fallthrough predecessor chain) to the function entry. Then scan the lifted blocks for direct CALL/JP to that function entry. List all callers.
+
+## Step 3: Probe each matched function
+
+Use the Phase 64 probe pattern (buildProbeEnv + runProbe from TI-84_Plus_CE/probe-phase64-0a1cac-novel-callers.mjs). For each matched function, invoke it with HL=0x0a0452 (the 'prgm' token entry — length 4, then "prgm"). Run maxSteps=500 and capture vramWrites + bbox + first 10 blocks. If vramWrites > 0 with bbox spanning ~10-20 cols in the top-left area, we've found a token-print helper.
+
+## Step 4: Report
+
+Write TI-84_Plus_CE/phase76-walker-scan-report.md with:
+- Total pattern matches
+- Per-match table: block PC, pattern, function entry, caller count
+- Per-probe results: matched function, vramWrites, bbox
+- Top candidates ranked by 'most likely to be token printer' (small render in top-left, termination=halt or ret, uniqueBlocks less than 30)
+
+## Step 5: Run the probe
+
+node TI-84_Plus_CE/probe-phase76-walker-scan.mjs larger than TI-84_Plus_CE/phase76-walker-scan.txt 2 and 1
+
+Actually use: node TI-84_Plus_CE/probe-phase76-walker-scan.mjs and redirect stdout to TI-84_Plus_CE/phase76-walker-scan.txt
+
+# DELIVERABLES
+
+1. TI-84_Plus_CE/probe-phase76-walker-scan.mjs
+2. TI-84_Plus_CE/phase76-walker-scan.txt
+3. TI-84_Plus_CE/phase76-walker-scan-report.md
+
+# REFERENCE
+
+- TI-84_Plus_CE/probe-phase64-0a1cac-novel-callers.mjs (probe pattern)
+- TI-84_Plus_CE/phase75-token-helper-hunt.md (Phase 75 findings)
+- TI-84_Plus_CE/ROM.transpiled.js (PRELIFTED_BLOCKS)
+
+# IMPORTANT
+- Run the probe yourself after creating it (parent agent needs the results)
+- Keep scan scope small — don't try to probe every match. Cap at top 10 candidates.
+- Pattern match should check instruction.dasm strings + instruction.target for the call to 0x0059c6
+
+# DO NOT
+- Do not modify existing probes or cpu-runtime.js
+- Do not commit

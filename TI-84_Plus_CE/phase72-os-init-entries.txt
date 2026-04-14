@@ -1,0 +1,29 @@
+=== Phase 72: OS init entry probes ===
+BOOT steps=8804 term=halt lastPc=0x0019b5 callback=0x015ad9 sysFlag=0x00 deepInit=0x7f d0058c=0x00
+
+VARIANT A  entry=0x08c331  steps=691  term=missing_block  lastPc=0xffffff  vram=76800  bbox=r0-239 c0-319  blocks=160  row=0 cols=0-31  first20=0x08c331, 0x05c634, 0x05c67c, 0x08c339, 0x06ce73, 0x06ce7f, 0x06ce7b, 0x06c8ab, 0x08c33d, 0x0a349a, 0x0a349f, 0x0a32f9, 0x0a3301, 0x08c308, 0x0a331e, 0x0a336f, 0x0a3383, 0x0a338a, 0x0a33fb, 0x0a3408
+CPU A  A=0x00  HL=0xff0820  BC=0x000000  DE=0xa10c5b  IX=0xd1a85d  IY=0xffffff  SP=0xd1a853
+WATCH A callback 0x015ad9 -> 0xffffff; sysFlag 0x00 -> 0xff; deepInit 0x7f -> 0xff; d0058c 0x00 -> 0xff
+ROW A ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff
+
+VARIANT B  entry=0x08c366  steps=813  term=missing_block  lastPc=0xffffff  vram=76800  bbox=r0-239 c0-319  blocks=175  row=0 cols=0-31  first20=0x08c366, 0x08c38a, 0x08c3a0, 0x05c634, 0x05c67c, 0x08c3a8, 0x0a27dd, 0x0a27e7, 0x03d1c3, 0x03d1c9, 0x0a32f9, 0x0a32ff, 0x08c308, 0x0a331e, 0x0a336f, 0x0a3383, 0x0a338a, 0x0a33fb, 0x0a3408, 0x0a3404
+CPU B  A=0x00  HL=0xff0820  BC=0x000000  DE=0xa10c5b  IX=0xd1a854  IY=0xffffff  SP=0xd1a84a
+WATCH B callback 0x015ad9 -> 0xffffff; sysFlag 0x00 -> 0xff; deepInit 0x7f -> 0xff; d0058c 0x00 -> 0xff
+ROW B ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff
+
+VARIANT C  entry=0x08c33d  steps=681  term=missing_block  lastPc=0xffffff  vram=76800  bbox=r0-239 c0-319  blocks=150  row=0 cols=0-31  first20=0x08c33d, 0x0a349a, 0x0a349f, 0x0a32f9, 0x0a3301, 0x08c308, 0x0a331e, 0x0a336f, 0x0a3383, 0x0a338a, 0x0a33fb, 0x0a3408, 0x0a3404, 0x0a340f, 0x0a3392, 0x0a339a, 0x0a33e6, 0x0a33ff, 0x0a33ee, 0x0a3403
+CPU C  A=0x00  HL=0xff0820  BC=0x000000  DE=0xa10c5b  IX=0xd1a854  IY=0xffffff  SP=0xd1a84a
+WATCH C callback 0x015ad9 -> 0xffffff; sysFlag 0x00 -> 0xff; deepInit 0x7f -> 0xff; d0058c 0x00 -> 0xff
+ROW C ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff ffff
+
+=== Rank by VRAM writes ===
+B  entry=0x08c366  vram=76800  bbox=r0-239 c0-319  blocks=175  term=missing_block
+A  entry=0x08c331  vram=76800  bbox=r0-239 c0-319  blocks=160  term=missing_block
+C  entry=0x08c33d  vram=76800  bbox=r0-239 c0-319  blocks=150  term=missing_block
+
+=== Browser-shell candidates (>1000 VRAM writes) ===
+btnP72_A -> showScreen(0x08c331, 'adl', 'P72 A 08c331', 200000)
+btnP72_B -> showScreen(0x08c366, 'adl', 'P72 B 08c366', 200000)
+btnP72_C -> showScreen(0x08c33d, 'adl', 'P72 C 08c33d', 200000)
+
+report=phase72-os-init-entries-report.md

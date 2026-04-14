@@ -1,0 +1,127 @@
+[
+  {
+    "callerPc": "0x024528",
+    "functionEntry": "0x024528",
+    "heuristic": "caller"
+  },
+  {
+    "callerPc": "0x02fc87",
+    "functionEntry": "0x02fc10",
+    "heuristic": "after_ret"
+  },
+  {
+    "callerPc": "0x03dc1b",
+    "functionEntry": "0x03dc1b",
+    "heuristic": "caller"
+  },
+  {
+    "callerPc": "0x03e182",
+    "functionEntry": "0x03e17e",
+    "heuristic": "after_ret"
+  },
+  {
+    "callerPc": "0x03ec07",
+    "functionEntry": "0x03ebed",
+    "heuristic": "after_ret"
+  },
+  {
+    "callerPc": "0x03f357",
+    "functionEntry": "0x03f338",
+    "heuristic": "after_ret"
+  },
+  {
+    "callerPc": "0x04552f",
+    "functionEntry": "0x04546a",
+    "heuristic": "after_ret"
+  },
+  {
+    "callerPc": "0x0455c6",
+    "functionEntry": "0x0455c6",
+    "heuristic": "caller"
+  },
+  {
+    "callerPc": "0x0458bf",
+    "functionEntry": "0x0458a3",
+    "heuristic": "after_ret"
+  },
+  {
+    "callerPc": "0x045f3e",
+    "functionEntry": "0x045f3e",
+    "heuristic": "caller"
+  },
+  {
+    "callerPc": "0x046126",
+    "functionEntry": "0x046126",
+    "heuristic": "caller"
+  },
+  {
+    "callerPc": "0x046319",
+    "functionEntry": "0x04622b",
+    "heuristic": "after_ret"
+  },
+  {
+    "callerPc": "0x046878",
+    "functionEntry": "0x046878",
+    "heuristic": "caller"
+  },
+  {
+    "callerPc": "0x04e21f",
+    "functionEntry": "0x04e1d0",
+    "heuristic": "after_ret"
+  },
+  {
+    "callerPc": "0x05cec6",
+    "functionEntry": "0x05cea3",
+    "heuristic": "after_ret"
+  },
+  {
+    "callerPc": "0x05cf76",
+    "functionEntry": "0x05cf6d",
+    "heuristic": "after_ret"
+  },
+  {
+    "callerPc": "0x05e76e",
+    "functionEntry": "0x05e738",
+    "heuristic": "after_ret"
+  },
+  {
+    "callerPc": "0x061f99",
+    "functionEntry": "0x061f6d",
+    "heuristic": "after_ret"
+  },
+  {
+    "callerPc": "0x06b46d",
+    "functionEntry": "0x06b406",
+    "heuristic": "after_ret"
+  },
+  {
+    "callerPc": "0x06b648",
+    "functionEntry": "0x06b584",
+    "heuristic": "after_ret"
+  },
+  {
+    "callerPc": "0x06db0d",
+    "functionEntry": "0x06daaf",
+    "heuristic": "after_ret"
+  },
+  {
+    "callerPc": "0x074bf1",
+    "functionEntry": "0x074b5c",
+    "heuristic": "after_ret"
+  },
+  {
+    "callerPc": "0x074cfb",
+    "functionEntry": "0x074cfb",
+    "heuristic": "caller"
+  },
+  {
+    "callerPc": "0x086c05",
+    "functionEntry": "0x086bd7",
+    "heuristic": "after_ret"
+  },
+  {
+    "callerPc": "0x08912f",
+    "functionEntry": "0x0890ce",
+    "heuristic": "after_ret"
+  }
+]

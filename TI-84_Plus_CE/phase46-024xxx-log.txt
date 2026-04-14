@@ -1,0 +1,6 @@
+Phase 46.1 placeholder log for region 0x020000-0x02ffff.
+This subagent created `probe-phase46-024xxx.mjs` but did not execute it.
+Requested run command:
+node TI-84_Plus_CE/probe-phase46-024xxx.mjs 2>&1 | tee TI-84_Plus_CE/phase46-024xxx-log.txt
+
+Static caller count from the ROM scan: 10

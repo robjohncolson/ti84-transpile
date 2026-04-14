@@ -1,0 +1,590 @@
+[
+  {
+    "index": 0,
+    "stringAddr": "0x062338",
+    "stringText": "OVERFLOW",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 60,
+      "maxCol": 133
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x00038c"
+  },
+  {
+    "index": 1,
+    "stringAddr": "0x062391",
+    "stringText": "DIVIDE BY 0",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 48,
+      "maxCol": 121
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a17c5"
+  },
+  {
+    "index": 2,
+    "stringAddr": "0x0623e1",
+    "stringText": "SINGULAR MATRIX",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 24,
+      "maxCol": 97
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x07bf5c"
+  },
+  {
+    "index": 3,
+    "stringAddr": "0x06244e",
+    "stringText": "DOMAIN",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 72,
+      "maxCol": 145
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a17e9"
+  },
+  {
+    "index": 4,
+    "stringAddr": "0x0624c6",
+    "stringText": "INCREMENT",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 60,
+      "maxCol": 133
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a17d0"
+  },
+  {
+    "index": 5,
+    "stringAddr": "0x062504",
+    "stringText": "BREAK",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 84,
+      "maxCol": 157
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a17f5"
+  },
+  {
+    "index": 6,
+    "stringAddr": "0x06251e",
+    "stringText": "NONREAL ANSWERS",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 24,
+      "maxCol": 97
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x07bf5c"
+  },
+  {
+    "index": 7,
+    "stringAddr": "0x06256f",
+    "stringText": "SYNTAX",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 72,
+      "maxCol": 145
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a17e9"
+  },
+  {
+    "index": 8,
+    "stringAddr": "0x0625bf",
+    "stringText": "DATA TYPE",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 60,
+      "maxCol": 133
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a17d0"
+  },
+  {
+    "index": 9,
+    "stringAddr": "0x06261f",
+    "stringText": "ARGUMENT",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 60,
+      "maxCol": 133
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x00038c"
+  },
+  {
+    "index": 10,
+    "stringAddr": "0x06267c",
+    "stringText": "DIMENSION MISMATCH",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 0,
+      "maxCol": 73
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a17b8"
+  },
+  {
+    "index": 11,
+    "stringAddr": "0x0626f9",
+    "stringText": "INVALID DIMENSION",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 12,
+      "maxCol": 85
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x07bf3e"
+  },
+  {
+    "index": 12,
+    "stringAddr": "0x06278d",
+    "stringText": "UNDEFINED",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 60,
+      "maxCol": 133
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a17d0"
+  },
+  {
+    "index": 13,
+    "stringAddr": "0x0627c2",
+    "stringText": "MEMORY",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 72,
+      "maxCol": 145
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a17e9"
+  },
+  {
+    "index": 14,
+    "stringAddr": "0x06282e",
+    "stringText": "INVALID",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 72,
+      "maxCol": 145
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x005a53"
+  },
+  {
+    "index": 15,
+    "stringAddr": "0x06287a",
+    "stringText": "ILLEGAL NEST",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 36,
+      "maxCol": 109
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x07bf61"
+  },
+  {
+    "index": 16,
+    "stringAddr": "0x0628c0",
+    "stringText": "BOUND",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 84,
+      "maxCol": 157
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a17f5"
+  },
+  {
+    "index": 17,
+    "stringAddr": "0x062909",
+    "stringText": "WINDOW RANGE",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 36,
+      "maxCol": 109
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x07bf61"
+  },
+  {
+    "index": 18,
+    "stringAddr": "0x06296b",
+    "stringText": "ZOOM",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 84,
+      "maxCol": 157
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a1842"
+  },
+  {
+    "index": 19,
+    "stringAddr": "0x0629a3",
+    "stringText": "LABEL",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 84,
+      "maxCol": 157
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a17f5"
+  },
+  {
+    "index": 20,
+    "stringAddr": "0x0629d1",
+    "stringText": "STAT",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 84,
+      "maxCol": 157
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a1842"
+  },
+  {
+    "index": 21,
+    "stringAddr": "0x062a36",
+    "stringText": "SOLVER",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 72,
+      "maxCol": 145
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a17e9"
+  },
+  {
+    "index": 22,
+    "stringAddr": "0x062a3e",
+    "stringText": "SINGULARITY",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 48,
+      "maxCol": 121
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a17c5"
+  },
+  {
+    "index": 23,
+    "stringAddr": "0x062a70",
+    "stringText": "NO SIGN CHANGE",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 24,
+      "maxCol": 97
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x000380"
+  },
+  {
+    "index": 24,
+    "stringAddr": "0x062af7",
+    "stringText": "ITERATIONS",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 48,
+      "maxCol": 121
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a2d4c"
+  },
+  {
+    "index": 25,
+    "stringAddr": "0x062b5e",
+    "stringText": "BAD GUESS",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 60,
+      "maxCol": 133
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a17d0"
+  },
+  {
+    "index": 26,
+    "stringAddr": "0x062ba3",
+    "stringText": "STAT PLOT",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 60,
+      "maxCol": 133
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a17d0"
+  },
+  {
+    "index": 27,
+    "stringAddr": "0x062bcd",
+    "stringText": "TOLERANCE NOT MET",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 12,
+      "maxCol": 85
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x07bf3e"
+  },
+  {
+    "index": 28,
+    "stringAddr": "0x062c27",
+    "stringText": "RESERVED",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 60,
+      "maxCol": 133
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x00038c"
+  },
+  {
+    "index": 29,
+    "stringAddr": "0x062c5d",
+    "stringText": "MODE",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 84,
+      "maxCol": 157
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a1842"
+  },
+  {
+    "index": 30,
+    "stringAddr": "0x062c93",
+    "stringText": "LINK",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 84,
+      "maxCol": 157
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a1842"
+  },
+  {
+    "index": 31,
+    "stringAddr": "0x062c93",
+    "stringText": "LINK",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 84,
+      "maxCol": 157
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a1842"
+  },
+  {
+    "index": 32,
+    "stringAddr": "0x062c93",
+    "stringText": "LINK",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 84,
+      "maxCol": 157
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a1842"
+  },
+  {
+    "index": 33,
+    "stringAddr": "0x062c93",
+    "stringText": "LINK",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 84,
+      "maxCol": 157
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a1842"
+  },
+  {
+    "index": 34,
+    "stringAddr": "0x062c93",
+    "stringText": "LINK",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 84,
+      "maxCol": 157
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a1842"
+  },
+  {
+    "index": 35,
+    "stringAddr": "0x062c99",
+    "stringText": "?",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 108,
+      "maxCol": 181
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a188c"
+  },
+  {
+    "index": 36,
+    "stringAddr": "0x062c9c",
+    "stringText": "SCALE",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 84,
+      "maxCol": 157
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a17f5"
+  },
+  {
+    "index": 37,
+    "stringAddr": "0x062ca3",
+    "stringText": "OS Overlaps Apps",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 12,
+      "maxCol": 85
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x07bf4d"
+  },
+  {
+    "index": 38,
+    "stringAddr": "0x062d01",
+    "stringText": "NO MODE",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 72,
+      "maxCol": 145
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x005a53"
+  },
+  {
+    "index": 39,
+    "stringAddr": "0x062d0a",
+    "stringText": "VALIDATION",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 48,
+      "maxCol": 121
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a2d4c"
+  },
+  {
+    "index": 40,
+    "stringAddr": "0x062d37",
+    "stringText": "LENGTH",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 72,
+      "maxCol": 145
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a17e9"
+  },
+  {
+    "index": 41,
+    "stringAddr": "0x062d3f",
+    "stringText": "APPLICATION",
+    "bbox": {
+      "minRow": 37,
+      "maxRow": 54,
+      "minCol": 48,
+      "maxCol": 121
+    },
+    "fgPixels": 938,
+    "bgPixels": 394,
+    "termination": "max_steps@0x0a17c5"
+  }
+]

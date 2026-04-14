@@ -1,0 +1,127 @@
+=== Phase 44.4 — batch probe 0x04xxxx text-loop callers ===
+target=0x0a1cac region=0x040000-0x04ffff callers=25
+
+boot:    8804 steps -> halt at 0x0019b5
+os init: 691 steps -> missing_block at 0xffffff
+
+addr=0x040aea  steps=90  drawn=0  fg=0  bg=0  bbox=[none]  term=halt
+addr=0x04266e  steps=11  drawn=0  fg=0  bg=0  bbox=[none]  term=missing_block
+addr=0x04552f  steps=849  drawn=252  fg=188  bg=64  bbox=[18-35,180-193]  term=halt
+addr=0x0455c6  steps=89  drawn=0  fg=0  bg=0  bbox=[none]  term=missing_block
+addr=0x0458bf  steps=400000  drawn=13500  fg=10725  bg=2775  bbox=[97-194,0-313]  term=max_steps
+  histogram for 0x0458bf:
+    0xaaaa: 63300
+    0x0000: 10725
+    0xffff: 2775
+  ascii=phase44-045xxx-0458bf.txt
+addr=0x045999  steps=400000  drawn=0  fg=0  bg=0  bbox=[none]  term=max_steps
+addr=0x045de1  steps=400000  drawn=8244  fg=1760  bg=6484  bbox=[77-134,0-229]  term=max_steps
+  histogram for 0x045de1:
+    0xaaaa: 68556
+    0xffff: 6484
+    0x0000: 1760
+  ascii=phase44-045xxx-045de1.txt
+addr=0x045e01  steps=400000  drawn=4140  fg=3300  bg=840  bbox=[117-134,0-229]  term=max_steps
+  histogram for 0x045e01:
+    0xaaaa: 72660
+    0x0000: 3300
+    0xffff: 840
+  ascii=phase44-045xxx-045e01.txt
+addr=0x045e11  steps=400000  drawn=4644  fg=3692  bg=952  bbox=[17-134,0-229]  term=max_steps
+  histogram for 0x045e11:
+    0xaaaa: 72156
+    0x0000: 3692
+    0xffff: 952
+  ascii=phase44-045xxx-045e11.txt
+addr=0x045e7c  steps=136085  drawn=10188  fg=2040  bg=8148  bbox=[77-214,0-265]  term=halt
+  histogram for 0x045e7c:
+    0xaaaa: 66612
+    0xffff: 8148
+    0x0000: 2040
+  ascii=phase44-045xxx-045e7c.txt
+addr=0x045e9c  steps=158505  drawn=9000  fg=7228  bg=1772  bbox=[77-214,0-265]  term=halt
+  histogram for 0x045e9c:
+    0xaaaa: 67800
+    0x0000: 7228
+    0xffff: 1772
+  ascii=phase44-045xxx-045e9c.txt
+addr=0x045eac  steps=140682  drawn=4212  fg=3400  bg=812  bbox=[77-134,0-217]  term=halt
+  histogram for 0x045eac:
+    0xaaaa: 72588
+    0x0000: 3400
+    0xffff: 812
+  ascii=phase44-045xxx-045eac.txt
+addr=0x045ecd  steps=10685  drawn=2916  fg=2245  bg=671  bbox=[18-134,0-193]  term=halt
+  histogram for 0x045ecd:
+    0xaaaa: 73884
+    0x0000: 2245
+    0xffff: 671
+  ascii=phase44-045xxx-045ecd.txt
+addr=0x045edd  steps=2542  drawn=684  fg=526  bg=158  bbox=[117-134,132-169]  term=halt
+  histogram for 0x045edd:
+    0xaaaa: 76116
+    0x0000: 526
+    0xffff: 158
+  ascii=phase44-045xxx-045edd.txt
+addr=0x045ef7  steps=901  drawn=252  fg=188  bg=64  bbox=[18-35,180-193]  term=halt
+addr=0x045f3e  steps=400000  drawn=0  fg=0  bg=0  bbox=[none]  term=max_steps
+addr=0x046126  steps=400000  drawn=0  fg=0  bg=0  bbox=[none]  term=max_steps
+addr=0x046188  steps=400000  drawn=1116  fg=334  bg=782  bbox=[97-114,60-121]  term=max_steps
+  histogram for 0x046188:
+    0xaaaa: 75684
+    0xffff: 782
+    0x0000: 334
+  ascii=phase44-045xxx-046188.txt
+addr=0x0461eb  steps=117  drawn=0  fg=0  bg=0  bbox=[none]  term=halt
+addr=0x046222  steps=38  drawn=0  fg=0  bg=0  bbox=[none]  term=missing_block
+addr=0x046272  steps=400000  drawn=2196  fg=532  bg=1664  bbox=[97-114,48-169]  term=max_steps
+  histogram for 0x046272:
+    0xaaaa: 74604
+    0xffff: 1664
+    0x0000: 532
+  ascii=phase44-045xxx-046272.txt
+addr=0x046319  steps=400000  drawn=252  fg=188  bg=64  bbox=[18-35,180-193]  term=max_steps
+addr=0x046878  steps=400000  drawn=0  fg=0  bg=0  bbox=[none]  term=max_steps
+addr=0x046983  steps=2  drawn=0  fg=0  bg=0  bbox=[none]  term=missing_block
+addr=0x04e21f  steps=50  drawn=0  fg=0  bg=0  bbox=[none]  term=missing_block
+
+=== Summary (sorted by drawn desc) ===
+tag  addr         drawn      fg      bg    other    steps  term          bbox
+hit  0x0458bf      13500   10725    2775        0   400000  max_steps     [97-194,0-313]
+hit  0x045e7c      10188    2040    8148        0   136085  halt          [77-214,0-265]
+hit  0x045e9c       9000    7228    1772        0   158505  halt          [77-214,0-265]
+hit  0x045de1       8244    1760    6484        0   400000  max_steps     [77-134,0-229]
+hit  0x045e11       4644    3692     952        0   400000  max_steps     [17-134,0-229]
+hit  0x045eac       4212    3400     812        0   140682  halt          [77-134,0-217]
+hit  0x045e01       4140    3300     840        0   400000  max_steps     [117-134,0-229]
+hit  0x045ecd       2916    2245     671        0    10685  halt          [18-134,0-193]
+hit  0x046272       2196     532    1664        0   400000  max_steps     [97-114,48-169]
+hit  0x046188       1116     334     782        0   400000  max_steps     [97-114,60-121]
+hit  0x045edd        684     526     158        0     2542  halt          [117-134,132-169]
+     0x04552f        252     188      64        0      849  halt          [18-35,180-193]
+     0x045ef7        252     188      64        0      901  halt          [18-35,180-193]
+     0x046319        252     188      64        0   400000  max_steps     [18-35,180-193]
+     0x040aea          0       0       0        0       90  halt          [none]
+     0x04266e          0       0       0        0       11  missing_block  [none]
+     0x0455c6          0       0       0        0       89  missing_block  [none]
+     0x045999          0       0       0        0   400000  max_steps     [none]
+     0x045f3e          0       0       0        0   400000  max_steps     [none]
+     0x046126          0       0       0        0   400000  max_steps     [none]
+     0x0461eb          0       0       0        0      117  halt          [none]
+     0x046222          0       0       0        0       38  missing_block  [none]
+     0x046878          0       0       0        0   400000  max_steps     [none]
+     0x046983          0       0       0        0        2  missing_block  [none]
+     0x04e21f          0       0       0        0       50  missing_block  [none]
+
+hits (drawn>500, fg>100): 11
+  0x0458bf  drawn=13500  fg=10725  ascii=phase44-045xxx-0458bf.txt
+  0x045e7c  drawn=10188  fg=2040  ascii=phase44-045xxx-045e7c.txt
+  0x045e9c  drawn=9000  fg=7228  ascii=phase44-045xxx-045e9c.txt
+  0x045de1  drawn=8244  fg=1760  ascii=phase44-045xxx-045de1.txt
+  0x045e11  drawn=4644  fg=3692  ascii=phase44-045xxx-045e11.txt
+  0x045eac  drawn=4212  fg=3400  ascii=phase44-045xxx-045eac.txt
+  0x045e01  drawn=4140  fg=3300  ascii=phase44-045xxx-045e01.txt
+  0x045ecd  drawn=2916  fg=2245  ascii=phase44-045xxx-045ecd.txt
+  0x046272  drawn=2196  fg=532  ascii=phase44-045xxx-046272.txt
+  0x046188  drawn=1116  fg=334  ascii=phase44-045xxx-046188.txt
+  0x045edd  drawn=684  fg=526  ascii=phase44-045xxx-045edd.txt

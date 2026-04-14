@@ -133,6 +133,16 @@ function createTimerHandler(state) {
   };
 }
 
+function createPhase99CPollUnlockHandler() {
+  return {
+    read() {
+      return 0x00;
+    },
+
+    write() {},
+  };
+}
+
 export function createPeripheralBus(options = {}) {
   const trace = options.trace === true;
   const handlers = new Map();
@@ -372,6 +382,10 @@ export function createPeripheralBus(options = {}) {
   register(0x06, createFlashHandler(state));
   register([0x10, 0x18], createTimerHandler(state));
   register(0x28, createPllHandler(state));
+  const phase99cPollUnlockHandler = createPhase99CPollUnlockHandler();
+  // Phase 99C: 0x006138 poll loop unlock — TODO confirm real hardware semantics
+  register(0xd00c, phase99cPollUnlockHandler);
+  register(0xd00d, phase99cPollUnlockHandler);
   // Memory controller / flash wait states (ports 0x1000-0x1005)
   // Port 0x1005: flash wait states (OS default 0x04 → 9 wait states per flash read)
   const memCtrlState = { waitStates: 0x04, bankCtrl: 0x00 };

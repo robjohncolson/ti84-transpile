@@ -22010,6 +22010,16 @@ function walkBlocks() {
     { pc: 0x029441, mode: 'adl' }, // CALL site of 0x029610 inside 0x0293ea
     { pc: 0x029683, mode: 'adl' }, // CALL site of 0x0296dd inside 0x029610
     { pc: 0x0296ad, mode: 'adl' }, // second CALL site of 0x0296dd inside 0x029610
+    // Phase 47.1: DispMessageAt variant (DE=cursor, HL=string, BC=length).
+    // Sibling of 0x03f300 — sets cursor from DE then jumps into 0x03f300's body.
+    // Walker missed this entry (no static caller in the analyzed graph).
+    { pc: 0x03f31c, mode: 'adl' },
+    // Phase 47.1: also seed 0x03f312 — the JR target inside 0x03f300, since the
+    // 0x03f31c → JR -23 → 0x03f312 path needs both blocks present.
+    { pc: 0x03f312, mode: 'adl' },
+    // Phase 49.2: post-boot callback target discovered at (0xd02ad7-9) after cold boot.
+    { pc: 0x015ad9, mode: 'adl' },
+    { pc: 0x015ada, mode: 'adl' },
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
