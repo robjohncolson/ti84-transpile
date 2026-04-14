@@ -1,0 +1,7 @@
+# Phase 111 menu-render retranspile seeds
+# These menu entry points were identified in Phase 109 as missing from
+# PRELIFTED_BLOCKS and need to be pulled into the transpiler seed set.
+0x0b6a58
+0x0b6834
+0x0b6b48
+0x09eb9e

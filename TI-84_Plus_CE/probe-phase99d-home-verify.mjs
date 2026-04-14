@@ -52,6 +52,8 @@ const STRIP_ROW_START = 17;
 const STRIP_ROW_END = 34;
 const DEFAULT_ROW = 20;
 
+const WORKSPACE_FILL_ROW_START = 75;
+const WORKSPACE_FILL_ROW_END = 219;
 const ENTRY_FILL_ROW_START = 220;
 const ENTRY_FILL_ROW_END = 239;
 
@@ -146,6 +148,16 @@ function runStage(executor, label, entry, maxSteps) {
 function seedModeBuffer(mem) {
   for (let index = 0; index < MODE_BUF_LEN; index++) {
     mem[MODE_BUF_START + index] = MODE_BUF_TEXT.charCodeAt(index);
+  }
+}
+
+function fillWorkspaceWhite(mem) {
+  for (let row = WORKSPACE_FILL_ROW_START; row <= WORKSPACE_FILL_ROW_END; row++) {
+    for (let col = 0; col < VRAM_WIDTH; col++) {
+      const offset = VRAM_BASE + (row * VRAM_WIDTH + col) * 2;
+      mem[offset] = 0xFF;
+      mem[offset + 1] = 0xFF;
+    }
   }
 }
 
@@ -558,8 +570,11 @@ async function main() {
   restoreCpu(cpu, cpuSnap, mem);
   stages.push(runStage(executor, 'stage 4 history area', STAGE_4_ENTRY, 50000));
 
+  fillWorkspaceWhite(mem);
+  console.log(`stage 5 workspace fill: rows ${WORKSPACE_FILL_ROW_START}-${WORKSPACE_FILL_ROW_END} -> 0xFFFF`);
+
   fillEntryLineWhite(mem);
-  console.log(`stage 5 entry line fill: rows ${ENTRY_FILL_ROW_START}-${ENTRY_FILL_ROW_END} -> 0xFFFF`);
+  console.log(`stage 6 entry line fill: rows ${ENTRY_FILL_ROW_START}-${ENTRY_FILL_ROW_END} -> 0xFFFF`);
   statusDots.leftFinal = countColoredPixels(mem, 3, 6, 146, 150);
   statusDots.rightFinal = countColoredPixels(mem, 3, 6, 306, 310);
 
@@ -579,7 +594,8 @@ async function main() {
 
   console.log(`stripHints: firstDrawnCol=${strip.firstDrawnCol} firstFgCol=${strip.firstFgCol} densestRow=${strip.densestRow}`);
 
-  const compositeBroken = totals.drawn === 0 || totals.drawn >= 40000;
+  // Phase 112 intentionally paints most of the panel white, so only a fully painted screen is suspicious now.
+  const compositeBroken = totals.drawn === 0 || totals.drawn >= VRAM_WIDTH * VRAM_HEIGHT;
   let attempts = [];
   let best = null;
 

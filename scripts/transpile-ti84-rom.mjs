@@ -8,6 +8,7 @@ const romPath = path.join(repoRoot, 'TI-84_Plus_CE', 'ROM.rom');
 const outPath = path.join(repoRoot, 'TI-84_Plus_CE', 'ROM.transpiled.js');
 const reportPath = path.join(repoRoot, 'TI-84_Plus_CE', 'ROM.transpiled.report.json');
 const phase100cSeedsPath = path.join(repoRoot, 'TI-84_Plus_CE', 'phase100c-seeds.txt');
+const phase111SeedsPath = path.join(repoRoot, 'TI-84_Plus_CE', 'phase111-seeds.txt');
 
 const romBytes = fs.readFileSync(romPath);
 const romBase64 = romBytes.toString('base64');
@@ -754,6 +755,7 @@ function buildBlock(startPc, mode, options) {
 function walkBlocks() {
   const seedEntries = [];
   const phase100cSeeds = loadSeedFile(phase100cSeedsPath);
+  const phase111Seeds = loadSeedFile(phase111SeedsPath);
   const knownEntryAnchors = [
     { pc: 0x000100, mode: 'adl' },
     { pc: 0x000658, mode: 'adl' },
@@ -22038,6 +22040,8 @@ function walkBlocks() {
     { pc: 0x015ada, mode: 'adl' },
     // Phase 100C: explicit mode-display chain anchors used by the 0x0b2d8a reprobe.
     ...phase100cSeeds,
+    // Phase 111: menu rendering entry points found missing from PRELIFTED_BLOCKS.
+    ...phase111Seeds,
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
