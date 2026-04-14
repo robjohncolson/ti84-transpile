@@ -45,6 +45,7 @@ button.active { background: #2a5a2a; border-color: #4a8a4a; }
 .log .info { color: #e8a838; }
 .status { background: #1e3a1e; border: 1px solid #2a5a2a; padding: 8px; margin-bottom: 12px; border-radius: 4px; color: #7ddf7d; font-size: 12px; }
 .status.error { background: #3a1e1e; border-color: #5a2a2a; color: #df7d7d; }
+.status.burst { background: #3a3416; border-color: #8a7b2a; color: #f0d86a; }
 </style>
 </head>
 <body>
@@ -252,7 +253,7 @@ button.active { background: #2a5a2a; border-color: #4a8a4a; }
 <script type="module">
 import { createExecutor } from './cpu-runtime.js';
 import { createPeripheralBus } from './peripherals.js';
-import { createKeyboardManager } from './ti84-keyboard.js';
+import { KEY_MAP, createKeyboardManager } from './ti84-keyboard.js';
 import { createLCDRenderer } from './ti84-lcd.js';
 
 const hex = (v, w) => v.toString(16).padStart(w, '0');
@@ -260,6 +261,9 @@ const $ = id => document.getElementById(id);
 
 const logEl = $('log');
 const statusEl = $('status');
+let stableStatusMessage = statusEl.textContent;
+let stableStatusIsError = false;
+let statusFlashTimer = null;
 
 // ROM module — loaded dynamically from .gz (repo) or .js (local dev)
 let PRELIFTED_BLOCKS = null;
@@ -297,7 +301,10 @@ let kbdDown = null;
 let kbdUp = null;
 let lcd = null;
 let autoRunning = false;
-const STEPS_PER_FRAME = 500;
+const STEPS_PER_FRAME = 2000;
+const KEY_BURST_STEPS = 2000;
+const KEYBOARD_IRQ_ENABLE_HIGH_PORT = 0x5006;
+const KEYBOARD_IRQ_ENABLE_HIGH_BIT = 0x08; // bit 3 of the high byte = interrupt 19 overall
 const SET_TEXT_FG_ENTRY = 0x0802b2;
 const SCREEN_STACK_TOP = 0xD1A87E;
 const SCREEN_RENDER_STACK_BYTES = 12;
@@ -358,9 +365,30 @@ function updateRegs() {
   $('rSteps').textContent = totalSteps;
 }
 
-function setStatus(msg, error = false) {
+function applyStatus(msg, className) {
   statusEl.textContent = msg;
-  statusEl.className = error ? 'status error' : 'status';
+  statusEl.className = className;
+}
+
+function setStatus(msg, error = false) {
+  stableStatusMessage = msg;
+  stableStatusIsError = error;
+  if (statusFlashTimer !== null) {
+    window.clearTimeout(statusFlashTimer);
+    statusFlashTimer = null;
+  }
+  applyStatus(msg, error ? 'status error' : 'status');
+}
+
+function flashStatus(msg, timeoutMs = 800) {
+  if (statusFlashTimer !== null) {
+    window.clearTimeout(statusFlashTimer);
+  }
+  applyStatus(msg, 'status burst');
+  statusFlashTimer = window.setTimeout(() => {
+    statusFlashTimer = null;
+    applyStatus(stableStatusMessage, stableStatusIsError ? 'status error' : 'status');
+  }, timeoutMs);
 }
 
 function enableButtons(booted) {
@@ -994,6 +1022,14 @@ function updateKeyboardOverlay() {
   });
 }
 
+function enableKeyboardIRQ() {
+  if (!peripherals) return;
+  const enableHighByte =
+    peripherals.read(KEYBOARD_IRQ_ENABLE_HIGH_PORT) | KEYBOARD_IRQ_ENABLE_HIGH_BIT;
+  peripherals.write(KEYBOARD_IRQ_ENABLE_HIGH_PORT, enableHighByte);
+  log(`<span class="info">--- Keyboard IRQ enabled (0x5006=0x${hex(enableHighByte, 2)}) ---</span>`);
+}
+
 function autoRunFrame() {
   if (!autoRunning || !executor) return;
   runSteps(STEPS_PER_FRAME);
@@ -1054,6 +1090,11 @@ $('btnBoot').addEventListener('click', async () => {
     kbd.handleKeyDown(e);
     updateKeyStateDisplay();
     updateKeyboardOverlay();
+    const mappedKey = KEY_MAP[e.code];
+    if (mappedKey && !autoRunning && executor) {
+      runSteps(KEY_BURST_STEPS);
+      flashStatus(`Key: ${mappedKey.label} → ${KEY_BURST_STEPS} steps`);
+    }
   };
   kbdUp = (e) => {
     kbd.handleKeyUp(e);
@@ -1083,6 +1124,7 @@ $('btnBoot').addEventListener('click', async () => {
   // This allows the ISR dispatch to reach the event loop at 0x0019BE
   romBytes[0xD02AD7] = 0xBE; romBytes[0xD02AD8] = 0x19; romBytes[0xD02AD9] = 0x00;
   romBytes[0xD0009B] |= 0x40; // (IY+27) bit 6 = dispatch-ready
+  enableKeyboardIRQ();
   log(`<span class="info">--- Event loop initialized (callback=0x0019BE) ---</span>`);
 });
 
