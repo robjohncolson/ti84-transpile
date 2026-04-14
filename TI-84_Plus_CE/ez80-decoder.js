@@ -623,6 +623,20 @@ function decodeDDFD(romBytes, startPc, prefixPc, indexReg, mode, modePrefix, imm
   if (op === 0x17) return emit(2, { tag: 'ld-pair-indexed', pair: 'de', indexRegister: indexReg, displacement: d() });
   if (op === 0x27) return emit(2, { tag: 'ld-pair-indexed', pair: 'hl', indexRegister: indexReg, displacement: d() });
 
+  // eZ80 indexed 24-bit pair stores: DD/FD 0F/1F/2F d = LD (IX/IY+d), BC/DE/HL
+  if (op === 0x0f) return emit(2, { tag: 'ld-indexed-pair', pair: 'bc', indexRegister: indexReg, displacement: d() });
+  if (op === 0x1f) return emit(2, { tag: 'ld-indexed-pair', pair: 'de', indexRegister: indexReg, displacement: d() });
+  if (op === 0x2f) return emit(2, { tag: 'ld-indexed-pair', pair: 'hl', indexRegister: indexReg, displacement: d() });
+
+  // eZ80 indexed 24-bit IX/IY loads: DD/FD 31/37 d = LD IX/IY, (IX/IY+d)
+  if (op === 0x31) return emit(2, { tag: 'ld-ixiy-indexed', dest: 'ix', indexRegister: indexReg, displacement: d() });
+  if (op === 0x37) return emit(2, { tag: 'ld-ixiy-indexed', dest: 'iy', indexRegister: indexReg, displacement: d() });
+
+  const otherIx = indexReg === 'ix' ? 'iy' : 'ix';
+  // eZ80 indexed 24-bit IX/IY stores: DD/FD 3E/3F d = LD (IX/IY+d), IY/IX
+  if (op === 0x3e) return emit(2, { tag: 'ld-indexed-ixiy', src: otherIx, indexRegister: indexReg, displacement: d() });
+  if (op === 0x3f) return emit(2, { tag: 'ld-indexed-ixiy', src: indexReg, indexRegister: indexReg, displacement: d() });
+
   // eZ80 indexed 24-bit pair stores: DD/FD 01/11 d = LD (IX/IY+d), BC/DE
   if (op === 0x01) return emit(2, { tag: 'ld-indexed-pair', pair: 'bc', indexRegister: indexReg, displacement: d() });
   if (op === 0x11) return emit(2, { tag: 'ld-indexed-pair', pair: 'de', indexRegister: indexReg, displacement: d() });

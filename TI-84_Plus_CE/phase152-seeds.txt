@@ -1,0 +1,3 @@
+# Phase 152 - missing block discovered after decoder additions retranspile
+# 0x00ff42 is hit by rendering stages (status bar, dots, home row) after DD/FD decoder expansion
+0x00ff42

@@ -10,6 +10,7 @@ const reportPath = path.join(repoRoot, 'TI-84_Plus_CE', 'ROM.transpiled.report.j
 const phase100cSeedsPath = path.join(repoRoot, 'TI-84_Plus_CE', 'phase100c-seeds.txt');
 const phase111SeedsPath = path.join(repoRoot, 'TI-84_Plus_CE', 'phase111-seeds.txt');
 const phase130SeedsPath = path.join(repoRoot, 'TI-84_Plus_CE', 'phase130-seeds.txt');
+const phase152SeedsPath = path.join(repoRoot, 'TI-84_Plus_CE', 'phase152-seeds.txt');
 
 const romBytes = fs.readFileSync(romPath);
 const romBase64 = romBytes.toString('base64');
@@ -150,6 +151,8 @@ function buildDasm(d) {
     case 'ld-ixd-imm': return `ld ${ixd(d.indexRegister, d.displacement)}, ${hex(d.value)}`;
     case 'ld-pair-indexed': return `ld ${d.pair}, (${d.indexRegister}+${d.displacement})`;
     case 'ld-indexed-pair': return `ld (${d.indexRegister}+${d.displacement}), ${d.pair}`;
+    case 'ld-ixiy-indexed': return `ld ${d.dest}, (${d.indexRegister}+${d.displacement})`;
+    case 'ld-indexed-ixiy': return `ld (${d.indexRegister}+${d.displacement}), ${d.src}`;
 
     case 'alu-reg': {
       const prefix = (d.op === 'add' || d.op === 'adc' || d.op === 'sbc') ? `${d.op} a, ` : `${d.op} `;
@@ -409,6 +412,8 @@ function emitInstructionJs(instruction) {
   if (tag === 'ld-ixd-imm') return [`cpu.writeIndexed8('${instruction.indexRegister}', ${instruction.displacement}, ${hex(instruction.value)});`];
   if (tag === 'ld-pair-indexed') return [`cpu.${instruction.pair} = cpu.read24((cpu.${instruction.indexRegister} + ${instruction.displacement}) & cpu.addressMask);`];
   if (tag === 'ld-indexed-pair') return [`cpu.write24((cpu.${instruction.indexRegister} + ${instruction.displacement}) & cpu.addressMask, cpu.${instruction.pair});`];
+  if (tag === 'ld-ixiy-indexed') return [`cpu.${instruction.dest} = cpu.read24((cpu.${instruction.indexRegister} + ${instruction.displacement}) & cpu.addressMask);`];
+  if (tag === 'ld-indexed-ixiy') return [`cpu.write24((cpu.${instruction.indexRegister} + ${instruction.displacement}) & cpu.addressMask, cpu.${instruction.src});`];
 
   // --- ALU 8-bit ---
   if (tag === 'alu-reg') {
@@ -762,6 +767,7 @@ function walkBlocks() {
   const phase100cSeeds = loadSeedFile(phase100cSeedsPath);
   const phase111Seeds = loadSeedFile(phase111SeedsPath);
   const phase130Seeds = loadSeedFile(phase130SeedsPath);
+  const phase152Seeds = loadSeedFile(phase152SeedsPath);
   const knownEntryAnchors = [
     { pc: 0x000100, mode: 'adl' },
     { pc: 0x000658, mode: 'adl' },
@@ -22052,6 +22058,8 @@ function walkBlocks() {
     ...phase111Seeds,
     // Phase 130: key compare chain block found missing from PRELIFTED_BLOCKS.
     ...phase130Seeds,
+    // Phase 152: missing block from decoder expansion retranspile.
+    ...phase152Seeds,
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
