@@ -198,6 +198,7 @@ button.active { background: #2a5a2a; border-color: #4a8a4a; }
     <div class="key-state" id="keyState">
       <span class="label">Keys: </span><span id="activeKeys">none</span><br>
       <span class="label">Scan: </span><span class="val" id="scanCode">0x00</span>
+      <span id="modifierState" style="margin-left: 8px; font-size: 11px;"></span>
     </div>
     <div class="ti84-kbd" id="ti84Kbd">
       <div class="kbd-row">
@@ -312,6 +313,8 @@ const KEY_EVENT_BUFFER_ADDR = 0xD0058E;
 const MODIFIER_STATE_ADDR = 0xD00092; // IY(0xD00080) + 0x12
 const MODIFIER_ALPHA_MASK = 0x10;
 const MODIFIER_2ND_MASK = 0x20;
+let secondActive = false;
+let alphaActive = false;
 const SET_TEXT_FG_ENTRY = 0x0802b2;
 const SCREEN_STACK_TOP = 0xD1A87E;
 const SCREEN_RENDER_STACK_BYTES = 12;
@@ -427,17 +430,75 @@ function getKeyboardModifierIndex(memory) {
 function writeTranslatedKeyEvent(code) {
   if (!cpu?.memory) return;
 
+  if (handleModifierKeys(code)) return;
+
   const scanCode = getScanCodeForPcCode(code);
   if (scanCode == null) return;
 
   const modifier = getKeyboardModifierIndex(cpu.memory);
   const keyCode = scanCodeToKeyCode[modifier]?.[scanCode] ?? 0;
+  clearSecondAfterUse();
 
   // Modifier-only slots stay on the matrix/IRQ path; only non-zero OS key codes
   // should be seeded into the shared key-event buffer.
   if (keyCode === 0) return;
 
   cpu.write8(KEY_EVENT_BUFFER_ADDR, keyCode);
+}
+
+function handleModifierKeys(code) {
+  if (!cpu?.memory) return false;
+
+  if (code === 'Home') {
+    secondActive = !secondActive;
+    updateModifierFlags();
+    updateModifierDisplay();
+    return true;
+  }
+
+  if (code === 'Tab') {
+    alphaActive = !alphaActive;
+    updateModifierFlags();
+    updateModifierDisplay();
+    return true;
+  }
+
+  return false;
+}
+
+function updateModifierFlags() {
+  if (!cpu?.memory) return;
+
+  let flags = cpu.memory[MODIFIER_STATE_ADDR] ?? 0;
+
+  if (secondActive) flags |= MODIFIER_2ND_MASK;
+  else flags &= ~MODIFIER_2ND_MASK;
+
+  if (alphaActive) flags |= MODIFIER_ALPHA_MASK;
+  else flags &= ~MODIFIER_ALPHA_MASK;
+
+  cpu.memory[MODIFIER_STATE_ADDR] = flags;
+}
+
+function clearSecondAfterUse() {
+  if (secondActive) {
+    secondActive = false;
+    updateModifierFlags();
+  }
+
+  updateModifierDisplay();
+}
+
+function updateModifierDisplay() {
+  const el = document.getElementById('modifierState');
+  if (!el) return;
+
+  const parts = [];
+  if (secondActive) parts.push('[2nd]');
+  if (alphaActive) parts.push('[Alpha]');
+
+  el.textContent = parts.join(' ') || '';
+  el.style.color = parts.length > 0 ? '#ff6600' : '';
 }
 
 function log(html) {
@@ -1108,6 +1169,7 @@ function updateKeyStateDisplay() {
 
   if (!hasKeys) {
     $('scanCode').textContent = '0x00';
+    updateModifierDisplay();
     return;
   }
 
@@ -1115,6 +1177,7 @@ function updateKeyStateDisplay() {
   $('scanCode').textContent = scanCode == null
     ? '0x00'
     : `0x${hex(scanCode, 2)}`;
+  updateModifierDisplay();
 }
 
 function updateKeyboardOverlay() {
@@ -1198,6 +1261,10 @@ $('btnBoot').addEventListener('click', async () => {
   peripherals = createPeripheralBus({ pllDelay: 2, timerMode: 'nmi', timerInterval: 100 });
   executor = createExecutor(PRELIFTED_BLOCKS, romBytes, { peripherals });
   cpu = executor.cpu;
+  secondActive = false;
+  alphaActive = false;
+  updateModifierFlags();
+  updateModifierDisplay();
   kbd = createKeyboardManager(peripherals);
   kbdDown = (e) => {
     kbd.handleKeyDown(e);
@@ -1392,6 +1459,9 @@ $('btnReset').addEventListener('click', () => {
   $('btnAutoRun').classList.remove('active');
   $('activeKeys').textContent = 'none';
   $('scanCode').textContent = '0x00';
+  secondActive = false;
+  alphaActive = false;
+  updateModifierDisplay();
   peripherals = null;
   updateKeyboardOverlay();
   executor = null;
