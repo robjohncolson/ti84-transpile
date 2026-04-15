@@ -332,6 +332,7 @@ const ERROR_BANNER_MODE_ADDR = 0xD00824;
 const ERROR_BANNER_MODE_ADDR_HEX = '0xD00824';
 // Phase 91: Mode display buffer — 26-byte ASCII text for home screen status bar
 const HOME_SCREEN_MODE_BUF = 0xD020A6;
+const HOME_SCREEN_DISPLAY_BUF = 0xD006C0;
 const HOME_SCREEN_MODE_TEXT = 'Normal Float Radian       '; // exactly 26 chars
 const ERROR_BANNER_RENDER_STEPS = 8000;
 const ERROR_BANNER_SPECIAL_CASES = [
@@ -1098,6 +1099,12 @@ function showHomeScreen() {
   // Stage 4c: seed mode display buffer — Phase 91c confirmed format is 26 ASCII chars
   for (let i = 0; i < HOME_SCREEN_MODE_TEXT.length && i < 26; i++) {
     mem[HOME_SCREEN_MODE_BUF + i] = HOME_SCREEN_MODE_TEXT.charCodeAt(i);
+  }
+
+  // Phase 172: seed display buffer at 0xD006C0 - Phase 170 proved the ROM
+  // renderer reads from this buffer, not 0xD020A6.
+  for (let i = 0; i < HOME_SCREEN_MODE_TEXT.length && i < 26; i++) {
+    mem[HOME_SCREEN_DISPLAY_BUF + i] = HOME_SCREEN_MODE_TEXT.charCodeAt(i);
   }
 
   // Stage 4d: render home row content (r17-34, mode text + borders) — NO VRAM clear

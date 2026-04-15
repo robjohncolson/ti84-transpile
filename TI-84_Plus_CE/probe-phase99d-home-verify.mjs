@@ -39,6 +39,8 @@ const DECODE_COMPARE_WIDTH = 10;
 
 const MODE_BUF_START = 0xD020A6;
 const MODE_BUF_TEXT = 'Normal Float Radian       ';
+const DISPLAY_BUF_START = 0xD006C0;
+const DISPLAY_BUF_TEXT = MODE_BUF_TEXT;
 const MODE_BUF_LEN = 26;
 
 const VRAM_BASE = 0xD40000;
@@ -150,6 +152,12 @@ function runStage(executor, label, entry, maxSteps) {
 function seedModeBuffer(mem) {
   for (let index = 0; index < MODE_BUF_LEN; index++) {
     mem[MODE_BUF_START + index] = MODE_BUF_TEXT.charCodeAt(index);
+  }
+}
+
+function seedDisplayBuffer(mem) {
+  for (let index = 0; index < MODE_BUF_LEN; index++) {
+    mem[DISPLAY_BUF_START + index] = DISPLAY_BUF_TEXT.charCodeAt(index);
   }
 }
 
@@ -610,6 +618,7 @@ async function main() {
   };
 
   seedModeBuffer(mem);
+  seedDisplayBuffer(mem);
   console.log(`stage 3 seed mode buffer: "${MODE_BUF_TEXT}"`);
 
   restoreCpu(cpu, cpuSnap, mem);
