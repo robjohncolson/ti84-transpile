@@ -332,6 +332,7 @@ const ERROR_BANNER_MODE_ADDR = 0xD00824;
 const ERROR_BANNER_MODE_ADDR_HEX = '0xD00824';
 // Phase 91: Mode display buffer — 26-byte ASCII text for home screen status bar
 const HOME_SCREEN_MODE_BUF = 0xD020A6;
+const HOME_SCREEN_BACKUP_BUF = 0xD02EC7;
 const HOME_SCREEN_DISPLAY_BUF = 0xD006C0;
 const HOME_SCREEN_MODE_TEXT = 'Normal Float Radian       '; // exactly 26 chars
 const ERROR_BANNER_RENDER_STEPS = 8000;
@@ -1019,9 +1020,11 @@ function showScreen(entryAddr, entryMode, name, maxSteps = 300000, hlValue = nul
   log(`<span class="info">--- ${name} rendered (${r.steps} steps, ${dt} ms) ---</span>`);
 }
 
-// Phase 91/93/96/102: Composite home screen render.
+// Phase 91/93/96/102/179: Composite home screen render.
+// Restore path: seed backup buffer 0xD02EC7, set HL, then call 0x088720 to copy 260 bytes into 0xD006C0 before the home row render.
 // Sequence: 0x0a2b72 (status bar bg r0-34) → 0x0a3301 (status dots r3-6) → seed mode buffer → 0x0a29ec (home row r17-34) → 0x0a2854 (history area r37-74) → direct fill (entry line r220-239).
 // Phase 91b/c finding: mode text buffer at 0xD020A6 (26 bytes ASCII). Default "Normal Float Radian       ".
+// Phase 179 finding: 0x088720 copies 260 bytes from backup buffer 0xD02EC7 into display buffer 0xD006C0 when HL points at the source.
 // Phase 93 finding: 0x0a2854 (JT slot 468) = history area renderer, draws bordered empty rows in r37-74.
 // Phase 96 finding: 0x0a2106 (entry line bg) has RAM side effects that break 0x0a29ec — using direct VRAM fill instead.
 function showHomeScreen() {
@@ -1101,11 +1104,15 @@ function showHomeScreen() {
     mem[HOME_SCREEN_MODE_BUF + i] = HOME_SCREEN_MODE_TEXT.charCodeAt(i);
   }
 
-  // Phase 172: seed display buffer at 0xD006C0 - Phase 170 proved the ROM
-  // renderer reads from this buffer, not 0xD020A6.
+  // Phase 179: seed the 260-byte backup buffer, then let the ROM restore path
+  // copy it into the home-screen display buffer at 0xD006C0.
+  mem.fill(0x20, HOME_SCREEN_BACKUP_BUF, HOME_SCREEN_BACKUP_BUF + 0x104);
   for (let i = 0; i < HOME_SCREEN_MODE_TEXT.length && i < 26; i++) {
-    mem[HOME_SCREEN_DISPLAY_BUF + i] = HOME_SCREEN_MODE_TEXT.charCodeAt(i);
+    mem[HOME_SCREEN_BACKUP_BUF + i] = HOME_SCREEN_MODE_TEXT.charCodeAt(i);
   }
+  restoreCpu(cpuSnap);
+  cpu2.hl = HOME_SCREEN_BACKUP_BUF;
+  const rRestore = ex2.runFrom(0x088720, 'adl', { maxSteps: 5000, maxLoopIterations: 500 });
 
   // Stage 4d: render home row content (r17-34, mode text + borders) — NO VRAM clear
   restoreCpu(cpuSnap);
@@ -1141,7 +1148,7 @@ function showHomeScreen() {
   executor = ex2;
   cpu = cpu2;
   peripherals = p2;
-  totalSteps = r1.steps + rDots.steps + r2.steps + r3.steps;
+  totalSteps = r1.steps + rDots.steps + rRestore.steps + r2.steps + r3.steps;
   lastPc = r3.lastPc;
   lastMode = r3.lastMode;
 
