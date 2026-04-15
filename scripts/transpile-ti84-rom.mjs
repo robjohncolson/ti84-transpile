@@ -21994,6 +21994,9 @@ function walkBlocks() {
     { pc: 0x0a17c5, mode: 'adl' },
     { pc: 0x0a17d0, mode: 'adl' },
     { pc: 0x0a17e9, mode: 'adl' },
+    // Phase 186: home-screen glyph load + color-flag check (white-on-white fix)
+    { pc: 0x0a190f, mode: 'adl' },
+    { pc: 0x0a1919, mode: 'adl' },
     { pc: 0x0a2389, mode: 'adl' },
     { pc: 0x0a23e4, mode: 'adl' },
     { pc: 0x0a2400, mode: 'adl' },
@@ -22054,6 +22057,13 @@ function walkBlocks() {
     // Phase 49.2: post-boot callback target discovered at (0xd02ad7-9) after cold boot.
     { pc: 0x015ad9, mode: 'adl' },
     { pc: 0x015ada, mode: 'adl' },
+    // Phase 158+: JT slot targets for status icon renderer coverage expansion.
+    { pc: 0x056ab2, mode: 'adl' },
+    { pc: 0x06306a, mode: 'adl' },
+    { pc: 0x0af966, mode: 'adl' },
+    { pc: 0x0afd2d, mode: 'adl' },
+    { pc: 0x0afd41, mode: 'adl' },
+    { pc: 0x0bcffa, mode: 'adl' },
     // Phase 100C: explicit mode-display chain anchors used by the 0x0b2d8a reprobe.
     ...phase100cSeeds,
     // Phase 111: menu rendering entry points found missing from PRELIFTED_BLOCKS.
