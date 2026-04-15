@@ -637,9 +637,6 @@ function decodeDDFD(romBytes, startPc, prefixPc, indexReg, mode, modePrefix, imm
   if (op === 0x3e) return emit(2, { tag: 'ld-indexed-ixiy', src: otherIx, indexRegister: indexReg, displacement: d() });
   if (op === 0x3f) return emit(2, { tag: 'ld-indexed-ixiy', src: indexReg, indexRegister: indexReg, displacement: d() });
 
-  // eZ80 indexed 24-bit pair stores: DD/FD 01/11 d = LD (IX/IY+d), BC/DE
-  if (op === 0x01) return emit(2, { tag: 'ld-indexed-pair', pair: 'bc', indexRegister: indexReg, displacement: d() });
-  if (op === 0x11) return emit(2, { tag: 'ld-indexed-pair', pair: 'de', indexRegister: indexReg, displacement: d() });
 
   // Fallback: DD/FD prefix on non-IX/IY opcodes — prefix is consumed silently,
   // opcode executes as-is (e.g., DD 2F = CPL, DD AF = XOR A).

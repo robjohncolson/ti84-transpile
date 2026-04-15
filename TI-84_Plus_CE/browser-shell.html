@@ -1059,6 +1059,7 @@ function showHomeScreen() {
     cpu2._iy = 0xD00080;
     cpu2.f = 0x40;
     cpu2.sp = SCREEN_STACK_TOP - SCREEN_RENDER_STACK_BYTES;
+    cpu2._ix = cpu2.sp;
     fillSentinel(mem, cpu2.sp, SCREEN_RENDER_STACK_BYTES);
   }
 
