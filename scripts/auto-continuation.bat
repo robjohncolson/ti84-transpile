@@ -1,6 +1,6 @@
 @echo off
 REM Auto-continuation launcher for TI-84 ROM transpilation work.
-REM Fired by Windows Task Scheduler every 2 hours.
+REM Fired by Windows Task Scheduler every 30 minutes.
 REM Each run starts a fresh headless Claude Code session (Opus 4.6) that
 REM reads CONTINUATION_PROMPT_CODEX.md, dispatches Codex in parallel,
 REM falls back to Sonnet subagents on failure, verifies results, and

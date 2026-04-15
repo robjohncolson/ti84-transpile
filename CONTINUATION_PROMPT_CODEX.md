@@ -1,6 +1,6 @@
 # Continuation Prompt — TI-84 Plus CE ROM Transpilation
 
-> ⚠ **Auto-continuation loop active** (as of 2026-04-14). Windows Task Scheduler task `TI84-AutoContinuation` fires a headless Opus session every 2h that reads this file, dispatches Codex/Sonnet work, commits+pushes to master, and updates this file. **Before editing this file in a human session**, check `git log --oneline` for recent `auto-session N` commits and consider `schtasks /change /tn "TI84-AutoContinuation" /disable` to prevent merge conflicts during long interactive edits. Re-enable with `/enable`. Launcher: `scripts/auto-continuation.bat` + `.auto-continuation-prompt.md`. Logs: `logs/auto-session-*.log` (gitignored).
+> ⚠ **Auto-continuation loop active** (as of 2026-04-14). Windows Task Scheduler task `TI84-AutoContinuation` fires a headless Opus session every 30 minutes that reads this file, dispatches Codex/Sonnet work, commits+pushes to master, and updates this file. **Before editing this file in a human session**, check `git log --oneline` for recent `auto-session N` commits and consider `schtasks /change /tn "TI84-AutoContinuation" /disable` to prevent merge conflicts during long interactive edits. Re-enable with `/enable`. Launcher: `scripts/auto-continuation.bat` + `.auto-continuation-prompt.md`. Logs: `logs/auto-session-*.log` (gitignored).
 
 **Session context log**:
 - 2026-04-12 (CC session resume): ~5% of 1M-context window after reading this file. Budget is green; continuing Phase 32 work (home-screen hunt via 0x081670 callers).
