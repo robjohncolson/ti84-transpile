@@ -127,6 +127,7 @@ function restoreCpu(cpu, snapshot, mem) {
   cpu.iff2 = 0;
   cpu._iy = 0xD00080;
   cpu.f = 0x40;
+  cpu._ix = 0xD1A860;
   cpu.sp = STACK_RESET_TOP - 12;
   mem.fill(0xFF, cpu.sp, 12);
 }
@@ -661,7 +662,7 @@ async function main() {
   console.log(`stripHints: firstDrawnCol=${strip.firstDrawnCol} firstFgCol=${strip.firstFgCol} densestRow=${strip.densestRow}`);
 
   // Phase 112 intentionally paints most of the panel white, so only a fully painted screen is suspicious now.
-  const compositeBroken = totals.drawn === 0 || totals.drawn >= VRAM_WIDTH * VRAM_HEIGHT;
+  const compositeBroken = totals.drawn === 0 || totals.fg === 0;
   let attempts = [];
   let best = null;
 
