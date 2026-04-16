@@ -2,10 +2,10 @@
 
 > ⚠ **Auto-continuation loop active** (as of 2026-04-14; cadence restored to 2h on 2026-04-15). Windows Task Scheduler task `TI84-AutoContinuation` fires a headless Opus session **every 2 hours** that reads this file, dispatches Codex/Sonnet work, commits+pushes to master, and updates this file. **Before editing this file in a human session**, check `git log --oneline` for recent `auto-session N` commits and consider `schtasks /change /tn "TI84-AutoContinuation" /disable` to prevent merge conflicts during long interactive edits. Re-enable with `/enable`. Launcher: `scripts/auto-continuation.bat` + `.auto-continuation-prompt.md`. Logs: `logs/auto-session-*.log` (gitignored).
 
-**Last updated**: 2026-04-15 (auto-session 53) — **PHASE 188 SOLVED**: ROM renderer now produces 968 native fg pixels showing readable "Normal Float Radian" text. Root cause was TWO bugs: (1) missing block 0x0A190F (glyph byte loader + color flag check never executed), (2) stack sentinel bug in probe-phase99d-home-verify.mjs line 132 (`mem.fill(0xFF, cpu.sp, 12)` should be `cpu.sp + 12`). Stage 3 now runs 17,848 steps to natural completion (was 6,144 to crash at font data address 0x004A7E). Phase 158+ JT seed expansion (+6 seeds, +0 new blocks).
+**Last updated**: 2026-04-15 (auto-session 54) — **Phase 188b DONE**: `paintGlyphs()` overlay removed from golden regression probe; native ROM rendering confirmed 26/26 exact at row 39 col 2 (was row 37 with overlay). **Phase 190 DONE**: browser-shell IX convention fixed (`cpu2._ix = 0xD1A860`, was `cpu2.sp`). **Phase 189 INVESTIGATED**: status dots at 0x0A3301 execute 107 fully-lifted blocks and RET to sentinel — no missing ROM blocks. The `missing_block` termination was just the sentinel return. Status dots non-rendering is a RAM state issue, not a coverage gap.
 
 **User's active focus (set 2026-04-15)**:
-1. **~~Get the calc emulator hooked up end-to-end~~** — DONE for text rendering. ROM produces visible black-on-white text natively. Next: remove `paintGlyphs()` overlay, re-baseline golden regression, verify browser-shell.
+1. **~~Get the calc emulator hooked up end-to-end~~** — DONE. Native text rendering verified in probe (26/26 exact, 968 fg pixels). `paintGlyphs()` overlay removed. Browser-shell IX convention fixed. Next: deploy updated .gz and verify browser rendering.
 2. **Start and finish all ROM traces** — push coverage past the 16.5% plateau. Phase 158+ CEmu PC-trace seed generator is the queued approach.
 
 ---
@@ -28,7 +28,7 @@
 - OTIMR eZ80 instruction: loops B→0 with C++ each iteration (Phase 30)
 - `ROM.transpiled.js`: gitignored (175MB). **`.gz` committed** (~15MB). Regenerate with `node scripts/transpile-ti84-rom.mjs` (~2s after Phase 27 walker fix).
 
-**Golden regression** (run `node TI-84_Plus_CE/probe-phase99d-home-verify.mjs`): 26/26 exact, "Normal Float Radian" 3/3 PASS, status dots FAIL (separate missing block chain at 0x58C35B). Stage 3 now runs 17,848 steps to natural completion (Phase 188 fix). ROM renderer produces 968 native fg pixels. `paintGlyphs()` overlay still active but redundant — removal is Phase 188b.
+**Golden regression** (run `node TI-84_Plus_CE/probe-phase99d-home-verify.mjs`): 26/26 exact at row 39 col 2, "Normal Float Radian" 3/3 PASS, status dots FAIL (RAM state issue — all 107 blocks are lifted, RET to sentinel). Stage 3 runs 17,848 steps to natural completion. ROM renderer produces 968 native fg pixels. `paintGlyphs()` overlay REMOVED in session 54 — native rendering confirmed sufficient.
 
 **Per-stage IX convention**: all 4 home-screen stages (0x0a2b72 bg, 0x0a29ec mode row, 0x0a2854 history, entry line) need `IX = 0xD1A860` before entry. Stage 3 exit IX = `0xe00800`, others = `0x0159bd`. Using `IX = SP` crashes stages 1/4 at 0x58c35b (Phase 183 correction of Phase 182).
 
@@ -57,15 +57,9 @@
 - 0x0A1A3B: loads fg from (0xD02688), bg from (0xD0268A), shifts glyph bits via SLA A / JR C to select fg or bg per pixel
 - Writes to VRAM via LD (HL), E / LD (HL), D (16-bit pixel as two 8-bit writes)
 
-### ★★★ Phase 188b — Remove paintGlyphs() overlay and re-baseline golden regression
+### ★★★ DONE: Phase 188b — Remove paintGlyphs() overlay and re-baseline golden regression
 
-**Why this is now #1**: The `paintGlyphs()` overlay in probe-phase99d-home-verify.mjs was a hack to compensate for the broken renderer. Now that the ROM renderer produces native fg pixels, the overlay should be removed (or made a fallback check). The golden regression's 26/26 checksums are based on the overlay's pixel pattern, which differs slightly from the ROM's native rendering. Re-baseline needed.
-
-**Plan**:
-1. Comment out the `paintGlyphs()` call in stage 3b
-2. Check if the font decoder still reads "Normal Float Radian" from ROM-native pixels
-3. If yes: remove overlay entirely, update expected checksums, re-run golden regression
-4. If no: keep overlay as optional cross-check, update the probe to report both native and overlay fg counts
+**Status**: DONE in auto-session 54 (2026-04-15). `paintGlyphs()` function and call removed from probe-phase99d-home-verify.mjs. Native rendering confirmed: 26/26 exact at row 39 col 2 (shifted from row 37 due to native pixel placement), 3/3 PASS, 968 fg pixels (was 1197 with overlay — overlay was adding 229 extra pixels).
 
 ### ★★★ Phase 158+ / ROM trace coverage expansion (finish all ROM traces)
 
@@ -77,15 +71,22 @@
 - Seed 0x006138 (hardware poll at end of cold boot) to unblock post-boot continuation
 - Any new callers found by Phase 188 investigation should be seeded
 
-### ★★ Phase 189 — Status dots branch tracing (follow-up to Phase 188)
+### ★★ INVESTIGATED: Phase 189 — Status dots branch tracing
 
-**Why**: Phase 188's fix restored the colored rendering path for stage 3 text. Stage 2 (status dots at 0x0A3301) still terminates at `missing_block` at 0x58C35B after 107-156 steps. The color flag fix may help, but stage 2 has its own missing block chain. Trace the execution path from 0x0A3301 and seed missing blocks along the way.
+**Status**: INVESTIGATED in auto-session 54 (2026-04-15). Probe `probe-phase189-status-dots.mjs` traces the full 107-block execution from 0x0A3301. Finding: **all 107 blocks are fully lifted** — execution terminates with `ret po` at 0x0A33DA returning to the 0xFFFFFF stack sentinel. The `missing_block` termination reported by the golden regression is just the executor trying to execute at the sentinel address. The status dots ARE rendering their VRAM writes (calls to 0x0A33FB/0x0A3411 loop), but the fg pixel count remains 0. Root cause is likely RAM state: the icon type selector at 0xD000C6 (bit2=battery vs mode dots) and the system flags at 0xD0009B (bit6 guard) may not be configured correctly for dot-style rendering. **Next step**: seed the correct RAM values for status dot rendering (battery icon at 0xD000C6, clear bit6 of 0xD0009B) and re-test.
 
-### ★ Phase 190 — Browser-shell integration verification
+### ★ DONE: Phase 190 — Browser-shell IX convention fix
 
-**Why**: Phase 188 proved the ROM renderer works in Node.js probes. Verify it also works in `browser-shell.html` (GitHub Pages). The browser shell uses `showHomeScreen()` which runs the same 4-stage composite. Check if visible text appears in the browser canvas.
+**Status**: DONE in auto-session 54 (2026-04-15). Fixed `showHomeScreen()`'s `restoreCpu()` in browser-shell.html: changed `cpu2._ix = cpu2.sp` (= 0xD1A872) to `cpu2._ix = 0xD1A860`. The Phase 183 handoff documented that IX=SP crashes stages 1/4 at 0x58C35B. The probe already had the correct value. Browser-shell generic `showScreen()` paths were left unchanged (they inherit IX from OS init snapshot).
 
-**Potential blockers**: Browser shell may not have the new transpiled ROM (.gz needs regeneration), or the `showHomeScreen()` function may have its own stack sentinel issue.
+**Remaining**: Deploy updated `.gz` and verify browser rendering with the new IX value + native text rendering. The `.gz` needs regeneration from the current `ROM.transpiled.js`.
+
+### Next-session priorities
+
+1. **Phase 191 — Regenerate ROM.transpiled.js.gz and verify browser-shell rendering**: Retranspile, compress, commit .gz, then check browser-shell shows native text. The IX fix (Phase 190) + native rendering (Phase 188) should produce visible "Normal Float Radian" in the browser canvas.
+2. **Phase 189b — Status dots RAM seeding**: The 107-block status dots path writes to VRAM but produces 0 fg pixels. Investigate by seeding icon type at 0xD000C6 (try bit2=0 for battery icon, bit2=1 for mode dots) and clearing bit6 of 0xD0009B (status-bar update guard). Test if either configuration produces visible status indicator pixels.
+3. **Phase 158+ — Seed 0x006138** (hardware poll at end of cold boot) to unblock post-boot continuation. Also: begin CEmu PC-trace seed generator work per `.phase158-spec.md`.
+4. **Phase 192 — Stage 1 status bar investigation**: Stage 1 (0x0A2B72) terminates at missing_block after only 25 steps. Run the same single-step trace as Phase 189 to determine if this is also a sentinel return or a genuine missing block.
 
 ---
 

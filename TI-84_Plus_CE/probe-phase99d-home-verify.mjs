@@ -162,49 +162,6 @@ function seedDisplayBuffer(mem) {
   }
 }
 
-// Phase 150: The 943-step OS init leaves the font record pointer (D00585)
-// zeroed, so the ROM glyph-to-VRAM renderer draws identical 6x6 blocks
-// for every character.  The font LOOKUP works (the glyph buffer at D005A5
-// gets the correct bitmap), but the VRAM writer is broken.  To verify the
-// full pipeline — boot, init, mode-buffer seeding, rendering stages — we
-// let stage 3 run (it paints the correct background rectangle) and then
-// overlay correct glyph pixels using the font signatures.  This mimics
-// what a working renderer would produce: black-on-white text at the
-// stage-3-painted coordinates.
-function paintGlyphs(mem, signatures, text, startRow, startCol, stride) {
-  const FG = 0x0000;  // black
-  const BG = 0xFFFF;  // white
-  const sigMap = new Map(signatures.map((s) => [s.char, s.bitmap]));
-
-  for (let ci = 0; ci < text.length; ci++) {
-    const ch = text[ci];
-    const bitmap = sigMap.get(ch);
-
-    if (!bitmap) {
-      continue;
-    }
-
-    const colBase = startCol + ci * stride;
-
-    for (let dy = 0; dy < GLYPH_HEIGHT; dy++) {
-      for (let dx = 0; dx < stride && dx < GLYPH_WIDTH; dx++) {
-        const r = startRow + dy;
-        const c = colBase + dx;
-
-        if (r >= VRAM_HEIGHT || c >= VRAM_WIDTH) {
-          continue;
-        }
-
-        const fgBit = bitmap[dy * GLYPH_WIDTH + dx];
-        const pixel = fgBit ? FG : BG;
-        const offset = VRAM_BASE + (r * VRAM_WIDTH + c) * 2;
-        mem[offset] = pixel & 0xFF;
-        mem[offset + 1] = (pixel >> 8) & 0xFF;
-      }
-    }
-  }
-}
-
 function fillWorkspaceWhite(mem) {
   for (let row = WORKSPACE_FILL_ROW_START; row <= WORKSPACE_FILL_ROW_END; row++) {
     for (let col = 0; col < VRAM_WIDTH; col++) {
@@ -625,14 +582,7 @@ async function main() {
   restoreCpu(cpu, cpuSnap, mem);
   stages.push(runStage(executor, 'stage 3 home row strip', STAGE_3_ENTRY, 50000));
 
-  // Phase 150: Overlay correct font glyphs onto the stage-3 background.
-  // Stage 3 painted the correct background rectangle (rows 37-52, cols 2-313)
-  // but drew identical 6x6 blocks for every character due to the font record
-  // pointer being zeroed.  We repaint with correct glyph bitmaps at the
-  // first-drawn-column position (col 2, stride 12, starting at row 37).
   const signatures = buildFontSignatures(romBytes);
-  paintGlyphs(mem, signatures, MODE_BUF_TEXT, STRIP_ROW_START, 2, DECODE_STRIDE);
-  console.log(`stage 3b glyph overlay: ${MODE_BUF_LEN} chars at row ${STRIP_ROW_START} col 2 stride ${DECODE_STRIDE}`);
 
   restoreCpu(cpu, cpuSnap, mem);
   stages.push(runStage(executor, 'stage 4 history area', STAGE_4_ENTRY, 50000));
