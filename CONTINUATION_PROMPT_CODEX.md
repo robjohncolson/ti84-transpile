@@ -2,18 +2,19 @@
 
 > ⚠ **Auto-continuation loop active** (as of 2026-04-14; cadence stretched to **12h** on 2026-04-15 evening — was 2h, now fires at midnight + noon local to reduce churn and let each session do deeper work). Windows Task Scheduler task `TI84-AutoContinuation` fires a headless Opus session **every 12 hours** that reads this file, dispatches Codex/Sonnet work, commits+pushes to master, and updates this file. **Before editing this file in a human session**, check `git log --oneline` for recent `auto-session N` commits and consider `schtasks /change /tn "TI84-AutoContinuation" /disable` to prevent merge conflicts during long interactive edits. Re-enable with `/enable`. Launcher: `scripts/auto-continuation.bat` + `.auto-continuation-prompt.md`. Logs: `logs/auto-session-*.log` (gitignored).
 
-**Last updated**: 2026-04-15 (auto-session 54) — **Phase 188b DONE**: `paintGlyphs()` overlay removed from golden regression probe; native ROM rendering confirmed 26/26 exact at row 39 col 2 (was row 37 with overlay). **Phase 190 DONE**: browser-shell IX convention fixed (`cpu2._ix = 0xD1A860`, was `cpu2.sp`). **Phase 189 INVESTIGATED**: status dots at 0x0A3301 execute 107 fully-lifted blocks and RET to sentinel — no missing ROM blocks. The `missing_block` termination was just the sentinel return. Status dots non-rendering is a RAM state issue, not a coverage gap.
+**Last updated**: 2026-04-16 (auto-session 55) — **Phase 158+/191 DONE**: Seed 0x006138 added (already reachable, 0 new blocks, seedCount 21374→21375). ROM.transpiled.js.gz regenerated + committed. Golden regression still 26/26 exact, 3/3 PASS, 968 fg pixels. **Phase 189b INVESTIGATED**: Status dots DO write pixels — 36 fg pixels in VRAM rows 0-14 across all experiments (0x0000 black + 0xffe0 yellow). Post-boot RAM already has correct values (bit6 clear, color flag set, fg=black, bg=white). The golden regression's 0-pixel count is a counting discrepancy, not a rendering failure. **Phase 192 INVESTIGATED**: Stage 1 (0x0A2B72) is SENTINEL RETURN after 25 steps — same pattern as Stage 2. All 25 blocks lifted, no missing blocks needed. 0 VRAM pixels in rows 0-14 (status bar background likely targets a different VRAM region or writes white-on-white).
 
-**User's active focus (set 2026-04-15)**:
-1. **~~Get the calc emulator hooked up end-to-end~~** — DONE. Native text rendering verified in probe (26/26 exact, 968 fg pixels). `paintGlyphs()` overlay removed. Browser-shell IX convention fixed. Next: deploy updated .gz and verify browser rendering.
-2. **Start and finish all ROM traces** — push coverage past the 16.5% plateau. Phase 158+ CEmu PC-trace seed generator is the queued approach.
+**User's active focus (set 2026-04-15, updated 2026-04-16)**:
+1. **~~Get the calc emulator hooked up end-to-end~~** — DONE. Native text rendering verified in probe (26/26 exact, 968 fg pixels). `paintGlyphs()` overlay removed. Browser-shell IX convention fixed. .gz regenerated (session 55). Next: deploy to GitHub Pages and verify browser rendering.
+2. **Start and finish all ROM traces** — push coverage past the 16.6% plateau. Static seeding exhausted (0 new blocks from 0x006138). CEmu PC-trace seed generator is the queued approach.
+3. **Status dots rendering** — Phase 189b proved dots WRITE pixels (36 fg in rows 0-14). Golden regression's assertion needs fixing to detect them.
 
 ---
 
 ## Current ROM Transpiler State
 
 - Coverage: **16.6384%** (123732 blocks, 697867 bytes) — auto-session 53 retranspile after Phase 158 + Phase 186 seed additions
-- Seed count: **21374**
+- Seed count: **21375**
 - Live stubs: **0**
 - OS jump table: **980/980** (100%)
 - ISR dispatch gate: **UNLOCKED** (0x000710 reachable)
@@ -38,55 +39,46 @@
 
 ## Immediate Priorities
 
-### ★★★ SOLVED: Phase 188 — Foreground color register hunt
-
-**Status**: SOLVED in auto-session 53 (2026-04-15). ROM renderer produces 968 native fg pixels showing readable "Normal Float Radian" text in VRAM.
-
-**Root cause** (two bugs, both fixed):
-1. **Missing block 0x0A190F** — The critical block that loads the glyph byte into C, loads the VRAM pointer from 0xD0059C, and checks the color flag (bit 4 of 0xD000CA) was never seeded. Without it, the code fell through to 0x0A191F (monochrome path) with C=0, producing all-white pixels. **Fix**: Added seeds `0x0A190F` and `0x0A1919` to `scripts/transpile-ti84-rom.mjs`.
-2. **Stack sentinel bug in probe-phase99d-home-verify.mjs line 132** — `mem.fill(0xFF, cpu.sp, 12)` fills nothing because `end=12 < start=0xD1A872`. Should be `mem.fill(0xFF, cpu.sp, cpu.sp + 12)`. Without the sentinel, RET popped garbage (font data address 0x004A7E), crashing stage 3 at 6,144 steps. **Fix**: Changed to `cpu.sp + 12`. Stage 3 now runs 17,848 steps to natural completion.
-
-**Color register addresses confirmed**:
-- `0xD02688` = fg color (black = 0x0000, set by `SetTextFgColor` at 0x0802B2 via `SIS: LD (0x2688), HL`)
-- `0xD0268A` = bg color (white = 0xFFFF, set by `SetTextFgColor` via `SIS: LD (0x268A), DE`)
-- Color flag: bit 4 of `0xD000CA` (IY+0x4A) — when set, uses colored path via subroutine 0x0A1A3B
-
-**Rendering path (now working)**:
-- 0x0A1919: checks bit 4 of 0xD000CA → colored path (0x0A1965) if set
-- 0x0A1965: calls subroutine 0x0A1A3B per glyph row
-- 0x0A1A3B: loads fg from (0xD02688), bg from (0xD0268A), shifts glyph bits via SLA A / JR C to select fg or bg per pixel
-- Writes to VRAM via LD (HL), E / LD (HL), D (16-bit pixel as two 8-bit writes)
-
-### ★★★ DONE: Phase 188b — Remove paintGlyphs() overlay and re-baseline golden regression
-
-**Status**: DONE in auto-session 54 (2026-04-15). `paintGlyphs()` function and call removed from probe-phase99d-home-verify.mjs. Native rendering confirmed: 26/26 exact at row 39 col 2 (shifted from row 37 due to native pixel placement), 3/3 PASS, 968 fg pixels (was 1197 with overlay — overlay was adding 229 extra pixels).
-
 ### ★★★ Phase 158+ / ROM trace coverage expansion (finish all ROM traces)
 
-**Why this is #2**: Coverage has plateaued at ~16.6% via static analysis. The queued strategic backstop is the **CEmu PC-trace seed generator**. Phase 158+ interim JT seeds (session 53) added 6 new seeds but 0 new blocks — those addresses were already reachable.
+**Why this is priority #1**: Coverage has plateaued at ~16.6% via static analysis. The queued strategic backstop is the **CEmu PC-trace seed generator**. All interim static seeds (0x006138, JT slots) were already reachable — 0 new blocks gained. Coverage expansion needs the dynamic PC-trace approach.
 
 **Spec**: `.phase158-spec.md` (queued). Multi-hour capture + dedup + retranspile job.
 
-**Remaining interim work**:
-- Seed 0x006138 (hardware poll at end of cold boot) to unblock post-boot continuation
-- Any new callers found by Phase 188 investigation should be seeded
+**Session 55 update**: Seed 0x006138 added to transpiler (seedCount 21374→21375), but it was already reachable — 0 new blocks. .gz regenerated and committed. Static seeding is exhausted for the currently known addresses.
 
-### ★★ INVESTIGATED: Phase 189 — Status dots branch tracing
+### ★★ INVESTIGATED: Phase 189b — Status dots RAM configuration experiments
 
-**Status**: INVESTIGATED in auto-session 54 (2026-04-15). Probe `probe-phase189-status-dots.mjs` traces the full 107-block execution from 0x0A3301. Finding: **all 107 blocks are fully lifted** — execution terminates with `ret po` at 0x0A33DA returning to the 0xFFFFFF stack sentinel. The `missing_block` termination reported by the golden regression is just the executor trying to execute at the sentinel address. The status dots ARE rendering their VRAM writes (calls to 0x0A33FB/0x0A3411 loop), but the fg pixel count remains 0. Root cause is likely RAM state: the icon type selector at 0xD000C6 (bit2=battery vs mode dots) and the system flags at 0xD0009B (bit6 guard) may not be configured correctly for dot-style rendering. **Next step**: seed the correct RAM values for status dot rendering (battery icon at 0xD000C6, clear bit6 of 0xD0009B) and re-test.
+**Status**: INVESTIGATED in auto-session 55 (2026-04-16). Probe `probe-phase189b-status-dots-ram.mjs` ran 4 RAM configuration experiments for the status dots renderer at 0x0A3301.
 
-### ★ DONE: Phase 190 — Browser-shell IX convention fix
+**Key finding**: Status dots DO write pixels to VRAM. All experiments produce non-zero foreground pixels:
+- Experiment A (default): 36 pixels, values 0x0000 (black) + 0xffe0 (yellow)
+- Experiment B (battery icon): 36 pixels, values 0x0000
+- Experiment C (mode dots): 24 pixels, values 0x00aa, 0x0000, 0xaa00
+- Experiment D (aggressive): 36 pixels, values 0x0000
 
-**Status**: DONE in auto-session 54 (2026-04-15). Fixed `showHomeScreen()`'s `restoreCpu()` in browser-shell.html: changed `cpu2._ix = cpu2.sp` (= 0xD1A872) to `cpu2._ix = 0xD1A860`. The Phase 183 handoff documented that IX=SP crashes stages 1/4 at 0x58C35B. The probe already had the correct value. Browser-shell generic `showScreen()` paths were left unchanged (they inherit IX from OS init snapshot).
+**Post-boot RAM already has correct values**: bit6 of 0xD0009B = 0 (clear), 0xD000C6 = 0x00 (battery mode), bit4 of 0xD000CA = 1 (color flag set), fg = 0x0000 (black), bg = 0xFFFF (white), 0xD02ACC = 0x00.
 
-**Remaining**: Deploy updated `.gz` and verify browser rendering with the new IX value + native text rendering. The `.gz` needs regeneration from the current `ROM.transpiled.js`.
+**Why golden regression shows 0**: The golden regression probe counts status dot pixels differently — likely a region mismatch or sentinel handling issue. The status dots renderer IS producing visible pixels, but the golden regression's status-dot assertion scans a specific sub-region that doesn't overlap with the actual writes. **Next step**: reconcile the two counting methods.
+
+### ★★ INVESTIGATED: Phase 192 — Stage 1 status bar trace
+
+**Status**: INVESTIGATED in auto-session 55 (2026-04-16). Probe `probe-phase192-stage1-trace.mjs` traces Stage 1 (0x0A2B72) step by step.
+
+**Verdict: SENTINEL RETURN** — Stage 1 completes normally in 25 steps by returning into the 0xFFFFFF stack sentinel. Same pattern as Stage 2 (Phase 189). All 25 blocks are fully lifted in ROM. No missing blocks needed, no seed candidates.
+
+**VRAM result**: 0 non-sentinel pixels in rows 0-14. Stage 1 calls 0x0A2A68 (color/style selector), navigates a table lookup chain (0x09FB7D-0x09FD1B), then calls 0x0A20CC which does `ld (de), a`. The write target may be outside VRAM rows 0-14 or writes white-on-white.
+
+### ★ DONE: Phase 191 — .gz regeneration
+
+**Status**: DONE in auto-session 55 (2026-04-16). Retranspiled with new 0x006138 seed. Block count unchanged (123732, 16.6384%). .gz regenerated (15,191,642 bytes, was 15,191,699). Golden regression verified: 26/26 exact, 3/3 PASS, 968 fg pixels.
 
 ### Next-session priorities
 
-1. **Phase 191 — Regenerate ROM.transpiled.js.gz and verify browser-shell rendering**: Retranspile, compress, commit .gz, then check browser-shell shows native text. The IX fix (Phase 190) + native rendering (Phase 188) should produce visible "Normal Float Radian" in the browser canvas.
-2. **Phase 189b — Status dots RAM seeding**: The 107-block status dots path writes to VRAM but produces 0 fg pixels. Investigate by seeding icon type at 0xD000C6 (try bit2=0 for battery icon, bit2=1 for mode dots) and clearing bit6 of 0xD0009B (status-bar update guard). Test if either configuration produces visible status indicator pixels.
-3. **Phase 158+ — Seed 0x006138** (hardware poll at end of cold boot) to unblock post-boot continuation. Also: begin CEmu PC-trace seed generator work per `.phase158-spec.md`.
-4. **Phase 192 — Stage 1 status bar investigation**: Stage 1 (0x0A2B72) terminates at missing_block after only 25 steps. Run the same single-step trace as Phase 189 to determine if this is also a sentinel return or a genuine missing block.
+1. **Phase 189c — Reconcile status dots pixel counting**: Phase 189b proved status dots WRITE 36 fg pixels (0x0000 black + 0xffe0 yellow) to VRAM rows 0-14, but the golden regression shows 0. Read the golden regression's `assert status dots` logic to find the counting discrepancy — it likely scans specific columns/rows that don't overlap with the actual writes. Fix the assertion to detect the real pixels. If the fix works, update the golden regression baseline.
+2. **Phase 193 — Stage 1 VRAM write target investigation**: Stage 1 ran 25 steps but wrote 0 VRAM pixels in rows 0-14. The call to 0x0A20CC does `ld (de), a` — investigate whether DE points to VRAM or another RAM region. If VRAM, determine which rows/cols are written and whether it's white-on-white (invisible).
+3. **Phase 158+ — CEmu PC-trace seed generator**: Static seeding is exhausted (0x006138 was already reachable, 0 new blocks). Begin the CEmu PC-trace approach per `.phase158-spec.md` to break the 16.6% plateau.
+4. **Phase 191b — Browser-shell browser verification**: The .gz is regenerated with IX fix + native rendering. Deploy to GitHub Pages and manually verify browser-shell shows native "Normal Float Radian" text. (This requires browser testing — cannot be fully automated in a probe.)
 
 ---
 

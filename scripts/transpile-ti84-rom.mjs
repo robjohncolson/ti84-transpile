@@ -22013,6 +22013,8 @@ function walkBlocks() {
     { pc: 0x0a33ca, mode: 'adl' },
     { pc: 0x0a33ee, mode: 'adl' },
     { pc: 0x0a34ae, mode: 'adl' },
+    // Phase 158+: hardware poll at end of cold boot (unblocks post-boot continuation)
+    { pc: 0x006138, mode: 'adl' },
     // Phase 24D: critical missing blocks from ISR cycling + OS init
     { pc: 0x0040b2, mode: 'adl' },
     { pc: 0x000698, mode: 'adl' },
