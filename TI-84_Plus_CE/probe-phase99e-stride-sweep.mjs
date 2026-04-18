@@ -55,11 +55,11 @@ console.log(`fontDecoder: base=${hex(FONT_BASE, 6)} glyph=${GLYPH_WIDTH}x${GLYPH
 
 executor.runFrom(0x000000, 'z80', { maxSteps: 20000, maxLoopIterations: 32 });
 cpu.halted = false; cpu.iff1 = 0; cpu.iff2 = 0;
-cpu.sp = 0xD1A87E - 3; mem.fill(0xFF, cpu.sp, 3);
+cpu.sp = 0xD1A87E - 3; mem.fill(0xFF, cpu.sp, cpu.sp + 3);
 executor.runFrom(0x08C331, 'adl', { maxSteps: 100000, maxLoopIterations: 10000 });
 cpu.mbase = 0xD0; cpu._iy = 0xD00080; cpu._hl = 0;
 cpu.halted = false; cpu.iff1 = 0; cpu.iff2 = 0;
-cpu.sp = 0xD1A87E - 3; mem.fill(0xFF, cpu.sp, 3);
+cpu.sp = 0xD1A87E - 3; mem.fill(0xFF, cpu.sp, cpu.sp + 3);
 executor.runFrom(0x0802b2, 'adl', { maxSteps: 100, maxLoopIterations: 32 });
 
 const ramSnap = new Uint8Array(mem.slice(0x400000, 0xE00000));

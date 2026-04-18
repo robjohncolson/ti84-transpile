@@ -321,7 +321,7 @@ cpu.halted = false;
 cpu.iff1 = 0;
 cpu.iff2 = 0;
 cpu.sp = 0xD1A87E - 3;
-mem.fill(0xFF, cpu.sp, 3);
+mem.fill(0xFF, cpu.sp, cpu.sp + 3);
 
 console.log('\nStage 2: OS init from 0x08C331 (adl, 500000 steps target)');
 let progressSteps = 0;
@@ -352,7 +352,7 @@ cpu.halted = false;
 cpu.iff1 = 0;
 cpu.iff2 = 0;
 cpu.sp = 0xD1A87E - 3;
-mem.fill(0xFF, cpu.sp, 3);
+mem.fill(0xFF, cpu.sp, cpu.sp + 3);
 
 console.log('\nStage 3: post-init color setup from 0x0802b2');
 const colorSetupResult = executor.runFrom(0x0802b2, 'adl', {

@@ -375,7 +375,7 @@ async function runPartB() {
   cpu.iff1 = 0;
   cpu.iff2 = 0;
   cpu.sp = STACK_RESET_TOP - 3;
-  mem.fill(0xFF, cpu.sp, 3);
+  mem.fill(0xFF, cpu.sp, cpu.sp + 3);
   executor.runFrom(KERNEL_INIT_ENTRY, 'adl', { maxSteps: KERNEL_INIT_MAX_STEPS, maxLoopIterations: KERNEL_INIT_MAX_LOOPS });
 
   // Post-init
@@ -387,7 +387,7 @@ async function runPartB() {
   cpu.iff1 = 0;
   cpu.iff2 = 0;
   cpu.sp = STACK_RESET_TOP - 3;
-  mem.fill(0xFF, cpu.sp, 3);
+  mem.fill(0xFF, cpu.sp, cpu.sp + 3);
   executor.runFrom(POST_INIT_ENTRY, 'adl', { maxSteps: POST_INIT_MAX_STEPS, maxLoopIterations: POST_INIT_MAX_LOOPS });
 
   console.log('  Boot complete.');

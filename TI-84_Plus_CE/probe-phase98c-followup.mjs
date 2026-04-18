@@ -69,7 +69,7 @@ console.log('--- Experiment 1: 0x08c366 cold boot → 500k steps, measure VRAM +
   // Cold boot
   executor.runFrom(0x000000, 'z80', { maxSteps: 20000, maxLoopIterations: 32 });
   cpu.halted = false; cpu.iff1 = 0; cpu.iff2 = 0;
-  cpu.sp = 0xD1A87E - 3; mem.fill(0xFF, cpu.sp, 3);
+  cpu.sp = 0xD1A87E - 3; mem.fill(0xFF, cpu.sp, cpu.sp + 3);
 
   // Trap writes to mode buffer
   const origWrite8 = cpu.write8.bind(cpu);
@@ -181,7 +181,7 @@ for (const maxSteps of stepCounts) {
   const cpu = executor.cpu;
   executor.runFrom(0x000000, 'z80', { maxSteps: 20000, maxLoopIterations: 32 });
   cpu.halted = false; cpu.iff1 = 0; cpu.iff2 = 0;
-  cpu.sp = 0xD1A87E - 3; mem.fill(0xFF, cpu.sp, 3);
+  cpu.sp = 0xD1A87E - 3; mem.fill(0xFF, cpu.sp, cpu.sp + 3);
   clearVram(mem);
   const result = executor.runFrom(0x08c366, 'adl', { maxSteps, maxLoopIterations: 10000 });
   const vram = countVram(mem);

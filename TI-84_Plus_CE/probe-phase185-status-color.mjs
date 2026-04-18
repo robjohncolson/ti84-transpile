@@ -198,7 +198,7 @@ function traceWritesDuringBoot(mem, romBytes) {
   cpu.iff1 = 0;
   cpu.iff2 = 0;
   cpu.sp = STACK_RESET_TOP - 3;
-  mem.fill(0xFF, cpu.sp, 3);
+  mem.fill(0xFF, cpu.sp, cpu.sp + 3);
 
   // Phase 2: Kernel init
   console.log('Phase 2: Kernel init (adl, 100000 steps)...');
@@ -212,7 +212,7 @@ function traceWritesDuringBoot(mem, romBytes) {
   cpu.iff1 = 0;
   cpu.iff2 = 0;
   cpu.sp = STACK_RESET_TOP - 3;
-  mem.fill(0xFF, cpu.sp, 3);
+  mem.fill(0xFF, cpu.sp, cpu.sp + 3);
 
   // Phase 3: Post-init
   console.log('Phase 3: Post-init (adl, 100 steps)...');
@@ -712,7 +712,7 @@ async function main() {
     cpu.iff1 = 0;
     cpu.iff2 = 0;
     cpu.sp = STACK_RESET_TOP - 3;
-    mem.fill(0xFF, cpu.sp, 3);
+    mem.fill(0xFF, cpu.sp, cpu.sp + 3);
 
     // Kernel init
     currentPhase = 'kernel-init';
@@ -728,7 +728,7 @@ async function main() {
     cpu.iff1 = 0;
     cpu.iff2 = 0;
     cpu.sp = STACK_RESET_TOP - 3;
-    mem.fill(0xFF, cpu.sp, 3);
+    mem.fill(0xFF, cpu.sp, cpu.sp + 3);
 
     // Post-init
     currentPhase = 'post-init';

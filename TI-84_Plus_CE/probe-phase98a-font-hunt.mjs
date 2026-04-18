@@ -421,7 +421,7 @@ function bootSnapshot() {
   cpu.iff1 = 0;
   cpu.iff2 = 0;
   cpu.sp = 0xD1A87E - 3;
-  mem.fill(0xff, cpu.sp, 3);
+  mem.fill(0xff, cpu.sp, cpu.sp + 3);
 
   const osInitResult = executor.runFrom(0x08c331, 'adl', {
     maxSteps: 100000,
@@ -435,7 +435,7 @@ function bootSnapshot() {
   cpu.iff1 = 0;
   cpu.iff2 = 0;
   cpu.sp = 0xD1A87E - 3;
-  mem.fill(0xff, cpu.sp, 3);
+  mem.fill(0xff, cpu.sp, cpu.sp + 3);
 
   const postInitResult = executor.runFrom(0x0802b2, 'adl', {
     maxSteps: 100,

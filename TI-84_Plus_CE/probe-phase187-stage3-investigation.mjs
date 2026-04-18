@@ -55,7 +55,7 @@ function coldBoot(executor, cpu, mem) {
   cpu.iff1 = 0;
   cpu.iff2 = 0;
   cpu.sp = STACK_RESET_TOP - 3;
-  mem.fill(0xFF, cpu.sp, 3);
+  mem.fill(0xFF, cpu.sp, cpu.sp + 3);
 
   executor.runFrom(0x08C331, 'adl', { maxSteps: 100000, maxLoopIterations: 10000 });
   cpu.mbase = 0xD0;
@@ -65,7 +65,7 @@ function coldBoot(executor, cpu, mem) {
   cpu.iff1 = 0;
   cpu.iff2 = 0;
   cpu.sp = STACK_RESET_TOP - 3;
-  mem.fill(0xFF, cpu.sp, 3);
+  mem.fill(0xFF, cpu.sp, cpu.sp + 3);
 
   executor.runFrom(0x0802B2, 'adl', { maxSteps: 100, maxLoopIterations: 32 });
   return result;

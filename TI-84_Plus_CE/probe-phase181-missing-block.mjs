@@ -147,7 +147,7 @@ function coldBoot(executor, cpu, mem) {
   cpu.iff1 = 0;
   cpu.iff2 = 0;
   cpu.sp = STACK_RESET_TOP - 3;
-  mem.fill(0xFF, cpu.sp, 3);
+  mem.fill(0xFF, cpu.sp, cpu.sp + 3);
 
   const kernelInitResult = executor.runFrom(KERNEL_INIT_ENTRY, 'adl', {
     maxSteps: KERNEL_INIT_MAX_STEPS,
@@ -161,7 +161,7 @@ function coldBoot(executor, cpu, mem) {
   cpu.iff1 = 0;
   cpu.iff2 = 0;
   cpu.sp = STACK_RESET_TOP - 3;
-  mem.fill(0xFF, cpu.sp, 3);
+  mem.fill(0xFF, cpu.sp, cpu.sp + 3);
 
   const postInitResult = executor.runFrom(POST_INIT_ENTRY, 'adl', {
     maxSteps: POST_INIT_MAX_STEPS,

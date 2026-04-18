@@ -66,7 +66,7 @@ const OPTIONS = [
       cpu.iff1 = 1;
       cpu.iff2 = 1;
       cpu.sp = 0xD1A87E - 3;
-      mem.fill(0xFF, cpu.sp, 3);
+      mem.fill(0xFF, cpu.sp, cpu.sp + 3);
     },
   },
   {
@@ -162,7 +162,7 @@ function buildPostInitSnapshot() {
   cpu.iff1 = 0;
   cpu.iff2 = 0;
   cpu.sp = 0xD1A87E - 3;
-  mem.fill(0xFF, cpu.sp, 3);
+  mem.fill(0xFF, cpu.sp, cpu.sp + 3);
 
   const osInit = executor.runFrom(0x08C331, 'adl', {
     maxSteps: 500000,

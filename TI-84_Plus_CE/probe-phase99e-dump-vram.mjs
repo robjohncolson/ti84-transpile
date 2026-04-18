@@ -26,7 +26,7 @@ function coldBoot(executor, cpu, mem) {
   cpu.iff1 = 0;
   cpu.iff2 = 0;
   cpu.sp = 0xD1A87E - 3;
-  mem.fill(0xFF, cpu.sp, 3);
+  mem.fill(0xFF, cpu.sp, cpu.sp + 3);
 }
 
 const mem = new Uint8Array(MEM_SIZE);

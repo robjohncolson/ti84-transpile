@@ -82,7 +82,7 @@ function coldBoot(executor, cpu, mem) {
   cpu.iff1 = 0;
   cpu.iff2 = 0;
   cpu.sp = STACK_RESET_TOP - 3;
-  mem.fill(0xFF, cpu.sp, 3);
+  mem.fill(0xFF, cpu.sp, cpu.sp + 3);
 
   executor.runFrom(KERNEL_INIT_ENTRY, 'adl', {
     maxSteps: 100000,
@@ -96,7 +96,7 @@ function coldBoot(executor, cpu, mem) {
   cpu.iff1 = 0;
   cpu.iff2 = 0;
   cpu.sp = STACK_RESET_TOP - 3;
-  mem.fill(0xFF, cpu.sp, 3);
+  mem.fill(0xFF, cpu.sp, cpu.sp + 3);
 
   executor.runFrom(POST_INIT_ENTRY, 'adl', {
     maxSteps: 100,

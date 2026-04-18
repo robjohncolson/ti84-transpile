@@ -2,7 +2,7 @@
 
 > ⚠ **Auto-continuation loop active** (as of 2026-04-14; cadence stretched to **12h** on 2026-04-15 evening — was 2h, now fires at midnight + noon local to reduce churn and let each session do deeper work). Windows Task Scheduler task `TI84-AutoContinuation` fires a headless Opus session **every 12 hours** that reads this file, dispatches Codex/Sonnet work, commits+pushes to master, and updates this file. **Before editing this file in a human session**, check `git log --oneline` for recent `auto-session N` commits and consider `schtasks /change /tn "TI84-AutoContinuation" /disable` to prevent merge conflicts during long interactive edits. Re-enable with `/enable`. Launcher: `scripts/auto-continuation.bat` + `.auto-continuation-prompt.md`. Logs: `logs/auto-session-*.log` (gitignored).
 
-**Last updated**: 2026-04-18 (auto-session 56) — **Phase 189c DONE**: Status dots golden regression fixed. Root cause: `mem.fill(0xFF, cpu.sp, 3)` bug in `coldBoot` — third arg is `end` not `length`, so the fill was a no-op. Fixed to `mem.fill(0xFF, cpu.sp, cpu.sp + 3)`. This caused POST_INIT to produce wrong HL (0x15AD9 vs 0), which propagated via CPU snapshot to Stage 2, making it paint white-on-white. Golden regression now **fully passes**: status dots PASS (36 fg pixels, before=0 after=36), text 26/26 exact, Normal/Float/Radian 3/3 PASS, **fg=1004** (was 968). **Phase 193 DONE**: Stage 1 (0x0A2B72) writes 0 VRAM pixels — only modifies curRow→0xFF, curCol→0x19, and 13 stack/IX-area bytes at 0xD1A857-0xD1A870. The `ld (de), a` at 0x0A20CC targets non-VRAM RAM.
+**Last updated**: 2026-04-18 (auto-session 57) — **Phase 194 DONE**: Fixed `mem.fill(value, start, 3)` bug (end vs length) across all 47 remaining probe files (132 total fixed instances across 64 files). Zero buggy instances remain. **Phase 195 DONE**: Stage 1 curRow=0xFF is an arithmetic underflow (`dec a` on curRow=0), not a sentinel. Block 0x0A20CC reads curRow, does `dec a`, stores 0xFF. 43/184 ROM curRow readers use `inc a` wrap-handling; none use `cp 0xFF`. Stage 1 is confirmed as cursor/configuration bookkeeping, not a renderer. Golden regression still fully passes: 26/26 exact, 3/3 PASS, status dots PASS (36 fg), fg=1004.
 
 **User's active focus (set 2026-04-15, updated 2026-04-16)**:
 1. **~~Get the calc emulator hooked up end-to-end~~** — DONE. Native text rendering verified in probe (26/26 exact, 968 fg pixels). `paintGlyphs()` overlay removed. Browser-shell IX convention fixed. .gz regenerated (session 55). Next: deploy to GitHub Pages and verify browser rendering.
@@ -70,12 +70,26 @@ The `ld (de), a` at 0x0A20CC writes to non-VRAM RAM metadata, not visible VRAM. 
 
 **Status**: DONE in auto-session 55 (2026-04-16). Retranspiled with new 0x006138 seed. Block count unchanged (123732, 16.6384%). .gz regenerated (15,191,642 bytes, was 15,191,699). Golden regression verified: 26/26 exact, 3/3 PASS, 968 fg pixels.
 
+### ★ DONE: Phase 194 — mem.fill bug fix across all probes
+
+**Status**: DONE in auto-session 57 (2026-04-18). Codex fixed `mem.fill(0xFF, cpu.sp, 3)` → `mem.fill(0xFF, cpu.sp, cpu.sp + 3)` across 47 probe files (both `0xFF` and `0xff` capitalizations). Total: 132 fixed instances across 64 files. Zero buggy instances remain. Golden regression unaffected (still 26/26, 3/3, fg=1004).
+
+### ★ DONE: Phase 195 — Stage 1 curRow=0xFF investigation
+
+**Status**: DONE in auto-session 57 (2026-04-18). Probe `probe-phase195-stage1-currow.mjs` (690 lines, Sonnet) provides definitive answer.
+
+**Root cause**: curRow=0xFF is **NOT a sentinel** — it's an arithmetic underflow. Block 0x0A20CC loads DE=0xD00595 (curRow address), reads curRow (=0x00), executes `dec a` → 0xFF, compares against row limit at 0xD02504, and stores the underflowed result via `ld (de), a` at 0x0A20F0.
+
+**ROM-wide curRow analysis**: 507 raw ROM references to 0xD00595; 500 are in transpiled blocks. 184 are readers. 43 readers use `inc a` after loading curRow (wrapping 0xFF→0x00). None use explicit `cp 0xFF`. This confirms wrap-style handling is the standard pattern.
+
+**Verdict**: Stage 1 is a cursor/configuration step. The 0xFF is consistent with an off-screen cursor position after decrement-past-zero, not with a missing VRAM fill. No missing ROM blocks are indicated.
+
 ### Next-session priorities
 
-1. **Phase 158+ — CEmu PC-trace seed generator**: Static seeding is exhausted (0x006138 was already reachable, 0 new blocks). Create `.phase158-spec.md` and begin the CEmu PC-trace approach to break the 16.6% plateau. This is the only path to coverage expansion.
-2. **Phase 191b — Browser-shell browser verification**: The .gz is regenerated with IX fix + native rendering + status dots fix. Deploy to GitHub Pages and manually verify browser-shell shows native "Normal Float Radian" text + battery icon. (Requires browser testing — cannot be fully automated in a probe.)
-3. **Phase 194 — Check `mem.fill` bug in other probes**: The `mem.fill(value, start, 3)` bug (end vs length) was found in `probe-phase99d-home-verify.mjs`. Grep all probes for `mem.fill.*,\s*3\)` to check if any other probes have the same bug. Fix any found.
-4. **Phase 195 — Status bar Stage 1 deeper investigation**: Stage 1 writes curRow=0xFF — this is suspicious (255 is out-of-bounds for both pixel rows 0-239 and text rows 0-9). Investigate whether Stage 1 is supposed to clear/reset the status bar background but fails because it writes to metadata rather than VRAM. This may indicate missing ROM blocks that would do the actual VRAM fill.
+1. **Phase 158+ — CEmu PC-trace seed generator**: Static seeding is exhausted. Spec exists at `TI-84_Plus_CE/cemu-trace-spec.md`. **BLOCKED on toolchain**: cmake/gcc/make are not installed on the work machine (MSYS2 MinGW64 packages needed). CEmu source repo not yet cloned. Next step: install `pacman -S mingw-w64-x86_64-cmake mingw-w64-x86_64-gcc mingw-w64-x86_64-make`, then clone CEmu and build patched `autotester_cli`. This is the only path to coverage expansion past 16.6%.
+2. **Phase 191b — Browser-shell browser verification**: The .gz is regenerated with all fixes (IX, native rendering, status dots, mem.fill). Deploy to GitHub Pages and manually verify browser-shell shows native "Normal Float Radian" text + battery icon. (Requires browser testing — cannot be fully automated in a probe.)
+3. **Phase 196 — Investigate Stage 1 row-limit initialization**: Phase 195 showed rowLimit at 0xD02504 = 0x00 and colLimit at 0xD02505 = 0x00 during Stage 1. The `dec a; cp (hl)` pattern at 0x0A20CC compares underflowed curRow against this zero limit. If the row limit were initialized to a real value (e.g., 10 for text rows), the `jp p` would take a different path. Check whether any boot sequence or prior stage should set 0xD02504/0xD02505, and whether the current zero values indicate missing initialization.
+4. **Phase 197 — Audit `mem.fill` with other lengths**: Phase 194 fixed the `mem.fill(X, cpu.sp, 3)` pattern but there may be other buggy `mem.fill` calls with different length values (e.g., `mem.fill(0xFF, addr, 12)`, `mem.fill(0xAA, addr, size)`). Grep for all `mem.fill` calls and verify the third argument is always `start + length`, not bare `length`.
 
 ---
 

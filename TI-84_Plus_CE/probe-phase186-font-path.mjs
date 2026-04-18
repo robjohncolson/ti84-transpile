@@ -1,16 +1,4 @@
 #!/usr/bin/env node
-/**
- * Phase 186 — Font Record Pointer / VRAM Writer Investigation
- *
- * Investigates WHY the VRAM writer produces degenerate output (identical blocks
- * for every character) even when the display buffer at D006C0 has real ASCII.
- *
- * Parts:
- *   A — Trace VRAM writes during stage 3, group by character position
- *   B — Trace reads from D00585-D00587 during rendering
- *   C — Trace glyph buffer writes at D005A1-D005BD
- *   D — Experiment with font pointer seeding at D00585
- */
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -18,720 +6,652 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { createExecutor } from './cpu-runtime.js';
 import { createPeripheralBus } from './peripherals.js';
+import { decodeInstruction } from './ez80-decoder.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROM_PATH = path.join(__dirname, 'ROM.rom');
+const JS_PATH = path.join(__dirname, 'ROM.transpiled.js');
 const REPORT_PATH = path.join(__dirname, 'phase186-report.md');
 
-const romBytes = fs.readFileSync(path.join(__dirname, 'ROM.rom'));
-const romModule = await import(pathToFileURL(path.join(__dirname, 'ROM.transpiled.js')).href);
-const BLOCKS = romModule.PRELIFTED_BLOCKS;
+const MEM_SIZE = 0x1000000;
+const RAM_START = 0x400000;
+const RAM_END = 0xE00000;
+const MASK24 = 0xFFFFFF;
 
-/* ── Constants ──────────────────────────────────────────────── */
-
-const MEM_SIZE        = 0x1000000;
-const VRAM_BASE       = 0xD40000;
-const VRAM_WIDTH      = 320;
-const VRAM_HEIGHT     = 240;
-const VRAM_BYTE_SIZE  = VRAM_WIDTH * VRAM_HEIGHT * 2;
-const STACK_RESET_TOP = 0xD1A87E;
-
+const BOOT_ENTRY = 0x000000;
 const KERNEL_INIT_ENTRY = 0x08C331;
-const POST_INIT_ENTRY   = 0x0802B2;
-const STAGE_3_ENTRY     = 0x0A29EC;
+const POST_INIT_ENTRY = 0x0802B2;
+const STAGE1_ENTRY = 0x0A2B72;
+const STAGE3_ENTRY = 0x0A29EC;
 
-const DISPLAY_BUF_START = 0xD006C0;
-const MODE_BUF_START    = 0xD020A6;
-const MODE_BUF_LEN      = 26;
-const MODE_BUF_TEXT     = 'Normal Float Radian       ';
+const STACK_RESET_TOP = 0xD1A87E;
+const IX_RESET = 0xD1A860;
+const IY_RESET = 0xD00080;
 
-const FONT_PTR_ADDR     = 0xD00585;  // 3-byte font record pointer
-const GLYPH_BUF_START   = 0xD005A1;
-const GLYPH_BUF_LEN     = 28;       // 28 bytes per glyph
-const GLYPH_BUF_END     = GLYPH_BUF_START + GLYPH_BUF_LEN - 1;
+const VRAM_BASE = 0xD40000;
+const VRAM_WIDTH = 320;
+const VRAM_HEIGHT = 240;
+const VRAM_SIZE = VRAM_WIDTH * VRAM_HEIGHT * 2;
+const VRAM_SENTINEL = 0xAAAA;
+const WHITE_PIXEL = 0xFFFF;
 
-const FONT_BASE_ROM     = 0x0040EE;  // real font table in ROM
-const FONT_BASE_HARDCODED = 0x003D6E; // hardcoded base from Phase 167
+const DISPLAY_BUF = 0xD006C0;
+const DISPLAY_LEN = 64;
+const DISPLAY_TEXT = 'ABCDE';
+const CELL_WIDTH = 12;
+const CELL_COUNT = DISPLAY_TEXT.length;
 
-const DISPLAY_TEXT      = 'ABCDE';   // 5 different chars to seed
+const MODE_BUF = 0xD020A6;
+const MODE_TEXT = 'Normal Float Radian       ';
 
-/* ── Helpers ────────────────────────────────────────────────── */
+const GLYPH_BUF = 0xD005A1;
+const GLYPH_LEN = 28;
+const GLYPH_END = GLYPH_BUF + GLYPH_LEN - 1;
+const GLYPH_STRIDE = 28;
 
-const reportLines = [];
+const FONT_PTR = 0xD00585;
+const FONT_PTR2 = 0xD00588;
+const FONT_PTR_END = FONT_PTR + 2;
+const ROM_FONT_BASE = 0x0040EE;
+const HARD_FONT_BASE = 0x003D6E;
 
-function log(line = '') {
-  console.log(line);
-  reportLines.push(line);
-}
+const FONT_COPY_BLOCK = 0x07BF61;
+const SUSPECT_BLOCKS = [0x0A1854, 0x0A1969];
+const STRIP_ROW_START = 37;
+const STRIP_ROW_END = 52;
+
+const CPU_FIELDS = [
+  'a', 'f', '_bc', '_de', '_hl', '_a2', '_f2', '_bc2', '_de2', '_hl2',
+  'sp', '_ix', '_iy', 'i', 'im', 'iff1', 'iff2', 'madl', 'mbase', 'halted', 'cycles',
+];
+
+const romBytes = fs.readFileSync(ROM_PATH);
+const romModule = await import(pathToFileURL(JS_PATH).href);
+const BLOCKS = romModule.PRELIFTED_BLOCKS;
+const ADL_BLOCKS = Object.keys(BLOCKS)
+  .map((key) => key.split(':'))
+  .filter((parts) => parts[1] === 'adl')
+  .map((parts) => parseInt(parts[0], 16))
+  .filter((value) => Number.isFinite(value))
+  .sort((a, b) => a - b);
 
 function hex(value, width = 6) {
-  if (value === undefined || value === null) return 'n/a';
-  return `0x${(value >>> 0).toString(16).padStart(width, '0')}`;
+  if (value === undefined || value === null || Number.isNaN(value)) return 'n/a';
+  return `0x${(Number(value) >>> 0).toString(16).toUpperCase().padStart(width, '0')}`;
 }
 
-function hex2(value) { return hex(value, 2); }
+function hexByte(value) {
+  return (value & 0xFF).toString(16).toUpperCase().padStart(2, '0');
+}
+
+function bytesToHex(bytes) {
+  return Array.from(bytes, (value) => hexByte(value)).join(' ');
+}
+
+function printable(code) {
+  if (!Number.isInteger(code)) return '?';
+  if (code >= 0x20 && code <= 0x7E) return String.fromCharCode(code);
+  return '.';
+}
+
+function read24LE(mem, addr) {
+  return mem[addr] | (mem[addr + 1] << 8) | (mem[addr + 2] << 16);
+}
+
+function write24LE(mem, addr, value) {
+  mem[addr] = value & 0xFF;
+  mem[addr + 1] = (value >> 8) & 0xFF;
+  mem[addr + 2] = (value >> 16) & 0xFF;
+}
+
+function snapCpu(cpu) {
+  return Object.fromEntries(CPU_FIELDS.map((field) => [field, cpu[field]]));
+}
+
+function restoreCpu(cpu, snap, mem, stackBytes = 12) {
+  for (const [field, value] of Object.entries(snap)) cpu[field] = value;
+  cpu.halted = false;
+  cpu.iff1 = 0;
+  cpu.iff2 = 0;
+  cpu.mbase = 0xD0;
+  cpu._ix = IX_RESET;
+  cpu._iy = IY_RESET;
+  cpu.f = 0x40;
+  cpu.sp = STACK_RESET_TOP - stackBytes;
+  mem.fill(0xFF, cpu.sp, cpu.sp + stackBytes);
+}
 
 function clearVram(mem) {
-  mem.fill(0xAA, VRAM_BASE, VRAM_BASE + VRAM_BYTE_SIZE);
+  mem.fill(0xAA, VRAM_BASE, VRAM_BASE + VRAM_SIZE);
+}
+
+function clearGlyph(mem) {
+  mem.fill(0x00, GLYPH_BUF, GLYPH_BUF + GLYPH_LEN);
+}
+
+function seedMode(mem) {
+  for (let i = 0; i < MODE_TEXT.length; i += 1) mem[MODE_BUF + i] = MODE_TEXT.charCodeAt(i);
+}
+
+function seedDisplay(mem) {
+  mem.fill(0x20, DISPLAY_BUF, DISPLAY_BUF + DISPLAY_LEN);
+  for (let i = 0; i < DISPLAY_TEXT.length; i += 1) mem[DISPLAY_BUF + i] = DISPLAY_TEXT.charCodeAt(i);
 }
 
 function readPixel(mem, row, col) {
-  const offset = VRAM_BASE + (row * VRAM_WIDTH + col) * 2;
-  return mem[offset] | (mem[offset + 1] << 8);
+  const addr = VRAM_BASE + (row * VRAM_WIDTH + col) * 2;
+  return mem[addr] | (mem[addr + 1] << 8);
 }
 
-/* ── Boot sequence (shared) ─────────────────────────────────── */
+function pixelSymbol(pixel) {
+  if (pixel === VRAM_SENTINEL) return ' ';
+  if (pixel === WHITE_PIXEL) return '.';
+  return '#';
+}
 
-function buildFreshSystem() {
+function countStripFg(mem) {
+  let count = 0;
+  for (let row = STRIP_ROW_START; row <= STRIP_ROW_END; row += 1) {
+    for (let col = 0; col < VRAM_WIDTH; col += 1) {
+      const pixel = readPixel(mem, row, col);
+      if (pixel !== VRAM_SENTINEL && pixel !== WHITE_PIXEL) count += 1;
+    }
+  }
+  return count;
+}
+
+function initEnv() {
   const mem = new Uint8Array(MEM_SIZE);
   mem.set(romBytes);
-  clearVram(mem);
-
   const peripherals = createPeripheralBus({ pllDelay: 2, timerInterrupt: false });
   const executor = createExecutor(BLOCKS, mem, { peripherals });
   const cpu = executor.cpu;
 
-  // Cold boot
-  executor.runFrom(0x000000, 'z80', { maxSteps: 20000, maxLoopIterations: 32 });
-  cpu.halted = false; cpu.iff1 = 0; cpu.iff2 = 0;
-  cpu.sp = STACK_RESET_TOP - 3;
-  mem.fill(0xFF, cpu.sp, 3);
-
-  // Kernel init (943-step OS init)
-  executor.runFrom(KERNEL_INIT_ENTRY, 'adl', { maxSteps: 100000, maxLoopIterations: 10000 });
-  cpu.mbase = 0xD0; cpu._iy = 0xD00080; cpu._hl = 0;
-  cpu.halted = false; cpu.iff1 = 0; cpu.iff2 = 0;
-  cpu.sp = STACK_RESET_TOP - 3;
-  mem.fill(0xFF, cpu.sp, 3);
-
-  // Post-init
-  executor.runFrom(POST_INIT_ENTRY, 'adl', { maxSteps: 100, maxLoopIterations: 32 });
-
-  return { mem, executor, cpu };
-}
-
-function snapshotCpu(cpu) {
-  const fields = [
-    'a','f','_bc','_de','_hl','_a2','_f2','_bc2','_de2','_hl2',
-    'sp','_ix','_iy','i','im','iff1','iff2','madl','mbase','halted','cycles',
-  ];
-  return Object.fromEntries(fields.map(f => [f, cpu[f]]));
-}
-
-function restoreCpu(cpu, snapshot, mem) {
-  for (const [f, v] of Object.entries(snapshot)) {
-    cpu[f] = v;
-  }
+  const boot = executor.runFrom(BOOT_ENTRY, 'z80', { maxSteps: 20000, maxLoopIterations: 32 });
   cpu.halted = false;
   cpu.iff1 = 0;
   cpu.iff2 = 0;
-  cpu._iy = 0xD00080;
-  cpu.f = 0x40;
-  cpu._ix = 0xD1A860;
-  cpu.sp = STACK_RESET_TOP - 12;
-  mem.fill(0xFF, cpu.sp, 12);
-}
+  cpu.sp = STACK_RESET_TOP - 3;
+  mem.fill(0xFF, cpu.sp, cpu.sp + 3);
 
-function seedDisplayBuffer(mem, text) {
-  // Zero the full display buffer line first (26 chars)
-  mem.fill(0x00, DISPLAY_BUF_START, DISPLAY_BUF_START + MODE_BUF_LEN);
-  for (let i = 0; i < text.length; i++) {
-    mem[DISPLAY_BUF_START + i] = text.charCodeAt(i);
-  }
-}
+  const kernel = executor.runFrom(KERNEL_INIT_ENTRY, 'adl', { maxSteps: 100000, maxLoopIterations: 10000 });
+  cpu.mbase = 0xD0;
+  cpu._iy = IY_RESET;
+  cpu._hl = 0;
+  cpu.halted = false;
+  cpu.iff1 = 0;
+  cpu.iff2 = 0;
+  cpu.sp = STACK_RESET_TOP - 3;
+  mem.fill(0xFF, cpu.sp, cpu.sp + 3);
 
-function seedModeBuffer(mem) {
-  for (let i = 0; i < MODE_BUF_LEN; i++) {
-    mem[MODE_BUF_START + i] = MODE_BUF_TEXT.charCodeAt(i);
-  }
-}
+  const post = executor.runFrom(POST_INIT_ENTRY, 'adl', { maxSteps: 100, maxLoopIterations: 32 });
 
-function dumpBytes(mem, start, len) {
-  const bytes = [];
-  for (let i = 0; i < len; i++) {
-    bytes.push(mem[start + i]);
-  }
-  return bytes;
-}
-
-function formatBytes(bytes) {
-  return bytes.map(b => hex2(b)).join(' ');
-}
-
-/* ── PART A: Trace VRAM writes during stage 3 ──────────────── */
-
-function partA(mem, executor, cpu, cpuSnap) {
-  log('');
-  log('========================================');
-  log('PART A — Trace VRAM writes during stage 3');
-  log('========================================');
-
-  // Restore state
-  mem.fill(0x00, 0x400000, 0xE00000); // clear RAM area
-  mem.set(romBytes.slice(0, 0x400000), 0); // ensure ROM intact
-  clearVram(mem);
-
-  // Re-build from scratch for clean state
-  // Actually, just restore from snapshot
-  restoreCpu(cpu, cpuSnap, mem);
-  clearVram(mem);
-  seedDisplayBuffer(mem, DISPLAY_TEXT);
-  seedModeBuffer(mem);
-
-  log(`Display buffer seeded: "${DISPLAY_TEXT}"`);
-  log(`Display buffer bytes: ${formatBytes(dumpBytes(mem, DISPLAY_BUF_START, 10))}`);
-  log(`Mode buffer seeded: "${MODE_BUF_TEXT}"`);
-
-  // Hook write8/write16/write24 to capture VRAM writes
-  const vramWrites = [];
-  let currentPc = 0;
-  let stepCount = 0;
-
-  const origWrite8 = cpu.write8.bind(cpu);
-  const origWrite16 = cpu.write16.bind(cpu);
-  const origWrite24 = cpu.write24.bind(cpu);
-
-  function recordVramByte(addr, value) {
-    if (addr < VRAM_BASE || addr >= VRAM_BASE + VRAM_BYTE_SIZE) return;
-    const byteOffset = addr - VRAM_BASE;
-    const pixelIndex = Math.floor(byteOffset / 2);
-    const row = Math.floor(pixelIndex / VRAM_WIDTH);
-    const col = pixelIndex % VRAM_WIDTH;
-    vramWrites.push({
-      pc: currentPc,
-      addr,
-      byteOffset,
-      row,
-      col,
-      value: value & 0xFF,
-      step: stepCount,
-      isHighByte: (byteOffset % 2) === 1,
-    });
-  }
-
-  cpu.write8 = (addr, value) => {
-    recordVramByte(addr, value);
-    return origWrite8(addr, value);
+  return {
+    mem,
+    cpu,
+    executor,
+    boot,
+    kernel,
+    post,
+    ramSnap: new Uint8Array(mem.slice(RAM_START, RAM_END)),
+    cpuSnap: snapCpu(cpu),
   };
-  cpu.write16 = (addr, value) => {
-    recordVramByte(addr, value & 0xFF);
-    recordVramByte(addr + 1, (value >> 8) & 0xFF);
-    return origWrite16(addr, value);
-  };
-  cpu.write24 = (addr, value) => {
-    recordVramByte(addr, value & 0xFF);
-    recordVramByte(addr + 1, (value >> 8) & 0xFF);
-    recordVramByte(addr + 2, (value >> 16) & 0xFF);
-    return origWrite24(addr, value);
-  };
+}
 
-  const result = executor.runFrom(STAGE_3_ENTRY, 'adl', {
-    maxSteps: 50000,
+function applySeeds(mem, seeds) {
+  for (const seed of seeds) write24LE(mem, seed.addr, seed.value);
+}
+
+function prepStage3(env, seeds = []) {
+  env.mem.set(env.ramSnap, RAM_START);
+  clearVram(env.mem);
+  clearGlyph(env.mem);
+  seedMode(env.mem);
+  seedDisplay(env.mem);
+  applySeeds(env.mem, seeds);
+  restoreCpu(env.cpu, env.cpuSnap, env.mem);
+
+  const stage1 = env.executor.runFrom(STAGE1_ENTRY, 'adl', {
+    maxSteps: 30000,
     maxLoopIterations: 500,
-    onBlock(pc, mode, meta, steps) {
-      currentPc = pc;
-      stepCount = steps;
-    },
   });
 
-  // Restore original methods
-  cpu.write8 = origWrite8;
-  cpu.write16 = origWrite16;
-  cpu.write24 = origWrite24;
+  clearVram(env.mem);
+  clearGlyph(env.mem);
+  seedMode(env.mem);
+  seedDisplay(env.mem);
+  applySeeds(env.mem, seeds);
+  restoreCpu(env.cpu, env.cpuSnap, env.mem);
 
-  log(`Stage 3 result: steps=${result.steps} term=${result.termination} lastPc=${hex(result.lastPc)}`);
-  log(`Total VRAM writes: ${vramWrites.length}`);
-
-  // Filter to text strip region (rows 37-52 based on Phase 150)
-  const textRowStart = 30;
-  const textRowEnd = 55;
-  const textWrites = vramWrites.filter(w => w.row >= textRowStart && w.row <= textRowEnd);
-  log(`VRAM writes in text strip rows ${textRowStart}-${textRowEnd}: ${textWrites.length}`);
-
-  // Group by character position (stride 12 pixels starting at col 2)
-  const charStride = 12;
-  const charStartCol = 0;
-  const charPositions = new Map(); // charIndex -> writes[]
-
-  for (const w of textWrites) {
-    const charIndex = Math.floor((w.col - charStartCol) / charStride);
-    if (!charPositions.has(charIndex)) charPositions.set(charIndex, []);
-    charPositions.get(charIndex).push(w);
-  }
-
-  log(`\nVRAM writes grouped by character position (stride ${charStride}):`);
-  for (const [charIdx, writes] of [...charPositions.entries()].sort((a, b) => a[0] - b[0]).slice(0, 10)) {
-    const uniquePcs = [...new Set(writes.map(w => w.pc))];
-    const uniqueValues = [...new Set(writes.map(w => w.value))];
-    const rows = [...new Set(writes.map(w => w.row))].sort((a, b) => a - b);
-    log(`  char[${charIdx}]: ${writes.length} writes, rows ${rows[0]}-${rows[rows.length - 1]}, ` +
-        `uniqueValues=${uniqueValues.length} (${uniqueValues.slice(0, 8).map(v => hex2(v)).join(' ')}), ` +
-        `PCs: ${uniquePcs.map(p => hex(p)).join(', ')}`);
-  }
-
-  // Build pixel pattern hashes per character to check if they differ
-  log(`\nPixel patterns per character (first 5 chars):`);
-  for (let ci = 0; ci < 5; ci++) {
-    const writes = charPositions.get(ci) || [];
-    // Reconstruct pixel data from writes
-    const pixelMap = new Map(); // "row,col" -> [lowByte, highByte]
-    for (const w of writes) {
-      const key = `${w.row},${w.col}`;
-      if (!pixelMap.has(key)) pixelMap.set(key, [0, 0]);
-      const pair = pixelMap.get(key);
-      if (w.isHighByte) {
-        pair[1] = w.value;
-      } else {
-        pair[0] = w.value;
-      }
-    }
-
-    // Count unique pixel values
-    const pixelValues = [...pixelMap.values()].map(([lo, hi]) => (hi << 8) | lo);
-    const uniquePixels = [...new Set(pixelValues)];
-    const fgCount = pixelValues.filter(p => p !== 0xFFFF && p !== 0xAAAA).length;
-
-    // Build a simple hash of all writes for comparison
-    const sortedWrites = writes.slice().sort((a, b) => a.addr - b.addr);
-    const hash = sortedWrites.map(w => `${w.row - textRowStart},${w.col - ci * charStride}:${hex2(w.value)}`).join('|');
-    const hashShort = hash.length > 120 ? hash.slice(0, 120) + '...' : hash;
-
-    log(`  char[${ci}] '${DISPLAY_TEXT[ci] || '?'}': ` +
-        `pixels=${pixelMap.size} fg=${fgCount} uniquePixelVals=${uniquePixels.length} ` +
-        `(${uniquePixels.slice(0, 5).map(v => hex(v, 4)).join(' ')})`);
-  }
-
-  // Compare first 5 chars pairwise
-  log(`\nPairwise pattern comparison (first 5 chars):`);
-  const charHashes = [];
-  for (let ci = 0; ci < 5; ci++) {
-    const writes = (charPositions.get(ci) || []).slice().sort((a, b) => a.addr - b.addr);
-    // Normalize positions relative to character origin
-    const normalized = writes.map(w => ({
-      relRow: w.row - textRowStart,
-      relCol: w.col - ci * charStride,
-      value: w.value,
-    }));
-    charHashes.push(JSON.stringify(normalized));
-  }
-  for (let i = 0; i < charHashes.length; i++) {
-    for (let j = i + 1; j < charHashes.length; j++) {
-      const same = charHashes[i] === charHashes[j];
-      log(`  char[${i}] vs char[${j}]: ${same ? 'IDENTICAL' : 'DIFFERENT'}`);
-    }
-  }
-
-  // Also log first 20 VRAM writes with full detail
-  log(`\nFirst 30 VRAM writes (raw):`);
-  for (const w of vramWrites.slice(0, 30)) {
-    log(`  step=${w.step} pc=${hex(w.pc)} row=${w.row} col=${w.col} val=${hex2(w.value)} hi=${w.isHighByte}`);
-  }
-
-  // Count total fg pixels in text region after stage 3
-  let fgPixels = 0;
-  for (let r = textRowStart; r <= textRowEnd; r++) {
-    for (let c = 0; c < VRAM_WIDTH; c++) {
-      const p = readPixel(mem, r, c);
-      if (p !== 0xAAAA && p !== 0xFFFF) fgPixels++;
-    }
-  }
-  log(`\nFg pixels in text strip after stage 3: ${fgPixels}`);
-
-  return { vramWrites, result };
+  return stage1;
 }
 
-/* ── PART B: Trace D00585 reads ─────────────────────────────── */
+function installTrace(cpu) {
+  const state = { pc: null, step: 0 };
+  const vramWrites = [];
+  const glyphWrites = [];
+  const glyphReads = [];
+  const pointerReads = [];
 
-function partB(mem, executor, cpu, cpuSnap, ramSnap) {
-  log('');
-  log('========================================');
-  log('PART B — Trace D00585 reads during rendering');
-  log('========================================');
+  const r8 = cpu.read8.bind(cpu);
+  const r16 = cpu.read16.bind(cpu);
+  const r24 = cpu.read24.bind(cpu);
+  const w8 = cpu.write8.bind(cpu);
+  const w16 = cpu.write16.bind(cpu);
+  const w24 = cpu.write24.bind(cpu);
 
-  // Fresh restore
-  mem.set(ramSnap, 0x400000);
-  clearVram(mem);
-  restoreCpu(cpu, cpuSnap, mem);
-  seedDisplayBuffer(mem, DISPLAY_TEXT);
-  seedModeBuffer(mem);
+  function setContext(step, pc) {
+    state.step = step;
+    state.pc = pc === null ? null : pc & MASK24;
+  }
 
-  // Show current value at D00585
-  const ptrBefore = dumpBytes(mem, FONT_PTR_ADDR, 6);
-  log(`D00585-D0058A before stage 3: ${formatBytes(ptrBefore)}`);
-
-  // Wrap read8 to trap reads from D00585-D00587
-  const fontPtrReads = [];
-  let currentPc = 0;
-  let stepCount = 0;
-
-  const origRead8 = cpu.read8.bind(cpu);
-  cpu.read8 = (addr) => {
-    const value = origRead8(addr);
-    if (addr >= FONT_PTR_ADDR && addr <= FONT_PTR_ADDR + 2) {
-      fontPtrReads.push({
-        pc: currentPc,
-        addr,
-        value,
-        step: stepCount,
-        offset: addr - FONT_PTR_ADDR,
+  function recordRange(list, start, end, addr, width, value) {
+    const base = addr & MASK24;
+    for (let i = 0; i < width; i += 1) {
+      const current = base + i;
+      if (current < start || current > end) continue;
+      list.push({
+        step: state.step,
+        pc: state.pc,
+        addr: current,
+        offset: current - start,
+        value: (value >> (i * 8)) & 0xFF,
       });
     }
-    return value;
-  };
-
-  const result = executor.runFrom(STAGE_3_ENTRY, 'adl', {
-    maxSteps: 50000,
-    maxLoopIterations: 500,
-    onBlock(pc, mode, meta, steps) {
-      currentPc = pc;
-      stepCount = steps;
-    },
-  });
-
-  cpu.read8 = origRead8;
-
-  log(`Stage 3 result: steps=${result.steps} term=${result.termination} lastPc=${hex(result.lastPc)}`);
-  log(`Reads from D00585-D00587: ${fontPtrReads.length}`);
-
-  if (fontPtrReads.length > 0) {
-    log('Font pointer reads detected!');
-    // Show first 50 reads
-    for (const r of fontPtrReads.slice(0, 50)) {
-      log(`  step=${r.step} pc=${hex(r.pc)} addr=${hex(r.addr)} offset=${r.offset} value=${hex2(r.value)}`);
-    }
-    // Unique PCs
-    const uniquePcs = [...new Set(fontPtrReads.map(r => r.pc))];
-    log(`Unique PCs reading D00585: ${uniquePcs.map(p => hex(p)).join(', ')}`);
-  } else {
-    log('NO reads from D00585-D00587 during stage 3.');
-    log('This confirms Phase 167: the font chain does NOT use D00585.');
   }
 
-  // Also check D00588-D0058A (secondary pointer?)
-  const fontPtrReads2 = [];
-  mem.set(ramSnap, 0x400000);
-  clearVram(mem);
-  restoreCpu(cpu, cpuSnap, mem);
-  seedDisplayBuffer(mem, DISPLAY_TEXT);
-  seedModeBuffer(mem);
-
-  const origRead8b = cpu.read8.bind(cpu);
-  cpu.read8 = (addr) => {
-    const value = origRead8b(addr);
-    if (addr >= FONT_PTR_ADDR + 3 && addr <= FONT_PTR_ADDR + 5) {
-      fontPtrReads2.push({ pc: currentPc, addr, value, step: stepCount });
-    }
-    return value;
-  };
-
-  executor.runFrom(STAGE_3_ENTRY, 'adl', {
-    maxSteps: 50000,
-    maxLoopIterations: 500,
-    onBlock(pc, mode, meta, steps) { currentPc = pc; stepCount = steps; },
-  });
-
-  cpu.read8 = origRead8b;
-
-  log(`Reads from D00588-D0058A: ${fontPtrReads2.length}`);
-  if (fontPtrReads2.length > 0) {
-    for (const r of fontPtrReads2.slice(0, 20)) {
-      log(`  step=${r.step} pc=${hex(r.pc)} addr=${hex(r.addr)} value=${hex2(r.value)}`);
-    }
-  }
-
-  return { fontPtrReads };
-}
-
-/* ── PART C: Trace glyph buffer writes ──────────────────────── */
-
-function partC(mem, executor, cpu, cpuSnap, ramSnap) {
-  log('');
-  log('========================================');
-  log('PART C — Trace glyph buffer writes at D005A1');
-  log('========================================');
-
-  // Fresh restore
-  mem.set(ramSnap, 0x400000);
-  clearVram(mem);
-  restoreCpu(cpu, cpuSnap, mem);
-  seedDisplayBuffer(mem, DISPLAY_TEXT);
-  seedModeBuffer(mem);
-
-  // Zero out glyph buffer before stage 3
-  mem.fill(0x00, GLYPH_BUF_START, GLYPH_BUF_START + GLYPH_BUF_LEN);
-  log(`Glyph buffer zeroed: ${hex(GLYPH_BUF_START)}-${hex(GLYPH_BUF_END)}`);
-  log(`Display buffer: ${formatBytes(dumpBytes(mem, DISPLAY_BUF_START, 10))}`);
-
-  // Hook writes to glyph buffer
-  const glyphWrites = [];
-  let currentPc = 0;
-  let stepCount = 0;
-  let glyphSnapshots = []; // snapshot glyph buffer at key moments
-
-  const origWrite8 = cpu.write8.bind(cpu);
-  const origWrite16 = cpu.write16.bind(cpu);
-  const origWrite24 = cpu.write24.bind(cpu);
-
-  function recordGlyphByte(addr, value) {
-    if (addr < GLYPH_BUF_START || addr > GLYPH_BUF_END) return;
-    glyphWrites.push({
-      pc: currentPc,
-      addr,
-      offset: addr - GLYPH_BUF_START,
-      value: value & 0xFF,
-      step: stepCount,
+  function recordVram(addr, width, value) {
+    const base = addr & MASK24;
+    if (base < VRAM_BASE || base >= VRAM_BASE + VRAM_SIZE) return;
+    const vramOffset = base - VRAM_BASE;
+    const pixelIndex = Math.floor(vramOffset / 2);
+    vramWrites.push({
+      step: state.step,
+      pc: state.pc,
+      width,
+      value: value & (width === 1 ? 0xFF : width === 2 ? 0xFFFF : 0xFFFFFF),
+      vramOffset,
+      row: Math.floor(pixelIndex / VRAM_WIDTH),
+      col: pixelIndex % VRAM_WIDTH,
     });
   }
 
+  cpu.read8 = (addr) => {
+    const value = r8(addr);
+    recordRange(pointerReads, FONT_PTR, FONT_PTR_END, addr, 1, value);
+    recordRange(glyphReads, GLYPH_BUF, GLYPH_END, addr, 1, value);
+    return value;
+  };
+  cpu.read16 = (addr) => {
+    const value = r16(addr);
+    recordRange(pointerReads, FONT_PTR, FONT_PTR_END, addr, 2, value);
+    recordRange(glyphReads, GLYPH_BUF, GLYPH_END, addr, 2, value);
+    return value;
+  };
+  cpu.read24 = (addr) => {
+    const value = r24(addr);
+    recordRange(pointerReads, FONT_PTR, FONT_PTR_END, addr, 3, value);
+    recordRange(glyphReads, GLYPH_BUF, GLYPH_END, addr, 3, value);
+    return value;
+  };
   cpu.write8 = (addr, value) => {
-    recordGlyphByte(addr, value);
-    return origWrite8(addr, value);
+    recordVram(addr, 1, value);
+    recordRange(glyphWrites, GLYPH_BUF, GLYPH_END, addr, 1, value);
+    return w8(addr, value);
   };
   cpu.write16 = (addr, value) => {
-    recordGlyphByte(addr, value & 0xFF);
-    recordGlyphByte(addr + 1, (value >> 8) & 0xFF);
-    return origWrite16(addr, value);
+    recordVram(addr, 2, value);
+    recordRange(glyphWrites, GLYPH_BUF, GLYPH_END, addr, 2, value);
+    return w16(addr, value);
   };
   cpu.write24 = (addr, value) => {
-    recordGlyphByte(addr, value & 0xFF);
-    recordGlyphByte(addr + 1, (value >> 8) & 0xFF);
-    recordGlyphByte(addr + 2, (value >> 16) & 0xFF);
-    return origWrite24(addr, value);
+    recordVram(addr, 3, value);
+    recordRange(glyphWrites, GLYPH_BUF, GLYPH_END, addr, 3, value);
+    return w24(addr, value);
   };
 
-  // Track how many times the glyph buffer has been fully written
-  // and snapshot each time we see offset 0 being written
-  let lastOffset0Step = -1;
+  return {
+    glyphReads,
+    glyphWrites,
+    pointerReads,
+    setContext,
+    vramWrites,
+    restore() {
+      cpu.read8 = r8;
+      cpu.read16 = r16;
+      cpu.read24 = r24;
+      cpu.write8 = w8;
+      cpu.write16 = w16;
+      cpu.write24 = w24;
+    },
+  };
+}
 
-  const result = executor.runFrom(STAGE_3_ENTRY, 'adl', {
+function topPcs(entries, rowMin, rowMax, colMin, colMax) {
+  const counts = new Map();
+  for (const entry of entries) {
+    if (entry.row < rowMin || entry.row > rowMax) continue;
+    if (entry.col < colMin || entry.col > colMax) continue;
+    const key = entry.pc ?? -1;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([pc, count]) => ({ pc: pc < 0 ? null : pc, count }))
+    .sort((a, b) => b.count - a.count || (a.pc ?? 0) - (b.pc ?? 0))
+    .slice(0, 5);
+}
+
+function cellSummary(mem, writes) {
+  const maxCol = CELL_COUNT * CELL_WIDTH - 1;
+  let rowMin = null;
+  let rowMax = null;
+  for (let row = 0; row < VRAM_HEIGHT; row += 1) {
+    for (let col = 0; col <= maxCol; col += 1) {
+      if (readPixel(mem, row, col) === VRAM_SENTINEL) continue;
+      rowMin = rowMin === null ? row : Math.min(rowMin, row);
+      rowMax = rowMax === null ? row : Math.max(rowMax, row);
+    }
+  }
+
+  if (rowMin === null) return { rowMin: null, rowMax: null, cells: [], patterns: [] };
+
+  const sigToId = new Map();
+  const patterns = [];
+  const cells = [];
+  let nextId = 1;
+
+  for (let cell = 0; cell < CELL_COUNT; cell += 1) {
+    const colMin = cell * CELL_WIDTH;
+    const colMax = colMin + CELL_WIDTH - 1;
+    const rows = [];
+    let drawn = 0;
+    let fg = 0;
+
+    for (let row = rowMin; row <= rowMax; row += 1) {
+      let text = '';
+      for (let col = colMin; col <= colMax; col += 1) {
+        const pixel = readPixel(mem, row, col);
+        text += pixelSymbol(pixel);
+        if (pixel !== VRAM_SENTINEL) drawn += 1;
+        if (pixel !== VRAM_SENTINEL && pixel !== WHITE_PIXEL) fg += 1;
+      }
+      rows.push(text);
+    }
+
+    const signature = rows.join('|');
+    if (!sigToId.has(signature)) {
+      const id = `P${nextId}`;
+      nextId += 1;
+      sigToId.set(signature, id);
+      patterns.push({ id, rows, signature });
+    }
+
+    cells.push({
+      cell,
+      char: DISPLAY_TEXT[cell],
+      colMin,
+      colMax,
+      drawn,
+      fg,
+      pattern: sigToId.get(signature),
+      rows,
+      signature,
+      pcs: topPcs(writes, rowMin, rowMax, colMin, colMax),
+    });
+  }
+
+  return { rowMin, rowMax, cells, patterns };
+}
+
+function groupGlyphWrites(glyphWrites, copies) {
+  const groups = new Map();
+  for (const entry of glyphWrites) {
+    const key = `${entry.step}:${entry.pc}`;
+    if (!groups.has(key)) {
+      groups.set(key, { step: entry.step, pc: entry.pc, bytes: new Uint8Array(GLYPH_LEN) });
+    }
+    groups.get(key).bytes[entry.offset] = entry.value;
+  }
+
+  return [...groups.values()]
+    .sort((a, b) => a.step - b.step || (a.pc ?? 0) - (b.pc ?? 0))
+    .map((group, index) => {
+      const copy = copies.find((entry) => entry.step === group.step && entry.pc === group.pc) ?? null;
+      return {
+        batch: index,
+        step: group.step,
+        pc: group.pc,
+        charCode: copy?.charCode ?? null,
+        char: printable(copy?.charCode ?? null),
+        source: copy?.source ?? null,
+        signature: bytesToHex(group.bytes),
+      };
+    });
+}
+
+function decodeBlock(startPc) {
+  const next = ADL_BLOCKS.find((value) => value > startPc) ?? Number.POSITIVE_INFINITY;
+  const rows = [];
+  let pc = startPc;
+  while (rows.length < 12 && pc < next && pc < romBytes.length) {
+    let inst;
+    try {
+      inst = decodeInstruction(romBytes, pc, 'adl');
+    } catch {
+      break;
+    }
+    if (!inst || !inst.length) break;
+    rows.push({ pc, bytes: romBytes.slice(pc, pc + inst.length), text: inst.dasm || inst.mnemonic || inst.tag });
+    pc = inst.nextPc;
+  }
+  return rows;
+}
+
+function runScenario(env, label, seeds = []) {
+  const stage1 = prepStage3(env, seeds);
+  const trace = installTrace(env.cpu);
+  const copies = [];
+
+  const stage3 = env.executor.runFrom(STAGE3_ENTRY, 'adl', {
     maxSteps: 50000,
     maxLoopIterations: 500,
     onBlock(pc, mode, meta, steps) {
-      currentPc = pc;
-      stepCount = steps;
+      const step = steps + 1;
+      const blockPc = pc & MASK24;
+      trace.setContext(step, blockPc);
+      if (blockPc !== FONT_COPY_BLOCK) return;
+      const de = env.cpu._de & MASK24;
+      const hl = env.cpu._hl & MASK24;
+      copies.push({
+        step,
+        pc: blockPc,
+        charCode: de % GLYPH_STRIDE === 0 ? Math.floor(de / GLYPH_STRIDE) : null,
+        source: (hl + de) & MASK24,
+      });
     },
   });
 
-  // Restore
-  cpu.write8 = origWrite8;
-  cpu.write16 = origWrite16;
-  cpu.write24 = origWrite24;
+  trace.restore();
 
-  log(`Stage 3 result: steps=${result.steps} term=${result.termination} lastPc=${hex(result.lastPc)}`);
-  log(`Total glyph buffer writes: ${glyphWrites.length}`);
-
-  // Group writes by "fill round" — each time offset 0 is written starts a new round
-  const rounds = [];
-  let currentRound = null;
-
-  for (const w of glyphWrites) {
-    if (w.offset === 0) {
-      if (currentRound) rounds.push(currentRound);
-      currentRound = { startStep: w.step, startPc: w.pc, writes: [] };
-    }
-    if (currentRound) currentRound.writes.push(w);
-  }
-  if (currentRound) rounds.push(currentRound);
-
-  log(`Glyph buffer fill rounds: ${rounds.length}`);
-
-  for (let ri = 0; ri < Math.min(rounds.length, 10); ri++) {
-    const round = rounds[ri];
-    const bytes = new Uint8Array(GLYPH_BUF_LEN);
-    for (const w of round.writes) {
-      if (w.offset >= 0 && w.offset < GLYPH_BUF_LEN) {
-        bytes[w.offset] = w.value;
-      }
-    }
-    const uniquePcs = [...new Set(round.writes.map(w => w.pc))];
-    log(`  round[${ri}]: step=${round.startStep} pc=${hex(round.startPc)} writes=${round.writes.length} ` +
-        `PCs: ${uniquePcs.map(p => hex(p)).join(', ')}`);
-    log(`    bytes: ${formatBytes(Array.from(bytes))}`);
-  }
-
-  // Compare round data to check if different chars get different bitmaps
-  log(`\nRound-by-round bitmap comparison:`);
-  const roundHashes = rounds.map((round, i) => {
-    const bytes = new Uint8Array(GLYPH_BUF_LEN);
-    for (const w of round.writes) {
-      if (w.offset >= 0 && w.offset < GLYPH_BUF_LEN) {
-        bytes[w.offset] = w.value;
-      }
-    }
-    return Array.from(bytes).join(',');
-  });
-
-  for (let i = 0; i < roundHashes.length; i++) {
-    for (let j = i + 1; j < roundHashes.length; j++) {
-      const same = roundHashes[i] === roundHashes[j];
-      log(`  round[${i}] vs round[${j}]: ${same ? 'IDENTICAL' : 'DIFFERENT'}`);
-    }
-  }
-
-  // Check what's at D00585 after stage 3
-  const ptrAfter = dumpBytes(mem, FONT_PTR_ADDR, 6);
-  log(`\nD00585-D0058A after stage 3: ${formatBytes(ptrAfter)}`);
-
-  // Check glyph buffer final state
-  const finalGlyph = dumpBytes(mem, GLYPH_BUF_START, GLYPH_BUF_LEN);
-  log(`Glyph buffer final: ${formatBytes(finalGlyph)}`);
-
-  return { glyphWrites, rounds };
+  return {
+    label,
+    stage1,
+    stage3,
+    stripFg: countStripFg(env.mem),
+    finalPtr: read24LE(env.mem, FONT_PTR),
+    finalPtr2: read24LE(env.mem, FONT_PTR2),
+    finalPtrBytes: Array.from(env.mem.slice(FONT_PTR, FONT_PTR + 3)),
+    finalPtr2Bytes: Array.from(env.mem.slice(FONT_PTR2, FONT_PTR2 + 3)),
+    finalGlyph: new Uint8Array(env.mem.slice(GLYPH_BUF, GLYPH_BUF + GLYPH_LEN)),
+    vramWrites: trace.vramWrites,
+    pointerReads: trace.pointerReads,
+    glyphWrites: trace.glyphWrites,
+    glyphReads: trace.glyphReads,
+    cells: cellSummary(env.mem, trace.vramWrites),
+    glyphBatches: groupGlyphWrites(trace.glyphWrites, copies),
+  };
 }
 
-/* ── PART D: Font pointer seeding experiments ───────────────── */
-
-function partD(mem, executor, cpu, cpuSnap, ramSnap) {
-  log('');
-  log('========================================');
-  log('PART D — Font pointer seeding experiments');
-  log('========================================');
-
-  // First: baseline (no seeding) — count fg pixels in text strip
-  function runAndCountFg(label, seedFn) {
-    mem.set(ramSnap, 0x400000);
-    clearVram(mem);
-    restoreCpu(cpu, cpuSnap, mem);
-    seedDisplayBuffer(mem, DISPLAY_TEXT);
-    seedModeBuffer(mem);
-
-    if (seedFn) seedFn(mem);
-
-    const ptrVal = dumpBytes(mem, FONT_PTR_ADDR, 6);
-    log(`\n${label}:`);
-    log(`  D00585-D0058A: ${formatBytes(ptrVal)}`);
-
-    const result = executor.runFrom(STAGE_3_ENTRY, 'adl', {
-      maxSteps: 50000,
-      maxLoopIterations: 500,
-    });
-
-    log(`  stage 3: steps=${result.steps} term=${result.termination} lastPc=${hex(result.lastPc)}`);
-
-    // Count fg pixels in the text strip (rows 30-55)
-    let fgCount = 0;
-    let whiteCount = 0;
-    let sentinelCount = 0;
-    for (let r = 30; r <= 55; r++) {
-      for (let c = 0; c < VRAM_WIDTH; c++) {
-        const p = readPixel(mem, r, c);
-        if (p === 0xAAAA) sentinelCount++;
-        else if (p === 0xFFFF) whiteCount++;
-        else fgCount++;
-      }
-    }
-
-    log(`  text strip fg=${fgCount} white=${whiteCount} sentinel=${sentinelCount}`);
-
-    // Also check overall VRAM fg
-    let totalFg = 0;
-    for (let r = 0; r < VRAM_HEIGHT; r++) {
-      for (let c = 0; c < VRAM_WIDTH; c++) {
-        const p = readPixel(mem, r, c);
-        if (p !== 0xAAAA && p !== 0xFFFF) totalFg++;
-      }
-    }
-    log(`  total VRAM fg=${totalFg}`);
-
-    return { fgCount, whiteCount, totalFg, label };
-  }
-
-  const baseline = runAndCountFg('Baseline (no seed)', null);
-
-  // Seed D00585 = 0x0040EE (real font table, 24-bit LE)
-  const seed1 = runAndCountFg('Seed D00585=0x0040EE', (mem) => {
-    mem[FONT_PTR_ADDR + 0] = 0xEE;
-    mem[FONT_PTR_ADDR + 1] = 0x40;
-    mem[FONT_PTR_ADDR + 2] = 0x00;
+function rawVramLog(entry) {
+  return JSON.stringify({
+    pc: hex(entry.pc),
+    vramOffset: hex(entry.vramOffset),
+    row: entry.row,
+    col: entry.col,
+    value: hex(entry.value, entry.width * 2),
   });
-
-  // Seed D00585 = 0x0040EE AND D00588 = 0x0040EE
-  const seed2 = runAndCountFg('Seed D00585=0x0040EE + D00588=0x0040EE', (mem) => {
-    mem[FONT_PTR_ADDR + 0] = 0xEE;
-    mem[FONT_PTR_ADDR + 1] = 0x40;
-    mem[FONT_PTR_ADDR + 2] = 0x00;
-    mem[FONT_PTR_ADDR + 3] = 0xEE;
-    mem[FONT_PTR_ADDR + 4] = 0x40;
-    mem[FONT_PTR_ADDR + 5] = 0x00;
-  });
-
-  // Seed D00585 = 0x003D6E (the hardcoded base)
-  const seed3 = runAndCountFg('Seed D00585=0x003D6E', (mem) => {
-    mem[FONT_PTR_ADDR + 0] = 0x6E;
-    mem[FONT_PTR_ADDR + 1] = 0x3D;
-    mem[FONT_PTR_ADDR + 2] = 0x00;
-  });
-
-  // Compare results
-  log('\n--- Comparison ---');
-  const all = [baseline, seed1, seed2, seed3];
-  for (const r of all) {
-    log(`  ${r.label}: textFg=${r.fgCount} totalFg=${r.totalFg}`);
-  }
-
-  // Check if any seed changed the fg count
-  for (const r of [seed1, seed2, seed3]) {
-    const delta = r.fgCount - baseline.fgCount;
-    log(`  Delta from baseline for "${r.label}": ${delta > 0 ? '+' : ''}${delta}`);
-  }
-
-  return { baseline, seed1, seed2, seed3 };
 }
 
-/* ── MAIN ───────────────────────────────────────────────────── */
-
-async function main() {
-  log('=== Phase 186 — Font Record Pointer / VRAM Writer Investigation ===');
-  log(`Date: ${new Date().toISOString()}`);
-  log('');
-
-  const { mem, executor, cpu } = buildFreshSystem();
-  const ramSnap = new Uint8Array(mem.slice(0x400000, 0xE00000));
-  const cpuSnap = snapshotCpu(cpu);
-
-  log(`System booted. D00585 after init: ${formatBytes(dumpBytes(mem, FONT_PTR_ADDR, 6))}`);
-
-  // Run all parts
-  partA(mem, executor, cpu, cpuSnap);
-  partB(mem, executor, cpu, cpuSnap, ramSnap);
-  partC(mem, executor, cpu, cpuSnap, ramSnap);
-  partD(mem, executor, cpu, cpuSnap, ramSnap);
-
-  // Summary
-  log('');
-  log('========================================');
-  log('SUMMARY');
-  log('========================================');
-  log('See detailed output above for each part.');
-
-  // Write report
-  const reportMd = [
-    '# Phase 186 Report — Font Record Pointer / VRAM Writer Investigation',
-    '',
-    `Generated: ${new Date().toISOString()}`,
-    '',
-    '## Console Output',
-    '',
-    '```',
-    ...reportLines,
-    '```',
-    '',
-  ].join('\n');
-
-  fs.writeFileSync(REPORT_PATH, reportMd);
-  log(`\nReport written to: ${REPORT_PATH}`);
+function rawPtrLog(entry) {
+  return JSON.stringify({ pc: hex(entry.pc), addr: hex(entry.addr), value: hex(entry.value, 2), step: entry.step });
 }
 
-try {
-  await main();
-} catch (error) {
-  console.error('FATAL ERROR:', error.stack || error);
-  const errorReport = [
-    '# Phase 186 Report — FAILURE',
-    '',
-    '```',
-    error.stack || String(error),
-    '```',
-  ].join('\n');
-  fs.writeFileSync(REPORT_PATH, errorReport);
-  process.exitCode = 1;
+function rawGlyphLog(entry) {
+  return JSON.stringify({ pc: hex(entry.pc), offset: entry.offset, value: hex(entry.value, 2), step: entry.step });
 }
+
+function pcsText(items) {
+  if (items.length === 0) return 'none';
+  return items.map((item) => `${hex(item.pc)} x${item.count}`).join(', ');
+}
+
+function buildReport(env, base, variants) {
+  const lines = [];
+  const glyphSet = new Set(base.glyphBatches.slice(0, CELL_COUNT).map((entry) => entry.signature)).size;
+  const cellSet = new Set(base.cells.cells.map((entry) => entry.signature)).size;
+
+  lines.push('# Phase 186 - Font Path Probe');
+  lines.push('');
+  lines.push(`- Boot: ${env.boot.termination}`);
+  lines.push(`- Kernel init: ${env.kernel.termination}`);
+  lines.push(`- Post-init: ${env.post.termination}`);
+  lines.push(`- Stage 1: ${base.stage1.termination}`);
+  lines.push(`- Stage 3: ${base.stage3.termination} @ ${hex(base.stage3.lastPc)}`);
+  lines.push(`- Strip fg: ${base.stripFg}`);
+  lines.push(`- Final ${hex(FONT_PTR)}: ${bytesToHex(base.finalPtrBytes)} -> ${hex(base.finalPtr)}`);
+  lines.push(`- Final ${hex(FONT_PTR2)}: ${bytesToHex(base.finalPtr2Bytes)} -> ${hex(base.finalPtr2)}`);
+  lines.push('');
+  lines.push('## Part A - VRAM');
+  lines.push('');
+  lines.push(`- VRAM write calls: ${base.vramWrites.length}`);
+  if (base.cells.rowMin === null) {
+    lines.push('- No pixels written in the first five cells.');
+  } else {
+    lines.push(`- Rows touched in the first five cells: ${base.cells.rowMin}-${base.cells.rowMax}`);
+  }
+  lines.push('');
+  lines.push('| Cell | Char | Cols | Pattern | Drawn | FG | Top PCs |');
+  lines.push('|---:|---:|---|---|---:|---:|---|');
+  for (const cell of base.cells.cells) {
+    lines.push(`| ${cell.cell} | \`${cell.char}\` | ${cell.colMin}-${cell.colMax} | ${cell.pattern} | ${cell.drawn} | ${cell.fg} | ${pcsText(cell.pcs)} |`);
+  }
+  lines.push('');
+  for (const pattern of base.cells.patterns) {
+    lines.push(`### ${pattern.id}`);
+    lines.push('');
+    lines.push('```text');
+    for (const row of pattern.rows) lines.push(row);
+    lines.push('```');
+    lines.push('');
+  }
+  lines.push('## Part B - D00585 Reads');
+  lines.push('');
+  if (base.pointerReads.length === 0) {
+    lines.push(`- No reads from ${hex(FONT_PTR)}-${hex(FONT_PTR_END)}.`);
+  } else {
+    for (const entry of base.pointerReads) lines.push(`- ${rawPtrLog(entry)}`);
+  }
+  lines.push('');
+  lines.push('## Part C - Glyph Buffer');
+  lines.push('');
+  lines.push(`- Final glyph bytes: ${bytesToHex(base.finalGlyph)}`);
+  lines.push(`- Glyph write bytes: ${base.glyphWrites.length}`);
+  lines.push(`- Glyph read bytes: ${base.glyphReads.length}`);
+  lines.push('');
+  lines.push('| Batch | Step | PC | Char | Source | Signature |');
+  lines.push('|---:|---:|---|---:|---|---|');
+  for (const entry of base.glyphBatches.slice(0, 12)) {
+    const charText = entry.charCode === null ? 'n/a' : `${hex(entry.charCode, 2)} (${entry.char})`;
+    lines.push(`| ${entry.batch} | ${entry.step} | ${hex(entry.pc)} | ${charText} | ${hex(entry.source)} | \`${entry.signature}\` |`);
+  }
+  lines.push('');
+  lines.push('## Suspect Blocks');
+  lines.push('');
+  for (const blockPc of SUSPECT_BLOCKS) {
+    lines.push(`### ${hex(blockPc)}`);
+    lines.push('');
+    lines.push('```text');
+    for (const row of decodeBlock(blockPc)) lines.push(`${hex(row.pc)}  ${bytesToHex(row.bytes).padEnd(16)}  ${row.text}`);
+    lines.push('```');
+    lines.push('');
+  }
+  lines.push('## Part D - Pointer Variants');
+  lines.push('');
+  lines.push('| Variant | Strip FG | Final D00585 | Final D00588 |');
+  lines.push('|---|---:|---|---|');
+  for (const variant of variants) lines.push(`| ${variant.label} | ${variant.stripFg} | ${hex(variant.finalPtr)} | ${hex(variant.finalPtr2)} |`);
+  lines.push('');
+  lines.push('## Verdict');
+  lines.push('');
+  if (glyphSet > 1) {
+    lines.push(`- A-E produce ${glyphSet} distinct 28-byte glyph signatures, so ${hex(FONT_COPY_BLOCK)} is receiving different glyphs.`);
+  } else {
+    lines.push(`- A-E collapse before the glyph buffer; inspect the source path into ${hex(FONT_COPY_BLOCK)}.`);
+  }
+  if (cellSet > 1) {
+    lines.push(`- A-E also produce ${cellSet} distinct VRAM cell patterns. The renderer still differentiates cells.`);
+  } else {
+    lines.push(`- A-E collapse to one VRAM pattern. Differentiation is being lost after the glyph buffer is filled.`);
+    lines.push('- The first post-copy readers are the 0x0A1854 / 0x0A1969 pair. Focus on `LD A,(IX+0)` and the rotate/xor logic immediately after it.');
+  }
+  if (base.pointerReads.length === 0) lines.push(`- No stage-3 reads touched ${hex(FONT_PTR)}-${hex(FONT_PTR_END)}.`);
+  return `${lines.join('\n')}\n`;
+}
+
+function printScenario(base, variants, env) {
+  console.log('=== Phase 186 - Font Path Probe ===');
+  console.log(`Boot=${env.boot.termination} Kernel=${env.kernel.termination} Post=${env.post.termination}`);
+  console.log(`Stage1=${base.stage1.termination} Stage3=${base.stage3.termination} lastPc=${hex(base.stage3.lastPc)} stripFg=${base.stripFg}`);
+  console.log(`Final ${hex(FONT_PTR)}=${bytesToHex(base.finalPtrBytes)} -> ${hex(base.finalPtr)}`);
+  console.log(`Final ${hex(FONT_PTR2)}=${bytesToHex(base.finalPtr2Bytes)} -> ${hex(base.finalPtr2)}`);
+  console.log('');
+  console.log('=== Part A - Cell Summary ===');
+  for (const cell of base.cells.cells) console.log(`cell=${cell.cell} char=${cell.char} pattern=${cell.pattern} drawn=${cell.drawn} fg=${cell.fg} pcs=${pcsText(cell.pcs)}`);
+  for (const pattern of base.cells.patterns) {
+    console.log(`pattern=${pattern.id}`);
+    for (const row of pattern.rows) console.log(row);
+  }
+  console.log('');
+  console.log('=== Part A - Raw VRAM Writes ===');
+  for (const entry of base.vramWrites) console.log(rawVramLog(entry));
+  console.log('');
+  console.log('=== Part B - D00585 Reads ===');
+  if (base.pointerReads.length === 0) console.log('none');
+  for (const entry of base.pointerReads) console.log(rawPtrLog(entry));
+  console.log('');
+  console.log('=== Part C - Glyph Writes ===');
+  for (const entry of base.glyphWrites) console.log(rawGlyphLog(entry));
+  console.log('');
+  console.log('=== Part C - Glyph Batches ===');
+  for (const entry of base.glyphBatches) console.log(`batch=${entry.batch} step=${entry.step} pc=${hex(entry.pc)} char=${hex(entry.charCode, 2)} (${entry.char}) source=${hex(entry.source)} signature=${entry.signature}`);
+  console.log('');
+  console.log('=== Part D - Pointer Variants ===');
+  for (const variant of variants) console.log(`${variant.label}: stripFg=${variant.stripFg} final85=${hex(variant.finalPtr)} final88=${hex(variant.finalPtr2)}`);
+  console.log('');
+  console.log(`Report written to ${REPORT_PATH}`);
+}
+
+const env = initEnv();
+const baseline = runScenario(env, 'baseline', []);
+const variants = [
+  runScenario(env, 'font_table_dual_seed', [
+    { addr: FONT_PTR, value: ROM_FONT_BASE },
+    { addr: FONT_PTR2, value: ROM_FONT_BASE },
+  ]),
+  runScenario(env, 'hardcoded_base_primary_seed', [
+    { addr: FONT_PTR, value: HARD_FONT_BASE },
+  ]),
+];
+
+fs.writeFileSync(REPORT_PATH, buildReport(env, baseline, variants));
+printScenario(baseline, variants, env);
