@@ -2,12 +2,12 @@
 
 > ⚠ **Auto-continuation loop active** (as of 2026-04-14; cadence stretched to **12h** on 2026-04-15 evening — was 2h, now fires at midnight + noon local to reduce churn and let each session do deeper work). Windows Task Scheduler task `TI84-AutoContinuation` fires a headless Opus session **every 12 hours** that reads this file, dispatches Codex/Sonnet work, commits+pushes to master, and updates this file. **Before editing this file in a human session**, check `git log --oneline` for recent `auto-session N` commits and consider `schtasks /change /tn "TI84-AutoContinuation" /disable` to prevent merge conflicts during long interactive edits. Re-enable with `/enable`. Launcher: `scripts/auto-continuation.bat` + `.auto-continuation-prompt.md`. Logs: `logs/auto-session-*.log` (gitignored).
 
-**Last updated**: 2026-04-16 (auto-session 55) — **Phase 158+/191 DONE**: Seed 0x006138 added (already reachable, 0 new blocks, seedCount 21374→21375). ROM.transpiled.js.gz regenerated + committed. Golden regression still 26/26 exact, 3/3 PASS, 968 fg pixels. **Phase 189b INVESTIGATED**: Status dots DO write pixels — 36 fg pixels in VRAM rows 0-14 across all experiments (0x0000 black + 0xffe0 yellow). Post-boot RAM already has correct values (bit6 clear, color flag set, fg=black, bg=white). The golden regression's 0-pixel count is a counting discrepancy, not a rendering failure. **Phase 192 INVESTIGATED**: Stage 1 (0x0A2B72) is SENTINEL RETURN after 25 steps — same pattern as Stage 2. All 25 blocks lifted, no missing blocks needed. 0 VRAM pixels in rows 0-14 (status bar background likely targets a different VRAM region or writes white-on-white).
+**Last updated**: 2026-04-18 (auto-session 56) — **Phase 189c DONE**: Status dots golden regression fixed. Root cause: `mem.fill(0xFF, cpu.sp, 3)` bug in `coldBoot` — third arg is `end` not `length`, so the fill was a no-op. Fixed to `mem.fill(0xFF, cpu.sp, cpu.sp + 3)`. This caused POST_INIT to produce wrong HL (0x15AD9 vs 0), which propagated via CPU snapshot to Stage 2, making it paint white-on-white. Golden regression now **fully passes**: status dots PASS (36 fg pixels, before=0 after=36), text 26/26 exact, Normal/Float/Radian 3/3 PASS, **fg=1004** (was 968). **Phase 193 DONE**: Stage 1 (0x0A2B72) writes 0 VRAM pixels — only modifies curRow→0xFF, curCol→0x19, and 13 stack/IX-area bytes at 0xD1A857-0xD1A870. The `ld (de), a` at 0x0A20CC targets non-VRAM RAM.
 
 **User's active focus (set 2026-04-15, updated 2026-04-16)**:
 1. **~~Get the calc emulator hooked up end-to-end~~** — DONE. Native text rendering verified in probe (26/26 exact, 968 fg pixels). `paintGlyphs()` overlay removed. Browser-shell IX convention fixed. .gz regenerated (session 55). Next: deploy to GitHub Pages and verify browser rendering.
 2. **Start and finish all ROM traces** — push coverage past the 16.6% plateau. Static seeding exhausted (0 new blocks from 0x006138). CEmu PC-trace seed generator is the queued approach.
-3. **Status dots rendering** — Phase 189b proved dots WRITE pixels (36 fg in rows 0-14). Golden regression's assertion needs fixing to detect them.
+3. **~~Status dots rendering~~** — DONE (session 56). Golden regression fully passes: status dots PASS (36 fg pixels), fg=1004. Root cause was `mem.fill` argument bug in `coldBoot`.
 
 ---
 
@@ -29,7 +29,7 @@
 - OTIMR eZ80 instruction: loops B→0 with C++ each iteration (Phase 30)
 - `ROM.transpiled.js`: gitignored (175MB). **`.gz` committed** (~15MB). Regenerate with `node scripts/transpile-ti84-rom.mjs` (~2s after Phase 27 walker fix).
 
-**Golden regression** (run `node TI-84_Plus_CE/probe-phase99d-home-verify.mjs`): 26/26 exact at row 39 col 2, "Normal Float Radian" 3/3 PASS, status dots FAIL (RAM state issue — all 107 blocks are lifted, RET to sentinel). Stage 3 runs 17,848 steps to natural completion. ROM renderer produces 968 native fg pixels. `paintGlyphs()` overlay REMOVED in session 54 — native rendering confirmed sufficient.
+**Golden regression** (run `node TI-84_Plus_CE/probe-phase99d-home-verify.mjs`): 26/26 exact at row 39 col 2, "Normal Float Radian" 3/3 PASS, **status dots PASS** (36 fg pixels, before=0 after=36 final=36). Stage 1 runs 28 steps, Stage 2 runs 107 steps, Stage 3 runs 17,848 steps to natural completion. ROM renderer produces **1004 native fg pixels** (968 text + 36 status dots). `paintGlyphs()` overlay REMOVED in session 54 — native rendering confirmed sufficient. Session 56 fix: `mem.fill` argument bug in `coldBoot` (end vs length).
 
 **Per-stage IX convention**: all 4 home-screen stages (0x0a2b72 bg, 0x0a29ec mode row, 0x0a2854 history, entry line) need `IX = 0xD1A860` before entry. Stage 3 exit IX = `0xe00800`, others = `0x0159bd`. Using `IX = SP` crashes stages 1/4 at 0x58c35b (Phase 183 correction of Phase 182).
 
@@ -47,27 +47,24 @@
 
 **Session 55 update**: Seed 0x006138 added to transpiler (seedCount 21374→21375), but it was already reachable — 0 new blocks. .gz regenerated and committed. Static seeding is exhausted for the currently known addresses.
 
-### ★★ INVESTIGATED: Phase 189b — Status dots RAM configuration experiments
+### ★★ DONE: Phase 189b/189c — Status dots rendering fully resolved
 
-**Status**: INVESTIGATED in auto-session 55 (2026-04-16). Probe `probe-phase189b-status-dots-ram.mjs` ran 4 RAM configuration experiments for the status dots renderer at 0x0A3301.
+**Status**: DONE in auto-session 56 (2026-04-18). The golden regression now fully passes with status dots PASS (36 fg pixels).
 
-**Key finding**: Status dots DO write pixels to VRAM. All experiments produce non-zero foreground pixels:
-- Experiment A (default): 36 pixels, values 0x0000 (black) + 0xffe0 (yellow)
-- Experiment B (battery icon): 36 pixels, values 0x0000
-- Experiment C (mode dots): 24 pixels, values 0x00aa, 0x0000, 0xaa00
-- Experiment D (aggressive): 36 pixels, values 0x0000
+**Root cause**: `mem.fill(0xFF, cpu.sp, 3)` bug in `coldBoot` at lines 95 and 105 of `probe-phase99d-home-verify.mjs`. `TypedArray.fill(value, start, end)` interprets 3 as `end`, not `length`. Since `cpu.sp` (~0xD1A87B) > 3, the fill was a no-op. This left the stack uninitialized for POST_INIT, which produced HL=0x15AD9 instead of 0. Stage 2 read H=0x5A via `ld a, h` and painted white-on-white instead of colored pixels.
 
-**Post-boot RAM already has correct values**: bit6 of 0xD0009B = 0 (clear), 0xD000C6 = 0x00 (battery mode), bit4 of 0xD000CA = 1 (color flag set), fg = 0x0000 (black), bg = 0xFFFF (white), 0xD02ACC = 0x00.
+**Fix**: `mem.fill(0xFF, cpu.sp, cpu.sp + 3)` on both lines. Also added defensive `mem[0xd0009b] &= ~0x40` before Stage 2.
 
-**Why golden regression shows 0**: The golden regression probe counts status dot pixels differently — likely a region mismatch or sentinel handling issue. The status dots renderer IS producing visible pixels, but the golden regression's status-dot assertion scans a specific sub-region that doesn't overlap with the actual writes. **Next step**: reconcile the two counting methods.
+**Pixel map** (probe `probe-phase189c-dots-pixel-map.mjs`): 36 fg pixels at rows 6-13, cols 293-301. Values: 0x0000 (black, outline) + 0xffe0 (yellow, fill). Forms a battery icon pattern.
 
-### ★★ INVESTIGATED: Phase 192 — Stage 1 status bar trace
+### ★★ DONE: Phase 192/193 — Stage 1 VRAM write target
 
-**Status**: INVESTIGATED in auto-session 55 (2026-04-16). Probe `probe-phase192-stage1-trace.mjs` traces Stage 1 (0x0A2B72) step by step.
+**Status**: DONE in auto-session 56 (2026-04-18). Probe `probe-phase193-stage1-de-target.mjs` confirmed via RAM diff.
 
-**Verdict: SENTINEL RETURN** — Stage 1 completes normally in 25 steps by returning into the 0xFFFFFF stack sentinel. Same pattern as Stage 2 (Phase 189). All 25 blocks are fully lifted in ROM. No missing blocks needed, no seed candidates.
-
-**VRAM result**: 0 non-sentinel pixels in rows 0-14. Stage 1 calls 0x0A2A68 (color/style selector), navigates a table lookup chain (0x09FB7D-0x09FD1B), then calls 0x0A20CC which does `ld (de), a`. The write target may be outside VRAM rows 0-14 or writes white-on-white.
+**Verdict**: Stage 1 (0x0A2B72) writes **0 VRAM pixels** anywhere in 0xD40000-0xD50000. It only modifies 21 bytes of non-VRAM RAM:
+- 0xD00595 (curRow) → 0xFF, 0xD00596 (curCol) → 0x19
+- 0xD1A857-0xD1A870 (stack/IX area): 13 bytes of call/return frame data
+The `ld (de), a` at 0x0A20CC writes to non-VRAM RAM metadata, not visible VRAM. Stage 1 is a configuration/state stage, not a renderer.
 
 ### ★ DONE: Phase 191 — .gz regeneration
 
@@ -75,10 +72,10 @@
 
 ### Next-session priorities
 
-1. **Phase 189c — Reconcile status dots pixel counting**: Phase 189b proved status dots WRITE 36 fg pixels (0x0000 black + 0xffe0 yellow) to VRAM rows 0-14, but the golden regression shows 0. Read the golden regression's `assert status dots` logic to find the counting discrepancy — it likely scans specific columns/rows that don't overlap with the actual writes. Fix the assertion to detect the real pixels. If the fix works, update the golden regression baseline.
-2. **Phase 193 — Stage 1 VRAM write target investigation**: Stage 1 ran 25 steps but wrote 0 VRAM pixels in rows 0-14. The call to 0x0A20CC does `ld (de), a` — investigate whether DE points to VRAM or another RAM region. If VRAM, determine which rows/cols are written and whether it's white-on-white (invisible).
-3. **Phase 158+ — CEmu PC-trace seed generator**: Static seeding is exhausted (0x006138 was already reachable, 0 new blocks). Begin the CEmu PC-trace approach per `.phase158-spec.md` to break the 16.6% plateau.
-4. **Phase 191b — Browser-shell browser verification**: The .gz is regenerated with IX fix + native rendering. Deploy to GitHub Pages and manually verify browser-shell shows native "Normal Float Radian" text. (This requires browser testing — cannot be fully automated in a probe.)
+1. **Phase 158+ — CEmu PC-trace seed generator**: Static seeding is exhausted (0x006138 was already reachable, 0 new blocks). Create `.phase158-spec.md` and begin the CEmu PC-trace approach to break the 16.6% plateau. This is the only path to coverage expansion.
+2. **Phase 191b — Browser-shell browser verification**: The .gz is regenerated with IX fix + native rendering + status dots fix. Deploy to GitHub Pages and manually verify browser-shell shows native "Normal Float Radian" text + battery icon. (Requires browser testing — cannot be fully automated in a probe.)
+3. **Phase 194 — Check `mem.fill` bug in other probes**: The `mem.fill(value, start, 3)` bug (end vs length) was found in `probe-phase99d-home-verify.mjs`. Grep all probes for `mem.fill.*,\s*3\)` to check if any other probes have the same bug. Fix any found.
+4. **Phase 195 — Status bar Stage 1 deeper investigation**: Stage 1 writes curRow=0xFF — this is suspicious (255 is out-of-bounds for both pixel rows 0-239 and text rows 0-9). Investigate whether Stage 1 is supposed to clear/reset the status bar background but fails because it writes to metadata rather than VRAM. This may indicate missing ROM blocks that would do the actual VRAM fill.
 
 ---
 

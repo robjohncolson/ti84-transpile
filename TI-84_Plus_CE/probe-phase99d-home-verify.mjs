@@ -92,7 +92,7 @@ function coldBoot(executor, cpu, mem) {
   cpu.iff1 = 0;
   cpu.iff2 = 0;
   cpu.sp = STACK_RESET_TOP - 3;
-  mem.fill(0xFF, cpu.sp, 3);
+  mem.fill(0xFF, cpu.sp, cpu.sp + 3);
 
   executor.runFrom(KERNEL_INIT_ENTRY, 'adl', { maxSteps: 100000, maxLoopIterations: 10000 });
   cpu.mbase = 0xD0;
@@ -102,7 +102,7 @@ function coldBoot(executor, cpu, mem) {
   cpu.iff1 = 0;
   cpu.iff2 = 0;
   cpu.sp = STACK_RESET_TOP - 3;
-  mem.fill(0xFF, cpu.sp, 3);
+  mem.fill(0xFF, cpu.sp, cpu.sp + 3);
 
   executor.runFrom(POST_INIT_ENTRY, 'adl', { maxSteps: 100, maxLoopIterations: 32 });
 
@@ -560,6 +560,7 @@ async function main() {
   stages.push(runStage(executor, 'stage 1 status bar background', STAGE_1_ENTRY, 30000));
 
   restoreCpu(cpu, cpuSnap, mem);
+  mem[0xd0009b] &= ~0x40;
   // Phase 150: Status dots shifted to rows 6-13.  Left cluster is now at
   // cols 293-301 (battery icon area); a second cluster may not appear with
   // the new init state, so we test a single wider region.
