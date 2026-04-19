@@ -11,3 +11,12 @@
 0x05AC04
 0x09D22C
 0x009006
+# Phase 204 - targeted coverage cleanup from true-uncovered audit
+# Missing documented seed plus the six largest currently unseeded CODE? holes.
+0x035D3B
+0x0B16AB
+0x0AF099
+0x060915
+0x03E103
+0x071CE0
+0x08DDBF

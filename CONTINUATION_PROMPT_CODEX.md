@@ -2,7 +2,7 @@
 
 > ⚠ **Auto-continuation loop active** (as of 2026-04-14; cadence stretched to **12h** on 2026-04-15 evening — was 2h, now fires at midnight + noon local to reduce churn and let each session do deeper work). Windows Task Scheduler task `TI84-AutoContinuation` fires a headless Opus session **every 12 hours** that reads this file, dispatches Codex/Sonnet work, commits+pushes to master, and updates this file. **Before editing this file in a human session**, check `git log --oneline` for recent `auto-session N` commits and consider `schtasks /change /tn "TI84-AutoContinuation" /disable` to prevent merge conflicts during long interactive edits. Re-enable with `/enable`. Launcher: `scripts/auto-continuation.bat` + `.auto-continuation-prompt.md`. Logs: `logs/auto-session-*.log` (gitignored).
 
-**Last updated**: 2026-04-18 (interactive session, Phase 200 + true-coverage reframing).
+**Last updated**: 2026-04-18 (interactive session, Phases 201 + 204; 202/203 deferred due to Codex timeouts).
 
 **★ COVERAGE DENOMINATOR REFRAMING (THE BIG FINDING)**: The "16.65% plateau" is a reported-coverage artifact, not a reachability problem. ROM is 4 MB but **82.6% of it (3,464,815 bytes) is erased flash (0xFF fill)** — fundamentally uncoverable (no code, no data, just unused sectors). The genuine executable+data ROM is **729,489 non-erased bytes**. Current transpiler covers **699,583 of those → 95.90% true coverage**. Only **~29,906 non-erased bytes remain uncovered**, and classifier-audit of those gaps (`TI-84_Plus_CE/audit-true-uncovered.mjs`) shows:
 
@@ -28,8 +28,8 @@ So only ~14 KB of remaining uncovered bytes is plausibly executable code — sca
 
 ## Current ROM Transpiler State
 
-- Coverage: **16.6794%** reported (143,526 blocks, 699,583 bytes) = **95.90% true coverage** of non-erased ROM (729,489 bytes). 82.6% of ROM is erased flash (0xFF fill) — uncoverable. See `audit-true-uncovered.mjs`.
-- Seed count: **49,965** (49,955 pre-Phase-200 + 10 Phase 200)
+- Coverage: **16.6821%** reported (143,547 blocks, 699,697 bytes) = **95.9160% true coverage** of non-erased ROM (729,489 bytes). 82.6% of ROM is erased flash (0xFF fill) — uncoverable. See `audit-true-uncovered.mjs`.
+- Seed count: **49,972** (49,965 pre-Phase-204 + 7 Phase 204)
 - Live stubs: **0**
 - OS jump table: **980/980** (100%)
 - ISR dispatch gate: **UNLOCKED** (0x000710 reachable)
@@ -109,19 +109,44 @@ The `ld (de), a` at 0x0A20CC writes to non-VRAM RAM metadata, not visible VRAM. 
 
 **Verdict**: Stage 1 is a cursor/configuration step. The 0xFF is consistent with an off-screen cursor position after decrement-past-zero, not with a missing VRAM fill. No missing ROM blocks are indicated.
 
-### Next-session priorities — Phase 201+ (post-reframing)
+### ★ DONE: Phase 201 — Browser-shell deploy preflight
+
+**Status**: DONE 2026-04-18 (interactive). Report at `TI-84_Plus_CE/phase201-deploy-preflight.md`.
+
+**Findings**: `ROM.transpiled.js.gz` tracked at 17.09 MB (decimal) / 16.30 MiB — the continuation-prompt's "15 MB" claim was stale; "17 MB" is current. `gh-pages` branch does NOT exist locally or remotely — GitHub Pages is not yet set up. `probe-golden-regression.mjs` path is stale (`MODULE_NOT_FOUND`); the maintained probe is `probe-phase99d-home-verify.mjs` (26/26 exact, 3/3 PASS, fg=1004). Browser-shell's fallback path to uncompressed `ROM.transpiled.js` references an untracked file.
+
+**Blocker for actual deploy**: no `gh-pages` branch. Next session should create it + publish or pick a different hosting path (e.g., `docs/` branch directory on master).
+
+### ★ DONE: Phase 204 — Targeted coverage cleanup
+
+**Status**: DONE 2026-04-18. Report at `TI-84_Plus_CE/phase204-coverage-cleanup-report.md`.
+
+**Seeds added** to `phase200-seeds.txt`: `0x035D3B` (documented) + `0x0B16AB`, `0x0AF099`, `0x060915`, `0x03E103`, `0x071CE0`, `0x08DDBF` (live top-gap CODE? ranges). `0x083B98`, `0x05AC04`, `0x09D22C` were already present.
+
+**Metrics**: blocks 143,526 → **143,547** (+21). Covered bytes 699,583 → **699,697** (+114). Reported coverage 16.6794% → **16.6821%** (+0.0027 pp). True coverage 95.9004% → **95.9160%** (+0.0156 pp). .gz regenerated with `gzip -9`. Golden regression PASS (26/26, 3/3, fg=1004).
+
+**Honest read**: Per-seed ratio is much worse than Phase 200 (was +1,175 bytes / 10 seeds; this is +114 bytes / 7 seeds). Confirms the reframing's "low ROI" verdict — remaining gaps are mostly dead code or rare error handlers.
+
+### DEFERRED: Phases 202 / 203
+
+Both Codex agents timed out at the 15-minute limit with no deliverables written (partial work in `state/cross-agent/*.result.json`, no md reports generated).
+
+- **Phase 202 (graph renderer entry-point discovery)**: prompt was too broad — needs to be split into (a) "find GRAPH scan code + first OS handler" and (b) "trace graph render pipeline from handler" as separate ≤10-minute tasks.
+- **Phase 203 (FPU op expansion)**: blocked by needing ROM entry points for Cos/Tan/Log/Ln/Exp/Pow/Sqrt that aren't cleanly documented in-repo. Prereq: investigation task to extract TI-OS jump-table slot numbers for those BCALLs (likely findable from TI SDK docs at `0x0000` jump-table base).
+
+### Next-session priorities — Phase 205+
 
 Phase 200's classifier audit settled the strategy fork. The "decoder/CF completeness" theory (that big contiguous unreached *code* regions existed) is **disproven**: 82.6% of ROM is erased flash, and the genuine uncovered is only ~30 KB, of which ~14 KB is plausibly code scattered across ~3,400 tiny ranges. **Pivot to feature work.**
 
-Recommended Phase 201+ priorities (in order):
+Recommended Phase 205+ priorities (in order):
 
-1. **★★★ Browser-shell feature expansion**: GitHub Pages deploy + visually verify native text + battery icon in browser (never shipped despite being ready since session 54). Add more reachable apps via the existing button panel. Catalog error-banner permutations (48 exist via 0xD008DF / 0xD00824). Priority target: get a demonstrable "this looks like a real TI-84" in browser before chasing more coverage.
+1. **★★★ Browser-shell deploy** (Phase 201 prerequisite was preflight; now execute): create `gh-pages` branch OR use `docs/` path on master. Regenerate .gz if seeds changed. Push and visually verify native text + battery icon in browser. See `phase201-deploy-preflight.md` for full blocker list.
 
-2. **★★ Graph renderer integration**: The graph renderer is the highest-value uncovered feature (math visualization). Trace `Y= → X,T,θ,n → graph` path in CEmu, identify handler entry points, probe each in isolation. Different class of work from keyboard/text.
+2. **★★ Phase 202-redo (split)**: (a) narrow task — identify GRAPH scan code + first OS handler from CEmu `*-trace.log` matching Phase 199's GRAPH scenario. Output a single address and the block before/after GRAPH press. (b) separate follow-up — trace graph-render pipeline from that entry point. Keep each task under 10 minutes of Codex wall-time.
 
-3. **★★ FPU op test surface**: `ti84-math.mjs` covers FPAdd, FPMult, FPDiv, Sin. Add Cos, Tan, Log, Ln, Exp, Pow, Sqrt. These are mostly reachable and the harness pattern is established.
+3. **★★ Phase 203-redo (split)**: (a) investigation — extract TI-OS jump-table slot numbers for Cos/Tan/Log/Ln/Exp/Pow/Sqrt from TI SDK docs or existing phase reports. Output: table of (op, slot, ROM addr via JT base 0x0000). (b) implementation — add test cases to `ti84-math.mjs` for each op we have addresses for.
 
-4. **★ Coverage cleanup (low ROI, skip unless bored)**: If future work *does* want to push true coverage past 96%, target the remaining ~14 KB of CODE? gaps listed by `audit-true-uncovered.mjs` — largest are at 0x083b98, 0x035d3b, 0x05ac04, 0x09d22c. Each is a <250-byte hole in an already-95%+ region, so most are rare error handlers or dead-code branches. Expect <0.5 pp true-coverage gain for the full batch.
+4. **★ Coverage cleanup continues (low ROI)**: Phase 204 got +0.0156 pp true coverage. The next 10 CODE? gaps (ranks 8-17 from the audit) would likely yield <0.01 pp each. Skip unless genuinely bored.
 
 **Do NOT** keep chasing reported-coverage % in `ROM.transpiled.report.json`. The 4 MB denominator is dominated by erased flash. Report `audit-true-uncovered.mjs` numbers instead.
 
