@@ -2,7 +2,7 @@
 
 > ⚠ **Auto-continuation loop active** — Windows Task Scheduler `TI84-AutoContinuation` fires a headless Opus session every 12h (midnight + noon local). Before editing this file in a human session, check `git log --oneline` for recent `auto-session N` commits and consider `schtasks /change /tn "TI84-AutoContinuation" /disable` to prevent conflicts. Re-enable with `/enable`. Launcher: `scripts/auto-continuation.bat`. Logs: `logs/auto-session-*.log` (gitignored).
 
-**Last updated**: 2026-04-18 (Phases 201 + 204 committed; 202a + 203a investigations filed; 205 gh-pages push in flight).
+**Last updated**: 2026-04-19 (Phase 205 live at https://robjohncolson.github.io/apstats-live-worksheet/browser-shell.html; 202a + 203a investigations filed).
 
 ---
 
@@ -39,11 +39,8 @@ Only ~13 KB is plausibly executable code, scattered across ~3,400 tiny ranges (t
 
 ## Next-Session Priorities
 
-### 1. ★★★ Browser-shell deploy (Phase 205) — IN FLIGHT
-`git subtree push --prefix TI-84_Plus_CE origin gh-pages` running. After it lands:
-- Enable Pages in GitHub settings → serve `gh-pages` branch root (via `gh api` or web UI).
-- Visually verify `https://robjohncolson.github.io/apstats-live-worksheet/browser-shell.html` boots and shows "Normal Float Radian" + battery icon.
-- Regenerate `.gz` before re-pushing if seeds change: `( cd TI-84_Plus_CE && gzip -kf -9 ROM.transpiled.js )` then subtree push again.
+### 1. ★ Browser-shell visual verification (Phase 205 landed)
+Deploy live at https://robjohncolson.github.io/apstats-live-worksheet/browser-shell.html (HTML 200, `.gz` 200). See `TI-84_Plus_CE/phase205-report.md`. Still TODO: visually confirm boot → "Normal Float Radian" + battery icon in a browser. Re-deploy recipe if seeds change: `gzip -kf -9 TI-84_Plus_CE/ROM.transpiled.js` → commit master → `git subtree split --prefix=TI-84_Plus_CE -b gh-pages` → `git -c http.version=HTTP/1.1 push -f origin gh-pages` (HTTP/1.1 required on this host for large pushes — SEC_E_MESSAGE_ALTERED otherwise).
 
 ### 2. ★★ Graph renderer investigation (Phase 202b)
 Phase 202a complete → `TI-84_Plus_CE/phase202a-graph-entry.md`. Key findings:
