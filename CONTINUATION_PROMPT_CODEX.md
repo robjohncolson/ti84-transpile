@@ -2,7 +2,7 @@
 
 > ⚠ **Auto-continuation loop active** — Windows Task Scheduler `TI84-AutoContinuation` fires a headless Opus session every 12h (midnight + noon local). Before editing this file in a human session, check `git log --oneline` for recent `auto-session N` commits and consider `schtasks /change /tn "TI84-AutoContinuation" /disable` to prevent conflicts. Re-enable with `/enable`. Launcher: `scripts/auto-continuation.bat`. Logs: `logs/auto-session-*.log` (gitignored).
 
-**Last updated**: 2026-04-19 (auto-session 58: Phase 203b FPU expansion 11/11 PASS + Phase 202b graph trace probe 154K VRAM writes mapped).
+**Last updated**: 2026-04-19 (auto-session 59: Phase 202c upbase trace + routine map + Phase 205 URL fix).
 
 ---
 
@@ -39,28 +39,22 @@ Only ~13 KB is plausibly executable code, scattered across ~3,400 tiny ranges (t
 
 ## Next-Session Priorities
 
-### 1. ★ Browser-shell visual verification (Phase 205 landed)
-Deploy live at https://robjohncolson.github.io/apstats-live-worksheet/browser-shell.html (HTML 200, `.gz` 200). See `TI-84_Plus_CE/phase205-report.md`. Still TODO: visually confirm boot → "Normal Float Radian" + battery icon in a browser. Re-deploy recipe if seeds change: `gzip -kf -9 TI-84_Plus_CE/ROM.transpiled.js` → commit master → `git subtree split --prefix=TI-84_Plus_CE -b gh-pages` → `git -c http.version=HTTP/1.1 push -f origin gh-pages` (HTTP/1.1 required on this host for large pushes — SEC_E_MESSAGE_ALTERED otherwise).
+### 1. ★★ ISR upbase trace (Phase 202c-c)
+Phase 202c-a confirmed: **zero upbase writes to `0xE00010`** during event loop — OS halts at `0x0019B5` waiting for interrupt. All 6 LCD MMIO writes were keyboard controller (`0xE008xx`) from PC `0x00069A`. **The display flip must happen in the ISR/timer interrupt handler.** Next: run probe with `timerInterrupt: true` (or manually invoke ISR entry) and trace where upbase gets written. See `TI-84_Plus_CE/phase202c-upbase-report.md`.
 
-### 2. ★★ Graph renderer deep trace (Phase 202c)
-Phase 202b complete → `TI-84_Plus_CE/phase202b-graph-trace-report.md`. Key findings from probe:
-- 19,434 steps executed from `0x08C543`, 646 unique PCs, 154,440 VRAM writes detected.
-- Status bar updater at `0x0A349A` clears status-bar VRAM, then execution continues into deep rendering routines.
-- Known VRAM pixel writers (`0x0A1939`, `0x0A19D7`) hit 65 times; VRAM fill primitive (`0x005B96`) hit once at step 2590.
-- Extensive graph-setup routines visited in `0x04xxxx` range (especially `0x048xxx` dispatch tables and `0x041xxx` init).
-- **No LCD MMIO access** (no `upbase` swap at `0xE00010`) — rendering writes VRAM but doesn't flip the display.
-- Terminates at `0x0019B5` (halt in ISR path), not at sentinel.
+### 2. ★ Graph renderer categorization follow-up (Phase 202c-d)
+Phase 202c-b mapped 135 routines from the 202b trace. Key findings:
+- 31 routines are graph-specific (18 graph-state, 11 graph-flags, 1 renderer, 1 graph-setup).
+- 13 LCD port I/O routines cluster at `0x040Fxx`, `0x041Axx`, `0x048Dxx`.
+- **`0x005D00-0x005F88` is NOT a dispatch table** — it's inline LCD init code: `ld a, N; call 0x0060F7/0x0060FA` pairs.
+- **`D177B7`** is a graph mode toggle (0x55 vs 0xAA two-state machine).
+- **`0x04CA7B`** is the canonical graph entry trampoline: `ld iy, 0xD00080; jp 0x040D11`.
+- **`0x048Bxx-0x048Cxx`** is contiguous graph init: sets up buffers at D176A8/D1776A/D17837/D1785B.
+See `TI-84_Plus_CE/phase202c-routine-map-report.md`.
+**Next**: decode the 79 "unknown" routines with deeper heuristics, and trace `0x0060F7`/`0x0060FA` to understand the LCD register init protocol.
 
-**Next (202c)**: Investigate why no upbase swap occurs — likely needs the ISR/NMI path that handles LCD refresh. Also identify which 0x04xxxx routines are the actual graph-specific renderers (vs. generic OS setup). The `0x005Dxx-0x005Fxx` range appears to be a large dispatch table walked repeatedly — may be window/viewport initialization.
-
-### 3. ✅ FPU op expansion (Phase 203b DONE)
-All 4 new FPU ops added to `ti84-math.mjs` and verified:
-- **LnX** (`0x07E053`): ln(e)=1 PASS, ln(1)=0 PASS
-- **LogX** (`0x07E071`): log10(100)=2 PASS, log10(1000)=3 PASS
-- **EToX** (`0x07E20D`): e^0=1 PASS, e^1=2.718... PASS
-- **YToX** (`0x0AFD41`): 2^3=8 PASS, 10^2=100 PASS
-- Convention confirmed: OP1=base, OP2=exponent (opposite of initial assumption from 203a).
-- All existing tests still pass (11/11 smoke, 7/7 codec). Golden regression 26/26 PASS.
+### 3. ✅ Browser-shell deployment verified (Phase 205)
+GH Pages source is `master:/` (not `gh-pages` branch). Correct URL: `https://robjohncolson.github.io/apstats-live-worksheet/TI-84_Plus_CE/browser-shell.html`. Both HTML and `.gz` return HTTP 200. The previously noted URL (`/browser-shell.html` at root) was wrong.
 
 ### 4. ★ Coverage cleanup (low ROI, skip unless bored)
 Phase 204 added 7 seeds for +0.0156 pp true coverage. Next 10 CODE? gaps (ranks 8–17 from `audit-true-uncovered.mjs`) would yield <0.01 pp each. **Stop chasing reported %**; report `audit-true-uncovered.mjs` numbers.

@@ -1,0 +1,385 @@
+# Phase 202c: Routine Map for 0x04xxxx Graph-Trace PCs
+
+Generated: 2026-04-19T16:12:55.577Z
+
+## Summary
+
+Total routines analyzed: 135
+
+| Classification | Count |
+|----------------|-------|
+| unknown | 79 |
+| graph-state | 18 |
+| lcd-port-io | 13 |
+| dispatch | 12 |
+| graph-flags | 11 |
+| graph-setup | 1 |
+| renderer | 1 |
+
+## Routine Analysis
+
+| PC | Hex Bytes | Decoded | Classification |
+|-----|-----------|---------|----------------|
+| 0x040d11 | `21 49 00 00 fd cb 42 46 28 04 21 f1` | ld hl, 0x000049; db 0xfd; db 0xcb; db 0x42; db 0x46; db 0x28; db 0x04; db 0x21; pop af | **unknown** |
+| 0x040d1f | `fd cb 41 4e 28 04 21 e1 01 00 f5 ed` | db 0xfd; db 0xcb; db 0x41; db 0x4e; db 0x28; db 0x04; ld hl, 0x0001e1; push af; db 0xed | **unknown** |
+| 0x040d29 | `f5 ed 57 f5 f3 22 91 05 d0 3e 00 32` | push af; db 0xed; db 0x57; push af; db 0xf3; db 0x22; db 0x91; db 0x05; db 0xd0; db 0x3e; db 0x00; db 0x32 | **unknown** |
+| 0x040d3d | `fb f1 c9 fb 76 e5 2a f3 31 d0 23 22` | db 0xfb; pop af; ret; db 0xfb; db 0x76; push hl; db 0x2a; db 0xf3; ld sp, 0x2223d0 | **unknown** |
+| 0x040fad | `cd 30 01 00 01 10 30 00 ed 78 cb cf` | call 0x000130; ld bc, 0x003010; db 0xed; db 0x78; db 0xcb; db 0xcf | **lcd-port-io** |
+| 0x040fb1 | `01 10 30 00 ed 78 cb cf ed 79 78 fe` | ld bc, 0x003010; db 0xed; db 0x78; db 0xcb; db 0xcf; db 0xed; db 0x79; db 0x78; db 0xfe | **lcd-port-io** |
+| 0x040fc1 | `79 fe 10 20 fa dd 27 06 cd 38 01 00` | db 0x79; db 0xfe; db 0x10; db 0x20; jp m, 0x0627dd; call 0x000138 | **unknown** |
+| 0x040fc6 | `dd 27 06 cd 38 01 00 28 2a dd 07 06` | db 0xdd; db 0x27; db 0x06; call 0x000138; db 0x28; db 0x2a; db 0xdd; db 0x07; db 0x06 | **unknown** |
+| 0x040fcd | `28 2a dd 07 06 c5 cd fc 04 00 c1 40` | db 0x28; db 0x2a; db 0xdd; db 0x07; db 0x06; push bc; call 0x0004fc; pop bc; db 0x40 | **unknown** |
+| 0x040ff9 | `3e 01 dd f9 dd e1 c9 cd 30 01 00 dd` | db 0x3e; ld bc, 0xddf9dd; pop hl; ret; call 0x000130; db 0xdd | **unknown** |
+| 0x0419f1 | `21 fd ff ff cd 2c 01 00 40 01 15 30` | ld hl, 0xfffffd; call 0x00012c; db 0x40; db 0x01; db 0x15; db 0x30 | **unknown** |
+| 0x0419f9 | `40 01 15 30 ed 78 b7 ed 62 6f 3e 08` | db 0x40; ld bc, 0xed3015; db 0x78; db 0xb7; db 0xed; db 0x62; db 0x6f; db 0x3e; db 0x08 | **unknown** |
+| 0x041a09 | `40 01 14 30 ed 78 e5 d1 b7 ed 62 6f` | db 0x40; ld bc, 0xed3014; db 0x78; push hl; pop de; db 0xb7; db 0xed; db 0x62; db 0x6f | **unknown** |
+| 0x041a1d | `dd 2f fd dd 07 fd c5 cd 64 b6 04 c1` | db 0xdd; db 0x2f; db 0xfd; db 0xdd; db 0x07; db 0xfd; push bc; call 0x04b664; pop bc | **unknown** |
+| 0x041a28 | `c1 af 32 82 40 d1 af 32 84 40 d1 af` | pop bc; db 0xaf; ld (0xd14082), a; db 0xaf; ld (0xd14084), a; db 0xaf | **graph-flags** |
+| 0x041a48 | `79 fe 81 20 fa 01 81 30 00 ed 78 cb` | db 0x79; db 0xfe; db 0x81; db 0x20; jp m, 0x308101; db 0x00; db 0xed; db 0x78; db 0xcb | **unknown** |
+| 0x041a4d | `01 81 30 00 ed 78 cb d7 ed 79 78 fe` | ld bc, 0x003081; db 0xed; db 0x78; db 0xcb; db 0xd7; db 0xed; db 0x79; db 0x78; db 0xfe | **lcd-port-io** |
+| 0x041a5d | `79 fe 81 20 fa 01 81 30 00 ed 78 cb` | db 0x79; db 0xfe; db 0x81; db 0x20; jp m, 0x308101; db 0x00; db 0xed; db 0x78; db 0xcb | **unknown** |
+| 0x041a62 | `01 81 30 00 ed 78 cb cf ed 79 78 fe` | ld bc, 0x003081; db 0xed; db 0x78; db 0xcb; db 0xcf; db 0xed; db 0x79; db 0x78; db 0xfe | **lcd-port-io** |
+| 0x041a72 | `79 fe 81 20 fa 40 01 82 30 ed 78 e6` | db 0x79; db 0xfe; db 0x81; db 0x20; jp m, 0x820140; db 0x30; db 0xed; db 0x78; db 0xe6 | **unknown** |
+| 0x041a77 | `40 01 82 30 ed 78 e6 20 b7 ed 62 6f` | db 0x40; ld bc, 0xed3082; db 0x78; db 0xe6; db 0x20; db 0xb7; db 0xed; db 0x62; db 0x6f | **unknown** |
+| 0x041a8d | `28 7e 3e 01 32 73 40 d1 3e 0f 32 42` | db 0x28; db 0x7e; db 0x3e; ld bc, 0x407332; pop de; db 0x3e; db 0x0f; db 0x32; db 0x42 | **graph-flags** |
+| 0x041a8f | `3e 01 32 73 40 d1 3e 0f 32 42 40 d1` | db 0x3e; ld bc, 0x407332; pop de; db 0x3e; db 0x0f; ld (0xd14042), a | **graph-flags** |
+| 0x041ab1 | `79 fe 3c 20 fa 01 3c 31 00 ed 78 cb` | db 0x79; db 0xfe; db 0x3c; db 0x20; jp m, 0x313c01; db 0x00; db 0xed; db 0x78; db 0xcb | **unknown** |
+| 0x041ab6 | `01 3c 31 00 ed 78 cb d7 ed 79 78 fe` | ld bc, 0x00313c; db 0xed; db 0x78; db 0xcb; db 0xd7; db 0xed; db 0x79; db 0x78; db 0xfe | **lcd-port-io** |
+| 0x041ac6 | `79 fe 3c 20 fa 01 40 41 00 c5 cd 6e` | db 0x79; db 0xfe; db 0x3c; db 0x20; jp m, 0x414001; db 0x00; push bc; db 0xcd; db 0x6e | **unknown** |
+| 0x041acb | `01 40 41 00 c5 cd 6e 20 05 c1 b7 28` | ld bc, 0x004140; push bc; call 0x05206e; pop bc; db 0xb7; db 0x28 | **unknown** |
+| 0x041ad4 | `c1 b7 28 06 3e 01 32 91 40 d1 cd 88` | pop bc; db 0xb7; db 0x28; db 0x06; db 0x3e; ld bc, 0x409132; pop de; db 0xcd; db 0x88 | **graph-flags** |
+| 0x041ade | `cd 88 af 02 01 30 1f 00 c5 cd db b6` | call 0x02af88; ld bc, 0x001f30; push bc; db 0xcd; db 0xdb; db 0xb6 | **unknown** |
+| 0x0457b2 | `fd e5 fd 21 80 00 d0 af 32 b7 77 d1` | db 0xfd; push hl; ld iy, 0xd00080; db 0xaf; ld (0xd177b7), a | **graph-state** |
+| 0x04586b | `22 f4 2f d0 22 f8 2f d0 22 fb 2f d0` | db 0x22; call p, 0x22d02f; db 0xf8; db 0x2f; db 0xd0; db 0x22; db 0xfb; db 0x2f; db 0xd0 | **graph-setup** |
+| 0x048964 | `cd 30 01 00 dd 07 06 ed 43 29 40 d1` | call 0x000130; db 0xdd; db 0x07; db 0x06; db 0xed; db 0x43; db 0x29; db 0x40; pop de | **graph-flags** |
+| 0x048968 | `dd 07 06 ed 43 29 40 d1 dd f9 dd e1` | db 0xdd; db 0x07; db 0x06; db 0xed; db 0x43; db 0x29; db 0x40; pop de; db 0xdd; db 0xf9; db 0xdd; pop hl | **graph-flags** |
+| 0x048ac4 | `21 fc ff ff cd 2c 01 00 dd 36 ff 00` | ld hl, 0xfffffc; call 0x00012c; db 0xdd; db 0x36; db 0xff; db 0x00 | **unknown** |
+| 0x048acc | `dd 36 ff 00 01 05 50 00 ed 78 cb af` | db 0xdd; db 0x36; db 0xff; db 0x00; ld bc, 0x005005; db 0xed; db 0x78; db 0xcb; db 0xaf | **unknown** |
+| 0x048ae0 | `79 fe 05 20 fa cd 6d f2 03 e6 10 28` | db 0x79; db 0xfe; db 0x05; db 0x20; jp m, 0xf26dcd; db 0x03; db 0xe6; db 0x10; db 0x28 | **unknown** |
+| 0x048ae5 | `cd 6d f2 03 e6 10 28 1a 3a b7 77 d1` | call 0x03f26d; db 0xe6; db 0x10; db 0x28; db 0x1a; ld a, (0xd177b7) | **graph-state** |
+| 0x048ae9 | `e6 10 28 1a 3a b7 77 d1 b7 28 13 af` | db 0xe6; db 0x10; db 0x28; db 0x1a; ld a, (0xd177b7); db 0xb7; db 0x28; db 0x13; db 0xaf | **graph-state** |
+| 0x048b07 | `3a b7 77 d1 fe 55 ca 44 8c 04 01 14` | ld a, (0xd177b7); db 0xfe; db 0x55; jp z, 0x048c44; db 0x01; db 0x14 | **dispatch** |
+| 0x048b11 | `01 14 31 00 ed 78 cb c7 ed 79 78 fe` | ld bc, 0x003114; db 0xed; db 0x78; db 0xcb; db 0xc7; db 0xed; db 0x79; db 0x78; db 0xfe | **lcd-port-io** |
+| 0x048b21 | `79 fe 14 20 fa 3e aa 32 b7 77 d1 01` | db 0x79; db 0xfe; db 0x14; db 0x20; jp m, 0x32aa3e; db 0xb7; db 0x77; pop de; db 0x01 | **graph-state** |
+| 0x048b26 | `3e aa 32 b7 77 d1 01 00 00 00 dd 0f` | db 0x3e; db 0xaa; ld (0xd177b7), a; ld bc, 0x000000; db 0xdd; db 0x0f | **graph-state** |
+| 0x048b3c | `c1 b7 28 1b cd e4 03 00 b7 28 0a ed` | pop bc; db 0xb7; db 0x28; db 0x1b; call 0x0003e4; db 0xb7; db 0x28; db 0x0a; db 0xed | **unknown** |
+| 0x048b5b | `01 48 04 00 c5 01 d8 3f d1 c5 cd b0` | ld bc, 0x000448; push bc; ld bc, 0xd13fd8; push bc; db 0xcd; db 0xb0 | **unknown** |
+| 0x048b69 | `c1 c1 dd 07 fc ed 43 1d 44 d1 01 60` | pop bc; pop bc; db 0xdd; db 0x07; call m, 0x1d43ed; db 0x44; pop de; db 0x01; db 0x60 | **unknown** |
+| 0x048b81 | `c1 c1 01 88 32 00 c5 01 20 44 d1 c5` | pop bc; pop bc; ld bc, 0x003288; push bc; ld bc, 0xd14420; push bc | **unknown** |
+| 0x048b91 | `c1 c1 01 62 00 00 c5 01 a8 76 d1 c5` | pop bc; pop bc; ld bc, 0x000062; push bc; ld bc, 0xd176a8; push bc | **graph-state** |
+| 0x048ba1 | `c1 c1 01 4d 00 00 c5 01 6a 77 d1 c5` | pop bc; pop bc; ld bc, 0x00004d; push bc; ld bc, 0xd1776a; push bc | **graph-state** |
+| 0x048bb1 | `c1 c1 01 24 00 00 c5 01 37 78 d1 c5` | pop bc; pop bc; ld bc, 0x000024; push bc; ld bc, 0xd17837; push bc | **graph-state** |
+| 0x048bc1 | `c1 c1 01 21 00 00 c5 01 5b 78 d1 c5` | pop bc; pop bc; ld bc, 0x000021; push bc; ld bc, 0xd1785b; push bc | **graph-state** |
+| 0x048bd1 | `c1 c1 cd b2 57 04 3e aa 32 b7 77 d1` | pop bc; pop bc; call 0x0457b2; db 0x3e; db 0xaa; ld (0xd177b7), a | **dispatch** |
+| 0x048bd7 | `3e aa 32 b7 77 d1 01 02 00 00 c5 01` | db 0x3e; db 0xaa; ld (0xd177b7), a; ld bc, 0x000002; push bc; db 0x01 | **graph-state** |
+| 0x048beb | `c1 c1 af 32 bb 77 d1 01 d0 07 00 c5` | pop bc; pop bc; db 0xaf; ld (0xd177bb), a; ld bc, 0x0007d0; push bc | **graph-state** |
+| 0x048bfb | `c1 01 00 00 00 c5 01 01 00 00 c5 cd` | pop bc; ld bc, 0x000000; push bc; ld bc, 0x000001; push bc; db 0xcd | **unknown** |
+| 0x048c0a | `c1 c1 3e 01 32 97 40 d1 af 32 98 40` | pop bc; pop bc; db 0x3e; ld bc, 0x409732; pop de; db 0xaf; db 0x32; db 0x98; db 0x40 | **graph-flags** |
+| 0x048c20 | `c1 b7 28 08 3e 01 32 91 40 d1 18 05` | pop bc; db 0xb7; db 0x28; db 0x08; db 0x3e; ld bc, 0x409132; pop de; db 0x18; db 0x05 | **graph-flags** |
+| 0x048c2c | `af 32 91 40 d1 af 32 95 40 d1 af 32` | db 0xaf; ld (0xd14091), a; db 0xaf; ld (0xd14095), a; db 0xaf; db 0x32 | **graph-flags** |
+| 0x048c44 | `3a b7 77 d1 fe aa c2 2e 8e 04 3e 55` | ld a, (0xd177b7); db 0xfe; db 0xaa; jp nz, 0x048e2e; db 0x3e; db 0x55 | **dispatch** |
+| 0x048c4e | `3e 55 32 b7 77 d1 01 00 00 00 c5 cd` | db 0x3e; db 0x55; ld (0xd177b7), a; ld bc, 0x000000; push bc; db 0xcd | **graph-state** |
+| 0x048c5d | `c1 ed 57 f5 f3 01 04 43 00 c5 cd 13` | pop bc; db 0xed; db 0x57; push af; db 0xf3; ld bc, 0x004304; push bc; db 0xcd; db 0x13 | **unknown** |
+| 0x048c6b | `c1 01 02 41 00 c5 cd 2f 20 05 c1 01` | pop bc; ld bc, 0x004102; push bc; call 0x05202f; pop bc; db 0x01 | **unknown** |
+| 0x048c75 | `c1 01 02 1b 00 c5 cd 2f 20 05 c1 01` | pop bc; ld bc, 0x001b02; push bc; call 0x05202f; pop bc; db 0x01 | **unknown** |
+| 0x048c7f | `c1 01 20 1b 00 c5 cd 2f 20 05 c1 01` | pop bc; ld bc, 0x001b20; push bc; call 0x05202f; pop bc; db 0x01 | **unknown** |
+| 0x048c89 | `c1 01 80 41 00 c5 cd 2f 20 05 c1 01` | pop bc; ld bc, 0x004180; push bc; call 0x05202f; pop bc; db 0x01 | **unknown** |
+| 0x048c93 | `c1 01 04 1b 00 c5 cd 2f 20 05 c1 01` | pop bc; ld bc, 0x001b04; push bc; call 0x05202f; pop bc; db 0x01 | **unknown** |
+| 0x048c9d | `c1 01 10 41 00 c5 cd 2f 20 05 c1 01` | pop bc; ld bc, 0x004110; push bc; call 0x05202f; pop bc; db 0x01 | **unknown** |
+| 0x048ca7 | `c1 01 01 41 00 c5 cd 2f 20 05 c1 01` | pop bc; ld bc, 0x004101; push bc; call 0x05202f; pop bc; db 0x01 | **unknown** |
+| 0x048cb1 | `c1 01 04 41 00 c5 cd 2f 20 05 c1 01` | pop bc; ld bc, 0x004104; push bc; call 0x05202f; pop bc; db 0x01 | **unknown** |
+| 0x048cbb | `c1 01 20 41 00 c5 cd 2f 20 05 c1 01` | pop bc; ld bc, 0x004120; push bc; call 0x05202f; pop bc; db 0x01 | **unknown** |
+| 0x048cc5 | `c1 01 20 43 00 c5 cd 2f 20 05 c1 01` | pop bc; ld bc, 0x004320; push bc; call 0x05202f; pop bc; db 0x01 | **unknown** |
+| 0x048ccf | `c1 01 10 43 00 c5 cd 2f 20 05 c1 01` | pop bc; ld bc, 0x004310; push bc; call 0x05202f; pop bc; db 0x01 | **unknown** |
+| 0x048cd9 | `c1 01 01 43 00 c5 cd 2f 20 05 c1 01` | pop bc; ld bc, 0x004301; push bc; call 0x05202f; pop bc; db 0x01 | **unknown** |
+| 0x048ce3 | `c1 01 08 43 00 c5 cd 2f 20 05 c1 cd` | pop bc; ld bc, 0x004308; push bc; call 0x05202f; pop bc; db 0xcd | **unknown** |
+| 0x048ced | `c1 cd 7b ca 04 f1 e2 f8 8c 04 fb 01` | pop bc; call 0x04ca7b; pop af; jp po, 0x048cf8; db 0xfb; db 0x01 | **dispatch** |
+| 0x048cf2 | `f1 e2 f8 8c 04 fb 01 b8 c0 02 ed 43` | pop af; jp po, 0x048cf8; db 0xfb; ld bc, 0x02c0b8; db 0xed; db 0x43 | **dispatch** |
+| 0x048cf8 | `01 b8 c0 02 ed 43 26 40 d1 cd fa 9f` | ld bc, 0x02c0b8; db 0xed; db 0x43; db 0x26; db 0x40; pop de; db 0xcd; db 0xfa; db 0x9f | **graph-flags** |
+| 0x048d05 | `01 00 31 00 ed 78 cb ef ed 79 78 fe` | ld bc, 0x003100; db 0xed; db 0x78; db 0xcb; db 0xef; db 0xed; db 0x79; db 0x78; db 0xfe | **lcd-port-io** |
+| 0x048d15 | `79 fe 00 20 fa 01 00 31 00 ed 78 cb` | db 0x79; db 0xfe; db 0x00; db 0x20; jp m, 0x310001; db 0x00; db 0xed; db 0x78; db 0xcb | **unknown** |
+| 0x048d1a | `01 00 31 00 ed 78 cb e7 ed 79 78 fe` | ld bc, 0x003100; db 0xed; db 0x78; db 0xcb; db 0xe7; db 0xed; db 0x79; db 0x78; db 0xfe | **lcd-port-io** |
+| 0x048d2a | `79 fe 00 20 fa 01 10 30 00 ed 78 cb` | db 0x79; db 0xfe; db 0x00; db 0x20; jp m, 0x301001; db 0x00; db 0xed; db 0x78; db 0xcb | **unknown** |
+| 0x048d2f | `01 10 30 00 ed 78 cb a7 ed 79 78 fe` | ld bc, 0x003010; db 0xed; db 0x78; db 0xcb; db 0xa7; db 0xed; db 0x79; db 0x78; db 0xfe | **lcd-port-io** |
+| 0x048d3f | `79 fe 10 20 fa 01 10 30 00 ed 78 cb` | db 0x79; db 0xfe; db 0x10; db 0x20; jp m, 0x301001; db 0x00; db 0xed; db 0x78; db 0xcb | **unknown** |
+| 0x048d44 | `01 10 30 00 ed 78 cb af ed 79 78 fe` | ld bc, 0x003010; db 0xed; db 0x78; db 0xcb; db 0xaf; db 0xed; db 0x79; db 0x78; db 0xfe | **lcd-port-io** |
+| 0x048d54 | `79 fe 10 20 fa 01 10 30 00 ed 78 cb` | db 0x79; db 0xfe; db 0x10; db 0x20; jp m, 0x301001; db 0x00; db 0xed; db 0x78; db 0xcb | **unknown** |
+| 0x048d59 | `01 10 30 00 ed 78 cb 87 ed 79 78 fe` | ld bc, 0x003010; db 0xed; db 0x78; db 0xcb; db 0x87; db 0xed; db 0x79; db 0x78; db 0xfe | **lcd-port-io** |
+| 0x048d69 | `79 fe 10 20 fa 01 00 00 00 c5 cd ad` | db 0x79; db 0xfe; db 0x10; db 0x20; jp m, 0x000001; db 0x00; push bc; db 0xcd; db 0xad | **unknown** |
+| 0x048d6e | `01 00 00 00 c5 cd ad 0f 04 c1 ed 57` | ld bc, 0x000000; push bc; call 0x040fad; pop bc; db 0xed; db 0x57 | **dispatch** |
+| 0x048d77 | `c1 ed 57 f5 f3 01 c4 30 00 ed 78 cb` | pop bc; db 0xed; db 0x57; push af; db 0xf3; ld bc, 0x0030c4; db 0xed; db 0x78; db 0xcb | **lcd-port-io** |
+| 0x048d8c | `79 fe c4 20 fa 01 0d 50 00 ed 78 cb` | db 0x79; db 0xfe; call nz, 0x01fa20; db 0x0d; db 0x50; db 0x00; db 0xed; db 0x78; db 0xcb | **unknown** |
+| 0x048d91 | `01 0d 50 00 ed 78 cb af ed 79 78 fe` | ld bc, 0x00500d; db 0xed; db 0x78; db 0xcb; db 0xaf; db 0xed; db 0x79; db 0x78; db 0xfe | **unknown** |
+| 0x048da1 | `79 fe 0d 20 fa 01 11 50 00 ed 78 cb` | db 0x79; db 0xfe; db 0x0d; db 0x20; jp m, 0x501101; db 0x00; db 0xed; db 0x78; db 0xcb | **unknown** |
+| 0x048da6 | `01 11 50 00 ed 78 cb af ed 79 78 fe` | ld bc, 0x005011; db 0xed; db 0x78; db 0xcb; db 0xaf; db 0xed; db 0x79; db 0x78; db 0xfe | **unknown** |
+| 0x048db6 | `79 fe 11 20 fa 01 09 50 00 3e 20 ed` | db 0x79; db 0xfe; ld de, 0x01fa20; db 0x09; db 0x50; db 0x00; db 0x3e; db 0x20; db 0xed | **unknown** |
+| 0x048dbb | `01 09 50 00 3e 20 ed 79 78 fe 50 28` | ld bc, 0x005009; db 0x3e; db 0x20; db 0xed; db 0x79; db 0x78; db 0xfe; db 0x50; db 0x28 | **unknown** |
+| 0x048dc9 | `79 fe 09 20 fa f1 e2 d4 8d 04 fb 01` | db 0x79; db 0xfe; db 0x09; db 0x20; jp m, 0xd4e2f1; db 0x8d; db 0x04; db 0xfb; db 0x01 | **renderer** |
+| 0x048dce | `f1 e2 d4 8d 04 fb 01 3d 31 00 ed 78` | pop af; jp po, 0x048dd4; db 0xfb; ld bc, 0x00313d; db 0xed; db 0x78 | **dispatch** |
+| 0x048dd4 | `01 3d 31 00 ed 78 cb cf ed 79 78 fe` | ld bc, 0x00313d; db 0xed; db 0x78; db 0xcb; db 0xcf; db 0xed; db 0x79; db 0x78; db 0xfe | **lcd-port-io** |
+| 0x048de4 | `79 fe 3d 20 fa cd 6d f2 03 fe 10 20` | db 0x79; db 0xfe; db 0x3d; db 0x20; jp m, 0xf26dcd; db 0x03; db 0xfe; db 0x10; db 0x20 | **unknown** |
+| 0x048de9 | `cd 6d f2 03 fe 10 20 0b cd e8 03 00` | call 0x03f26d; db 0xfe; db 0x10; db 0x20; db 0x0b; call 0x0003e8 | **unknown** |
+| 0x048ded | `fe 10 20 0b cd e8 03 00 b7 20 04 cd` | db 0xfe; db 0x10; db 0x20; db 0x0b; call 0x0003e8; db 0xb7; db 0x20; db 0x04; db 0xcd | **unknown** |
+| 0x048dfc | `cd f1 19 04 cd e4 03 00 b7 20 27 cd` | call 0x0419f1; call 0x0003e4; db 0xb7; db 0x20; db 0x27; db 0xcd | **dispatch** |
+| 0x04985c | `af 32 89 40 d1 fd 21 80 00 d0 fd cb` | db 0xaf; ld (0xd14089), a; ld iy, 0xd00080; db 0xfd; db 0xcb | **graph-flags** |
+| 0x049a23 | `21 ff ff ff cd 2c 01 00 dd 36 ff 01` | ld hl, 0xffffff; call 0x00012c; db 0xdd; db 0x36; db 0xff; db 0x01 | **unknown** |
+| 0x049a2b | `dd 36 ff 01 dd 7e 06 b7 20 05 af c3` | db 0xdd; db 0x36; db 0xff; ld bc, 0x067edd; db 0xb7; db 0x20; db 0x05; db 0xaf; db 0xc3 | **unknown** |
+| 0x049a3a | `3a b9 77 d1 b7 ed 62 6f cd 24 01 00` | ld a, (0xd177b9); db 0xb7; db 0xed; db 0x62; db 0x6f; call 0x000124 | **graph-state** |
+| 0x049aa7 | `dd 7e 06 b7 ed 62 6f cd 10 02 00 05` | db 0xdd; db 0x7e; db 0x06; db 0xb7; db 0xed; db 0x62; db 0x6f; call 0x000210; db 0x05 | **unknown** |
+| 0x049ac9 | `dd 36 ff 00 c3 c2 9c 04 dd 7e 06 b7` | db 0xdd; db 0x36; db 0xff; db 0x00; jp 0x049cc2; db 0xdd; db 0x7e; db 0x06; db 0xb7 | **unknown** |
+| 0x049cc2 | `dd 7e ff dd f9 dd e1 c9 21 ff ff ff` | db 0xdd; db 0x7e; db 0xff; db 0xdd; db 0xf9; db 0xdd; pop hl; ret; ld hl, 0xffffff | **unknown** |
+| 0x049cca | `21 ff ff ff cd 2c 01 00 dd 36 ff 00` | ld hl, 0xffffff; call 0x00012c; db 0xdd; db 0x36; db 0xff; db 0x00 | **unknown** |
+| 0x049cd2 | `dd 36 ff 00 ed 57 f5 f3 3a b9 77 d1` | db 0xdd; db 0x36; db 0xff; db 0x00; db 0xed; db 0x57; push af; db 0xf3; ld a, (0xd177b9) | **graph-state** |
+| 0x049d11 | `dd 7e ff b7 c2 f9 9d 04 dd 4e 06 06` | db 0xdd; db 0x7e; db 0xff; db 0xb7; jp nz, 0x049df9; db 0xdd; db 0x4e; db 0x06; db 0x06 | **unknown** |
+| 0x049d19 | `dd 4e 06 06 00 c5 cd 23 9a 04 c1 dd` | db 0xdd; db 0x4e; db 0x06; db 0x06; db 0x00; push bc; call 0x049a23; pop bc; db 0xdd | **unknown** |
+| 0x049d23 | `c1 dd 77 ff dd 7e ff b7 c2 f9 9d 04` | pop bc; db 0xdd; db 0x77; db 0xff; db 0xdd; db 0x7e; db 0xff; db 0xb7; jp nz, 0x049df9 | **unknown** |
+| 0x049d2f | `dd 7e 09 b7 ed 62 6f cd 24 01 00 0e` | db 0xdd; db 0x7e; db 0x09; db 0xb7; db 0xed; db 0x62; db 0x6f; call 0x000124; db 0x0e | **unknown** |
+| 0x049d77 | `dd 7e 06 32 b8 77 d1 18 79 dd 7e 06` | db 0xdd; db 0x7e; db 0x06; ld (0xd177b8), a; db 0x18; db 0x79; db 0xdd; db 0x7e; db 0x06 | **graph-state** |
+| 0x049df9 | `f1 e2 ff 9d 04 fb dd 7e ff dd f9 dd` | pop af; jp po, 0x049dff; db 0xfb; db 0xdd; db 0x7e; db 0xff; db 0xdd; db 0xf9; db 0xdd | **dispatch** |
+| 0x049dfe | `fb dd 7e ff dd f9 dd e1 c9 21 ff ff` | db 0xfb; db 0xdd; db 0x7e; db 0xff; db 0xdd; db 0xf9; db 0xdd; pop hl; ret; db 0x21; db 0xff; db 0xff | **unknown** |
+| 0x049ffa | `40 01 cb 31 ed 78 cb bf ed 79 78 fe` | db 0x40; ld bc, 0xed31cb; db 0x78; db 0xcb; db 0xbf; db 0xed; db 0x79; db 0x78; db 0xfe | **unknown** |
+| 0x04a00a | `79 fe cb 20 fa 40 01 40 30 ed 78 cb` | db 0x79; db 0xfe; db 0xcb; db 0x20; jp m, 0x400140; db 0x30; db 0xed; db 0x78; db 0xcb | **unknown** |
+| 0x04a00f | `40 01 40 30 ed 78 cb b7 ed 79 78 fe` | db 0x40; ld bc, 0xed3040; db 0x78; db 0xcb; db 0xb7; db 0xed; db 0x79; db 0x78; db 0xfe | **unknown** |
+| 0x04a01f | `79 fe 40 20 fa c9 dd e5 fd 21 80 00` | db 0x79; db 0xfe; db 0x40; db 0x20; jp m, 0xe5ddc9; db 0xfd; db 0x21; db 0x80; db 0x00 | **unknown** |
+| 0x04a024 | `c9 dd e5 fd 21 80 00 d0 cd d9 78 02` | ret; db 0xdd; push hl; ld iy, 0xd00080; call 0x0278d9 | **unknown** |
+| 0x04b664 | `dd e5 dd 21 00 00 00 dd 39 dd 27 06` | db 0xdd; push hl; ld ix, 0x000000; db 0xdd; db 0x39; db 0xdd; db 0x27; db 0x06 | **unknown** |
+| 0x04b67f | `79 fe 15 20 fa dd e1 c9 dd e5 dd 21` | db 0x79; db 0xfe; db 0x15; db 0x20; jp m, 0xc9e1dd; db 0xdd; push hl; db 0xdd; db 0x21 | **unknown** |
+| 0x04b684 | `dd e1 c9 dd e5 dd 21 00 00 00 dd 39` | db 0xdd; pop hl; ret; db 0xdd; push hl; ld ix, 0x000000; db 0xdd; db 0x39 | **unknown** |
+| 0x04c973 | `e5 b7 ed 52 e1 c9 e5 b7 52 ed 52 e1` | push hl; db 0xb7; db 0xed; db 0x52; pop hl; ret; push hl; db 0xb7; db 0x52; db 0xed; db 0x52; pop hl | **unknown** |
+| 0x04ca7b | `fd 21 80 00 d0 c3 11 0d 04 3e 0c c9` | ld iy, 0xd00080; jp 0x040d11; db 0x3e; db 0x0c; ret | **dispatch** |
+| 0x04e07b | `cd 30 01 00 ed 57 f5 f3 01 62 00 00` | call 0x000130; db 0xed; db 0x57; push af; db 0xf3; ld bc, 0x000062 | **unknown** |
+| 0x04e07f | `ed 57 f5 f3 01 62 00 00 c5 01 a8 76` | db 0xed; db 0x57; push af; db 0xf3; ld bc, 0x000062; push bc; db 0x01; db 0xa8; db 0x76 | **unknown** |
+| 0x04e091 | `c1 c1 01 60 00 00 c5 01 0a 77 d1 c5` | pop bc; pop bc; ld bc, 0x000060; push bc; ld bc, 0xd1770a; push bc | **graph-state** |
+| 0x04e0a1 | `c1 c1 01 4d 00 00 c5 01 6a 77 d1 c5` | pop bc; pop bc; ld bc, 0x00004d; push bc; ld bc, 0xd1776a; push bc | **graph-state** |
+| 0x04e0b1 | `c1 c1 dd 07 06 ed 43 92 77 d1 dd 07` | pop bc; pop bc; db 0xdd; db 0x07; db 0x06; db 0xed; db 0x43; db 0x92; db 0x77; pop de; db 0xdd; db 0x07 | **graph-state** |
+| 0x04e0cc | `c1 cd 24 cd 0b f1 e2 d7 e0 04 fb dd` | pop bc; call 0x0bcd24; pop af; jp po, 0x04e0d7; db 0xfb; db 0xdd | **dispatch** |
+| 0x04e0d1 | `f1 e2 d7 e0 04 fb dd f9 dd e1 c9 43` | pop af; jp po, 0x04e0d7; db 0xfb; db 0xdd; db 0xf9; db 0xdd; pop hl; ret; db 0x43 | **dispatch** |
+| 0x04e0d6 | `fb dd f9 dd e1 c9 43 41 54 41 4c 4f` | db 0xfb; db 0xdd; db 0xf9; db 0xdd; pop hl; ret; db 0x43; db 0x41; db 0x54; db 0x41; db 0x4c; db 0x4f | **unknown** |
+
+## Notable Operand Addresses
+
+- **0x040fad** [lcd-port-io]: 0x000130
+- **0x041a28** [graph-flags]: 0xd14082 (RAM), 0xd14084 (RAM)
+- **0x041a8d** [graph-flags]: 0x407332
+- **0x041a8f** [graph-flags]: 0x407332, 0xd14042 (RAM)
+- **0x041ad4** [graph-flags]: 0x409132
+- **0x0457b2** [graph-state]: 0xd00080 (RAM), 0xd177b7 (RAM)
+- **0x04586b** [graph-setup]: 0x22d02f
+- **0x048964** [graph-flags]: 0x000130
+- **0x048ae5** [graph-state]: 0x03f26d, 0xd177b7 (RAM)
+- **0x048ae9** [graph-state]: 0xd177b7 (RAM)
+- **0x048b07** [dispatch]: 0xd177b7 (RAM), 0x048c44 (ROM 04)
+- **0x048b21** [graph-state]: 0x32aa3e
+- **0x048b26** [graph-state]: 0xd177b7 (RAM)
+- **0x048b91** [graph-state]: 0xd176a8 (RAM)
+- **0x048ba1** [graph-state]: 0xd1776a (RAM)
+- **0x048bb1** [graph-state]: 0xd17837 (RAM)
+- **0x048bc1** [graph-state]: 0xd1785b (RAM)
+- **0x048bd1** [dispatch]: 0x0457b2 (ROM 04), 0xd177b7 (RAM)
+- **0x048bd7** [graph-state]: 0xd177b7 (RAM)
+- **0x048beb** [graph-state]: 0xd177bb (RAM)
+- **0x048c0a** [graph-flags]: 0x409732
+- **0x048c20** [graph-flags]: 0x409132
+- **0x048c2c** [graph-flags]: 0xd14091 (RAM), 0xd14095 (RAM)
+- **0x048c44** [dispatch]: 0xd177b7 (RAM), 0x048e2e (ROM 04)
+- **0x048c4e** [graph-state]: 0xd177b7 (RAM)
+- **0x048ced** [dispatch]: 0x04ca7b (ROM 04), 0x048cf8 (ROM 04)
+- **0x048cf2** [dispatch]: 0x048cf8 (ROM 04)
+- **0x048d6e** [dispatch]: 0x040fad (ROM 04)
+- **0x048dc9** [renderer]: 0xd4e2f1 (VRAM)
+- **0x048dce** [dispatch]: 0x048dd4 (ROM 04)
+- **0x048dfc** [dispatch]: 0x0419f1 (ROM 04), 0x0003e4
+- **0x04985c** [graph-flags]: 0xd14089 (RAM), 0xd00080 (RAM)
+- **0x049a3a** [graph-state]: 0xd177b9 (RAM), 0x000124
+- **0x049cd2** [graph-state]: 0xd177b9 (RAM)
+- **0x049d77** [graph-state]: 0xd177b8 (RAM)
+- **0x049df9** [dispatch]: 0x049dff (ROM 04)
+- **0x04ca7b** [dispatch]: 0xd00080 (RAM), 0x040d11 (ROM 04)
+- **0x04e091** [graph-state]: 0xd1770a (RAM)
+- **0x04e0a1** [graph-state]: 0xd1776a (RAM)
+- **0x04e0cc** [dispatch]: 0x0bcd24, 0x04e0d7 (ROM 04)
+- **0x04e0d1** [dispatch]: 0x04e0d7 (ROM 04)
+
+## Dispatch Table (0x005D00 - 0x005F88)
+
+Entries: 108 (every 6 bytes)
+
+| Address | Opcode | Target/Data |
+|---------|--------|-------------|
+| 0x005d00 | raw | fd cb 42 7e 28 07 |
+| 0x005d06 | raw | ed 38 09 e6 ef 18 |
+| 0x005d0c | raw | 03 ed 38 09 cb d7 |
+| 0x005d12 | raw | ed 39 09 cd e3 61 |
+| 0x005d18 | raw | 00 ed 38 09 cb 97 |
+| 0x005d1e | raw | ed 39 09 3e 05 cd |
+| 0x005d24 | raw | e5 61 00 ed 38 09 |
+| 0x005d2a | raw | cb d7 ed 39 09 3e |
+| 0x005d30 | raw | 0c cd e5 61 00 01 |
+| 0x005d36 | raw | 06 d0 00 3e 02 ed |
+| 0x005d3c | raw | 79 78 fe d0 28 01 |
+| 0x005d42 | raw | cf 0e 01 3e 18 ed |
+| 0x005d48 | raw | 79 0d 3e 0b ed 79 |
+| 0x005d4e | raw | 78 fe d0 28 01 cf |
+| 0x005d54 | raw | 0e 04 3e 0b ed 79 |
+| 0x005d5a | raw | 0c af ed 79 0e 08 |
+| 0x005d60 | raw | 3e 0c ed 79 78 fe |
+| 0x005d66 | raw | d0 28 01 cf 79 fe |
+| 0x005d6c | raw | 08 20 fa 0c 3e 01 |
+| 0x005d72 | raw | ed 79 78 fe d0 28 |
+| 0x005d78 | raw | 01 cf 3e 11 cd f7 |
+| 0x005d7e | raw | 60 00 3e 0c cd e5 |
+| 0x005d84 | raw | 61 00 3e 36 cd f7 |
+| 0x005d8a | raw | 60 00 3e 08 cd fa |
+| 0x005d90 | raw | 60 00 3e 3a cd f7 |
+| 0x005d96 | raw | 60 00 3e 66 cd fa |
+| 0x005d9c | raw | 60 00 3e 2a cd f7 |
+| 0x005da2 | raw | 60 00 af cd fa 60 |
+| 0x005da8 | raw | 00 af cd fa 60 00 |
+| 0x005dae | raw | 3e 01 cd fa 60 00 |
+| 0x005db4 | raw | 3e 3f cd fa 60 00 |
+| 0x005dba | raw | 3e 2b cd f7 60 00 |
+| 0x005dc0 | raw | 3e 00 cd fa 60 00 |
+| 0x005dc6 | raw | 3e 00 cd fa 60 00 |
+| 0x005dcc | raw | 3e 00 cd fa 60 00 |
+| 0x005dd2 | raw | 3e ef cd fa 60 00 |
+| 0x005dd8 | raw | 3e b2 cd f7 60 00 |
+| 0x005dde | raw | 3e 0c cd fa 60 00 |
+| 0x005de4 | raw | 3e 0c cd fa 60 00 |
+| 0x005dea | raw | 3e 00 cd fa 60 00 |
+| 0x005df0 | raw | 3e 33 cd fa 60 00 |
+| 0x005df6 | raw | 3e 33 cd fa 60 00 |
+| 0x005dfc | raw | 3e c0 cd f7 60 00 |
+| 0x005e02 | raw | 3e 2c cd fa 60 00 |
+| 0x005e08 | raw | 3e c2 cd f7 60 00 |
+| 0x005e0e | raw | 3e 01 cd fa 60 00 |
+| 0x005e14 | raw | 3e c4 cd f7 60 00 |
+| 0x005e1a | raw | 3e 20 cd fa 60 00 |
+| 0x005e20 | raw | 3e c6 cd f7 60 00 |
+| 0x005e26 | raw | 3e 0f cd fa 60 00 |
+| 0x005e2c | raw | 3e d0 cd f7 60 00 |
+| 0x005e32 | raw | 3e a4 cd fa 60 00 |
+| 0x005e38 | raw | 3e a1 cd fa 60 00 |
+| 0x005e3e | raw | 3e b0 cd f7 60 00 |
+| 0x005e44 | raw | 3e 11 cd fa 60 00 |
+| 0x005e4a | raw | 3e f0 cd fa 60 00 |
+| 0x005e50 | raw | 3e c0 cd f7 60 00 |
+| 0x005e56 | raw | 3e 22 cd fa 60 00 |
+| 0x005e5c | raw | 3e e9 cd f7 60 00 |
+| 0x005e62 | raw | 3e 08 cd fa 60 00 |
+| 0x005e68 | raw | 3e 08 cd fa 60 00 |
+| 0x005e6e | raw | 3e 08 cd fa 60 00 |
+| 0x005e74 | raw | 3e dc cd 47 61 00 |
+| 0x005e7a | raw | fe 35 ca 8c 5f 00 |
+| 0x005e80 | raw | 3e b7 cd f7 60 00 |
+| 0x005e86 | raw | 3e 35 cd fa 60 00 |
+| 0x005e8c | raw | 3e bb cd f7 60 00 |
+| 0x005e92 | raw | 3e 17 cd fa 60 00 |
+| 0x005e98 | raw | 3e c3 cd f7 60 00 |
+| 0x005e9e | raw | 3e 03 cd fa 60 00 |
+| 0x005ea4 | raw | 3e d2 cd f7 60 00 |
+| 0x005eaa | raw | 3e 00 cd fa 60 00 |
+| 0x005eb0 | raw | 3e e0 cd f7 60 00 |
+| 0x005eb6 | raw | 3e d0 cd fa 60 00 |
+| 0x005ebc | raw | 3e 00 cd fa 60 00 |
+| 0x005ec2 | raw | 3e 00 cd fa 60 00 |
+| 0x005ec8 | raw | 3e 10 cd fa 60 00 |
+| 0x005ece | raw | 3e 0f cd fa 60 00 |
+| 0x005ed4 | raw | 3e 1a cd fa 60 00 |
+| 0x005eda | raw | 3e 2d cd fa 60 00 |
+| 0x005ee0 | raw | 3e 54 cd fa 60 00 |
+| 0x005ee6 | raw | 3e 3f cd fa 60 00 |
+| 0x005eec | raw | 3e 3b cd fa 60 00 |
+| 0x005ef2 | raw | 3e 18 cd fa 60 00 |
+| 0x005ef8 | raw | 3e 17 cd fa 60 00 |
+| 0x005efe | raw | 3e 13 cd fa 60 00 |
+| 0x005f04 | raw | 3e 17 cd fa 60 00 |
+| 0x005f0a | raw | 3e e1 cd f7 60 00 |
+| 0x005f10 | raw | 3e d0 cd fa 60 00 |
+| 0x005f16 | raw | 3e 00 cd fa 60 00 |
+| 0x005f1c | raw | 3e 00 cd fa 60 00 |
+| 0x005f22 | raw | 3e 10 cd fa 60 00 |
+| 0x005f28 | raw | 3e 0f cd fa 60 00 |
+| 0x005f2e | raw | 3e 09 cd fa 60 00 |
+| 0x005f34 | raw | 3e 2b cd fa 60 00 |
+| 0x005f3a | raw | 3e 43 cd fa 60 00 |
+| 0x005f40 | raw | 3e 40 cd fa 60 00 |
+| 0x005f46 | raw | 3e 3b cd fa 60 00 |
+| 0x005f4c | raw | 3e 18 cd fa 60 00 |
+| 0x005f52 | raw | 3e 17 cd fa 60 00 |
+| 0x005f58 | raw | 3e 13 cd fa 60 00 |
+| 0x005f5e | raw | 3e 17 cd fa 60 00 |
+| 0x005f64 | raw | 3e b1 cd f7 60 00 |
+| 0x005f6a | raw | 3e 01 cd fa 60 00 |
+| 0x005f70 | raw | 3e 05 cd fa 60 00 |
+| 0x005f76 | raw | 3e 14 cd fa 60 00 |
+| 0x005f7c | raw | 3e 26 cd f7 60 00 |
+| 0x005f82 | raw | 3e 00 cd fa 60 00 |
+
+## Graph-Specific vs Generic
+
+- **Graph-specific** (renderer + graph-setup + graph-state + graph-flags + text-renderer): 31
+- **Dispatch/trampoline**: 12
+- **LCD port I/O**: 13
+- **Unknown/generic**: 79
+
+### Graph-specific routines:
+- 0x041a28 [graph-flags]: pop bc; db 0xaf; ld (0xd14082), a; db 0xaf; ld (0xd14084), a; db 0xaf
+- 0x041a8d [graph-flags]: db 0x28; db 0x7e; db 0x3e; ld bc, 0x407332; pop de; db 0x3e; db 0x0f; db 0x32; db 0x42
+- 0x041a8f [graph-flags]: db 0x3e; ld bc, 0x407332; pop de; db 0x3e; db 0x0f; ld (0xd14042), a
+- 0x041ad4 [graph-flags]: pop bc; db 0xb7; db 0x28; db 0x06; db 0x3e; ld bc, 0x409132; pop de; db 0xcd; db 0x88
+- 0x0457b2 [graph-state]: db 0xfd; push hl; ld iy, 0xd00080; db 0xaf; ld (0xd177b7), a
+- 0x04586b [graph-setup]: db 0x22; call p, 0x22d02f; db 0xf8; db 0x2f; db 0xd0; db 0x22; db 0xfb; db 0x2f; db 0xd0
+- 0x048964 [graph-flags]: call 0x000130; db 0xdd; db 0x07; db 0x06; db 0xed; db 0x43; db 0x29; db 0x40; pop de
+- 0x048968 [graph-flags]: db 0xdd; db 0x07; db 0x06; db 0xed; db 0x43; db 0x29; db 0x40; pop de; db 0xdd; db 0xf9; db 0xdd; pop hl
+- 0x048ae5 [graph-state]: call 0x03f26d; db 0xe6; db 0x10; db 0x28; db 0x1a; ld a, (0xd177b7)
+- 0x048ae9 [graph-state]: db 0xe6; db 0x10; db 0x28; db 0x1a; ld a, (0xd177b7); db 0xb7; db 0x28; db 0x13; db 0xaf
+- 0x048b21 [graph-state]: db 0x79; db 0xfe; db 0x14; db 0x20; jp m, 0x32aa3e; db 0xb7; db 0x77; pop de; db 0x01
+- 0x048b26 [graph-state]: db 0x3e; db 0xaa; ld (0xd177b7), a; ld bc, 0x000000; db 0xdd; db 0x0f
+- 0x048b91 [graph-state]: pop bc; pop bc; ld bc, 0x000062; push bc; ld bc, 0xd176a8; push bc
+- 0x048ba1 [graph-state]: pop bc; pop bc; ld bc, 0x00004d; push bc; ld bc, 0xd1776a; push bc
+- 0x048bb1 [graph-state]: pop bc; pop bc; ld bc, 0x000024; push bc; ld bc, 0xd17837; push bc
+- 0x048bc1 [graph-state]: pop bc; pop bc; ld bc, 0x000021; push bc; ld bc, 0xd1785b; push bc
+- 0x048bd7 [graph-state]: db 0x3e; db 0xaa; ld (0xd177b7), a; ld bc, 0x000002; push bc; db 0x01
+- 0x048beb [graph-state]: pop bc; pop bc; db 0xaf; ld (0xd177bb), a; ld bc, 0x0007d0; push bc
+- 0x048c0a [graph-flags]: pop bc; pop bc; db 0x3e; ld bc, 0x409732; pop de; db 0xaf; db 0x32; db 0x98; db 0x40
+- 0x048c20 [graph-flags]: pop bc; db 0xb7; db 0x28; db 0x08; db 0x3e; ld bc, 0x409132; pop de; db 0x18; db 0x05
+- 0x048c2c [graph-flags]: db 0xaf; ld (0xd14091), a; db 0xaf; ld (0xd14095), a; db 0xaf; db 0x32
+- 0x048c4e [graph-state]: db 0x3e; db 0x55; ld (0xd177b7), a; ld bc, 0x000000; push bc; db 0xcd
+- 0x048cf8 [graph-flags]: ld bc, 0x02c0b8; db 0xed; db 0x43; db 0x26; db 0x40; pop de; db 0xcd; db 0xfa; db 0x9f
+- 0x048dc9 [renderer]: db 0x79; db 0xfe; db 0x09; db 0x20; jp m, 0xd4e2f1; db 0x8d; db 0x04; db 0xfb; db 0x01
+- 0x04985c [graph-flags]: db 0xaf; ld (0xd14089), a; ld iy, 0xd00080; db 0xfd; db 0xcb
+- 0x049a3a [graph-state]: ld a, (0xd177b9); db 0xb7; db 0xed; db 0x62; db 0x6f; call 0x000124
+- 0x049cd2 [graph-state]: db 0xdd; db 0x36; db 0xff; db 0x00; db 0xed; db 0x57; push af; db 0xf3; ld a, (0xd177b9)
+- 0x049d77 [graph-state]: db 0xdd; db 0x7e; db 0x06; ld (0xd177b8), a; db 0x18; db 0x79; db 0xdd; db 0x7e; db 0x06
+- 0x04e091 [graph-state]: pop bc; pop bc; ld bc, 0x000060; push bc; ld bc, 0xd1770a; push bc
+- 0x04e0a1 [graph-state]: pop bc; pop bc; ld bc, 0x00004d; push bc; ld bc, 0xd1776a; push bc
+- 0x04e0b1 [graph-state]: pop bc; pop bc; db 0xdd; db 0x07; db 0x06; db 0xed; db 0x43; db 0x92; db 0x77; pop de; db 0xdd; db 0x07
+
+### Dispatch/trampoline routines:
+- 0x048b07: ld a, (0xd177b7); db 0xfe; db 0x55; jp z, 0x048c44; db 0x01; db 0x14
+- 0x048bd1: pop bc; pop bc; call 0x0457b2; db 0x3e; db 0xaa; ld (0xd177b7), a
+- 0x048c44: ld a, (0xd177b7); db 0xfe; db 0xaa; jp nz, 0x048e2e; db 0x3e; db 0x55
+- 0x048ced: pop bc; call 0x04ca7b; pop af; jp po, 0x048cf8; db 0xfb; db 0x01
+- 0x048cf2: pop af; jp po, 0x048cf8; db 0xfb; ld bc, 0x02c0b8; db 0xed; db 0x43
+- 0x048d6e: ld bc, 0x000000; push bc; call 0x040fad; pop bc; db 0xed; db 0x57
+- 0x048dce: pop af; jp po, 0x048dd4; db 0xfb; ld bc, 0x00313d; db 0xed; db 0x78
+- 0x048dfc: call 0x0419f1; call 0x0003e4; db 0xb7; db 0x20; db 0x27; db 0xcd
+- 0x049df9: pop af; jp po, 0x049dff; db 0xfb; db 0xdd; db 0x7e; db 0xff; db 0xdd; db 0xf9; db 0xdd
+- 0x04ca7b: ld iy, 0xd00080; jp 0x040d11; db 0x3e; db 0x0c; ret
+- 0x04e0cc: pop bc; call 0x0bcd24; pop af; jp po, 0x04e0d7; db 0xfb; db 0xdd
+- 0x04e0d1: pop af; jp po, 0x04e0d7; db 0xfb; db 0xdd; db 0xf9; db 0xdd; pop hl; ret; db 0x43
+
+### LCD port I/O routines:
+- 0x040fad: call 0x000130; ld bc, 0x003010; db 0xed; db 0x78; db 0xcb; db 0xcf
+- 0x040fb1: ld bc, 0x003010; db 0xed; db 0x78; db 0xcb; db 0xcf; db 0xed; db 0x79; db 0x78; db 0xfe
+- 0x041a4d: ld bc, 0x003081; db 0xed; db 0x78; db 0xcb; db 0xd7; db 0xed; db 0x79; db 0x78; db 0xfe
+- 0x041a62: ld bc, 0x003081; db 0xed; db 0x78; db 0xcb; db 0xcf; db 0xed; db 0x79; db 0x78; db 0xfe
+- 0x041ab6: ld bc, 0x00313c; db 0xed; db 0x78; db 0xcb; db 0xd7; db 0xed; db 0x79; db 0x78; db 0xfe
+- 0x048b11: ld bc, 0x003114; db 0xed; db 0x78; db 0xcb; db 0xc7; db 0xed; db 0x79; db 0x78; db 0xfe
+- 0x048d05: ld bc, 0x003100; db 0xed; db 0x78; db 0xcb; db 0xef; db 0xed; db 0x79; db 0x78; db 0xfe
+- 0x048d1a: ld bc, 0x003100; db 0xed; db 0x78; db 0xcb; db 0xe7; db 0xed; db 0x79; db 0x78; db 0xfe
+- 0x048d2f: ld bc, 0x003010; db 0xed; db 0x78; db 0xcb; db 0xa7; db 0xed; db 0x79; db 0x78; db 0xfe
+- 0x048d44: ld bc, 0x003010; db 0xed; db 0x78; db 0xcb; db 0xaf; db 0xed; db 0x79; db 0x78; db 0xfe
+- 0x048d59: ld bc, 0x003010; db 0xed; db 0x78; db 0xcb; db 0x87; db 0xed; db 0x79; db 0x78; db 0xfe
+- 0x048d77: pop bc; db 0xed; db 0x57; push af; db 0xf3; ld bc, 0x0030c4; db 0xed; db 0x78; db 0xcb
+- 0x048dd4: ld bc, 0x00313d; db 0xed; db 0x78; db 0xcb; db 0xcf; db 0xed; db 0x79; db 0x78; db 0xfe
