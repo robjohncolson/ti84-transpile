@@ -25,6 +25,10 @@ const KNOWN_FUNCTIONS = new Map([
   [0x07E57B, 'Sin'],
   [0x07E5B5, 'Cos'],
   [0x07E5D8, 'Tan'],
+  [0x07E053, 'LnX'],
+  [0x07E071, 'LogX'],
+  [0x07E20D, 'EToX'],
+  [0x0AFD41, 'YToX'],
   [0x0A9325, 'OneVar'],
 ]);
 
@@ -42,6 +46,14 @@ const SMOKE_TESTS = [
   { name: 'FPAdd', addr: 0x07C77F, args: [2, 3], expect: 5, tol: 1e-12 },
   { name: 'FPMult', addr: 0x07C8B7, args: [6, 7], expect: 42, tol: 1e-12 },
   { name: 'FPDiv', addr: 0x07CAB9, args: [22, 7], expect: 22 / 7, tol: 1e-10 },
+  { name: 'LnX', addr: 0x07E053, args: [Math.E], expect: 1, tol: 1e-10 },
+  { name: 'LnX', addr: 0x07E053, args: [1], expect: 0, tol: 1e-12 },
+  { name: 'LogX', addr: 0x07E071, args: [100], expect: 2, tol: 1e-12 },
+  { name: 'LogX', addr: 0x07E071, args: [1000], expect: 3, tol: 1e-12 },
+  { name: 'EToX', addr: 0x07E20D, args: [0], expect: 1, tol: 1e-12 },
+  { name: 'EToX', addr: 0x07E20D, args: [1], expect: Math.E, tol: 1e-10 },
+  { name: 'YToX', addr: 0x0AFD41, args: [2, 3], expect: 8, tol: 1e-12 },
+  { name: 'YToX', addr: 0x0AFD41, args: [10, 2], expect: 100, tol: 1e-12 },
 ];
 
 const ROM_PATH = new URL('./ROM.rom', import.meta.url);
@@ -307,6 +319,9 @@ function identifyFunction(addr) {
     { args: [6, 7], expect: 42, name: 'FPMult' },
     { args: [22, 7], expect: 22 / 7, name: 'FPDiv', tol: 1e-10 },
     { args: [9], expect: 3, name: 'SqRoot' },
+    { args: [Math.E], expect: 1, name: 'LnX' },
+    { args: [100], expect: 2, name: 'LogX' },
+    { args: [0], expect: 1, name: 'EToX' },
   ];
 
   for (const test of tests) {
