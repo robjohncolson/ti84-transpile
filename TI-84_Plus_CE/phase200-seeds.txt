@@ -1,0 +1,13 @@
+# Phase 200 — seeds from coverage-analyzer's "Suggested New Seeds (from largest OS-area gaps)"
+# output. These PCs correspond to the top CODE? ranges identified by
+# audit-true-uncovered.mjs (largest unreached code-shaped holes in the OS region).
+0x035F5D
+0x038037
+0x035CF1
+0x038323
+0x083B98
+0x0071E1
+0x0072F5
+0x05AC04
+0x09D22C
+0x009006

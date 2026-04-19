@@ -2,7 +2,22 @@
 
 > ⚠ **Auto-continuation loop active** (as of 2026-04-14; cadence stretched to **12h** on 2026-04-15 evening — was 2h, now fires at midnight + noon local to reduce churn and let each session do deeper work). Windows Task Scheduler task `TI84-AutoContinuation` fires a headless Opus session **every 12 hours** that reads this file, dispatches Codex/Sonnet work, commits+pushes to master, and updates this file. **Before editing this file in a human session**, check `git log --oneline` for recent `auto-session N` commits and consider `schtasks /change /tn "TI84-AutoContinuation" /disable` to prevent merge conflicts during long interactive edits. Re-enable with `/enable`. Launcher: `scripts/auto-continuation.bat` + `.auto-continuation-prompt.md`. Logs: `logs/auto-session-*.log` (gitignored).
 
-**Last updated**: 2026-04-18 (interactive session, post-dead-session recovery) — **Phase 198 DONE** (boot-only CEmu PC-trace): 22,238 unique ROM PCs, +15,892 blocks, +0.0113 pp. **Phase 199 DONE** (scenario matrix: MODE, Y=, GRAPH, CLEAR, 2+3 ENTER): 5 new autotester scenarios merged with boot trace → 28,580 unique ROM PCs (+6,342 vs Phase 198), blockCount 139,624 → **143,436 (+3,812 blocks)**, coveredBytes 698,341 → 698,408 (+67), coverage 16.6497% → **16.6513%** (+0.0016 pp), .gz 15.05 MB → 16.42 MB. Golden regression PASS (26/26, 3/3, fg=1004). **Key finding**: scenario-matrix byte-coverage gain is marginal — new entry points mostly walk into already-covered byte ranges through alternative paths. Structural win is +3,812 new basic blocks (denser graph, fewer `missing_block` terminations). The "several pp" hypothesis from the dead-session narrative did NOT pan out. See `TI-84_Plus_CE/phase199-scenario-matrix-report.md`.
+**Last updated**: 2026-04-18 (interactive session, Phase 200 + true-coverage reframing).
+
+**★ COVERAGE DENOMINATOR REFRAMING (THE BIG FINDING)**: The "16.65% plateau" is a reported-coverage artifact, not a reachability problem. ROM is 4 MB but **82.6% of it (3,464,815 bytes) is erased flash (0xFF fill)** — fundamentally uncoverable (no code, no data, just unused sectors). The genuine executable+data ROM is **729,489 non-erased bytes**. Current transpiler covers **699,583 of those → 95.90% true coverage**. Only **~29,906 non-erased bytes remain uncovered**, and classifier-audit of those gaps (`TI-84_Plus_CE/audit-true-uncovered.mjs`) shows:
+
+| Verdict | Bytes | % of uncovered |
+|---------|-------|---|
+| CODE? (decodable) | ~14K | 31% |
+| DATA-MIXED | ~24K | 51% |
+| DATA-SPARSE | ~6K | 12% |
+| STRINGS | ~3K | 6% |
+
+So only ~14 KB of remaining uncovered bytes is plausibly executable code — scattered across ~3,400 tiny ranges (top three: 221, 147, 142 bytes). **Strategic implication**: coverage work is ~done. Future sessions should stop chasing reported-% gains (denominator is poisoned by erased flash) and pivot to feature work. Use `audit-true-uncovered.mjs` to measure true coverage, not `coveragePercent` in the report.
+
+**Phase 200 DONE**: Added 10 coverage-analyzer-suggested seeds (top CODE? ranges in OS region). Result: 143,436 → 143,526 blocks (+90), 698,408 → **699,583 bytes** (+1,175), 16.6513% → **16.6794%** (+0.0281 pp reported / **+0.16 pp true coverage** → 95.90%). .gz 16.42 MB → 17.08 MB. Golden regression PASS (26/26 exact, "Normal Float Radian" 3/3). Best per-seed ratio since Phase 198 — targeted CODE?-classified gaps work; blind seed-sweeps don't.
+
+**Prior (Phase 198/199)**: CEmu PC-trace seed pipeline (boot trace 22,238 PCs + 5 autotester scenarios) merged to 28,580 unique PCs, yielded +0.0113 pp + +0.0016 pp. Scenario matrix confirmed seeds-from-traces hits diminishing returns — new entry points walk into already-covered byte ranges. See `TI-84_Plus_CE/phase199-scenario-matrix-report.md`.
 
 **User's active focus (set 2026-04-15, updated 2026-04-16)**:
 1. **~~Get the calc emulator hooked up end-to-end~~** — DONE. Native text rendering verified in probe (26/26 exact, 968 fg pixels). `paintGlyphs()` overlay removed. Browser-shell IX convention fixed. .gz regenerated (session 55). Next: deploy to GitHub Pages and verify browser rendering.
@@ -13,8 +28,8 @@
 
 ## Current ROM Transpiler State
 
-- Coverage: **16.6384%** (123732 blocks, 697867 bytes) — auto-session 53 retranspile after Phase 158 + Phase 186 seed additions
-- Seed count: **21375**
+- Coverage: **16.6794%** reported (143,526 blocks, 699,583 bytes) = **95.90% true coverage** of non-erased ROM (729,489 bytes). 82.6% of ROM is erased flash (0xFF fill) — uncoverable. See `audit-true-uncovered.mjs`.
+- Seed count: **49,965** (49,955 pre-Phase-200 + 10 Phase 200)
 - Live stubs: **0**
 - OS jump table: **980/980** (100%)
 - ISR dispatch gate: **UNLOCKED** (0x000710 reachable)
@@ -94,17 +109,21 @@ The `ld (de), a` at 0x0A20CC writes to non-VRAM RAM metadata, not visible VRAM. 
 
 **Verdict**: Stage 1 is a cursor/configuration step. The 0xFF is consistent with an off-screen cursor position after decrement-past-zero, not with a missing VRAM fill. No missing ROM blocks are indicated.
 
-### Next-session priorities — Phase 200+ strategy fork
+### Next-session priorities — Phase 201+ (post-reframing)
 
-The scenario-matrix result (Phase 199, +0.0016 pp) signals seeds-from-traces has hit diminishing returns for byte coverage. Three candidate directions for Phase 200:
+Phase 200's classifier audit settled the strategy fork. The "decoder/CF completeness" theory (that big contiguous unreached *code* regions existed) is **disproven**: 82.6% of ROM is erased flash, and the genuine uncovered is only ~30 KB, of which ~14 KB is plausibly code scattered across ~3,400 tiny ranges. **Pivot to feature work.**
 
-1. **★★ Richer scenarios** (keeps the trace infra hot, but unproven): Graph an actual function (`Y= → X,T,θ,n → graph`), run 1-VarStats on a list (`STAT → EDIT → enter data → STAT → CALC → 1-Var Stats → ENTER`), chain arithmetic (`2 → ENTER → ans+1 → ENTER` × 10). If Phase 199's thin gain is because CSC single-press hits shared helpers only, these may crack math-library interiors. Risk: same shared-helper pattern may hold, in which case this is more of the same.
+Recommended Phase 201+ priorities (in order):
 
-2. **★★★ Pivot to static decoder/CF completeness**: The uncovered 83% of ROM is likely gated on decoder gaps (unhandled prefixes, jump-table walker misses) more than entry-point discovery. Audit undecoded bytes in the current walker output and target the biggest contiguous unreached regions. This is the most likely lever for non-trivial coverage gain.
+1. **★★★ Browser-shell feature expansion**: GitHub Pages deploy + visually verify native text + battery icon in browser (never shipped despite being ready since session 54). Add more reachable apps via the existing button panel. Catalog error-banner permutations (48 exist via 0xD008DF / 0xD00824). Priority target: get a demonstrable "this looks like a real TI-84" in browser before chasing more coverage.
 
-3. **★★ Accept the wall & pivot to feature work**: 16.65% is sufficient for the 4-stage home composite + keyboard. Spend remaining Phase 200+ budget on: more apps reachable from browser-shell, error-banner exhaustive coverage, FPU-op test surface, graph renderer integration.
+2. **★★ Graph renderer integration**: The graph renderer is the highest-value uncovered feature (math visualization). Trace `Y= → X,T,θ,n → graph` path in CEmu, identify handler entry points, probe each in isolation. Different class of work from keyboard/text.
 
-**Recommendation for fresh session**: Start with option 2 (decoder/CF audit). It's the only one with a clear coverage-gain theory that hasn't been tested. If the audit reveals no big contiguous unreached regions, fall back to option 3 (feature work). Option 1 only makes sense if option 2 also stalls.
+3. **★★ FPU op test surface**: `ti84-math.mjs` covers FPAdd, FPMult, FPDiv, Sin. Add Cos, Tan, Log, Ln, Exp, Pow, Sqrt. These are mostly reachable and the harness pattern is established.
+
+4. **★ Coverage cleanup (low ROI, skip unless bored)**: If future work *does* want to push true coverage past 96%, target the remaining ~14 KB of CODE? gaps listed by `audit-true-uncovered.mjs` — largest are at 0x083b98, 0x035d3b, 0x05ac04, 0x09d22c. Each is a <250-byte hole in an already-95%+ region, so most are rare error handlers or dead-code branches. Expect <0.5 pp true-coverage gain for the full batch.
+
+**Do NOT** keep chasing reported-coverage % in `ROM.transpiled.report.json`. The 4 MB denominator is dominated by erased flash. Report `audit-true-uncovered.mjs` numbers instead.
 
 **Deferred from prior sessions** (lower priority now):
 - **Phase 191b — Browser-shell browser verification**: Deploy to GitHub Pages and manually verify browser-shell shows native "Normal Float Radian" text + battery icon.
@@ -262,7 +281,7 @@ After committing code changes, re-run `npx gitnexus analyze` to keep the GitNexu
 ## Verified State
 
 1. `node --check scripts/transpile-ti84-rom.mjs` passes.
-2. `node scripts/transpile-ti84-rom.mjs` generates 124543 blocks at 16.5076% coverage in ~2 seconds.
+2. `node scripts/transpile-ti84-rom.mjs` generates 143,526 blocks at 16.6794% reported / 95.90% true coverage in ~2 seconds (Phase 200).
 3. All blocks compile (0 failures). `ROM.transpiled.js` gitignored, `.gz` committed.
 4. `node TI-84_Plus_CE/test-harness.mjs` — 25 tests pass. Test 25 (direct keyboard scan at 0x0159C0) is 9/9 PASS.
 5. Golden regression: 26/26 exact, Normal/Float/Radian 3/3 PASS. Status dots FAIL (informational, unblocks via Phase 188).
