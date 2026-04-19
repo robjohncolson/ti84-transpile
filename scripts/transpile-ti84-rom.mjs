@@ -12,6 +12,7 @@ const phase111SeedsPath = path.join(repoRoot, 'TI-84_Plus_CE', 'phase111-seeds.t
 const phase130SeedsPath = path.join(repoRoot, 'TI-84_Plus_CE', 'phase130-seeds.txt');
 const phase152SeedsPath = path.join(repoRoot, 'TI-84_Plus_CE', 'phase152-seeds.txt');
 const phase179SeedsPath = path.join(repoRoot, 'TI-84_Plus_CE', 'phase179-seeds.txt');
+const cemuTraceSeedsPath = path.join(repoRoot, 'TI-84_Plus_CE', 'cemu-trace-seeds.txt');
 
 const romBytes = fs.readFileSync(romPath);
 const romBase64 = romBytes.toString('base64');
@@ -770,6 +771,7 @@ function walkBlocks() {
   const phase130Seeds = loadSeedFile(phase130SeedsPath);
   const phase152Seeds = loadSeedFile(phase152SeedsPath);
   const phase179Seeds = loadSeedFile(phase179SeedsPath);
+  const cemuTraceSeeds = loadSeedFile(cemuTraceSeedsPath);
   const knownEntryAnchors = [
     { pc: 0x000100, mode: 'adl' },
     { pc: 0x000658, mode: 'adl' },
@@ -22076,6 +22078,8 @@ function walkBlocks() {
     ...phase152Seeds,
     // Phase 179: restore path for display buffer copy (0xD02EC7 -> 0xD006C0).
     ...phase179Seeds,
+    // Phase 198: CEmu boot-trace seeds (22,235 novel ROM PCs from ~3s emulated boot).
+    ...cemuTraceSeeds,
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {

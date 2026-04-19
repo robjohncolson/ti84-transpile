@@ -2,7 +2,7 @@
 
 > ⚠ **Auto-continuation loop active** (as of 2026-04-14; cadence stretched to **12h** on 2026-04-15 evening — was 2h, now fires at midnight + noon local to reduce churn and let each session do deeper work). Windows Task Scheduler task `TI84-AutoContinuation` fires a headless Opus session **every 12 hours** that reads this file, dispatches Codex/Sonnet work, commits+pushes to master, and updates this file. **Before editing this file in a human session**, check `git log --oneline` for recent `auto-session N` commits and consider `schtasks /change /tn "TI84-AutoContinuation" /disable` to prevent merge conflicts during long interactive edits. Re-enable with `/enable`. Launcher: `scripts/auto-continuation.bat` + `.auto-continuation-prompt.md`. Logs: `logs/auto-session-*.log` (gitignored).
 
-**Last updated**: 2026-04-18 (auto-session 57) — **Phase 194 DONE**: Fixed `mem.fill(value, start, 3)` bug (end vs length) across all 47 remaining probe files (132 total fixed instances across 64 files). Zero buggy instances remain. **Phase 195 DONE**: Stage 1 curRow=0xFF is an arithmetic underflow (`dec a` on curRow=0), not a sentinel. Block 0x0A20CC reads curRow, does `dec a`, stores 0xFF. 43/184 ROM curRow readers use `inc a` wrap-handling; none use `cp 0xFF`. Stage 1 is confirmed as cursor/configuration bookkeeping, not a renderer. Golden regression still fully passes: 26/26 exact, 3/3 PASS, status dots PASS (36 fg), fg=1004.
+**Last updated**: 2026-04-18 (interactive session, post-dead-session recovery) — **Phase 198 DONE** (boot-only CEmu PC-trace): 22,238 unique ROM PCs, +15,892 blocks, +0.0113 pp. **Phase 199 DONE** (scenario matrix: MODE, Y=, GRAPH, CLEAR, 2+3 ENTER): 5 new autotester scenarios merged with boot trace → 28,580 unique ROM PCs (+6,342 vs Phase 198), blockCount 139,624 → **143,436 (+3,812 blocks)**, coveredBytes 698,341 → 698,408 (+67), coverage 16.6497% → **16.6513%** (+0.0016 pp), .gz 15.05 MB → 16.42 MB. Golden regression PASS (26/26, 3/3, fg=1004). **Key finding**: scenario-matrix byte-coverage gain is marginal — new entry points mostly walk into already-covered byte ranges through alternative paths. Structural win is +3,812 new basic blocks (denser graph, fewer `missing_block` terminations). The "several pp" hypothesis from the dead-session narrative did NOT pan out. See `TI-84_Plus_CE/phase199-scenario-matrix-report.md`.
 
 **User's active focus (set 2026-04-15, updated 2026-04-16)**:
 1. **~~Get the calc emulator hooked up end-to-end~~** — DONE. Native text rendering verified in probe (26/26 exact, 968 fg pixels). `paintGlyphs()` overlay removed. Browser-shell IX convention fixed. .gz regenerated (session 55). Next: deploy to GitHub Pages and verify browser rendering.
@@ -39,13 +39,23 @@
 
 ## Immediate Priorities
 
-### ★★★ Phase 158+ / ROM trace coverage expansion (finish all ROM traces)
+### ★★★ DONE: Phase 198/199 — CEmu PC-trace seed generator + scenario matrix
 
-**Why this is priority #1**: Coverage has plateaued at ~16.6% via static analysis. The queued strategic backstop is the **CEmu PC-trace seed generator**. All interim static seeds (0x006138, JT slots) were already reachable — 0 new blocks gained. Coverage expansion needs the dynamic PC-trace approach.
+**Status**: Both DONE in 2026-04-18 interactive session (post-dead-session recovery).
 
-**Spec**: `.phase158-spec.md` (queued). Multi-hour capture + dedup + retranspile job.
+**Phase 198** (boot-only): Patched CEmu (commit `73a4cb0c...`) with PC-trace hook. 22,238 unique ROM PCs from boot; +15,892 blocks; coverage 16.6384% → 16.6497% (+0.0113 pp). Pipeline: `cemu-build/run-trace.ps1` → `cemu-build/smoke-trace.log` → `TI-84_Plus_CE/cemu-trace-to-seeds.mjs` → `cemu-trace-seeds.txt` → transpiler seed input.
 
-**Session 55 update**: Seed 0x006138 added to transpiler (seedCount 21374→21375), but it was already reachable — 0 new blocks. .gz regenerated and committed. Static seeding is exhausted for the currently known addresses.
+**Phase 199** (scenario matrix): Added 5 autotester scenarios — MODE, Y=, GRAPH, CLEAR, 2+3 ENTER. Post-processor updated to glob all `*-trace.log` files. Result: 28,580 unique ROM PCs (+6,342 vs Phase 198), 143,436 blocks (+3,812), coverage 16.6513% (+0.0016 pp). Golden regression PASS (26/26, 3/3, fg=1004).
+
+**Honest read**: Coverage % gain is marginal. Seeds-from-traces is hitting diminishing returns — new entry points mostly walk into already-covered byte ranges through alternative paths. Structural win is denser block graph. The "several pp" hypothesis did NOT pan out. See `TI-84_Plus_CE/phase199-scenario-matrix-report.md`.
+
+**Autotester key gotcha**: `valid_keys` in `autotester.cpp` is lowercase (`mode`, `y=`, `graph`, `clear`, `enter`, `+`, digits). PascalCase labels error silently with no key press.
+
+**Infra files** (reusable):
+- `cemu-build/scenario-*.json` — 5 scenario configs (MODE/Y=/GRAPH/CLEAR/arith) + `smoke.json` (boot)
+- `cemu-build/run-trace-DE.ps1`, `run-trace-FGH.ps1` — batch runners, set `TRACE_PC` per run
+- `TI-84_Plus_CE/cemu-trace-to-seeds.mjs` — globs `*-trace.log`, dedups, writes `cemu-trace-seeds.txt`
+- `scripts/transpile-ti84-rom.mjs` — seeds `cemu-trace-seeds.txt` via `cemuTraceSeedsPath`
 
 ### ★★ DONE: Phase 189b/189c — Status dots rendering fully resolved
 
@@ -84,12 +94,22 @@ The `ld (de), a` at 0x0A20CC writes to non-VRAM RAM metadata, not visible VRAM. 
 
 **Verdict**: Stage 1 is a cursor/configuration step. The 0xFF is consistent with an off-screen cursor position after decrement-past-zero, not with a missing VRAM fill. No missing ROM blocks are indicated.
 
-### Next-session priorities
+### Next-session priorities — Phase 200+ strategy fork
 
-1. **Phase 158+ — CEmu PC-trace seed generator**: Static seeding is exhausted. Spec exists at `TI-84_Plus_CE/cemu-trace-spec.md`. **BLOCKED on toolchain**: cmake/gcc/make are not installed on the work machine (MSYS2 MinGW64 packages needed). CEmu source repo not yet cloned. Next step: install `pacman -S mingw-w64-x86_64-cmake mingw-w64-x86_64-gcc mingw-w64-x86_64-make`, then clone CEmu and build patched `autotester_cli`. This is the only path to coverage expansion past 16.6%.
-2. **Phase 191b — Browser-shell browser verification**: The .gz is regenerated with all fixes (IX, native rendering, status dots, mem.fill). Deploy to GitHub Pages and manually verify browser-shell shows native "Normal Float Radian" text + battery icon. (Requires browser testing — cannot be fully automated in a probe.)
-3. **Phase 196 — Investigate Stage 1 row-limit initialization**: Phase 195 showed rowLimit at 0xD02504 = 0x00 and colLimit at 0xD02505 = 0x00 during Stage 1. The `dec a; cp (hl)` pattern at 0x0A20CC compares underflowed curRow against this zero limit. If the row limit were initialized to a real value (e.g., 10 for text rows), the `jp p` would take a different path. Check whether any boot sequence or prior stage should set 0xD02504/0xD02505, and whether the current zero values indicate missing initialization.
-4. **Phase 197 — Audit `mem.fill` with other lengths**: Phase 194 fixed the `mem.fill(X, cpu.sp, 3)` pattern but there may be other buggy `mem.fill` calls with different length values (e.g., `mem.fill(0xFF, addr, 12)`, `mem.fill(0xAA, addr, size)`). Grep for all `mem.fill` calls and verify the third argument is always `start + length`, not bare `length`.
+The scenario-matrix result (Phase 199, +0.0016 pp) signals seeds-from-traces has hit diminishing returns for byte coverage. Three candidate directions for Phase 200:
+
+1. **★★ Richer scenarios** (keeps the trace infra hot, but unproven): Graph an actual function (`Y= → X,T,θ,n → graph`), run 1-VarStats on a list (`STAT → EDIT → enter data → STAT → CALC → 1-Var Stats → ENTER`), chain arithmetic (`2 → ENTER → ans+1 → ENTER` × 10). If Phase 199's thin gain is because CSC single-press hits shared helpers only, these may crack math-library interiors. Risk: same shared-helper pattern may hold, in which case this is more of the same.
+
+2. **★★★ Pivot to static decoder/CF completeness**: The uncovered 83% of ROM is likely gated on decoder gaps (unhandled prefixes, jump-table walker misses) more than entry-point discovery. Audit undecoded bytes in the current walker output and target the biggest contiguous unreached regions. This is the most likely lever for non-trivial coverage gain.
+
+3. **★★ Accept the wall & pivot to feature work**: 16.65% is sufficient for the 4-stage home composite + keyboard. Spend remaining Phase 200+ budget on: more apps reachable from browser-shell, error-banner exhaustive coverage, FPU-op test surface, graph renderer integration.
+
+**Recommendation for fresh session**: Start with option 2 (decoder/CF audit). It's the only one with a clear coverage-gain theory that hasn't been tested. If the audit reveals no big contiguous unreached regions, fall back to option 3 (feature work). Option 1 only makes sense if option 2 also stalls.
+
+**Deferred from prior sessions** (lower priority now):
+- **Phase 191b — Browser-shell browser verification**: Deploy to GitHub Pages and manually verify browser-shell shows native "Normal Float Radian" text + battery icon.
+- **Phase 196 — Stage 1 row-limit initialization** investigation: rowLimit at 0xD02504 / colLimit at 0xD02505 are both 0x00 during Stage 1. Check whether boot should set these.
+- **Phase 197 — `mem.fill` audit**: Grep for all `mem.fill` calls with non-3 lengths to ensure `start + length` not bare `length`.
 
 ---
 
