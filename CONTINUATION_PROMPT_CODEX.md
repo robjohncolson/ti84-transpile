@@ -2,7 +2,7 @@
 
 > ⚠ **Auto-continuation loop active** — Windows Task Scheduler `TI84-AutoContinuation` fires a headless Opus session every 12h (midnight + noon local). Before editing this file in a human session, check `git log --oneline` for recent `auto-session N` commits and consider `schtasks /change /tn "TI84-AutoContinuation" /disable` to prevent conflicts. Re-enable with `/enable`. Launcher: `scripts/auto-continuation.bat`. Logs: `logs/auto-session-*.log` (gitignored).
 
-**Last updated**: 2026-04-18 (Phases 201 + 204 committed; 202/203 deferred).
+**Last updated**: 2026-04-18 (Phases 201 + 204 committed; 202a + 203a investigations filed; 205 gh-pages push in flight).
 
 ---
 
@@ -39,22 +39,35 @@ Only ~13 KB is plausibly executable code, scattered across ~3,400 tiny ranges (t
 
 ## Next-Session Priorities
 
-### 1. ★★★ Browser-shell deploy (Phase 205)
-Phase 201 preflight (2026-04-18, `TI-84_Plus_CE/phase201-deploy-preflight.md`) confirmed the .gz is ready and the golden regression passes. **Blocker**: no `gh-pages` branch exists. Options:
-- Create `gh-pages` branch + push
-- Use `docs/` directory on master with Pages configured to serve from there
+### 1. ★★★ Browser-shell deploy (Phase 205) — IN FLIGHT
+`git subtree push --prefix TI-84_Plus_CE origin gh-pages` running. After it lands:
+- Enable Pages in GitHub settings → serve `gh-pages` branch root (via `gh api` or web UI).
+- Visually verify `https://robjohncolson.github.io/apstats-live-worksheet/browser-shell.html` boots and shows "Normal Float Radian" + battery icon.
+- Regenerate `.gz` before re-pushing if seeds change: `( cd TI-84_Plus_CE && gzip -kf -9 ROM.transpiled.js )` then subtree push again.
 
-Regenerate .gz first if seeds changed. Visually verify native text + battery icon in browser.
+### 2. ★★ Graph renderer investigation (Phase 202b)
+Phase 202a complete → `TI-84_Plus_CE/phase202a-graph-entry.md`. Key findings:
+- Raw GRAPH scan code `0x60` (keyMatrix[6] bit 0). OS translates to internal `0x44` stored at `0xD0058E`.
+- Translation trampoline `0x02FE84`; first normal-key handler entry `0x08C543`.
+- Entry dispatches through `0x08C593` → `0x08C33D` → status-bar update `0x0A349A`.
 
-### 2. ★★ Graph renderer investigation (Phase 202-redo, SPLIT)
-Previous Phase 202 attempt timed out at 15 min with too-broad scope. Split into:
-- **(a)** From CEmu `cemu-build/*-trace.log` matching Phase 199's GRAPH scenario, identify the GRAPH scan code + first OS handler PC after the key press. Output: single address + surrounding block. ≤10 min.
-- **(b)** From that entry point, trace the graph-render pipeline. Separate task.
+**Next (202b)**: from `0x08C543`, trace forward past the status-bar call to find the actual GRAPH screen renderer — look for LCD/VRAM writes or `upbase` swap at `0xE00010`.
 
-### 3. ★★ FPU op expansion (Phase 203-redo, SPLIT)
-Previous attempt timed out — no entry points found in-repo for Cos/Tan/Log/Ln/Exp/Pow/Sqrt. Split into:
-- **(a)** Investigation — extract TI-OS jump-table slot numbers for those BCALLs from TI SDK docs. Output: table of (op, slot, ROM addr via JT base).
-- **(b)** Implementation — add test cases to `ti84-math.mjs` following the Sin pattern.
+### 3. ★★ FPU op expansion (Phase 203b)
+Phase 203a complete → `TI-84_Plus_CE/phase203a-fpu-slots.md`. BCALL slot table (JT base `0x020104`, stride `4`):
+
+| Op | Slot | ROM target |
+|----|------|------------|
+| Sin | 0x0048 | 0x07E57B (already in ti84-math.mjs) |
+| Cos | 0x0049 | 0x07E5B5 (already) |
+| Tan | 0x004A | 0x07E5D8 (already) |
+| SqRoot | 0x003D | 0x07DF66 (already) |
+| LnX | 0x0042 | 0x07E053 |
+| LogX | 0x0043 | 0x07E071 |
+| EToX | 0x0045 | 0x07E20D |
+| YToX | 0x0288 | 0x0AFD41 |
+
+**Next (203b)**: add test cases for LnX/LogX/EToX/YToX to `ti84-math.mjs` following the Sin pattern (set OP1, call target, decode OP1 to float, compare to Math.log/log10/exp/pow).
 
 ### 4. ★ Coverage cleanup (low ROI, skip unless bored)
 Phase 204 added 7 seeds for +0.0156 pp true coverage. Next 10 CODE? gaps (ranks 8–17 from `audit-true-uncovered.mjs`) would yield <0.01 pp each. **Stop chasing reported %**; report `audit-true-uncovered.mjs` numbers.
