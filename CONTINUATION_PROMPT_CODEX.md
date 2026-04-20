@@ -2,7 +2,7 @@
 
 > ⚠ **Auto-continuation loop active** — Windows Task Scheduler `TI84-AutoContinuation` fires a headless Opus session every 12h (midnight + noon local). Before editing this file in a human session, check `git log --oneline` for recent `auto-session N` commits and consider `schtasks /change /tn "TI84-AutoContinuation" /disable` to prevent conflicts. Re-enable with `/enable`. Launcher: `scripts/auto-continuation.bat`. Logs: `logs/auto-session-*.log` (gitignored).
 
-**Last updated**: 2026-04-19 (auto-session 60: Phase 202c-c ISR trace [4 strategies, all fail] + Phase 202c-d LCD init protocol decoded + 79 unknown routines classified).
+**Last updated**: 2026-04-19 (auto-session 61: Phase 202e upbase writer identified at 0x005c34 via static scan; extended boot confirms it's dead code from cold-boot path).
 
 ---
 
@@ -39,10 +39,16 @@ Only ~13 KB is plausibly executable code, scattered across ~3,400 tiny ranges (t
 
 ## Next-Session Priorities
 
-### 1. ★★ Upbase writer hunt — NEW DIRECTION (Phase 202c-e)
-Phase 202c-c ran 4 ISR-invocation strategies: `jump_ivt_z80`, `jump_dispatch_gate` (pc=0x0719 ADL), `raise_timer_irq`, `trigger_irq_then_run_halt`. **All 3 working strategies converge on the same 33,297-step trajectory, HALT at `0x0019B5`, zero upbase writes.** PC `0x006202` dominates (30,030 hits — tight wait loop). The only LCD MMIO routine reached is PC `0x00069A`, but it writes the LCD **cursor cluster** (`0xE00810/14/21/2D/30/33`) — NOT upbase. **Strategy A (z80 IVT at 0x00038) missing_block immediately** — transpiler produced no lifted block for `00038:z80`. See `TI-84_Plus_CE/phase202c-isr-trace-report.md`.
-**Conclusion**: upbase write is NOT in the periodic ISR. It's a one-shot boot-init routine the existing probe sequence bypasses.
-**Next targets**: (a) static grep for any ROM write sequence targeting `0xE00010/11/12` — scan `ez80-decoder` output for `ld hl, 0xE000xx` / `ld de, 0xE000xx` / indirect stores; (b) audit callers of `0x00069A` for siblings; (c) run a full-boot probe that does NOT skip early LCD-init (currently cold_boot maxSteps=20000 — see if extending exposes upbase write); (d) add a lifted z80-mode block for `0x00038` and rerun Strategy A.
+### 1. ★★★ Upbase writer LOCATED (Phase 202e) — reverse-walk needed
+**Prime candidate: `0x005c34` (block 0x005c2d) — `ld (0x000010), hl`** (z80-mode 16-bit store with MBASE=0xE0 → writes `0xE00010`). Secondary: `0x006294` (same idiom). Static scan over 143,547 lifted blocks found **only 9 candidates**; 2 are writes, 7 are pointer-priming `ld bc, 0x0010/11/12`. **No ADL-mode absolute writer exists anywhere in ROM** (4MB raw-byte scan for `32/22/ED43/ED53/DD22/FD22` targeting `0xE00010` = 0 hits). See `TI-84_Plus_CE/phase202e-upbase-writer-scan-report.md`.
+
+**Extended boot probe** (`probe-phase202e-boot-upbase-trace.mjs`, 25× cold-boot + 20× os_init step budget): both cold boot and os_init still halt at `0x0019B5` with 0 upbase writes. The upbase writer is **genuinely dead code from the cold-boot path**. It's reached only via an explicit LCD-reinit entry (DispHome? ClrHome? graph-mode switch?) that our probes don't invoke. Initial upbase is seeded to `0xD40000` by `cpu-runtime.js` executor construction — that's why probes see a "correct" upbase despite never writing it.
+
+**Next targets (Phase 202f)**:
+(a) **Reverse-walk from `0x005c2d` to find its caller(s)** — no callers appear in the lifted CALL graph (suggests entry via uncovered code, jump table, or tail-call from unlifted block). Static disassemble 32 bytes preceding `0x005c2d` and scan all lifted blocks for `call 0x005c??` / `jp 0x005c??` targeting the block or a prefix.
+(b) **Dynamic probe: force pc = `0x005c2d` with mbase=0xE0 (z80 mode) post-OS-init** and confirm upbase = HL after the block runs. If successful, the writer is proven.
+(c) **Snapshot HL value expected at entry** — the 32 bytes before the store likely load HL with the framebuffer address (`0xD40000` or similar). Decode and document.
+(d) Map the full LCD-reinit routine containing `0x005c2d` — it may be the bootloader's LCD handshake or a late init path gated on a flag we haven't set.
 
 ### 2. ★ LCD command/data protocol decoded (Phase 202c-d) — DONE
 - `0x0060F7`: `or a; fallthrough` (carry=0, "index/command" selector)
