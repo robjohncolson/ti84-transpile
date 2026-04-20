@@ -2,7 +2,7 @@
 
 > ⚠ **Auto-continuation loop active** — Windows Task Scheduler `TI84-AutoContinuation` fires a headless Opus session every 12h (midnight + noon local). Before editing this file in a human session, check `git log --oneline` for recent `auto-session N` commits and consider `schtasks /change /tn "TI84-AutoContinuation" /disable` to prevent conflicts. Re-enable with `/enable`. Launcher: `scripts/auto-continuation.bat`. Logs: `logs/auto-session-*.log` (gitignored).
 
-**Last updated**: 2026-04-19 (auto-session 59: Phase 202c upbase trace + routine map + Phase 205 URL fix).
+**Last updated**: 2026-04-19 (auto-session 60: Phase 202c-c ISR trace [4 strategies, all fail] + Phase 202c-d LCD init protocol decoded + 79 unknown routines classified).
 
 ---
 
@@ -39,19 +39,16 @@ Only ~13 KB is plausibly executable code, scattered across ~3,400 tiny ranges (t
 
 ## Next-Session Priorities
 
-### 1. ★★ ISR upbase trace (Phase 202c-c)
-Phase 202c-a confirmed: **zero upbase writes to `0xE00010`** during event loop — OS halts at `0x0019B5` waiting for interrupt. All 6 LCD MMIO writes were keyboard controller (`0xE008xx`) from PC `0x00069A`. **The display flip must happen in the ISR/timer interrupt handler.** Next: run probe with `timerInterrupt: true` (or manually invoke ISR entry) and trace where upbase gets written. See `TI-84_Plus_CE/phase202c-upbase-report.md`.
+### 1. ★★ Upbase writer hunt — NEW DIRECTION (Phase 202c-e)
+Phase 202c-c ran 4 ISR-invocation strategies: `jump_ivt_z80`, `jump_dispatch_gate` (pc=0x0719 ADL), `raise_timer_irq`, `trigger_irq_then_run_halt`. **All 3 working strategies converge on the same 33,297-step trajectory, HALT at `0x0019B5`, zero upbase writes.** PC `0x006202` dominates (30,030 hits — tight wait loop). The only LCD MMIO routine reached is PC `0x00069A`, but it writes the LCD **cursor cluster** (`0xE00810/14/21/2D/30/33`) — NOT upbase. **Strategy A (z80 IVT at 0x00038) missing_block immediately** — transpiler produced no lifted block for `00038:z80`. See `TI-84_Plus_CE/phase202c-isr-trace-report.md`.
+**Conclusion**: upbase write is NOT in the periodic ISR. It's a one-shot boot-init routine the existing probe sequence bypasses.
+**Next targets**: (a) static grep for any ROM write sequence targeting `0xE00010/11/12` — scan `ez80-decoder` output for `ld hl, 0xE000xx` / `ld de, 0xE000xx` / indirect stores; (b) audit callers of `0x00069A` for siblings; (c) run a full-boot probe that does NOT skip early LCD-init (currently cold_boot maxSteps=20000 — see if extending exposes upbase write); (d) add a lifted z80-mode block for `0x00038` and rerun Strategy A.
 
-### 2. ★ Graph renderer categorization follow-up (Phase 202c-d)
-Phase 202c-b mapped 135 routines from the 202b trace. Key findings:
-- 31 routines are graph-specific (18 graph-state, 11 graph-flags, 1 renderer, 1 graph-setup).
-- 13 LCD port I/O routines cluster at `0x040Fxx`, `0x041Axx`, `0x048Dxx`.
-- **`0x005D00-0x005F88` is NOT a dispatch table** — it's inline LCD init code: `ld a, N; call 0x0060F7/0x0060FA` pairs.
-- **`D177B7`** is a graph mode toggle (0x55 vs 0xAA two-state machine).
-- **`0x04CA7B`** is the canonical graph entry trampoline: `ld iy, 0xD00080; jp 0x040D11`.
-- **`0x048Bxx-0x048Cxx`** is contiguous graph init: sets up buffers at D176A8/D1776A/D17837/D1785B.
-See `TI-84_Plus_CE/phase202c-routine-map-report.md`.
-**Next**: decode the 79 "unknown" routines with deeper heuristics, and trace `0x0060F7`/`0x0060FA` to understand the LCD register init protocol.
+### 2. ★ LCD command/data protocol decoded (Phase 202c-d) — DONE
+- `0x0060F7`: `or a; fallthrough` (carry=0, "index/command" selector)
+- `0x0060FA`: `scf; ...` (carry=1, "data" selector); shared body: `sis ld bc, 0xD018; triple rla; out (c), a; poll in a, (c)` — classic command/data LCD idiom writing port `0x18` on MMIO page `0xD0` (i.e. `0xE00018` = LCD control reg per PL111).
+- **85 call pairs** walked at `0x005D00-0x005F88`. A_values `0x11` (sleep-out), `0x36` (MADCTL), `0x3A` (pixel-format), `0x2A` (column-addr) match **ST7789/ILI9341** panel init commands. Full table in `TI-84_Plus_CE/phase202c-lcd-init-report.md`.
+- 79 unknown routines classified in `TI-84_Plus_CE/phase202c-unknown-routines-report.md`: 33 port-io, 4 graph-flag-toggle, 42 still-unknown (stack-shuffle/plain-call glue), 0 trampolines/math-helpers/ram-copies/display-helpers.
 
 ### 3. ✅ Browser-shell deployment verified (Phase 205)
 GH Pages source is `master:/` (not `gh-pages` branch). Correct URL: `https://robjohncolson.github.io/apstats-live-worksheet/TI-84_Plus_CE/browser-shell.html`. Both HTML and `.gz` return HTTP 200. The previously noted URL (`/browser-shell.html` at root) was wrong.
