@@ -1,457 +1,352 @@
-# Phase 202f: LCD Reinit Map Around 0x005c2d
+# Phase 202f: LCD Re-initialization Routine Map
 
-Generated: 2026-04-20
+**Date**: 2026-04-20 (updated with full ADL-mode analysis)
+**ROM region**: 0x005BB1 - 0x0060F6 (full routine including SPI tail)
+**Mode**: ADL (24-bit) primary analysis; z80 overlay noted
+**LCD controller base**: 0xF80000 (PL111-compatible)
+**Prior context**: [phase202c-lcd-init-report.md](./phase202c-lcd-init-report.md), [phase202e-upbase-writer-scan-report.md](./phase202e-upbase-writer-scan-report.md)
 
-## Scope
+## Key Finding: LCD Controller at 0xF80000
 
-- ROM slice inspected: `0x005b00..0x005d20`
-- Prior context: [phase202c-lcd-init-report.md](./phase202c-lcd-init-report.md), [phase202e-upbase-writer-scan-report.md](./phase202e-upbase-writer-scan-report.md)
-- `scripts/transpile-ti84-rom.mjs` was run before this analysis so `ROM.transpiled.js` was available for block and caller cross-reference.
+The TI-84 Plus CE maps its PL111 LCD controller at **0xF80000**, not 0xE00000 as previously assumed. This is confirmed by direct memory-mapped register writes throughout this routine. The PL111 register offsets match the standard ARM PL111 specification:
+
+| Address    | PL111 Offset | Register Name  | Purpose                          |
+|------------|-------------|----------------|----------------------------------|
+| 0xF80000   | +0x00       | LCDTiming0     | Horizontal timing                |
+| 0xF80004   | +0x04       | LCDTiming1     | Vertical timing                  |
+| 0xF80008   | +0x08       | LCDTiming2     | Clock and signal polarity        |
+| 0xF80010   | +0x10       | LCDUPbase      | Upper panel base address         |
+| 0xF80014   | +0x14       | LCDLPbase      | Lower panel base (read here)     |
+| 0xF80018   | +0x18       | LCDControl     | (not directly written in this routine) |
+
+## Callers
+
+- **0x00190B** (post-OS-init): calls 0x005BB1 after OS data structures are ready
+- **0x000384** (reset vector): calls 0x005BB1 as part of hardware cold-boot
 
 ## Routine Boundaries
 
-| Region | Addresses | Evidence | Conclusion |
-| --- | --- | --- | --- |
-| Preceding routine | `0x005b96..0x005bb0` | Ends with `ret` at `0x005bb0`; known separate VRAM fill primitive from earlier work | Not part of the LCD reinit routine |
-| LCD reinit entry | `0x005bb1` | First byte after that `ret`; direct references in `ROM.transpiled.js` include `call 0x005bb1` from `0x00190b` and `jp 0x005bb1` from `0x000384` | Start of the contiguous LCD reinit byte range |
-| `0x005d00` LCD command block | `0x005d00..` | Reached internally from `0x005cf1` (`jr z, 0x005d0d`, fallthrough `0x005d00`) | Same routine, not a separate entry |
-| Tail after Phase 202c window | `0x005f88 -> 0x006094..0x0060f6` | `0x005f88` is an unconditional `jp 0x006094`; the z80 tail finishes at `0x0060f6 ret` | The full z80 LCD reinit routine is larger than `0x005d00..0x005f88` |
+| Boundary     | Address  | Evidence                                         |
+|--------------|----------|--------------------------------------------------|
+| Preceding routine | 0x005B96-0x005BB0 | Ends with `ret` at 0x005BB0; separate VRAM fill |
+| **Entry**    | 0x005BB1 | Called from 0x00190B and 0x000384                |
+| LCD reg init | 0x005BC9 | PL111 timing register programming               |
+| SPI panel init | 0x005C44 | Port 0x50xx/0x40xx SPI command sequence        |
+| Post-SPI     | 0x005CF1 | Port config and power sequencing                 |
+| Extended SPI | 0x005D35 | Second SPI sequence (port 0xD0xx)                |
+| SPI tail     | 0x005D7A-0x005F88 | SPI commands via call 0x0060F7/0x0060FA      |
+| JP to tail   | 0x005F88 | `jp 0x006094`                                    |
+| Tail + ret   | 0x006094-0x0060F6 | Final polling/return logic                   |
+| **End**      | 0x0060F6 | `ret` instruction                                |
 
-### Boundary verdict
+The full routine spans **0x005BB1 to 0x0060F6** (~1350 bytes).
 
-- The best routine boundary for the LCD reinit overlay is `0x005bb1..0x0060f6`.
-- `0x005c2d` is not a standalone routine entry. It is an internal fallthrough block inside that larger routine.
-- The `0x00` bytes at `0x005c2d..0x005c2f` are not alignment padding for the z80 overlay. They are live fallthrough bytes inside the block that leads to the store at `0x005c34`.
+## Routine Structure (4 major sections)
 
-## Control Flow Analysis
+1. **0x005BB1-0x005C40**: Preamble and PL111 register setup
+2. **0x005C44-0x005CF0**: SPI port sequencing (port 0x50xx, 0x40xx)
+3. **0x005CF1-0x005F88**: Power sequencing + extended SPI commands (port 0xD0xx, bit-banged via 0xD018)
+4. **0x005F8C-0x0060F6**: SPI tail commands and return
 
-### How execution reaches `0x005c2d`
+---
 
-No direct call or jump to `0x005c2d` was found. In the z80 overlay, control reaches it only by fallthrough:
+## Section 1: PL111 Register Setup (0x005BB1-0x005C40)
 
-`0x005bb1 -> 0x005bb6 -> 0x005bc2 -> 0x005bc6 -> 0x005bd1 -> 0x005bd9 -> 0x005be1 -> 0x005bea -> 0x005bf5 -> 0x005c0b -> 0x005c0f -> 0x005c13 -> 0x005c1c -> 0x005c24 -> 0x005c2d`
+### block_005bb1_adl (ENTRY POINT)
 
-The important consequence is:
+```
+ld iy, 0xD00080          ; IY = OS flags base
+res 7, (iy+66)           ; Clear flag bit 7 at (IY+0x42)
+in0 a, (0x03)            ; Read port 0x03 (clock/power status)
+bit 4, a                 ; Test bit 4
+jp z, 0x005C44           ; If bit 4 = 0, skip LCD register init -> SPI panel init
+; fall through to 0x005BC3
+```
 
-- `0x005c2d` is an internal setup block, not a dispatch target.
-- The upbase write at `0x005c34` is part of the routine prologue before the `0x005d00+` LCD command stream.
+**Decision point**: Bit 4 of port 0x03 determines whether PL111 timing registers need programming. If zero (LCD controller already initialized or not present?), skip directly to SPI panel commands.
 
-### Flow around `0x005d00`
+### block_005bc3_adl (Delay call)
 
-The bytes immediately before the known LCD command stream prove it is the same routine:
+```
+call 0x0158DE            ; Hardware settle delay, returns Z flag
+; returns to 0x005BC7
+jr z, 0x005C44           ; If delay indicates skip, go to SPI section
+; fall through to 0x005BC9
+```
 
-- `0x005cf1..0x005cfe` toggles ports `0x07` and `0x03`.
-- `0x005cfe` branches to `0x005d0d` or falls through to `0x005d00`.
-- `0x005d00..0x005f88` is therefore a mid-routine body, not a separately called helper.
+### block_005bc9_adl (Main LCD register programming - FIRST PASS)
 
-### Tail beyond `0x005f88`
+```
+ld hl, 0x02000B
+ld (0xF80004), hl         ; LCDTiming1 = 0x02000B
+ld hl, 0x001828
+ld (0xF80000), hl         ; LCDTiming0 = 0x001828
+ld hl, 0x00000C
+ld (0xF80008), hl         ; LCDTiming2 = 0x00000C (step 1)
+nop
+ld hl, 0x000040
+ld (0xF80008), hl         ; LCDTiming2 = 0x000040 (step 2 - overwrite)
+in0 a, (0x0A)             ; Read port 0x0A
+set 2, a                  ; Set bit 2
+out0 (0x0A), a            ; Enable LCD clock
+call 0x015AEC             ; Further init subroutine
+; returns to 0x005BF6
+```
 
-The earlier Phase 202c report stopped at `0x005f88`, but the routine does not end there:
+**First-pass register writes**:
 
-- `0x005f88` is `jp 0x006094`
-- `0x005e7c` also has an alternate branch to `0x005f8c`
-- both paths converge into the `0x006094..0x0060f6` tail
-- the first real routine terminator is `ret` at `0x0060f6`
+| Step | Register       | Address  | Value      |
+|------|----------------|----------|------------|
+| 1    | LCDTiming1     | 0xF80004 | 0x02000B   |
+| 2    | LCDTiming0     | 0xF80000 | 0x001828   |
+| 3a   | LCDTiming2     | 0xF80008 | 0x00000C   |
+| 3b   | LCDTiming2     | 0xF80008 | 0x000040   |
 
-## Relationship To The LCD Init Sequence At `0x005d00+`
+### block_005bf6_adl (Port I/O + triple delay)
 
-`0x005c2d` is part of the same larger LCD init/reinit flow as the `0x005d00..0x005f88` command/data stream.
+```
+in0 a, (0x07)             ; Read port 0x07
+set 4, a                  ; Set bit 4
+out0 (0x07), a            ; Write port 0x07 (backlight/power)
+ld a, (0xF9000C)          ; Read MMIO at 0xF9000C
+res 6, a                  ; Clear bit 6
+ld (0xF9000C), a          ; Write back
+call 0x0061C2             ; Delay #1 (checks port 0x03 bit 4)
+call 0x0061C2             ; Delay #2
+call 0x0061C2             ; Delay #3
+; falls through to 0x005C14
+```
 
-The structure is:
+### block_005c14_adl (LCD register programming - SECOND PASS + upbase write)
 
-1. `0x005bb1..0x005c40`: preamble and register setup, including the `0x005c34` store.
-2. `0x005c44..0x005cf0`: low-level MMIO and port sequencing.
-3. `0x005d00..0x005f88`: the Phase 202c LCD command/data pairs that call `0x0060f7` / `0x0060fa`.
-4. `0x005f8c..0x0060f6`: remaining LCD command/data tail and final polling/return logic.
+```
+ld hl, 0x00182B
+ld (0xF80000), hl         ; LCDTiming0 = 0x00182B (updated from 0x1828)
+ld hl, 0x00000C
+ld (0xF80008), hl         ; LCDTiming2 = 0x00000C (step 1)
+nop
+ld hl, 0x000040
+ld (0xF80008), hl         ; LCDTiming2 = 0x000040 (step 2)
+nop; nop; nop
+ld hl, 0x000021
+ld (0xF80010), hl         ; *** LCDUPbase = 0x000021 ***
+ld hl, 0x000100
+ld (0xF80008), hl         ; LCDTiming2 = 0x000100 (final value)
+ld a, (0xF80014)          ; Read LCDLPbase
+; falls through to 0x005C44
+```
 
-So the answer to the main question is:
+**Second-pass register writes**:
 
-- `0x005c2d` is not a separate routine called independently.
-- It is part of the same contiguous reinit byte range that later emits the known LCD controller init script.
+| Step | Register       | Address  | Value      | Notes                        |
+|------|----------------|----------|------------|------------------------------|
+| 1    | LCDTiming0     | 0xF80000 | 0x00182B   | Changed from 0x1828          |
+| 2a   | LCDTiming2     | 0xF80008 | 0x00000C   | Same two-step pattern        |
+| 2b   | LCDTiming2     | 0xF80008 | 0x000040   |                              |
+| 3    | **LCDUPbase**  | 0xF80010 | **0x000021** | NOT a VRAM address (see below) |
+| 4    | LCDTiming2     | 0xF80008 | 0x000100   | Final polarity config        |
+| 5    | LCDLPbase      | 0xF80014 | (read)     |                              |
+
+### Analysis: The 0x000021 UPbase Write
+
+The value 0x000021 written to LCDUPbase (0xF80010) is **NOT a VRAM address**. VRAM on the TI-84 Plus CE is at 0xD40000 (256KB). The value 0x000021 is far too small to be a valid framebuffer pointer.
+
+This is an **LCD control/configuration value**, likely encoding:
+- Bit 5 (0x20) = LCD power enable or dual-panel mode
+- Bit 0 (0x01) = LCD enable
+- Or: a PL111 LCDControl-like value temporarily written to the UPbase register during init sequencing
+
+The actual VRAM base address (0xD40000) is written to LCDUPbase later in the OS, after the LCD panel SPI init completes and the framebuffer is ready.
+
+---
+
+## Section 2: SPI Panel Init (0x005C44-0x005CF0)
+
+### block_005c44_adl (SPI preamble)
+
+```
+ld a, 0x03
+out0 (0x00), a            ; Port 0x00 = 0x03 (SPI mode select)
+ld bc, 0x00500C            ; B=0x50, C=0x0C
+in a, (c)                 ; Read port 0x500C
+set 4, a                  ; Set bit 4
+out (c), a                ; Write port 0x500C (SPI chip select assert)
+; SANITY CHECK: cp B, 0x50 -> RST 0x08 if wrong
+; SANITY CHECK: cp C, 0x0C -> RST 0x08 if wrong
+```
+
+### Port 0x5004 init (0x005C5E)
+
+```
+ld c, 0x04                ; Switch to port 0x5004
+in a, (c)                 ; Read port 0x5004
+set 4, a                  ; Set bit 4
+out (c), a                ; Write (second chip select)
+; SANITY CHECK: B=0x50, C=0x04
+```
+
+### SPI command sequence via port 0x4000-0x4019 (0x005C71-0x005CF0)
+
+BC is loaded to 0x004000 and C is incremented to write sequential port addresses. Each group is followed by a B=0x40 sanity check (RST 0x08 = error trap if corrupted).
+
+| Port    | Value | C after |
+|---------|-------|---------|
+| 0x4000  | 0x38  | 0x00    |
+| 0x4001  | 0x03  | 0x01    |
+| *verify B=0x40* | | |
+| 0x4002  | 0x0A  | 0x02    |
+| 0x4003  | 0x1F  | 0x03    |
+| 0x4004  | 0x3F  | 0x04    |
+| *verify B=0x40* | | |
+| 0x4005  | 0x09  | 0x05    |
+| 0x4006  | 0x02  | 0x06    |
+| 0x4007  | 0x04  | 0x07    |
+| *verify B=0x40* | | |
+| 0x4008  | 0x02  | 0x08    |
+| 0x4009  | 0x78  | 0x09    |
+| 0x400A  | 0xEF  | 0x0A    |
+| 0x400B  | 0x00  | 0x0B    |
+| *verify B=0x40* | | |
+| 0x4010  | 0x00  | 0x10 (jump) |
+| 0x4011  | 0x00  | 0x11    |
+| 0x4012  | 0xD4  | 0x12    |
+| *verify B=0x40* | | |
+| 0x4019  | 0x09  | 0x19 (jump) |
+| 0x4018  | 0x2D  | 0x18 (dec) |
+| *verify B=0x40, C=0x18* | | |
+
+---
+
+## Section 3: Post-SPI Power Sequencing (0x005CF1-0x005D7A+)
+
+### block_005cf1_adl (Port 0x07 + conditional backlight)
+
+```
+in0 a, (0x07)             ; Read port 0x07
+set 2, a                  ; Set bit 2
+out0 (0x07), a            ; Write port 0x07
+in0 a, (0x03)             ; Read port 0x03
+bit 4, a                  ; Test bit 4
+jr z, 0x005D0D            ; If zero -> skip conditional logic
+```
+
+### block_005d00_adl (Conditional backlight path)
+
+```
+bit 7, (iy+66)            ; Test (IY+0x42) bit 7
+jr z, 0x005D0D            ; If zero -> common path
+in0 a, (0x09)             ; Read port 0x09
+and 0xEF                  ; Clear bit 4
+jr 0x005D10               ; Jump to common set-bit-2 path
+```
+
+### block_005d0d_adl - block_005d27_adl (Power sequencing)
+
+```
+in0 a, (0x09)             ; Read port 0x09
+set 2, a                  ; Set bit 2
+out0 (0x09), a            ; Write port 0x09
+call 0x0061E3             ; Delay (A=1)
+in0 a, (0x09)             ; Read port 0x09
+res 2, a                  ; Clear bit 2
+out0 (0x09), a            ; Write port 0x09
+ld a, 0x05
+call 0x0061E5             ; Parameterized delay (A=5)
+in0 a, (0x09)             ; Read port 0x09
+set 2, a                  ; Set bit 2
+out0 (0x09), a            ; Write port 0x09
+ld a, 0x0C
+call 0x0061E5             ; Parameterized delay (A=0x0C)
+```
+
+### Extended SPI via port 0xD000-0xD019 (0x005D35-0x005D7A+)
+
+Second SPI command sequence targeting port base 0xD0xx:
+
+| Port    | Value | Notes                          |
+|---------|-------|--------------------------------|
+| 0xD006  | 0x02  | *verify B=0xD0*                |
+| 0xD001  | 0x18  |                                |
+| 0xD000  | 0x0B  | *verify B=0xD0*                |
+| 0xD004  | 0x0B  |                                |
+| 0xD005  | 0x00  | (xor a)                        |
+| 0xD008  | 0x0C  | *verify B=0xD0, C=0x08*        |
+| 0xD009  | 0x01  | *verify B=0xD0*                |
+
+Then continues with SPI writes through helpers at 0x0060F7 and 0x0060FA.
+
+---
+
+## Section 4: SPI Tail (0x005D7A-0x0060F6)
+
+From 0x005D7A onwards, the routine sends LCD panel commands via two SPI byte-send subroutines:
+- **0x0060F7** (`spi_send_cmd`): OR A clears carry flag = command mode, then bit-bangs byte via port 0xD018
+- **0x0060FA** (`spi_send_data`): SCF sets carry flag = data mode, then bit-bangs byte via port 0xD018
+
+These helpers rotate the byte left 3 bits at a time and output 3 nibbles to port 0xD018 (bit-banged SPI). The routine at 0x005F88 jumps to 0x006094 for final cleanup, ending with `ret` at **0x0060F6**.
+
+---
+
+## Helper Subroutines
+
+| Address  | Name           | Purpose                                           |
+|----------|----------------|---------------------------------------------------|
+| 0x0158DE | delay_0158de   | Hardware settle delay, returns Z flag              |
+| 0x015AEC | init_015aec    | Unknown init (called after timing reg setup)       |
+| 0x0061C2 | delay_0061c2   | Timed delay: pushes DE/HL, checks port 0x03 bit 4 |
+| 0x0061E3 | delay_0061e3   | Short delay with A=1                               |
+| 0x0061E5 | delay_0061e5   | Parameterized delay (A = count)                    |
+| 0x0060F7 | spi_send_cmd   | SPI byte send (OR A = command, carry clear)        |
+| 0x0060FA | spi_send_data  | SPI byte send (SCF = data, carry set)              |
+
+## Port I/O Summary
+
+| Port           | Direction | Purpose                                    |
+|----------------|-----------|--------------------------------------------|
+| 0x00           | OUT       | System control (set to 0x03)               |
+| 0x03           | IN        | Clock/power status (bit 4 = LCD present)   |
+| 0x07           | IN/OUT    | Power control (bit 4 = backlight?, bit 2)  |
+| 0x09           | IN/OUT    | Power sequencing (bit 2 toggle, bit 4)     |
+| 0x0A           | IN/OUT    | LCD clock enable (bit 2)                   |
+| 0x500C         | IN/OUT    | SPI chip select #1 (bit 4)                 |
+| 0x5004         | IN/OUT    | SPI chip select #2 (bit 4)                 |
+| 0x4000-0x4019  | OUT       | LCD panel SPI registers (first sequence)   |
+| 0xD000-0xD019  | OUT       | LCD panel SPI registers (second sequence)  |
+| 0xD018         | OUT       | Bit-banged SPI data out (via 0x0060F7/FA)  |
+| 0xF9000C       | R/W       | Unknown MMIO (bit 6 cleared during init)   |
 
 ## Mode Overlay Note
 
-This byte range is mode-overloaded.
+This byte range is mode-overloaded. The same bytes decode differently in z80 mode vs ADL mode:
 
-- In ADL mode, the same bytes decode as an MMIO setup routine that stores to `0xf800xx` addresses.
-- In z80 mode, the same bytes decode as short-address stores like `ld (0x0010), hl`; with MBASE-based MMIO addressing, this is the pattern Phase 202e flagged as the upbase writer idiom.
+- In **ADL mode**: 24-bit addresses like `ld (0xF80010), hl` store to PL111 MMIO registers
+- In **z80 mode**: the same bytes decode as 16-bit stores like `ld (0x0010), hl` where MBASE maps to the LCD register space
 
-That is why this area looks unusual:
-
-- z80 decode shows several `ret m` / `ret nc` instructions inside what otherwise looks like a setup sequence
-- those bytes are the high bytes of 24-bit ADL immediates in the alternate decode
-
-The caller and block evidence still place the `0x005c2d` block inside the larger LCD init/reinit byte range. The upbase-writer interpretation specifically belongs to the z80 overlay.
+The `0xF8` bytes that are the high bytes of 24-bit ADL immediates decode as `ret m` in z80 mode, creating apparent return instructions inside what is actually a straight-line setup sequence.
 
 ## Transpiler Seed Audit
 
-The generated block identifiers in `ROM.transpiled.js` omit `0x`, so searching for `block_0x005b` / `block_0x005c` returns nothing useful. The effective coverage check is against symbols/keys such as:
+All blocks in the investigated range (0x005BB1-0x005D7A and beyond through 0x0060F6) are present in the transpiled JS. No missing seed addresses were found.
 
-- `block_005bb1_z80`
-- `block_005c2d_z80`
-- JSON keys like `"005bb1:z80"`
+Confirmed present in transpiled JS:
+- Entry: block_005bb1_adl through block_005bf6_adl
+- LCD reg init: block_005c14_adl (contains the 0x005C34 upbase write)
+- SPI panel: block_005c44_adl through block_005cec_adl
+- Power seq: block_005cf1_adl through block_005d1e_adl
+- Extended SPI: block_005d35_adl through block_005d7a_adl
+- Helpers: block_0060f7_adl, block_0060fa_adl, block_0060f6_adl, block_0061c2_adl, block_0061e3_adl, block_0061e5_adl
 
-Relevant discovered block starts in this window are already present, including:
+Subroutine targets verified present:
+- 0x0158DE, 0x015AEC, 0x0061C2, 0x0061E3, 0x0061E5, 0x0060F7, 0x0060FA
 
-- `0x005bb1`, `0x005bb6`, `0x005bc2`, `0x005bc6`
-- `0x005bd1`, `0x005bd9`, `0x005be1`, `0x005bea`, `0x005bf5`
-- `0x005c0b`, `0x005c0f`, `0x005c13`, `0x005c1c`, `0x005c24`, `0x005c2d`, `0x005c38`, `0x005c40`
-- `0x005c44`, `0x005c58`, `0x005c59`, `0x005c5e`, `0x005c6b`, `0x005c6c`, `0x005c71`, `0x005c83`, `0x005c84`, `0x005c98`, `0x005c99`, `0x005cad`, `0x005cae`, `0x005cc7`, `0x005cc8`, `0x005cda`, `0x005cdb`, `0x005ceb`, `0x005cec`, `0x005cf1`
-- `0x005d00`, `0x005d06`, `0x005d0d`, `0x005d10`, `0x005d18`, `0x005d26`, `0x005d34`, `0x005d42`, `0x005d43`, `0x005d53`, `0x005d54`
+**New seed addresses needed: none.**
 
-New transpiler seed addresses found in `0x005b00..0x005d20`: none.
+## Summary
 
-## Full Disassembly Of `0x005b00..0x005d20` (z80 overlay)
-
-```text
-0x005b00  cb 48            bit 1, b
-0x005b02  ca 16 5b         jp z, 0x005b16
-0x005b05  00               nop
-0x005b06  7b               ld a, e
-0x005b07  cb 21            sla c
-0x005b09  8a               adc a, d
-0x005b0a  77               ld (hl), a
-0x005b0b  23               inc hl
-0x005b0c  77               ld (hl), a
-0x005b0d  23               inc hl
-0x005b0e  7b               ld a, e
-0x005b0f  cb 21            sla c
-0x005b11  8a               adc a, d
-0x005b12  77               ld (hl), a
-0x005b13  23               inc hl
-0x005b14  77               ld (hl), a
-0x005b15  23               inc hl
-0x005b16  7b               ld a, e
-0x005b17  cb 21            sla c
-0x005b19  8a               adc a, d
-0x005b1a  77               ld (hl), a
-0x005b1b  23               inc hl
-0x005b1c  77               ld (hl), a
-0x005b1d  23               inc hl
-0x005b1e  7b               ld a, e
-0x005b1f  cb 21            sla c
-0x005b21  8a               adc a, d
-0x005b22  77               ld (hl), a
-0x005b23  23               inc hl
-0x005b24  77               ld (hl), a
-0x005b25  23               inc hl
-0x005b26  7b               ld a, e
-0x005b27  cb 21            sla c
-0x005b29  8a               adc a, d
-0x005b2a  77               ld (hl), a
-0x005b2b  23               inc hl
-0x005b2c  77               ld (hl), a
-0x005b2d  23               inc hl
-0x005b2e  7b               ld a, e
-0x005b2f  cb 21            sla c
-0x005b31  8a               adc a, d
-0x005b32  77               ld (hl), a
-0x005b33  23               inc hl
-0x005b34  77               ld (hl), a
-0x005b35  23               inc hl
-0x005b36  7b               ld a, e
-0x005b37  cb 21            sla c
-0x005b39  8a               adc a, d
-0x005b3a  77               ld (hl), a
-0x005b3b  23               inc hl
-0x005b3c  77               ld (hl), a
-0x005b3d  23               inc hl
-0x005b3e  dd 7e 00         ld a, (ix+0)
-0x005b41  dd 23            inc ix
-0x005b43  fd cb 05 5e      bit 3, (iy+5)
-0x005b47  28 02            jr z, 0x005b4b
-0x005b49  ee fe            xor 0xfe
-0x005b4b  4f               ld c, a
-0x005b4c  11 ff 00         ld de, 0x0000ff
-0x005b4f  00               nop
-0x005b50  7b               ld a, e
-0x005b51  cb 21            sla c
-0x005b53  8a               adc a, d
-0x005b54  77               ld (hl), a
-0x005b55  23               inc hl
-0x005b56  77               ld (hl), a
-0x005b57  23               inc hl
-0x005b58  7b               ld a, e
-0x005b59  cb 21            sla c
-0x005b5b  8a               adc a, d
-0x005b5c  77               ld (hl), a
-0x005b5d  23               inc hl
-0x005b5e  77               ld (hl), a
-0x005b5f  23               inc hl
-0x005b60  7b               ld a, e
-0x005b61  cb 21            sla c
-0x005b63  8a               adc a, d
-0x005b64  77               ld (hl), a
-0x005b65  23               inc hl
-0x005b66  77               ld (hl), a
-0x005b67  23               inc hl
-0x005b68  7b               ld a, e
-0x005b69  cb 21            sla c
-0x005b6b  8a               adc a, d
-0x005b6c  77               ld (hl), a
-0x005b6d  23               inc hl
-0x005b6e  77               ld (hl), a
-0x005b6f  23               inc hl
-0x005b70  7b               ld a, e
-0x005b71  cb 21            sla c
-0x005b73  8a               adc a, d
-0x005b74  77               ld (hl), a
-0x005b75  23               inc hl
-0x005b76  77               ld (hl), a
-0x005b77  23               inc hl
-0x005b78  7b               ld a, e
-0x005b79  cb 21            sla c
-0x005b7b  8a               adc a, d
-0x005b7c  77               ld (hl), a
-0x005b7d  23               inc hl
-0x005b7e  77               ld (hl), a
-0x005b7f  23               inc hl
-0x005b80  7b               ld a, e
-0x005b81  cb 21            sla c
-0x005b83  8a               adc a, d
-0x005b84  77               ld (hl), a
-0x005b85  23               inc hl
-0x005b86  77               ld (hl), a
-0x005b87  c1               pop bc
-0x005b88  21 a0 05         ld hl, 0x0005a0
-0x005b8b  d0               ret nc
-0x005b8c  34               inc (hl)
-0x005b8d  05               dec b
-0x005b8e  c2 b6 5a         jp nz, 0x005ab6
-0x005b91  00               nop
-0x005b92  c3 19 5a         jp 0x005a19
-0x005b95  00               nop
-0x005b96  21 00 00         ld hl, 0x000000
-0x005b99  d4 36 ff         call nc, 0x00ff36
-0x005b9c  11 01 00         ld de, 0x000001
-0x005b9f  d4 01 ff         call nc, 0x00ff01
-0x005ba2  57               ld d, a
-0x005ba3  02               ld (bc), a
-0x005ba4  ed b0            ldir
-0x005ba6  e5               push hl
-0x005ba7  21 00 00         ld hl, 0x000000
-0x005baa  00               nop
-0x005bab  22 95 05         ld (0x000595), hl
-0x005bae  d0               ret nc
-0x005baf  e1               pop hl
-0x005bb0  c9               ret
-0x005bb1  fd 21 80 00      ld iy, 0x000080
-0x005bb5  d0               ret nc
-0x005bb6  fd cb 42 be      res 7, (iy+66)
-0x005bba  ed 38 03         in0 a, (0x03)
-0x005bbd  cb 67            bit 4, a
-0x005bbf  ca 44 5c         jp z, 0x005c44
-0x005bc2  00               nop
-0x005bc3  cd de 58         call 0x0058de
-0x005bc6  01 28 7b         ld bc, 0x007b28
-0x005bc9  21 0b 00         ld hl, 0x00000b
-0x005bcc  02               ld (bc), a
-0x005bcd  22 04 00         ld (0x000004), hl
-0x005bd0  f8               ret m
-0x005bd1  21 28 18         ld hl, 0x001828
-0x005bd4  00               nop
-0x005bd5  22 00 00         ld (0x000000), hl
-0x005bd8  f8               ret m
-0x005bd9  21 0c 00         ld hl, 0x00000c
-0x005bdc  00               nop
-0x005bdd  22 08 00         ld (0x000008), hl
-0x005be0  f8               ret m
-0x005be1  00               nop
-0x005be2  21 40 00         ld hl, 0x000040
-0x005be5  00               nop
-0x005be6  22 08 00         ld (0x000008), hl
-0x005be9  f8               ret m
-0x005bea  ed 38 0a         in0 a, (0x0a)
-0x005bed  cb d7            set 2, a
-0x005bef  ed 39 0a         out0 (0x0a), a
-0x005bf2  cd ec 5a         call 0x005aec
-0x005bf5  01 ed 38         ld bc, 0x0038ed
-0x005bf8  07               rlca
-0x005bf9  cb e7            set 4, a
-0x005bfb  ed 39 07         out0 (0x07), a
-0x005bfe  3a 0c 00         ld a, (0x00000c)
-0x005c01  f9               ld sp, hl
-0x005c02  cb b7            res 6, a
-0x005c04  32 0c 00         ld (0x00000c), a
-0x005c07  f9               ld sp, hl
-0x005c08  cd c2 61         call 0x0061c2
-0x005c0b  00               nop
-0x005c0c  cd c2 61         call 0x0061c2
-0x005c0f  00               nop
-0x005c10  cd c2 61         call 0x0061c2
-0x005c13  00               nop
-0x005c14  21 2b 18         ld hl, 0x00182b
-0x005c17  00               nop
-0x005c18  22 00 00         ld (0x000000), hl
-0x005c1b  f8               ret m
-0x005c1c  21 0c 00         ld hl, 0x00000c
-0x005c1f  00               nop
-0x005c20  22 08 00         ld (0x000008), hl
-0x005c23  f8               ret m
-0x005c24  00               nop
-0x005c25  21 40 00         ld hl, 0x000040
-0x005c28  00               nop
-0x005c29  22 08 00         ld (0x000008), hl
-0x005c2c  f8               ret m
-0x005c2d  00               nop
-0x005c2e  00               nop
-0x005c2f  00               nop
-0x005c30  21 21 00         ld hl, 0x000021
-0x005c33  00               nop
-0x005c34  22 10 00         ld (0x000010), hl
-0x005c37  f8               ret m
-0x005c38  21 00 01         ld hl, 0x000100
-0x005c3b  00               nop
-0x005c3c  22 08 00         ld (0x000008), hl
-0x005c3f  f8               ret m
-0x005c40  3a 14 00         ld a, (0x000014)
-0x005c43  f8               ret m
-0x005c44  3e 03            ld a, 0x03
-0x005c46  ed 39 00         out0 (0x00), a
-0x005c49  40 01 0c 50      sis ld bc, 0x00500c
-0x005c4d  ed 78            in a, (c)
-0x005c4f  cb e7            set 4, a
-0x005c51  ed 79            out (c), a
-0x005c53  78               ld a, b
-0x005c54  fe 50            cp 0x50
-0x005c56  28 01            jr z, 0x005c59
-0x005c58  cf               rst 0x08
-0x005c59  79               ld a, c
-0x005c5a  fe 0c            cp 0x0c
-0x005c5c  20 fa            jr nz, 0x005c58
-0x005c5e  0e 04            ld c, 0x04
-0x005c60  ed 78            in a, (c)
-0x005c62  cb e7            set 4, a
-0x005c64  ed 79            out (c), a
-0x005c66  78               ld a, b
-0x005c67  fe 50            cp 0x50
-0x005c69  28 01            jr z, 0x005c6c
-0x005c6b  cf               rst 0x08
-0x005c6c  79               ld a, c
-0x005c6d  fe 04            cp 0x04
-0x005c6f  20 fa            jr nz, 0x005c6b
-0x005c71  40 01 00 40      sis ld bc, 0x004000
-0x005c75  3e 38            ld a, 0x38
-0x005c77  ed 79            out (c), a
-0x005c79  0c               inc c
-0x005c7a  3e 03            ld a, 0x03
-0x005c7c  ed 79            out (c), a
-0x005c7e  78               ld a, b
-0x005c7f  fe 40            cp 0x40
-0x005c81  28 01            jr z, 0x005c84
-0x005c83  cf               rst 0x08
-0x005c84  0c               inc c
-0x005c85  3e 0a            ld a, 0x0a
-0x005c87  ed 79            out (c), a
-0x005c89  0c               inc c
-0x005c8a  3e 1f            ld a, 0x1f
-0x005c8c  ed 79            out (c), a
-0x005c8e  0c               inc c
-0x005c8f  3e 3f            ld a, 0x3f
-0x005c91  ed 79            out (c), a
-0x005c93  78               ld a, b
-0x005c94  fe 40            cp 0x40
-0x005c96  28 01            jr z, 0x005c99
-0x005c98  cf               rst 0x08
-0x005c99  0c               inc c
-0x005c9a  3e 09            ld a, 0x09
-0x005c9c  ed 79            out (c), a
-0x005c9e  0c               inc c
-0x005c9f  3e 02            ld a, 0x02
-0x005ca1  ed 79            out (c), a
-0x005ca3  0c               inc c
-0x005ca4  3e 04            ld a, 0x04
-0x005ca6  ed 79            out (c), a
-0x005ca8  78               ld a, b
-0x005ca9  fe 40            cp 0x40
-0x005cab  28 01            jr z, 0x005cae
-0x005cad  cf               rst 0x08
-0x005cae  0c               inc c
-0x005caf  3e 02            ld a, 0x02
-0x005cb1  ed 79            out (c), a
-0x005cb3  0c               inc c
-0x005cb4  3e 78            ld a, 0x78
-0x005cb6  ed 79            out (c), a
-0x005cb8  0c               inc c
-0x005cb9  3e ef            ld a, 0xef
-0x005cbb  ed 79            out (c), a
-0x005cbd  0c               inc c
-0x005cbe  3e 00            ld a, 0x00
-0x005cc0  ed 79            out (c), a
-0x005cc2  78               ld a, b
-0x005cc3  fe 40            cp 0x40
-0x005cc5  28 01            jr z, 0x005cc8
-0x005cc7  cf               rst 0x08
-0x005cc8  0e 10            ld c, 0x10
-0x005cca  af               xor a
-0x005ccb  ed 79            out (c), a
-0x005ccd  0c               inc c
-0x005cce  ed 79            out (c), a
-0x005cd0  0c               inc c
-0x005cd1  3e d4            ld a, 0xd4
-0x005cd3  ed 79            out (c), a
-0x005cd5  78               ld a, b
-0x005cd6  fe 40            cp 0x40
-0x005cd8  28 01            jr z, 0x005cdb
-0x005cda  cf               rst 0x08
-0x005cdb  0e 19            ld c, 0x19
-0x005cdd  3e 09            ld a, 0x09
-0x005cdf  ed 79            out (c), a
-0x005ce1  0d               dec c
-0x005ce2  3e 2d            ld a, 0x2d
-0x005ce4  ed 79            out (c), a
-0x005ce6  78               ld a, b
-0x005ce7  fe 40            cp 0x40
-0x005ce9  28 01            jr z, 0x005cec
-0x005ceb  cf               rst 0x08
-0x005cec  79               ld a, c
-0x005ced  fe 18            cp 0x18
-0x005cef  20 fa            jr nz, 0x005ceb
-0x005cf1  ed 38 07         in0 a, (0x07)
-0x005cf4  cb d7            set 2, a
-0x005cf6  ed 39 07         out0 (0x07), a
-0x005cf9  ed 38 03         in0 a, (0x03)
-0x005cfc  cb 67            bit 4, a
-0x005cfe  28 0d            jr z, 0x005d0d
-0x005d00  fd cb 42 7e      bit 7, (iy+66)
-0x005d04  28 07            jr z, 0x005d0d
-0x005d06  ed 38 09         in0 a, (0x09)
-0x005d09  e6 ef            and 0xef
-0x005d0b  18 03            jr 0x005d10
-0x005d0d  ed 38 09         in0 a, (0x09)
-0x005d10  cb d7            set 2, a
-0x005d12  ed 39 09         out0 (0x09), a
-0x005d15  cd e3 61         call 0x0061e3
-0x005d18  00               nop
-0x005d19  ed 38 09         in0 a, (0x09)
-0x005d1c  cb 97            res 2, a
-0x005d1e  ed 39 09         out0 (0x09), a
-```
-
-## Short ADL Overlay Snippet
-
-The same bytes decode differently in ADL mode. This is the overlap that makes `0x005c2d` appear as a z80 short store in one interpretation and a `0xf80010` MMIO store in the other:
-
-```text
-0x005c14  21 2b 18 00      ld hl, 0x00182b
-0x005c18  22 00 00 f8      ld (0xf80000), hl
-0x005c1c  21 0c 00 00      ld hl, 0x00000c
-0x005c20  22 08 00 f8      ld (0xf80008), hl
-0x005c24  00               nop
-0x005c25  21 40 00 00      ld hl, 0x000040
-0x005c29  22 08 00 f8      ld (0xf80008), hl
-0x005c2d  00               nop
-0x005c2e  00               nop
-0x005c2f  00               nop
-0x005c30  21 21 00 00      ld hl, 0x000021
-0x005c34  22 10 00 f8      ld (0xf80010), hl
-0x005c38  21 00 01 00      ld hl, 0x000100
-0x005c3c  22 08 00 f8      ld (0xf80008), hl
-0x005c40  3a 14 00 f8      ld a, (0xf80014)
-```
-
-That overlap is why the safest conclusion is:
-
-- the bytes around `0x005c2d` are definitely part of the larger LCD reinit region
-- the upbase-writer interpretation is the z80 overlay of that region
-- the known `0x005d00+` LCD init table is a later body inside the same contiguous flow
+1. The LCD re-init routine at 0x005BB1 spans to 0x0060F6 (~1350 bytes) and is a comprehensive LCD hardware initialization that programs PL111 timing registers AND sends SPI commands to the physical LCD panel controller.
+2. The LCD controller base is definitively at **0xF80000** (not 0xE00000).
+3. The 0x000021 value written to LCDUPbase is an **LCD control value, NOT a VRAM address**. The real VRAM base (0xD40000) is written to LCDUPbase elsewhere in the OS.
+4. The routine has four major sections: (a) PL111 register programming (0x005BC9-0x005C40), (b) SPI panel init via ports 0x50xx/0x40xx (0x005C44-0x005CF0), (c) power sequencing + extended SPI via port 0xD0xx (0x005CF1-0x005F88), and (d) SPI tail + return (0x005F8C-0x0060F6).
+5. Port 0x03 bit 4 is the key decision point -- it determines whether PL111 timing registers need reprogramming.
+6. All blocks in the investigated range are present in the transpiled JS. No new seed addresses needed.
+7. The PL111 timing register write uses a two-pass pattern: first pass writes initial values, then after three delay calls, second pass writes slightly adjusted values (LCDTiming0 changes from 0x1828 to 0x182B).

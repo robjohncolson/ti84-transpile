@@ -826,6 +826,9 @@ export function createExecutor(blocks, memory, options = {}) {
     cpu.onIoWrite(port, value);
   };
 
+  cpu._currentBlockPc = 0;
+  cpu.getLcdF80Stats = () => ({ writes: 0, log: [] });
+
   // Keyboard controller MMIO at 0xE00800-0xE0081F
   // The TI-84 CE keyboard hardware is memory-mapped, accessed via LD (IY+d) with IY=0xE00800
   let lcdMmio = null;
@@ -833,6 +836,8 @@ export function createExecutor(blocks, memory, options = {}) {
     lcdMmio = {
       upbase: 0xD40000,
       control: 0x00,
+      f80Writes: 0,
+      f80WriteLog: [],
     };
     const kbdMmio = {
       mode: 0x00,        // 0xE00803: scan mode
@@ -847,15 +852,45 @@ export function createExecutor(blocks, memory, options = {}) {
     const origRead8 = cpu.read8.bind(cpu);
     const origWrite8 = cpu.write8.bind(cpu);
 
+    const getLcdMmioReg = (addr) => {
+      if (addr >= 0xE00000 && addr < 0xE00030) return addr - 0xE00000;
+      if (addr >= 0xF80000 && addr < 0xF80030) return addr - 0xF80000;
+      return -1;
+    };
+
+    const readLcdMmioReg = (reg) => {
+      if (reg === 0x10) return lcdMmio.upbase & 0xFF;
+      if (reg === 0x11) return (lcdMmio.upbase >> 8) & 0xFF;
+      if (reg === 0x12) return (lcdMmio.upbase >> 16) & 0xFF;
+      if (reg === 0x18) return lcdMmio.control & 0xFF;
+      return 0x00;
+    };
+
+    const writeLcdMmioReg = (reg, value) => {
+      if (reg === 0x10) lcdMmio.upbase = (lcdMmio.upbase & 0xFFFF00) | value;
+      if (reg === 0x11) lcdMmio.upbase = (lcdMmio.upbase & 0xFF00FF) | (value << 8);
+      if (reg === 0x12) lcdMmio.upbase = (lcdMmio.upbase & 0x00FFFF) | (value << 16);
+      if (reg === 0x18) lcdMmio.control = value;
+    };
+
+    const recordF80Write = (addr, value) => {
+      lcdMmio.f80Writes++;
+      if (lcdMmio.f80WriteLog.length >= 100) return;
+      lcdMmio.f80WriteLog.push({
+        addr,
+        value,
+        pc: cpu._currentBlockPc ?? cpu.pc ?? 0,
+      });
+    };
+
+    cpu.getLcdF80Stats = () => ({
+      writes: lcdMmio.f80Writes,
+      log: lcdMmio.f80WriteLog.map((entry) => ({ ...entry })),
+    });
+
     cpu.read8 = (addr) => {
-      if (addr >= 0xE00000 && addr < 0xE00030) {
-        const reg = addr - 0xE00000;
-        if (reg === 0x10) return lcdMmio.upbase & 0xFF;
-        if (reg === 0x11) return (lcdMmio.upbase >> 8) & 0xFF;
-        if (reg === 0x12) return (lcdMmio.upbase >> 16) & 0xFF;
-        if (reg === 0x18) return lcdMmio.control & 0xFF;
-        return 0x00;
-      }
+      const lcdReg = getLcdMmioReg(addr);
+      if (lcdReg >= 0) return readLcdMmioReg(lcdReg);
       if (addr >= 0xE00800 && addr < 0xE00920) {
         const reg = addr - 0xE00800;
         if (reg >= 0x10 && reg < 0x18) return kbd.keyMatrix[reg - 0x10]; // key data per group
@@ -887,12 +922,13 @@ export function createExecutor(blocks, memory, options = {}) {
     };
 
     cpu.write8 = (addr, value) => {
-      if (addr >= 0xE00000 && addr < 0xE00030) {
-        const reg = addr - 0xE00000;
-        if (reg === 0x10) lcdMmio.upbase = (lcdMmio.upbase & 0xFFFF00) | value;
-        if (reg === 0x11) lcdMmio.upbase = (lcdMmio.upbase & 0xFF00FF) | (value << 8);
-        if (reg === 0x12) lcdMmio.upbase = (lcdMmio.upbase & 0x00FFFF) | (value << 16);
-        if (reg === 0x18) lcdMmio.control = value;
+      const lcdReg = getLcdMmioReg(addr);
+      if (lcdReg >= 0) {
+        const byteValue = value & 0xFF;
+        if (addr >= 0xF80000 && addr < 0xF80030) {
+          recordF80Write(addr, byteValue);
+        }
+        writeLcdMmioReg(lcdReg, byteValue);
         return;
       }
       if (addr >= 0xE00800 && addr < 0xE00920) {
@@ -1051,6 +1087,7 @@ export function createExecutor(blocks, memory, options = {}) {
         }
 
         const meta = blockMeta[key];
+        cpu._currentBlockPc = pc;
         if (onBlock) {
           onBlock(pc, mode, meta, steps);
         }

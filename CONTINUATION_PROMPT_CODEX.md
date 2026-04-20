@@ -2,7 +2,7 @@
 
 > ⚠ **Auto-continuation loop active** — Windows Task Scheduler `TI84-AutoContinuation` fires a headless Opus session every 12h (midnight + noon local). Before editing this file in a human session, check `git log --oneline` for recent `auto-session N` commits and consider `schtasks /change /tn "TI84-AutoContinuation" /disable` to prevent conflicts. Re-enable with `/enable`. Launcher: `scripts/auto-continuation.bat`. Logs: `logs/auto-session-*.log` (gitignored).
 
-**Last updated**: 2026-04-20 (auto-session 62: Phase 202f upbase writer reverse-walk COMPLETE — 0x005c2d is a z80-mode decode artifact of ADL LCD controller init; LCD base is 0xF80000 not 0xE00000; upbase seeded by cpu-runtime.js, never written by ROM in boot path).
+**Last updated**: 2026-04-20 (auto-session 63: Phase 202g LCD MMIO mirror COMPLETE + Phase 196 rowLimit trace COMPLETE + Phase 197 mem.fill audit COMPLETE. cpu-runtime.js now intercepts 0xF80000-0xF8002F as LCD mirror alongside 0xE00000. Boot path produces 0 F80000 writes. rowLimit/colLimit are mutable counters, not static limits. 42 suspicious mem.fill calls identified for Phase 198 fix batch).
 
 ---
 
@@ -39,31 +39,20 @@ Only ~13 KB is plausibly executable code, scattered across ~3,400 tiny ranges (t
 
 ## Next-Session Priorities
 
-### 1. ★★★ LCD MMIO base address mismatch (Phase 202g — NEW)
-**Discovery from Phase 202f**: The ROM's LCD controller init routine at `0x005bb1-0x0060f6` writes PL111 registers to base address **`0xF80000`** (ADL mode), but `peripherals.js` intercepts LCD MMIO at **`0xE00000`**. Register offsets match perfectly (timing0=+0x00, timing1=+0x04, timing2=+0x08, upbase=+0x10, lpbase=+0x14, control=+0x18).
+### 1. ★★★ Phase 198 — Fix 42 suspicious `mem.fill` calls (from Phase 197 audit)
+Phase 197 identified 42 probe files with `mem.fill(0xFF, cpu.sp, N)` where `N` is a bare integer (byte count, not end address). All silently no-op because `start > end`. Fix pattern: `mem.fill(0xFF, cpu.sp, cpu.sp + N)`. Full list in `phase197-memfill-audit-report.md` § "SUSPICIOUS List". Golden regression (`probe-phase99d-home-verify.mjs`) is NOT affected but re-run after to confirm.
 
-**Current state**: LCD display works because `cpu-runtime.js` seeds upbase to `0xD40000` at construction, bypassing the ROM's LCD init entirely. But any future feature that needs ROM-driven LCD reconfiguration (DispHome, ClrHome, graph-mode switch) will write to `0xF80000+` and miss the peripheral intercepts.
-
-**Options**:
-(a) Add `0xF80000-0xF8002F` as a second LCD MMIO intercept range in `peripherals.js` (alongside existing `0xE00000`)
-(b) Investigate whether `0xE00000` is actually keyboard/port space and the LCD was always at `0xF80000` — may need to remap
-(c) Just document the discrepancy and leave `0xD40000` seed as the working approach
-
-### 2. ✅ Phase 202f upbase writer investigation — DONE
-All four sub-tasks completed:
-- **(a) Reverse-walk**: 64-byte disassembly + caller scan found **NO external callers** — only internal fallthrough. See `phase202f-reverse-walk-report.md`.
-- **(b) Dynamic probe**: `probe-phase202f-upbase-dynamic.mjs` confirms z80-mode block writes HL (0x0021) to 0xE00010 — **PASS**. But the block overwrites HL to 0x0021 internally (not a VRAM address).
-- **(c) HL value**: HL = 0x000021 before the store — NOT a framebuffer address (expected 0xD40000). This is an LCD control register value.
-- **(d) Routine map**: Full LCD reinit routine mapped at `0x005bb1-0x0060f6` (1350+ bytes). Same routine as Phase 202c's LCD command/data pairs. The z80-mode "upbase write" is a **decode artifact** — the code runs in ADL mode writing to 0xF80010. See `phase202f-lcd-reinit-map-report.md`.
-
-**Conclusion**: The upbase writer hunt is CLOSED. There is no ROM code that writes the VRAM base address to the LCD controller in the boot path. The upbase is seeded by `cpu-runtime.js` and never updated by ROM.
+### 2. ★★ Phase 25G — OS event loop investigation + _GetCSC scan code mapping
+The OS event loop entry at `0x0019BE` and keyboard scan at `0x0159C0` are seeded and working, but the event loop's dispatch logic (what happens after a key is scanned) is unexplored. Investigate: (a) what code path `0x0019BE` takes after `_GetCSC` returns a non-zero scan code, (b) map the scan code translation table at `0x09F79B` (228 bytes, 4 modifier × 56 keys) to actual key names, (c) trace what happens when ENTER (scan code 0x09) is pressed from the home screen.
 
 ### 3. ★ Coverage cleanup (low ROI, skip unless bored)
 Phase 204 added 7 seeds for +0.0156 pp true coverage. Next 10 CODE? gaps (ranks 8–17 from `audit-true-uncovered.mjs`) would yield <0.01 pp each. **Stop chasing reported %**; report `audit-true-uncovered.mjs` numbers.
 
-### Deferred (lower priority)
-- **Phase 196** — Stage 1 row-limit initialization (rowLimit 0xD02504 / colLimit 0xD02505 are 0x00 during Stage 1; check whether boot should set these).
-- **Phase 197** — audit all `mem.fill` calls with non-3 lengths for `start + length` correctness.
+### Completed (session 63)
+- ✅ **Phase 202g** — LCD MMIO 0xF80000 mirror added to `cpu-runtime.js`. Both `0xE00000-0xE0002F` and `0xF80000-0xF8002F` now share the same LCD register state. Boot path produces 0 writes to F80000 range; upbase stays at seeded 0xD40000. See `phase202g-lcd-mirror-report.md`.
+- ✅ **Phase 196** — rowLimit/colLimit write trace. `0xD02504`/`0xD02505` are mutable counters (not static limits). All boot-path writes store `0x00`. The hypothesis that these hold `row=8/col=26` defaults is incorrect. See `phase196-rowlimit-report.md`.
+- ✅ **Phase 197** — mem.fill audit. 326 calls scanned; 284 SAFE, 42 SUSPICIOUS (all probe stack-sentinel seeds with bare length arg). See `phase197-memfill-audit-report.md`.
+- ✅ **Phase 202f** — upbase writer investigation CLOSED (session 62).
 
 ---
 
@@ -103,7 +92,7 @@ Phase 204 added 7 seeds for +0.0156 pp true coverage. Next 10 CODE? gaps (ranks 
 
 ### Ports
 - `0x3D/0x3E` — IRQ status/ack. `0x5000+` — FTINTC010. `0x500A` — keyboard IRQ ack (OUT 0x08). `0x5006` — keyboard IRQ mask.
-- `0xF80000+` — LCD PL111 registers (ROM writes here in ADL mode: timing0 +0x00, timing1 +0x04, timing2 +0x08, upbase +0x10, lpbase +0x14, ctrl +0x18). **peripherals.js intercepts at 0xE00000 instead — MISMATCH** (Phase 202f finding).
+- `0xF80000+` — LCD PL111 registers (ROM writes here in ADL mode: timing0 +0x00, timing1 +0x04, timing2 +0x08, upbase +0x10, lpbase +0x14, ctrl +0x18). **Now mirrored in cpu-runtime.js alongside 0xE00000** (Phase 202g). F80000 writes are logged via `cpu.getLcdF80Stats()`.
 - `0xE00000+` — LCD MMIO as intercepted by peripherals.js (upbase +0x10, ctrl +0x18). `0xE00800-0xE00920` — keyboard MMIO. `0xE00900` — scan result.
 - `0xD40000` — VRAM base (BGR565)
 
