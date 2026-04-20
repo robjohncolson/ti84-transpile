@@ -2,7 +2,7 @@
 
 > ⚠ **Auto-continuation loop active** — Windows Task Scheduler `TI84-AutoContinuation` fires a headless Opus session every 12h (midnight + noon local). Before editing this file in a human session, check `git log --oneline` for recent `auto-session N` commits and consider `schtasks /change /tn "TI84-AutoContinuation" /disable` to prevent conflicts. Re-enable with `/enable`. Launcher: `scripts/auto-continuation.bat`. Logs: `logs/auto-session-*.log` (gitignored).
 
-**Last updated**: 2026-04-19 (auto-session 61: Phase 202e upbase writer identified at 0x005c34 via static scan; extended boot confirms it's dead code from cold-boot path).
+**Last updated**: 2026-04-20 (auto-session 62: Phase 202f upbase writer reverse-walk COMPLETE — 0x005c2d is a z80-mode decode artifact of ADL LCD controller init; LCD base is 0xF80000 not 0xE00000; upbase seeded by cpu-runtime.js, never written by ROM in boot path).
 
 ---
 
@@ -39,27 +39,26 @@ Only ~13 KB is plausibly executable code, scattered across ~3,400 tiny ranges (t
 
 ## Next-Session Priorities
 
-### 1. ★★★ Upbase writer LOCATED (Phase 202e) — reverse-walk needed
-**Prime candidate: `0x005c34` (block 0x005c2d) — `ld (0x000010), hl`** (z80-mode 16-bit store with MBASE=0xE0 → writes `0xE00010`). Secondary: `0x006294` (same idiom). Static scan over 143,547 lifted blocks found **only 9 candidates**; 2 are writes, 7 are pointer-priming `ld bc, 0x0010/11/12`. **No ADL-mode absolute writer exists anywhere in ROM** (4MB raw-byte scan for `32/22/ED43/ED53/DD22/FD22` targeting `0xE00010` = 0 hits). See `TI-84_Plus_CE/phase202e-upbase-writer-scan-report.md`.
+### 1. ★★★ LCD MMIO base address mismatch (Phase 202g — NEW)
+**Discovery from Phase 202f**: The ROM's LCD controller init routine at `0x005bb1-0x0060f6` writes PL111 registers to base address **`0xF80000`** (ADL mode), but `peripherals.js` intercepts LCD MMIO at **`0xE00000`**. Register offsets match perfectly (timing0=+0x00, timing1=+0x04, timing2=+0x08, upbase=+0x10, lpbase=+0x14, control=+0x18).
 
-**Extended boot probe** (`probe-phase202e-boot-upbase-trace.mjs`, 25× cold-boot + 20× os_init step budget): both cold boot and os_init still halt at `0x0019B5` with 0 upbase writes. The upbase writer is **genuinely dead code from the cold-boot path**. It's reached only via an explicit LCD-reinit entry (DispHome? ClrHome? graph-mode switch?) that our probes don't invoke. Initial upbase is seeded to `0xD40000` by `cpu-runtime.js` executor construction — that's why probes see a "correct" upbase despite never writing it.
+**Current state**: LCD display works because `cpu-runtime.js` seeds upbase to `0xD40000` at construction, bypassing the ROM's LCD init entirely. But any future feature that needs ROM-driven LCD reconfiguration (DispHome, ClrHome, graph-mode switch) will write to `0xF80000+` and miss the peripheral intercepts.
 
-**Next targets (Phase 202f)**:
-(a) **Reverse-walk from `0x005c2d` to find its caller(s)** — no callers appear in the lifted CALL graph (suggests entry via uncovered code, jump table, or tail-call from unlifted block). Static disassemble 32 bytes preceding `0x005c2d` and scan all lifted blocks for `call 0x005c??` / `jp 0x005c??` targeting the block or a prefix.
-(b) **Dynamic probe: force pc = `0x005c2d` with mbase=0xE0 (z80 mode) post-OS-init** and confirm upbase = HL after the block runs. If successful, the writer is proven.
-(c) **Snapshot HL value expected at entry** — the 32 bytes before the store likely load HL with the framebuffer address (`0xD40000` or similar). Decode and document.
-(d) Map the full LCD-reinit routine containing `0x005c2d` — it may be the bootloader's LCD handshake or a late init path gated on a flag we haven't set.
+**Options**:
+(a) Add `0xF80000-0xF8002F` as a second LCD MMIO intercept range in `peripherals.js` (alongside existing `0xE00000`)
+(b) Investigate whether `0xE00000` is actually keyboard/port space and the LCD was always at `0xF80000` — may need to remap
+(c) Just document the discrepancy and leave `0xD40000` seed as the working approach
 
-### 2. ★ LCD command/data protocol decoded (Phase 202c-d) — DONE
-- `0x0060F7`: `or a; fallthrough` (carry=0, "index/command" selector)
-- `0x0060FA`: `scf; ...` (carry=1, "data" selector); shared body: `sis ld bc, 0xD018; triple rla; out (c), a; poll in a, (c)` — classic command/data LCD idiom writing port `0x18` on MMIO page `0xD0` (i.e. `0xE00018` = LCD control reg per PL111).
-- **85 call pairs** walked at `0x005D00-0x005F88`. A_values `0x11` (sleep-out), `0x36` (MADCTL), `0x3A` (pixel-format), `0x2A` (column-addr) match **ST7789/ILI9341** panel init commands. Full table in `TI-84_Plus_CE/phase202c-lcd-init-report.md`.
-- 79 unknown routines classified in `TI-84_Plus_CE/phase202c-unknown-routines-report.md`: 33 port-io, 4 graph-flag-toggle, 42 still-unknown (stack-shuffle/plain-call glue), 0 trampolines/math-helpers/ram-copies/display-helpers.
+### 2. ✅ Phase 202f upbase writer investigation — DONE
+All four sub-tasks completed:
+- **(a) Reverse-walk**: 64-byte disassembly + caller scan found **NO external callers** — only internal fallthrough. See `phase202f-reverse-walk-report.md`.
+- **(b) Dynamic probe**: `probe-phase202f-upbase-dynamic.mjs` confirms z80-mode block writes HL (0x0021) to 0xE00010 — **PASS**. But the block overwrites HL to 0x0021 internally (not a VRAM address).
+- **(c) HL value**: HL = 0x000021 before the store — NOT a framebuffer address (expected 0xD40000). This is an LCD control register value.
+- **(d) Routine map**: Full LCD reinit routine mapped at `0x005bb1-0x0060f6` (1350+ bytes). Same routine as Phase 202c's LCD command/data pairs. The z80-mode "upbase write" is a **decode artifact** — the code runs in ADL mode writing to 0xF80010. See `phase202f-lcd-reinit-map-report.md`.
 
-### 3. ✅ Browser-shell deployment verified (Phase 205)
-GH Pages source is `master:/` (not `gh-pages` branch). Correct URL: `https://robjohncolson.github.io/apstats-live-worksheet/TI-84_Plus_CE/browser-shell.html`. Both HTML and `.gz` return HTTP 200. The previously noted URL (`/browser-shell.html` at root) was wrong.
+**Conclusion**: The upbase writer hunt is CLOSED. There is no ROM code that writes the VRAM base address to the LCD controller in the boot path. The upbase is seeded by `cpu-runtime.js` and never updated by ROM.
 
-### 4. ★ Coverage cleanup (low ROI, skip unless bored)
+### 3. ★ Coverage cleanup (low ROI, skip unless bored)
 Phase 204 added 7 seeds for +0.0156 pp true coverage. Next 10 CODE? gaps (ranks 8–17 from `audit-true-uncovered.mjs`) would yield <0.01 pp each. **Stop chasing reported %**; report `audit-true-uncovered.mjs` numbers.
 
 ### Deferred (lower priority)
@@ -104,7 +103,8 @@ Phase 204 added 7 seeds for +0.0156 pp true coverage. Next 10 CODE? gaps (ranks 
 
 ### Ports
 - `0x3D/0x3E` — IRQ status/ack. `0x5000+` — FTINTC010. `0x500A` — keyboard IRQ ack (OUT 0x08). `0x5006` — keyboard IRQ mask.
-- `0xE00000+` — LCD MMIO (upbase +0x10, ctrl +0x18). `0xE00800-0xE00920` — keyboard MMIO. `0xE00900` — scan result.
+- `0xF80000+` — LCD PL111 registers (ROM writes here in ADL mode: timing0 +0x00, timing1 +0x04, timing2 +0x08, upbase +0x10, lpbase +0x14, ctrl +0x18). **peripherals.js intercepts at 0xE00000 instead — MISMATCH** (Phase 202f finding).
+- `0xE00000+` — LCD MMIO as intercepted by peripherals.js (upbase +0x10, ctrl +0x18). `0xE00800-0xE00920` — keyboard MMIO. `0xE00900` — scan result.
 - `0xD40000` — VRAM base (BGR565)
 
 ---
