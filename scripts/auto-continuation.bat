@@ -9,7 +9,7 @@ REM full wrapper prompt.
 
 setlocal
 
-set PROJECT_DIR=C:\Users\rober\Downloads\Projects\school\follow-alongs
+set PROJECT_DIR=C:\Users\rober\Downloads\Projects\school\ti84-transpile
 set PROMPT_FILE=%PROJECT_DIR%\.auto-continuation-prompt.md
 set LOG_DIR=%PROJECT_DIR%\logs
 set TIMESTAMP=%DATE:~10,4%%DATE:~4,2%/%DATE:~7,2%-%TIME:~0,2%%TIME:~3,2%
