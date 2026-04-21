@@ -2,7 +2,7 @@
 
 > ⚠ **Auto-continuation loop active** — Windows Task Scheduler `TI84-AutoContinuation` fires a headless Opus session every 12h (midnight + noon local). Before editing this file in a human session, check `git log --oneline` for recent `auto-session N` commits and consider `schtasks /change /tn "TI84-AutoContinuation" /disable` to prevent conflicts. Re-enable with `/enable`. Launcher: `scripts/auto-continuation.bat`. Logs: `logs/auto-session-*.log` (gitignored).
 
-**Last updated**: 2026-04-21 (session 68: Phase 25G-h COMPLETE. Scancode table at 0x09F79B emits TI-OS **`k*` keypress equates** (`_GetKey` codes written to `kbdKey`), **NOT** `sk*` scan-key codes. Source: `ti84pceg.inc` (CE-Programming/toolchain master, https://raw.githubusercontent.com/CE-Programming/toolchain/master/src/include/ti84pceg.inc). Full 0x00-0xFF k* dictionary applied. Session 67's DICT labels (0x09=ENTER, 0x80=PI, 0x82=SIN, etc.) were **wrong guesses** — authoritative values are 0x05=kEnter (0x09=kClear), 0x80=kAdd, 0x82=kMul. Reconciled DICT: 78 new entries + 14 overwrites. Undecoded cells 114 → 10 (all NONE plane, hitting documented k* gap 0x8E-0x97 / 0x94-0x97). Golden regression 26/26 PASS + 5/5 asserts. Prior: session 67: Phase 25G-g brute-scanned 64 keyboard cells through scanner 0x0159C0, 25G-f produced unified 4-plane decode.
+**Last updated**: 2026-04-21 (session 69: Phase 25H-a COMPLETE. Built jump-table symbol cross-reference: walked 980 entries at ROM 0x020104 (each a `C3 xx yy zz` JP instruction) and cross-referenced against CE-Programming/toolchain's `src/include/ti84pceg.inc`. Result: **957/980 slots named (97.7%)**, 23 unnamed. Canonical subsystem entry points now addressable — FPAdd=0x07C77F, FPSub=0x07C771, SqRoot=0x07DF66, Sin=0x07E57B, Cos=0x07E5B5, RndGuard=0x0685DF, Rcl_StatVar=0x08019F, ChkFindSym=0x08383D, ParseInp=0x099914, PutC=0x0A1B5B, PutMap=0x0A1799, VPutS=0x0A2718, ClrLCD=0x0A21C1, HomeUp=0x0A235E, **GetCSC=0x03FA09** (supersedes our 0x02FF0B which is an internal translation-table helper). 3 of our prior guesses confirmed: 0x062160=DispErrorScreen ✓, 0x08C331=CoorMon (OS main coordinator) ✓, 0x0A349A=RunIndicOff (turns off busy indicator — we mis-described as "status bar updater"). Artifacts: `phase25h-a-jump-table.json` (980 entries), `phase25h-a-jump-table-report.md`, `build-jump-table-symbols.mjs`, `references/ti84pceg.inc` (local copy for future sessions). Golden regression unaffected (no runtime changes). Session 68: Phase 25G-h COMPLETE. Scancode table at 0x09F79B emits TI-OS **`k*` keypress equates** (`_GetKey` codes written to `kbdKey`), **NOT** `sk*` scan-key codes. Source: `ti84pceg.inc` (CE-Programming/toolchain master, https://raw.githubusercontent.com/CE-Programming/toolchain/master/src/include/ti84pceg.inc). Full 0x00-0xFF k* dictionary applied. Session 67's DICT labels (0x09=ENTER, 0x80=PI, 0x82=SIN, etc.) were **wrong guesses** — authoritative values are 0x05=kEnter (0x09=kClear), 0x80=kAdd, 0x82=kMul. Reconciled DICT: 78 new entries + 14 overwrites. Undecoded cells 114 → 10 (all NONE plane, hitting documented k* gap 0x8E-0x97 / 0x94-0x97). Golden regression 26/26 PASS + 5/5 asserts. Prior: session 67: Phase 25G-g brute-scanned 64 keyboard cells through scanner 0x0159C0, 25G-f produced unified 4-plane decode.
 
 ---
 
@@ -39,14 +39,29 @@ Only ~13 KB is plausibly executable code, scattered across ~3,400 tiny ranges (t
 
 ## Next-Session Priorities
 
-### 1. ★ Resolve remaining 10 undecoded NONE-plane cells (low priority)
+### 1. ★★ Pivot to named-subsystem verification (high leverage)
+With Phase 25H-a's jump-table symbol table, we can now drive probes against canonical entry points. Candidate first campaigns:
+- **Stats subsystem** (AP Stats trainer angle): probe `Rcl_StatVar` at 0x08019F with each stat-variable token → verify OP1 is populated correctly, then route through `DispOP1A` at the corresponding JT slot to render. Requires stats to have been computed first (seed `statFlags.allStats` or run `_OneVarStats`).
+- **Parser subsystem**: probe `ParseInp` at 0x099914 with a tokenized string (e.g., `"2+3"` as tokens) → verify OP1 = 5.
+- **FP engine (main CE FP)**: probe `FPAdd` at 0x07C77F, `FPMult` (if in JT), `SqRoot` at 0x07DF66 with OP1/OP2 loaded. Note: this is the CE's main FP at 0x07Cxxx — **distinct from the 0xADxx-0xB6xx engine** we analyzed in Phase 25G-e, which appears to be a secondary/bootloader engine.
+- **VAT walker**: probe `ChkFindSym` at 0x08383D with OP1 loaded with a variable name → verify it returns a valid pointer into RAM/flash.
+
+Each of these is one self-contained Codex probe (load OPs, CALL entry, inspect state) and produces a named, reusable verification checkpoint.
+
+### 2. ★ Backfill phase-report labels with canonical names
+Phase reports scatter bare addresses everywhere. A one-shot script could grep phase*-report.md for any `0x[0-9A-F]{6}` that matches a JT slot and append ` (= Name)` inline. Low-cost, high readability win.
+
+### 3. ★ Resolve remaining 10 undecoded NONE-plane cells (low priority)
 After Phase 25G-h, 10 cells still render as `tok:0x8E..0x97` — these are the documented gap in the k* namespace in `ti84pceg.inc`. If any of these are genuinely emitted by the table at runtime, they may be CE-specific extensions (e.g., graphing-mode softkeys) or OS-internal codes not in the public header. Could probe `_GetKey`/`kbdKey` state during physical key presses that hit rows producing these values, but ROI is low — the table may just have don't-care fill in unused NONE-plane slots.
 
-### 2. ★ FP engine documentation (low priority)
+### 4. ★ FP engine documentation (low priority)
 Phase 25G-e mapped the 0xAD–0xB6 FP region: self-contained engine, rst 0x28 is the exit, only 5 external callers (normalize at 0xB69E). Hub addresses: 0x00B2C4 (operation selection), 0x00B554 (loop-back). Could document the FP opcode dispatch structure for future reference, but this is not blocking anything.
 
-### 3. ★ Coverage cleanup (low ROI, skip unless bored)
+### 5. ★ Coverage cleanup (low ROI, skip unless bored)
 Phase 204 added 7 seeds for +0.0156 pp true coverage. Next 10 CODE? gaps (ranks 8–17 from `audit-true-uncovered.mjs`) would yield <0.01 pp each. **Stop chasing reported %**; report `audit-true-uncovered.mjs` numbers.
+
+### Completed (session 69)
+- ✅ **Phase 25H-a** — Built OS jump-table symbol cross-reference. Walked 980 entries at ROM 0x020104 (4-byte `C3 xx yy zz` JP format, 100% JP coverage) and cross-referenced against CE-Programming/toolchain `src/include/ti84pceg.inc`. 957/980 (97.7%) slots named. Key canonical entries now known: see `## Canonical OS Entry Points (JT)` below. Confirmed 3 prior probe-guessed addresses (0x062160=DispErrorScreen, 0x08C331=CoorMon, 0x0A349A=RunIndicOff — the last being a correction from our earlier "status bar updater" label). Unlocks: subsystem-targeted probes against canonical entry points (stats, parser, FP, VAT). Artifacts: `build-jump-table-symbols.mjs`, `phase25h-a-jump-table.json`, `phase25h-a-jump-table-report.md`, `references/ti84pceg.inc`. Source: https://raw.githubusercontent.com/CE-Programming/toolchain/master/src/include/ti84pceg.inc
 
 ### Completed (session 68)
 - ✅ **Phase 25G-h** — Cross-referenced scancode table outputs against authoritative TI-OS `k*` keypress equates from `ti84pceg.inc` (CE-Programming/toolchain master). **Key correction**: the table emits `_GetKey` (`k*`) codes, NOT `_GetCSC` (`sk*`) codes. Session-67 DICT labels were wrong guesses (0x09→ENTER was actually kClear; 0x80→PI was actually kAdd; 0x82→SIN was actually kMul; 0x84→TAN was actually kExpon; etc.). Rewrote DICT with authoritative k* names for 0x00-0xFB (14 overwrites + 78 new). Undecoded cells: 114 → 10 (all in NONE plane, hitting documented k* gap at 0x8E-0x97 and specifically 0x94-0x97 which the agent flagged as genuinely absent from the keypress equates block). Artifacts: `phase25g-h-report.md` (scheme source + full 0x00-0xFF derivation + conflict table), edited `phase25g-f-decode.mjs`, regenerated `phase25g-f-scancode-decoded.md`. Golden regression 26/26 PASS + 5/5 asserts. Source URL: https://raw.githubusercontent.com/CE-Programming/toolchain/master/src/include/ti84pceg.inc
@@ -76,6 +91,45 @@ Phase 204 added 7 seeds for +0.0156 pp true coverage. Next 10 CODE? gaps (ranks 
 ---
 
 ## Key Reference Addresses
+
+### Canonical OS Entry Points (Jump Table, Phase 25H-a)
+Full list in `TI-84_Plus_CE/phase25h-a-jump-table.json` (957 named, 23 unnamed). Highlights:
+
+| Slot | Impl | Name | Subsystem |
+|------|------|------|-----------|
+| 0x020148 | 0x03F9CD | `KbdScan` | Keyboard |
+| 0x02014C | **0x03FA09** | `GetCSC` | Keyboard (supersedes 0x02FF0B) |
+| 0x020150 | 0x08C331 | `CoorMon` | OS main coordinator (our "OS init" ≡ this) |
+| 0x0201BC | 0x07C771 | `FPSub` | FP |
+| 0x0201C0 | 0x07C77F | `FPAdd` | FP |
+| 0x0201D4 | 0x07C8B3 | `FPSquare` | FP |
+| 0x0201F8 | 0x07DF66 | `SqRoot` | FP |
+| 0x0201FC | 0x0685DF | `RndGuard` | FP |
+| 0x02020C | 0x07E053 | `LnX` | FP |
+| 0x020220 | 0x07E543 | `SinCosRad` | FP |
+| 0x020224 | 0x07E57B | `Sin` | FP |
+| 0x020228 | 0x07E5B5 | `Cos` | FP |
+| 0x02022C | 0x07E5D8 | `Tan` | FP |
+| 0x020294 | 0x07F831 | `CpOP1OP2` | FP |
+| 0x0204F0 | 0x08019F | `Rcl_StatVar` | Stats |
+| 0x0204EC | 0x09A3BD | `Sto_StatVar` | Stats |
+| 0x02050C | 0x08383D | `ChkFindSym` | VAT |
+| 0x020534 | 0x08238A | `CreateReal` | VAT |
+| 0x020588 | 0x08267D | `DelVar` | VAT |
+| 0x0207B4 | 0x0A1799 | `PutMap` | Display (large font) |
+| 0x0207B8 | 0x0A1B5B | `PutC` | Display (large font) |
+| 0x0207BC | 0x0A1C62 | `DispHL_s` | Display |
+| 0x020808 | 0x0A21BB | `ClrLCDFull` | Display |
+| 0x02080C | 0x0A21C1 | `ClrLCD` | Display |
+| 0x020828 | 0x0A235E | `HomeUp` | Display |
+| 0x020830 | 0x0A23E5 | `VPutMap` | Display (small font) |
+| 0x020834 | 0x0A2718 | `VPutS` | Display (small font) |
+| 0x020848 | 0x0A349A | `RunIndicOff` | UI (correction: our "status bar updater" is the busy-indicator off-switch) |
+| 0x020868 | 0x0A2A3E | `GetKeypress` | Keyboard |
+| 0x020D8C | 0x02FCB3 | `GetKey` | Keyboard (blocking) |
+| 0x020E10 | 0x062160 | `DispErrorScreen` | Errors |
+| 0x020F00 | 0x099914 | `ParseInp` | Parser (expression evaluator) |
+| 0x020F60 | 0x09AC77 | `RclVarSym` | VAT |
 
 ### ROM
 - `0x0040ee` — font table base (1bpp 10×14, 28 bytes/glyph, idx = char − 0x20)
