@@ -2,7 +2,7 @@
 
 > ⚠ **Auto-continuation loop active** — Windows Task Scheduler `TI84-AutoContinuation` fires a headless Opus session every 12h (midnight + noon local). Before editing this file in a human session, check `git log --oneline` for recent `auto-session N` commits and consider `schtasks /change /tn "TI84-AutoContinuation" /disable` to prevent conflicts. Re-enable with `/enable`. Launcher: `scripts/auto-continuation.bat`. Logs: `logs/auto-session-*.log` (gitignored).
 
-**Last updated**: 2026-04-21 (auto-session 64: Phase 198 mem.fill fix batch COMPLETE — all 42 suspicious calls fixed across 41 probe files. Phase 25G partial — 0x00B608 seeded + retranspiled, event loop ISR-dispatch probe created (17 blocks traced), scan code translation table dumped (228 bytes at 0x09F79B → 57 keys × 4 modifiers). Finding: 0x00B608 is on non-keyboard ISR path; probe needs no-key + system flag re-set to reach it).
+**Last updated**: 2026-04-21 (session 65: Phase 25G-b two-phase ISR probe COMPLETE — reset strategy works cleanly but 0x00B608 still NOT reached; event loop at 0x19BE loops internally (0x19BE→0x19EF→0x1A17→0x1A23→0x1A2D→0x1A32→0x19B6 HALT) without dispatching to 0x00B608. Phase 25G-c scancode decode partial — 228 bytes at 0x09F79B dumped via inline dictionary, 4 planes × 57 entries. Caveat: physical-label alignment unverified; table likely indexed by compact enum not raw scancode. Golden regression 26/26 PASS.
 
 ---
 
@@ -39,14 +39,21 @@ Only ~13 KB is plausibly executable code, scattered across ~3,400 tiny ranges (t
 
 ## Next-Session Priorities
 
-### 1. ★★★ Phase 25G-b — Reach 0x00B608 via no-keyboard ISR cycle
-Session 64 found that 0x00B608 is on the non-keyboard event loop path. The ISR dispatch clears `(IY+27) bit 6` after the first cycle, so subsequent cycles exit early. To reach 0x00B608: (a) run one ISR cycle with keyboard to let the handler clear the key IRQ, (b) re-set `mem[0xD0009B] |= 0x40` (system flag), (c) clear keyboard IRQ (`p.setKeyboardIRQ(false)`), (d) run another ISR from 0x000038. The no-keyboard path should dispatch through the event loop to 0x00B608. Update `probe-phase25g-eventloop.mjs` with this two-phase approach.
+### 1. ★★★ Phase 25G-d — Establish real index formula for 0x09F79B table
+Phase 25G-c decoded 228 bytes with an inline dictionary but the scancode-to-label alignment is wrong. APPS→'8', '2' key→'D' patterns indicate the table is NOT indexed by `(group<<4)|bit` scancode. Hook a watchpoint on reads to `0x09F79B..0x09F87E` during a live keystroke (feed a known scan code through the event loop), record `addr - 0x09F79B` to get the true index, then re-derive the key/modifier packing. Only after this is 25G-c's physical-label column trustworthy.
 
-### 2. ★★ Phase 25G-c — Decode scan code translation table values
-The 228-byte table at 0x09F79B is dumped in `phase25g-scancode-table-report.md` but the hex values (0x80, 0x8c, 0x91, etc.) are TI-OS internal token codes, not yet mapped to readable names. Cross-reference against the TI-OS token table (see `toksys.inc` from the CE SDK or the token list at wikiti.brandonw.net) to produce a human-readable key→action mapping for all 4 modifier states.
+### 2. ★★★ Phase 25G-e — Find the actual dispatcher to 0x00B608
+Phase 25G-b proved 0x00B608 is NOT on the no-keyboard-IRQ event-loop path either. The OS event loop (0x19BE) loops 0x19BE→0x19EF→0x1A17→0x1A23→0x1A2D→0x1A32→0x19B6 HALT without branching to 0x00B608. Need to: (a) grep the transpiled JS for `0xb608` / `00B608` references to find what calls it, (b) trace from those callers back up to a reachable entry point, (c) seed/verify that entry point.
+
+### 3. ★★ Phase 25G-c completion — Cross-reference TI-OS token table
+The 120 unique `tok:0xNN` values in `phase25g-c-decode.out` need mapping against WikiTI token tables or toksys.inc. Explicitly out of scope for the inline-dictionary retry. Pair with 25G-d — no point decoding until the index is right.
 
 ### 3. ★ Coverage cleanup (low ROI, skip unless bored)
 Phase 204 added 7 seeds for +0.0156 pp true coverage. Next 10 CODE? gaps (ranks 8–17 from `audit-true-uncovered.mjs`) would yield <0.01 pp each. **Stop chasing reported %**; report `audit-true-uncovered.mjs` numbers.
+
+### Completed (session 65)
+- ✅ **Phase 25G-b** — Two-phase ISR event-loop probe (`probe-phase25g-eventloop.mjs`) reworked with keyboard cycle → state reset → no-keyboard cycle. Phase B trace confirms the event loop at 0x19BE never branches to 0x00B608; it executes 0x19BE→0x19EF→0x1A17→0x1A23→0x1A2D→0x1A32→0x19B6 HALT. Two new blocks visited (0x1A23, 0x1A2D). Reset strategy works cleanly. Report: `phase25g-b-report.md`. Golden regression 26/26 PASS.
+- ✅ **Phase 25G-c partial** — Created `phase25g-c-decode.mjs` + `phase25g-c-scancode-decoded.md` + `phase25g-c-decode.out`. 228 bytes at 0x09F79B decoded via inline dictionary into 4 modifier-plane tables. Byte frequency: 144 unique bytes, 0x00 ×36 most frequent. **Caveat**: physical-label column is unreliable — table indexing doesn't match `(group<<4)|bit` scancode convention. Follow-up in Phase 25G-d.
 
 ### Completed (session 64)
 - ✅ **Phase 198** — Fixed all 42 suspicious `mem.fill` calls across 41 probe files. Pattern: `mem.fill(0xFF, cpu.sp, N)` → `mem.fill(0xFF, cpu.sp, cpu.sp + N)`. Golden regression unaffected (26/26 PASS). Grep confirms 0 remaining suspicious patterns.

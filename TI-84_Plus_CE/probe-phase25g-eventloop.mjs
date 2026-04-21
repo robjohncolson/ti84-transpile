@@ -22,6 +22,21 @@ const SYS_FLAG_ADDR = 0xD0009B;
 const SYS_FLAG_MASK = 0x40;
 const STACK_TOP = 0xD1A87E;
 
+const TRACE_PRINT_LIMIT = 30;
+const TRACE_BLOCK_LIMIT = 200;
+
+const INTC_RAW_STATUS_PORT = 0x5000;
+const INTC_ENABLE_MASK_PORT = 0x5004;
+const INTC_KEYBOARD_ACK_PORT = 0x500A;
+const INTC_KEYBOARD_ENABLE_PORT = 0x5006;
+const INTC_KEYBOARD_MASK = 0x08;
+
+const ENTER_GROUP = 1;
+const ENTER_PRESSED = 0xFE;
+const NO_KEYS_PRESSED = 0xFF;
+
+const STOP_ON_TARGET = 'stop_on_target';
+
 function hex(value, width = 6) {
   if (value === undefined || value === null || Number.isNaN(value)) {
     return 'n/a';
@@ -38,6 +53,56 @@ function write24(memory, addr, value) {
 
 function read24(memory, addr) {
   return memory[addr] | (memory[addr + 1] << 8) | (memory[addr + 2] << 16);
+}
+
+function readPort24(peripherals, basePort) {
+  return (
+    peripherals.read(basePort) |
+    (peripherals.read(basePort + 1) << 8) |
+    (peripherals.read(basePort + 2) << 16)
+  );
+}
+
+function blockKey(pc, mode) {
+  return `${hex(pc)}:${mode}`;
+}
+
+function formatTraceEntry(entry) {
+  return `${String(entry.step).padStart(5, ' ')} ${hex(entry.pc)}:${entry.mode} ${entry.dasm}`;
+}
+
+function summarizeRegions(trace) {
+  const regions = new Map();
+
+  for (const entry of trace) {
+    const region = (entry.pc >> 16) & 0xFF;
+    regions.set(region, (regions.get(region) || 0) + 1);
+  }
+
+  return [...regions.entries()].sort((a, b) => b[1] - a[1]);
+}
+
+function collectNewBlocks(trace, baseline) {
+  const newBlocks = [];
+  const emitted = new Set();
+
+  for (const entry of trace) {
+    const key = blockKey(entry.pc, entry.mode);
+    if (baseline.has(key) || emitted.has(key)) {
+      continue;
+    }
+
+    emitted.add(key);
+    newBlocks.push(entry);
+  }
+
+  return newBlocks;
+}
+
+function createTargetStopError() {
+  const error = new Error(STOP_ON_TARGET);
+  error.code = STOP_ON_TARGET;
+  return error;
 }
 
 // --- Load ROM and transpiled blocks ---
@@ -57,181 +122,209 @@ const peripherals = createPeripheralBus({
 const executor = createExecutor(blocks, memory, { peripherals });
 const cpu = executor.cpu;
 
+function primeIsrFrame(returnPc) {
+  cpu.halted = false;
+  cpu.iff1 = 1;
+  cpu.iff2 = 1;
+  cpu.madl = true;
+  cpu.sp = STACK_TOP;
+  cpu.push(returnPc);
+}
+
+function printPhaseSummary(label, phase) {
+  const title = `${label} Summary`;
+  const targetMissing = phase.missingHits.find((entry) => entry.pc === TARGET_BLOCK) ?? null;
+
+  console.log('');
+  console.log(title);
+  console.log('-'.repeat(title.length));
+  console.log(`Termination: ${phase.result.termination}`);
+  console.log(`Final PC: ${hex(phase.result.lastPc)}:${phase.result.lastMode ?? 'adl'}`);
+  console.log(`Block executions: ${phase.trace.length}`);
+  console.log(`Unique blocks: ${phase.uniqueBlocks.size}`);
+  console.log(`Missing block hits: ${phase.missingHits.length}`);
+  console.log(`Reached ${hex(TARGET_BLOCK)}: ${phase.targetReached ? 'YES' : 'no'}`);
+
+  if (targetMissing) {
+    console.log(`${hex(TARGET_BLOCK)} missing at step ${targetMissing.step}`);
+  }
+
+  console.log('Code regions:');
+  for (const [region, count] of summarizeRegions(phase.trace)) {
+    console.log(`  ${hex(region, 2)}xxxx: ${count} blocks`);
+  }
+
+  if (phase.missingHits.length > 0) {
+    console.log('Missing blocks encountered:');
+    for (const entry of phase.missingHits.slice(0, 20)) {
+      console.log(`  step ${String(entry.step).padStart(5, ' ')} -> ${hex(entry.pc)}:${entry.mode}`);
+    }
+    if (phase.missingHits.length > 20) {
+      console.log(`  ... and ${phase.missingHits.length - 20} more`);
+    }
+  }
+
+  console.log(`Callback after ISR: ${hex(phase.callback)}`);
+  console.log(`System flag after: ${hex(phase.systemFlag, 2)}`);
+  console.log(`INTC raw status after: ${hex(phase.rawStatus)}`);
+  console.log(`INTC enable mask after: ${hex(phase.enableMask)}`);
+}
+
+function runIsrPhase(label, returnPc) {
+  const trace = [];
+  const missingHits = [];
+  const uniqueBlocks = new Set();
+  let targetReached = false;
+  let result;
+
+  primeIsrFrame(returnPc);
+
+  console.log(`--- ${label} ---`);
+
+  try {
+    result = executor.runFrom(ISR_ENTRY, 'adl', {
+      maxSteps: 100000,
+      maxLoopIterations: TRACE_BLOCK_LIMIT,
+      onBlock(pc, mode, meta, step) {
+        const entry = {
+          step: step + 1,
+          pc: pc >>> 0,
+          mode,
+          dasm: meta?.instructions?.[0]?.dasm ?? '???',
+        };
+
+        trace.push(entry);
+        uniqueBlocks.add(blockKey(entry.pc, entry.mode));
+
+        if (trace.length <= TRACE_PRINT_LIMIT || entry.pc === TARGET_BLOCK) {
+          console.log(`[block ${String(entry.step).padStart(5, ' ')}] ${hex(entry.pc)}:${entry.mode} ${entry.dasm}`);
+        }
+
+        if (entry.pc === TARGET_BLOCK) {
+          targetReached = true;
+          console.log(`REACHED ${hex(TARGET_BLOCK)} during ${label} at block ${entry.step}`);
+          throw createTargetStopError();
+        }
+      },
+      onMissingBlock(pc, mode, step) {
+        const entry = {
+          step: step + 1,
+          pc: pc >>> 0,
+          mode,
+          dasm: 'missing',
+        };
+
+        missingHits.push(entry);
+        console.log(`[missing ${String(entry.step).padStart(5, ' ')}] ${hex(entry.pc)}:${entry.mode}`);
+      },
+    });
+  } catch (error) {
+    if (error?.code !== STOP_ON_TARGET) {
+      throw error;
+    }
+
+    result = {
+      termination: 'target_hit',
+      lastPc: TARGET_BLOCK,
+      lastMode: 'adl',
+    };
+  }
+
+  return {
+    label,
+    result,
+    trace,
+    missingHits,
+    uniqueBlocks,
+    targetReached,
+    callback: read24(memory, CALLBACK_PTR),
+    systemFlag: memory[SYS_FLAG_ADDR],
+    rawStatus: readPort24(peripherals, INTC_RAW_STATUS_PORT),
+    enableMask: readPort24(peripherals, INTC_ENABLE_MASK_PORT),
+  };
+}
+
 // --- Step A: Boot to HALT (z80 mode, 5000 steps) ---
 
-console.log('Phase 25G Event Loop Probe (ISR-dispatch version)');
-console.log('==================================================');
+console.log('Phase 25G Event Loop Probe (two-phase ISR version)');
+console.log('===================================================');
 
 const boot = executor.runFrom(0x000000, 'z80', {
   maxSteps: 5000,
   maxLoopIterations: 32,
 });
 
-console.log(`Boot: ${boot.steps} steps → ${boot.termination} at ${hex(boot.lastPc)}`);
+console.log(`Boot: ${boot.steps} steps -> ${boot.termination} at ${hex(boot.lastPc)}`);
 
-// --- Step B: Initialize state AFTER boot ---
+// --- Step B: Initialize state after boot ---
 
-// Write callback pointer: mem[0xD02AD7..0xD02AD9] = 0x0019BE (little-endian)
+const isrReturnPc = boot.lastPc + 1;
+
 write24(memory, CALLBACK_PTR, EVENT_LOOP_ENTRY);
-
-// Set system flag: (IY+27) bit 6 = ISR dispatch ready
 memory[SYS_FLAG_ADDR] |= SYS_FLAG_MASK;
 
-// Press ENTER: SDK Group 6 = keyMatrix[1], bit 0
-peripherals.keyboard.keyMatrix[1] = 0xFE;
+peripherals.keyboard.keyMatrix.fill(NO_KEYS_PRESSED);
+peripherals.keyboard.keyMatrix[ENTER_GROUP] = ENTER_PRESSED;
 peripherals.setKeyboardIRQ(true);
-
-// Enable keyboard in interrupt controller
-peripherals.write(0x5006, 0x08);
+peripherals.write(INTC_KEYBOARD_ENABLE_PORT, INTC_KEYBOARD_MASK);
 
 console.log(`Callback: 0xD02AD7 = ${hex(read24(memory, CALLBACK_PTR))}`);
 console.log(`System flag (IY+27): ${hex(memory[SYS_FLAG_ADDR], 2)}`);
-console.log(`Keyboard: ENTER pressed, IRQ bit 19 set`);
+console.log(`INTC raw status: ${hex(readPort24(peripherals, INTC_RAW_STATUS_PORT))}`);
+console.log(`INTC enable mask: ${hex(readPort24(peripherals, INTC_ENABLE_MASK_PORT))}`);
+console.log('Keyboard: ENTER pressed, IRQ bit 19 set');
 console.log('');
 
-// --- Step C: Wake CPU for ISR and run from 0x000038 (not 0x0019BE) ---
+// --- Step C: Phase A - keyboard ISR cycle ---
 
-cpu.halted = false;
-cpu.iff1 = 1;
-cpu.iff2 = 1;
-cpu.sp = STACK_TOP;
-cpu.push(boot.lastPc + 1);
+const phaseA = runIsrPhase('Phase A: keyboard IRQ active', isrReturnPc);
+printPhaseSummary('Phase A', phaseA);
 
-const blockTrace = [];
-const missingHits = [];
-const uniqueBlocks = new Set();
-
-const result = executor.runFrom(ISR_ENTRY, 'adl', {
-  maxSteps: 100000,
-  maxLoopIterations: 200,
-  onBlock(pc, mode, meta, step) {
-    const entry = {
-      step: step + 1,
-      pc: pc >>> 0,
-      mode,
-      dasm: meta?.instructions?.[0]?.dasm ?? '???',
-    };
-
-    blockTrace.push(entry);
-    uniqueBlocks.add(`${hex(entry.pc)}:${entry.mode}`);
-
-    if (blockTrace.length <= 30 || entry.pc === TARGET_BLOCK) {
-      console.log(`[block ${String(entry.step).padStart(5, ' ')}] ${hex(entry.pc)}:${entry.mode} ${entry.dasm}`);
-    }
-  },
-  onMissingBlock(pc, mode, step) {
-    const entry = {
-      step: step + 1,
-      pc: pc >>> 0,
-      mode,
-    };
-
-    missingHits.push(entry);
-    console.log(`[missing ${String(entry.step).padStart(5, ' ')}] ${hex(entry.pc)}:${entry.mode}`);
-  },
-});
-
-const targetReached = blockTrace.some((entry) => entry.pc === TARGET_BLOCK);
-const targetMissing = missingHits.find((entry) => entry.pc === TARGET_BLOCK) ?? null;
-
-// Region breakdown
-const regions = new Map();
-for (const entry of blockTrace) {
-  const region = (entry.pc >> 16) & 0xFF;
-  regions.set(region, (regions.get(region) || 0) + 1);
-}
+// --- Step D: Re-arm for a second ISR with no keyboard IRQ ---
 
 console.log('');
-console.log('ISR Run Summary');
-console.log('---------------');
-console.log(`Termination: ${result.termination}`);
-console.log(`Final PC: ${hex(result.lastPc)}:${result.lastMode ?? 'adl'}`);
-console.log(`Block executions: ${blockTrace.length}`);
-console.log(`Unique blocks: ${uniqueBlocks.size}`);
-console.log(`Missing block hits: ${missingHits.length}`);
-console.log(`Reached ${hex(TARGET_BLOCK)}: ${targetReached ? 'YES' : 'no'}`);
+console.log('--- Between Phases ---');
 
-if (targetMissing) {
-  console.log(`${hex(TARGET_BLOCK)} missing at step ${targetMissing.step}`);
-}
+write24(memory, CALLBACK_PTR, EVENT_LOOP_ENTRY);
+memory[SYS_FLAG_ADDR] |= SYS_FLAG_MASK;
 
-console.log(`Code regions:`);
-for (const [region, count] of [...regions.entries()].sort((a, b) => b[1] - a[1])) {
-  console.log(`  ${hex(region, 2)}xxxx: ${count} blocks`);
-}
+peripherals.keyboard.keyMatrix.fill(NO_KEYS_PRESSED);
+peripherals.setKeyboardIRQ(false);
+peripherals.write(INTC_KEYBOARD_ACK_PORT, INTC_KEYBOARD_MASK);
+peripherals.write(INTC_KEYBOARD_ENABLE_PORT, INTC_KEYBOARD_MASK);
+peripherals.acknowledgeIRQ();
 
-if (missingHits.length > 0) {
-  console.log('Missing blocks encountered:');
-  for (const entry of missingHits.slice(0, 20)) {
-    console.log(`  step ${String(entry.step).padStart(5, ' ')} -> ${hex(entry.pc)}:${entry.mode}`);
-  }
-  if (missingHits.length > 20) {
-    console.log(`  ... and ${missingHits.length - 20} more`);
+console.log(`Callback re-armed: ${hex(read24(memory, CALLBACK_PTR))}`);
+console.log(`System flag re-set: ${hex(memory[SYS_FLAG_ADDR], 2)}`);
+console.log(`INTC raw status: ${hex(readPort24(peripherals, INTC_RAW_STATUS_PORT))}`);
+console.log(`INTC enable mask: ${hex(readPort24(peripherals, INTC_ENABLE_MASK_PORT))}`);
+console.log('Keyboard: released, IRQ source cleared');
+console.log('');
+
+// --- Step E: Phase B - no-keyboard ISR cycle ---
+
+const phaseB = runIsrPhase('Phase B: no keyboard IRQ', isrReturnPc);
+printPhaseSummary('Phase B', phaseB);
+
+const newPhaseBBlocks = collectNewBlocks(phaseB.trace, phaseA.uniqueBlocks);
+
+console.log('');
+console.log('Phase B Newly Visited Blocks');
+console.log('----------------------------');
+if (newPhaseBBlocks.length === 0) {
+  console.log('  (none)');
+} else {
+  for (const entry of newPhaseBBlocks) {
+    console.log(`  ${formatTraceEntry(entry)}`);
   }
 }
 
-console.log(`Callback after ISR: ${hex(read24(memory, CALLBACK_PTR))}`);
-console.log(`System flag after: ${hex(memory[SYS_FLAG_ADDR], 2)}`);
-
-// --- Step D: ISR Cycling (5 rounds) ---
-
 console.log('');
-console.log('--- ISR Cycling (5 rounds) ---');
-
-let anyReachedTarget = targetReached;
-
-for (let cycle = 0; cycle < 5; cycle++) {
-  cpu.halted = false;
-  cpu.iff1 = 1;
-  cpu.iff2 = 1;
-  cpu.sp = STACK_TOP;
-
-  // Push sentinel return address onto stack (manual write, like test 23)
-  cpu.sp -= 3;
-  memory[cpu.sp] = 0xFF;
-  memory[cpu.sp + 1] = 0xFF;
-  memory[cpu.sp + 2] = 0xFF;
-
-  const cycleMissing = [];
-  let cycleReachedTarget = false;
-
-  const cycleResult = executor.runFrom(ISR_ENTRY, 'adl', {
-    maxSteps: 50000,
-    maxLoopIterations: 200,
-    onBlock(pc) {
-      if ((pc >>> 0) === TARGET_BLOCK) {
-        cycleReachedTarget = true;
-      }
-    },
-    onMissingBlock(pc, mode) {
-      cycleMissing.push(hex(pc));
-    },
-  });
-
-  if (cycleReachedTarget) {
-    anyReachedTarget = true;
-  }
-
-  const cb = read24(memory, CALLBACK_PTR);
-
-  // Check first 64 VRAM bytes for activity
-  let vramNow = 0;
-  for (let i = 0xD40000; i < 0xD40000 + 64; i++) {
-    if (memory[i] !== 0) vramNow++;
-  }
-
-  const missInfo = cycleMissing.length > 0
-    ? ` missing=[${[...new Set(cycleMissing)].join(',')}]`
-    : '';
-
-  const targetInfo = cycleReachedTarget ? ' ← TARGET HIT' : '';
-
-  console.log(
-    `  Cycle ${cycle}: ${cycleResult.steps} steps → ${cycleResult.termination}` +
-    ` | cb=${hex(cb)} | vram=${vramNow > 0 ? vramNow + ' non-zero' : 'empty'}` +
-    `${missInfo}${targetInfo}`
-  );
+console.log('Phase B Full Trace');
+console.log('------------------');
+for (const entry of phaseB.trace) {
+  console.log(`  ${formatTraceEntry(entry)}`);
 }
 
 console.log('');
-console.log(`=== ${hex(TARGET_BLOCK)} reached in ANY cycle: ${anyReachedTarget ? 'YES' : 'NO'} ===`);
+console.log(`=== ${hex(TARGET_BLOCK)} reached in Phase B: ${phaseB.targetReached ? 'YES' : 'NO'} ===`);
