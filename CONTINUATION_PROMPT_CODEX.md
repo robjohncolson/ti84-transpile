@@ -2,7 +2,7 @@
 
 > ⚠ **Auto-continuation loop active** — Windows Task Scheduler `TI84-AutoContinuation` fires a headless Opus session every 12h (midnight + noon local). Before editing this file in a human session, check `git log --oneline` for recent `auto-session N` commits and consider `schtasks /change /tn "TI84-AutoContinuation" /disable` to prevent conflicts. Re-enable with `/enable`. Launcher: `scripts/auto-continuation.bat`. Logs: `logs/auto-session-*.log` (gitignored).
 
-**Last updated**: 2026-04-21 (session 65: Phase 25G-b two-phase ISR probe COMPLETE — reset strategy works cleanly but 0x00B608 still NOT reached; event loop at 0x19BE loops internally (0x19BE→0x19EF→0x1A17→0x1A23→0x1A2D→0x1A32→0x19B6 HALT) without dispatching to 0x00B608. Phase 25G-c scancode decode partial — 228 bytes at 0x09F79B dumped via inline dictionary, 4 planes × 57 entries. Caveat: physical-label alignment unverified; table likely indexed by compact enum not raw scancode. Golden regression 26/26 PASS.
+**Last updated**: 2026-04-21 (session 66: Phase 25G-d RESOLVED via Codex dynamic instrumentation — index formula `offset = ((raw>>4)*8) + (raw&0x0F) + 1`, verified: raw 0x31→offset 0x1A→byte 0x90 at 0x09F7B5 via 4 table reads from callers 0x0302EB/0x02FFAE/0x02FFBF/0x02FFDE. Phase 25G-e COMPLETE — rst 0x28 is FP EXIT (0x28→0x2B→0x02011C→0x04AB69→0x03AC→0x19B5→HALT), 0xAD–0xB6 is self-contained FP engine (2019 internal refs, 0 indirect jumps, 5 external callers→0xB69E normalize), 0x00B608 unreachable from cold start. Golden regression 26/26 PASS.
 
 ---
 
@@ -39,17 +39,24 @@ Only ~13 KB is plausibly executable code, scattered across ~3,400 tiny ranges (t
 
 ## Next-Session Priorities
 
-### 1. ★★★ Phase 25G-d — Establish real index formula for 0x09F79B table
-Phase 25G-c decoded 228 bytes with an inline dictionary but the scancode-to-label alignment is wrong. APPS→'8', '2' key→'D' patterns indicate the table is NOT indexed by `(group<<4)|bit` scancode. Hook a watchpoint on reads to `0x09F79B..0x09F87E` during a live keystroke (feed a known scan code through the event loop), record `addr - 0x09F79B` to get the true index, then re-derive the key/modifier packing. Only after this is 25G-c's physical-label column trustworthy.
+### 1. ★★★ Phase 25G-f — Re-decode 0x09F79B table with correct _GetCSC index
+Phase 25G-d established the real index formula: `rom[0x09F79B + getcsc_code + modifier_offset]`. The Phase 25G-c decode used raw `(group<<4)|bit` scan codes which don't match — need to redo the decode with the sequential _GetCSC enumeration (0x01–0x38). Map each _GetCSC code to its physical key label using the keyboard scanner at 0x0159C0, then re-generate the 4-plane table with correct physical labels.
 
-### 2. ★★★ Phase 25G-e — Find the actual dispatcher to 0x00B608
-Phase 25G-b proved 0x00B608 is NOT on the no-keyboard-IRQ event-loop path either. The OS event loop (0x19BE) loops 0x19BE→0x19EF→0x1A17→0x1A23→0x1A2D→0x1A32→0x19B6 HALT without branching to 0x00B608. Need to: (a) grep the transpiled JS for `0xb608` / `00B608` references to find what calls it, (b) trace from those callers back up to a reachable entry point, (c) seed/verify that entry point.
+### 2. ★★ Phase 25G-g — Map _GetCSC scan codes to physical keys
+The keyboard scanner at 0x0159C0 converts raw matrix position to sequential _GetCSC codes (0x01–0x38). Need to either: (a) trace the scanner for each key to build the mapping table, or (b) find the lookup table used by the scanner in ROM. This mapping is prerequisite for 25G-f.
 
 ### 3. ★★ Phase 25G-c completion — Cross-reference TI-OS token table
-The 120 unique `tok:0xNN` values in `phase25g-c-decode.out` need mapping against WikiTI token tables or toksys.inc. Explicitly out of scope for the inline-dictionary retry. Pair with 25G-d — no point decoding until the index is right.
+The 120 unique `tok:0xNN` values in `phase25g-c-decode.out` need mapping against WikiTI token tables or toksys.inc. Now unblocked since 25G-d resolved the index formula. Pair with 25G-f for a complete decode.
 
-### 3. ★ Coverage cleanup (low ROI, skip unless bored)
+### 4. ★ FP engine documentation (low priority)
+Phase 25G-e mapped the 0xAD–0xB6 FP region: self-contained engine, rst 0x28 is the exit, only 5 external callers (normalize at 0xB69E). Hub addresses: 0x00B2C4 (operation selection), 0x00B554 (loop-back). Could document the FP opcode dispatch structure for future reference, but this is not blocking anything.
+
+### 5. ★ Coverage cleanup (low ROI, skip unless bored)
 Phase 204 added 7 seeds for +0.0156 pp true coverage. Next 10 CODE? gaps (ranks 8–17 from `audit-true-uncovered.mjs`) would yield <0.01 pp each. **Stop chasing reported %**; report `audit-true-uncovered.mjs` numbers.
+
+### Completed (session 66)
+- ✅ **Phase 25G-d** — Table index formula RESOLVED via dynamic instrumentation. Probe `probe-phase25g-d-index.mjs` (Codex two-stage: ISR + lookup entry at 0x02FF0B) captured 4 table reads at offset 0x1A for raw scancode 0x31. **Index formula: `offset = ((raw >> 4) * 8) + (raw & 0x0F) + 1`**. For raw 0x31: `(3*8)+1+1 = 26 = 0x1A`. Table byte at 0x09F7B5 = 0x90. ISR stage: zero table reads (translation happens in main-loop GetCSC path). Callers: 0x0302EB, 0x02FFAE, 0x02FFBF, 0x02FFDE. Report: `phase25g-d-report.md`. Golden regression 26/26 PASS.
+- ✅ **Phase 25G-e** — Dispatch to 0x00B608 analysis COMPLETE. Probe `probe-phase25g-e-dispatch.mjs` dumped rst 0x28 handler (FP EXIT: 0x28→0x2B→0x02011C→0x04AB69→0x03AC→0x19B5→HALT), searched all blocks for 0xAD–0xB6 range references (2019 internal, 5 external callers at 0x00156x/0x00161D→0x00B69E), and tested dynamic execution from 0x00ADB9 (41 steps, exited via rst 0x28 without reaching 0x00B608). Conclusion: 0x00B608 is deep in the FP engine's compare-and-branch dispatch, reachable only with specific FP operands. No indirect jumps — all dispatch is direct. Report: `phase25g-e-report.md`. Golden regression 26/26 PASS.
 
 ### Completed (session 65)
 - ✅ **Phase 25G-b** — Two-phase ISR event-loop probe (`probe-phase25g-eventloop.mjs`) reworked with keyboard cycle → state reset → no-keyboard cycle. Phase B trace confirms the event loop at 0x19BE never branches to 0x00B608; it executes 0x19BE→0x19EF→0x1A17→0x1A23→0x1A2D→0x1A32→0x19B6 HALT. Two new blocks visited (0x1A23, 0x1A2D). Reset strategy works cleanly. Report: `phase25g-b-report.md`. Golden regression 26/26 PASS.
@@ -85,7 +92,11 @@ Phase 204 added 7 seeds for +0.0156 pp true coverage. Next 10 CODE? gaps (ranks 
 - `0x0a349a` — status bar updater (guard: bit6 of 0xD0009b must be clear)
 - `0x0a3320` — status indicator dots
 - `0x056900` — dispatch table populator (dynamic-only; head=0xD0231A tail=0xD0231D)
-- `0x09F79B` — scan code translation table (228 bytes, 4 modifier × 56)
+- `0x09F79B` — scan code translation table (228 bytes, 4 modifier × 57). Index: `((raw>>4)*8)+(raw&0x0F)+1`. Modifier offsets: none=0, 2nd=0x38, alpha=0x70, alpha+2nd=0xA8
+- `0x02FF0B` — GetCSC lookup entry (drives table read). Callers at 0x0302EB, 0x02FFAE, 0x02FFBF, 0x02FFDE
+- `0x000028` — rst 0x28 = FP EXIT (di; rsmix → 0x2B → 0x02011C → 0x04AB69 → 0x03AC → 0x19B5 → HALT)
+- `0x00B2C4` — FP engine operation selection hub
+- `0x00B554` — FP engine loop-back to 0x00AE24
 
 ### RAM
 - `0xD02688` / `0xD0268A` — fg / bg color registers
