@@ -106,7 +106,7 @@ function restoreCpu(cpu, snap, mem) {
   cpu._iy    = 0xD00080;
   cpu.f      = 0x40;
   cpu.sp     = STACK_RESET_TOP - 12;
-  mem.fill(0xFF, cpu.sp, 12);
+  mem.fill(0xFF, cpu.sp, cpu.sp + 12);
 }
 
 // ── Function-start lookup ─────────────────────────────────────────────────────

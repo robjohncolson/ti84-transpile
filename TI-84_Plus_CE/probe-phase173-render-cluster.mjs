@@ -422,7 +422,7 @@ async function runPartB() {
   cpu.iff1 = 0;
   cpu.iff2 = 0;
   cpu.sp = STACK_RESET_TOP - 12;
-  mem.fill(0xFF, cpu.sp, 12);
+  mem.fill(0xFF, cpu.sp, cpu.sp + 12);
 
   let stage3Result;
   try {

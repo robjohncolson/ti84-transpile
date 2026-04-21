@@ -2,7 +2,7 @@
 
 > ⚠ **Auto-continuation loop active** — Windows Task Scheduler `TI84-AutoContinuation` fires a headless Opus session every 12h (midnight + noon local). Before editing this file in a human session, check `git log --oneline` for recent `auto-session N` commits and consider `schtasks /change /tn "TI84-AutoContinuation" /disable` to prevent conflicts. Re-enable with `/enable`. Launcher: `scripts/auto-continuation.bat`. Logs: `logs/auto-session-*.log` (gitignored).
 
-**Last updated**: 2026-04-20 (auto-session 63: Phase 202g LCD MMIO mirror COMPLETE + Phase 196 rowLimit trace COMPLETE + Phase 197 mem.fill audit COMPLETE. cpu-runtime.js now intercepts 0xF80000-0xF8002F as LCD mirror alongside 0xE00000. Boot path produces 0 F80000 writes. rowLimit/colLimit are mutable counters, not static limits. 42 suspicious mem.fill calls identified for Phase 198 fix batch).
+**Last updated**: 2026-04-21 (auto-session 64: Phase 198 mem.fill fix batch COMPLETE — all 42 suspicious calls fixed across 41 probe files. Phase 25G partial — 0x00B608 seeded + retranspiled, event loop ISR-dispatch probe created (17 blocks traced), scan code translation table dumped (228 bytes at 0x09F79B → 57 keys × 4 modifiers). Finding: 0x00B608 is on non-keyboard ISR path; probe needs no-key + system flag re-set to reach it).
 
 ---
 
@@ -39,19 +39,23 @@ Only ~13 KB is plausibly executable code, scattered across ~3,400 tiny ranges (t
 
 ## Next-Session Priorities
 
-### 1. ★★★ Phase 198 — Fix 42 suspicious `mem.fill` calls (from Phase 197 audit)
-Phase 197 identified 42 probe files with `mem.fill(0xFF, cpu.sp, N)` where `N` is a bare integer (byte count, not end address). All silently no-op because `start > end`. Fix pattern: `mem.fill(0xFF, cpu.sp, cpu.sp + N)`. Full list in `phase197-memfill-audit-report.md` § "SUSPICIOUS List". Golden regression (`probe-phase99d-home-verify.mjs`) is NOT affected but re-run after to confirm.
+### 1. ★★★ Phase 25G-b — Reach 0x00B608 via no-keyboard ISR cycle
+Session 64 found that 0x00B608 is on the non-keyboard event loop path. The ISR dispatch clears `(IY+27) bit 6` after the first cycle, so subsequent cycles exit early. To reach 0x00B608: (a) run one ISR cycle with keyboard to let the handler clear the key IRQ, (b) re-set `mem[0xD0009B] |= 0x40` (system flag), (c) clear keyboard IRQ (`p.setKeyboardIRQ(false)`), (d) run another ISR from 0x000038. The no-keyboard path should dispatch through the event loop to 0x00B608. Update `probe-phase25g-eventloop.mjs` with this two-phase approach.
 
-### 2. ★★ Phase 25G — OS event loop investigation + _GetCSC scan code mapping
-The OS event loop entry at `0x0019BE` and keyboard scan at `0x0159C0` are seeded and working, but the event loop's dispatch logic (what happens after a key is scanned) is unexplored. Investigate: (a) what code path `0x0019BE` takes after `_GetCSC` returns a non-zero scan code, (b) map the scan code translation table at `0x09F79B` (228 bytes, 4 modifier × 56 keys) to actual key names, (c) trace what happens when ENTER (scan code 0x09) is pressed from the home screen.
+### 2. ★★ Phase 25G-c — Decode scan code translation table values
+The 228-byte table at 0x09F79B is dumped in `phase25g-scancode-table-report.md` but the hex values (0x80, 0x8c, 0x91, etc.) are TI-OS internal token codes, not yet mapped to readable names. Cross-reference against the TI-OS token table (see `toksys.inc` from the CE SDK or the token list at wikiti.brandonw.net) to produce a human-readable key→action mapping for all 4 modifier states.
 
 ### 3. ★ Coverage cleanup (low ROI, skip unless bored)
 Phase 204 added 7 seeds for +0.0156 pp true coverage. Next 10 CODE? gaps (ranks 8–17 from `audit-true-uncovered.mjs`) would yield <0.01 pp each. **Stop chasing reported %**; report `audit-true-uncovered.mjs` numbers.
 
+### Completed (session 64)
+- ✅ **Phase 198** — Fixed all 42 suspicious `mem.fill` calls across 41 probe files. Pattern: `mem.fill(0xFF, cpu.sp, N)` → `mem.fill(0xFF, cpu.sp, cpu.sp + N)`. Golden regression unaffected (26/26 PASS). Grep confirms 0 remaining suspicious patterns.
+- ✅ **Phase 25G partial** — Seeded 0x00B608 in transpiler (seed count 49,972→49,973). Block exists in prelifted JSON. Event loop probe (`probe-phase25g-eventloop.mjs`) traces 17 blocks via ISR dispatch (0x038→0x6f3→0x704→0x710→0x1713→0x719→0x19BE→event loop→HALT). Scan code translation table dumped to `phase25g-scancode-table-report.md` (57 keys × 4 modifiers). **Finding**: 0x00B608 is on the non-keyboard ISR path; keyboard-handling ISR clears system flag, preventing subsequent cycles from re-entering event loop.
+
 ### Completed (session 63)
-- ✅ **Phase 202g** — LCD MMIO 0xF80000 mirror added to `cpu-runtime.js`. Both `0xE00000-0xE0002F` and `0xF80000-0xF8002F` now share the same LCD register state. Boot path produces 0 writes to F80000 range; upbase stays at seeded 0xD40000. See `phase202g-lcd-mirror-report.md`.
-- ✅ **Phase 196** — rowLimit/colLimit write trace. `0xD02504`/`0xD02505` are mutable counters (not static limits). All boot-path writes store `0x00`. The hypothesis that these hold `row=8/col=26` defaults is incorrect. See `phase196-rowlimit-report.md`.
-- ✅ **Phase 197** — mem.fill audit. 326 calls scanned; 284 SAFE, 42 SUSPICIOUS (all probe stack-sentinel seeds with bare length arg). See `phase197-memfill-audit-report.md`.
+- ✅ **Phase 202g** — LCD MMIO 0xF80000 mirror added to `cpu-runtime.js`.
+- ✅ **Phase 196** — rowLimit/colLimit write trace complete.
+- ✅ **Phase 197** — mem.fill audit: 326 calls scanned, 42 SUSPICIOUS identified.
 - ✅ **Phase 202f** — upbase writer investigation CLOSED (session 62).
 
 ---

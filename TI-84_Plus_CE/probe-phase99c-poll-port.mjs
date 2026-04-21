@@ -93,7 +93,7 @@ function seedPollFrame(cpu, mem) {
   cpu.iff1 = 0;
   cpu.iff2 = 0;
   cpu.sp = STACK_RESET_TOP - 6;
-  mem.fill(0xFF, cpu.sp, 6);
+  mem.fill(0xFF, cpu.sp, cpu.sp + 6);
   cpu.write24(cpu.sp, 0x000000);
   cpu.write24(cpu.sp + 3, POLL_STACK_RETURN);
 }

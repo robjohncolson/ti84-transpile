@@ -183,7 +183,7 @@ function resetCpu(cpuSnapshot) {
   cpu.iff2 = 0;
   cpu.f = 0x40;
   cpu.sp = 0xD1A87E - 12;
-  mem.fill(0xff, cpu.sp, 12);
+  mem.fill(0xff, cpu.sp, cpu.sp + 12);
 }
 
 function seedModeBuffer(charCode) {

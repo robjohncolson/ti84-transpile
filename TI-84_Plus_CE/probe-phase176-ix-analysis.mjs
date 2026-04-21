@@ -280,7 +280,7 @@ function restoreStageState(cpu, snapshot, mem, ramSnapshot) {
   cpu.f = 0x40;
   cpu.sp = STACK_RESET_TOP - 12;
   cpu._ix = cpu.sp;
-  mem.fill(0xFF, cpu.sp, 12);
+  mem.fill(0xFF, cpu.sp, cpu.sp + 12);
 }
 
 // ---- Deliverable 1: Extended boot IX/SP trace ----

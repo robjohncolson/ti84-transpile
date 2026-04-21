@@ -157,7 +157,7 @@ function runDynamicBootTrace() {
   cpu.iff1 = 0;
   cpu.iff2 = 0;
   cpu.sp = 0xd1a87e - 12;
-  mem.fill(0xff, cpu.sp, 12);
+  mem.fill(0xff, cpu.sp, cpu.sp + 12);
 
   const osInit = executor.runFrom(0x08c331, 'adl', {
     maxSteps: 500000,

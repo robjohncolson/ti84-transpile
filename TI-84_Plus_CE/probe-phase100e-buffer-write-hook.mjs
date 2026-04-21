@@ -84,7 +84,7 @@ function readModeBuffer(mem) {
 
 function resetStack(cpu, mem, size = 3) {
   cpu.sp = STACK_RESET_TOP - size;
-  mem.fill(0xFF, cpu.sp, size);
+  mem.fill(0xFF, cpu.sp, cpu.sp + size);
 }
 
 function clearPendingInterrupts(peripherals) {

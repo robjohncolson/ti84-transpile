@@ -54,7 +54,7 @@ function resetCpu() {
   for (const [f, v] of Object.entries(cpuSnap)) cpu[f] = v;
   cpu.halted = false; cpu.iff1 = 0; cpu.iff2 = 0;
   cpu._iy = 0xD00080; cpu.f = 0x40;
-  cpu.sp = 0xD1A87E - 12; mem.fill(0xFF, cpu.sp, 12);
+  cpu.sp = 0xD1A87E - 12; mem.fill(0xFF, cpu.sp, cpu.sp + 12);
 }
 
 function seedModeBuffer() {

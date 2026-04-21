@@ -70,7 +70,7 @@ function runWithWriteTrace(maxStepsMain, maxStepsInit = 100000) {
   // Stage 4: longer continuation from OS init entry (try to drive more OS init)
   if (maxStepsMain > 0) {
     cpu.halted = false; cpu.iff1 = 0; cpu.iff2 = 0;
-    cpu.sp = 0xD1A87E - 12; mem.fill(0xFF, cpu.sp, 12);
+    cpu.sp = 0xD1A87E - 12; mem.fill(0xFF, cpu.sp, cpu.sp + 12);
     cpu._iy = 0xD00080; cpu.f = 0x40;
     executor.runFrom(0x08C331, 'adl', {
       maxSteps: maxStepsMain, maxLoopIterations: Math.max(2000, maxStepsMain / 200),
