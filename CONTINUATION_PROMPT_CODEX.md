@@ -2,7 +2,7 @@
 
 > ⚠ **Auto-continuation loop active** — Windows Task Scheduler `TI84-AutoContinuation` fires a headless Opus session every 12h (midnight + noon local). Before editing this file in a human session, check `git log --oneline` for recent `auto-session N` commits and consider `schtasks /change /tn "TI84-AutoContinuation" /disable` to prevent conflicts. Re-enable with `/enable`. Launcher: `scripts/auto-continuation.bat`. Logs: `logs/auto-session-*.log` (gitignored).
 
-**Last updated**: 2026-04-21 (session 66: Phase 25G-d RESOLVED via Codex dynamic instrumentation — index formula `offset = ((raw>>4)*8) + (raw&0x0F) + 1`, verified: raw 0x31→offset 0x1A→byte 0x90 at 0x09F7B5 via 4 table reads from callers 0x0302EB/0x02FFAE/0x02FFBF/0x02FFDE. Phase 25G-e COMPLETE — rst 0x28 is FP EXIT (0x28→0x2B→0x02011C→0x04AB69→0x03AC→0x19B5→HALT), 0xAD–0xB6 is self-contained FP engine (2019 internal refs, 0 indirect jumps, 5 external callers→0xB69E normalize), 0x00B608 unreachable from cold start. Golden regression 26/26 PASS.
+**Last updated**: 2026-04-21 (session 67: Phase 25G-g + 25G-f COMPLETE. 25G-g brute-scanned all 64 keyboard-matrix cells through scanner 0x0159C0 → 63 unique non-zero codes + 1 documented DOWN/no-key collision; scanner returns raw MMIO scancode `((7-sdkGroup)<<4)|bit`, NOT compact _GetCSC form. 25G-f merged session 64's raw table + 25G-d formula + 25G-g labels + 25G-c dictionary into a unified decode: 57 rows × 4 planes, 8 raws (0x70-0x77 = group 7) correctly out-of-range, 114/228 cells remain `tok:0xNN` pending TI-OS token cross-ref. 0 label disagreements between sources. Golden regression 26/26 PASS. Prior: session 66: Phase 25G-d RESOLVED via Codex dynamic instrumentation — index formula `offset = ((raw>>4)*8) + (raw&0x0F) + 1`, verified: raw 0x31→offset 0x1A→byte 0x90 at 0x09F7B5 via 4 table reads from callers 0x0302EB/0x02FFAE/0x02FFBF/0x02FFDE. Phase 25G-e COMPLETE — rst 0x28 is FP EXIT (0x28→0x2B→0x02011C→0x04AB69→0x03AC→0x19B5→HALT), 0xAD–0xB6 is self-contained FP engine (2019 internal refs, 0 indirect jumps, 5 external callers→0xB69E normalize), 0x00B608 unreachable from cold start. Golden regression 26/26 PASS.
 
 ---
 
@@ -39,20 +39,18 @@ Only ~13 KB is plausibly executable code, scattered across ~3,400 tiny ranges (t
 
 ## Next-Session Priorities
 
-### 1. ★★★ Phase 25G-f — Re-decode 0x09F79B table with correct _GetCSC index
-Phase 25G-d established the real index formula: `rom[0x09F79B + getcsc_code + modifier_offset]`. The Phase 25G-c decode used raw `(group<<4)|bit` scan codes which don't match — need to redo the decode with the sequential _GetCSC enumeration (0x01–0x38). Map each _GetCSC code to its physical key label using the keyboard scanner at 0x0159C0, then re-generate the 4-plane table with correct physical labels.
+### 1. ★★ Phase 25G-h — TI-OS token cross-reference for `tok:0xNN` cells
+Phase 25G-f decode leaves 114/228 cells as `tok:0x94..0xFF` (extended TI-OS tokens). Cross-reference against WikiTI token tables or the CE SDK's `toksys.inc` to produce a complete byte→name mapping. No probe work needed — pure documentation task. Feed results back through `phase25g-f-decode.mjs` dictionary to regenerate `phase25g-f-scancode-decoded.md` with full semantics.
 
-### 2. ★★ Phase 25G-g — Map _GetCSC scan codes to physical keys
-The keyboard scanner at 0x0159C0 converts raw matrix position to sequential _GetCSC codes (0x01–0x38). Need to either: (a) trace the scanner for each key to build the mapping table, or (b) find the lookup table used by the scanner in ROM. This mapping is prerequisite for 25G-f.
-
-### 3. ★★ Phase 25G-c completion — Cross-reference TI-OS token table
-The 120 unique `tok:0xNN` values in `phase25g-c-decode.out` need mapping against WikiTI token tables or toksys.inc. Now unblocked since 25G-d resolved the index formula. Pair with 25G-f for a complete decode.
-
-### 4. ★ FP engine documentation (low priority)
+### 2. ★ FP engine documentation (low priority)
 Phase 25G-e mapped the 0xAD–0xB6 FP region: self-contained engine, rst 0x28 is the exit, only 5 external callers (normalize at 0xB69E). Hub addresses: 0x00B2C4 (operation selection), 0x00B554 (loop-back). Could document the FP opcode dispatch structure for future reference, but this is not blocking anything.
 
-### 5. ★ Coverage cleanup (low ROI, skip unless bored)
+### 3. ★ Coverage cleanup (low ROI, skip unless bored)
 Phase 204 added 7 seeds for +0.0156 pp true coverage. Next 10 CODE? gaps (ranks 8–17 from `audit-true-uncovered.mjs`) would yield <0.01 pp each. **Stop chasing reported %**; report `audit-true-uncovered.mjs` numbers.
+
+### Completed (session 67)
+- ✅ **Phase 25G-g** — Brute-scanned all 64 keyboard-matrix cells through scanner at 0x0159C0. 63 non-zero unique _GetCSC codes + 1 documented DOWN/no-key collision at 0x00. **Key finding**: scanner returns raw MMIO scancode `((7-sdkGroup)<<4)|bit`, NOT a compact sequential form — the "sequential" impression came from the downstream table lookup at 0x02FF0B (per 25G-d). 15 scancodes unlabeled (genuinely unused matrix cells incl. group 7 which only has ON at bit 7). Required `cpu._iy = 0xE00800` before each iteration (scanner reads MMIO via IY-offset). Artifacts: `probe-phase25g-g-getcsc-map.mjs`, `phase25g-g-map.json`, `phase25g-g-report.md`. Golden regression 26/26 PASS.
+- ✅ **Phase 25G-f** — Merged session 64's raw table + 25G-d formula + 25G-g probe-verified labels + 25G-c dictionary into a unified decode. 57 rows × 4 planes (NONE/2nd/ALPHA/2nd+ALPHA), plane stride 57 bytes, 8 raws 0x70–0x77 correctly out-of-range (group 7 has no translation entry). 114/228 cells remain `tok:0x94..0xFF` pending TI-OS token cross-ref (Phase 25G-h). 0 label disagreements between session 64 and 25G-g sources. Artifacts: `phase25g-f-decode.mjs`, `phase25g-f-decode.out`, `phase25g-f-decode.err`, `phase25g-f-scancode-decoded.md`.
 
 ### Completed (session 66)
 - ✅ **Phase 25G-d** — Table index formula RESOLVED via dynamic instrumentation. Probe `probe-phase25g-d-index.mjs` (Codex two-stage: ISR + lookup entry at 0x02FF0B) captured 4 table reads at offset 0x1A for raw scancode 0x31. **Index formula: `offset = ((raw >> 4) * 8) + (raw & 0x0F) + 1`**. For raw 0x31: `(3*8)+1+1 = 26 = 0x1A`. Table byte at 0x09F7B5 = 0x90. ISR stage: zero table reads (translation happens in main-loop GetCSC path). Callers: 0x0302EB, 0x02FFAE, 0x02FFBF, 0x02FFDE. Report: `phase25g-d-report.md`. Golden regression 26/26 PASS.

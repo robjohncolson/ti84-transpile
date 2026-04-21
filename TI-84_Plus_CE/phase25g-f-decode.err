@@ -1,0 +1,12 @@
+Out-of-range raw scancodes (offset >= 57):
+  raw=0x70 offset=57 label=key0x70
+  raw=0x71 offset=58 label=key0x71
+  raw=0x72 offset=59 label=key0x72
+  raw=0x73 offset=60 label=key0x73
+  raw=0x74 offset=61 label=key0x74
+  raw=0x75 offset=62 label=key0x75
+  raw=0x76 offset=63 label=key0x76
+  raw=0x77 offset=64 label=key0x77
+Total out-of-range: 8
+Undecoded (tok:0xNN) cells: total=114 by_plane=[NONE:17, 2nd:24, ALPHA:38, 2ndALPHA:35]
+Rows emitted: 57
