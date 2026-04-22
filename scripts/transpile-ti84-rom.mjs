@@ -22087,6 +22087,9 @@ function walkBlocks() {
     { pc: 0x0821a3, mode: 'adl' },
     // Phase 200: coverage-analyzer "suggested seeds" targeting top CODE? gaps.
     ...phase200Seeds,
+    // Phase 25X: explicit MEM_INIT coverage anchors for ParseInp reprobe.
+    { pc: 0x09dee0, mode: 'adl' },
+    { pc: 0x08a98f, mode: 'adl' },
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
