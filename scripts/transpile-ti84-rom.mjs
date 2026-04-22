@@ -22090,6 +22090,11 @@ function walkBlocks() {
     // Phase 25X: explicit MEM_INIT coverage anchors for ParseInp reprobe.
     { pc: 0x09dee0, mode: 'adl' },
     { pc: 0x08a98f, mode: 'adl' },
+    // Phase 25Z: JError/PushErrorHandler blocks for error recovery paths (session 85).
+    { pc: 0x061db2, mode: 'adl' },  // JError (longjmp entry)
+    { pc: 0x061dd1, mode: 'adl' },  // PopErrorHandler / error-restore stub
+    { pc: 0x061def, mode: 'adl' },  // PushErrorHandler
+    { pc: 0x061e27, mode: 'adl' },  // Normal-return cleanup stub
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
