@@ -1,0 +1,365 @@
+# Phase 25AD - Event Loop (CoorMon) Trace with Simulated Keypress
+
+## Date
+
+2026-04-22
+
+## Objective
+
+Trace the OS event loop (CoorMon at 0x08C331) with a simulated ENTER keypress to map how keystrokes flow from GetCSC through key dispatch.
+
+## Setup
+
+- Boot/init sequence from `probe-phase25z-full-pipeline.mjs`
+- Timer IRQ disabled with `createPeripheralBus({ timerInterrupt: false })`
+- MEM_INIT entry: `0x09dee0`
+- CoorMon entry: `0x08c331`
+- Keyboard seeded: keyMatrix[1]=0xFE (ENTER pressed), kbdScanCode=0x09, kbdFlags bits 3+4 set
+- CoorMon budget: 100000 steps, maxLoopIterations=2000
+
+## Stage 1: MEM_INIT
+
+- Returned: true
+- Termination: return_hit
+- Steps: 18
+- Post-MEM_INIT pointers: tempMem=0xd1a881 FPSbase=0xd1a881 FPS=0xd1a881 OPBase=0xd3ffff OPS=0xd3ffff errNo=0x00 errSP=0x000000
+
+## Stage 2: CoorMon Event Loop Trace
+
+- Termination: halt
+- Steps: 65860
+- Final PC: `0x0019b5`
+- Returned to sentinel: false
+- Hit missing block: false
+- Unique PCs visited: 531
+- Total trace entries: 5000
+
+### Known Routine Hits
+
+| Routine | Hit Count | Unique PCs |
+|---------|-----------|------------|
+| GetCSC | 1 | 0x03fa09 |
+| ParseInp | 0 | - |
+| ScancodeTable | 0 | - |
+| JT_Slots | 0 | - |
+| CoorMon | 18 | 0x08c331, 0x08c339, 0x08c33d, 0x08c341, 0x08c345, 0x08c359, 0x08c366, 0x08c38a, 0x08c3a0, 0x08c3a8, 0x08c3ac, 0x08c3c3, 0x08c3c9, 0x08c3ee, 0x08c3f2, 0x08c3f6, 0x08c3fa, 0x08c3fc |
+| BootArea | 23 | 0x000380, 0x00038c, 0x000578, 0x000000, 0x000003, 0x000658, 0x000673, 0x000679, 0x00067e, 0x000688, 0x000697, 0x00069a, 0x0006d8, 0x0006db, 0x000d7e, 0x000dc2, 0x000dca, 0x000d82 |
+| ISR_area | 0 | - |
+
+### Specific Address Checks
+
+- GetCSC (`0x03fa09`): visited=true, count=1
+- ParseInp (`0x099914`): visited=false, count=0
+- CoorMon entry (`0x08c331`): count=1
+
+### Top 20 Most-Visited PCs
+
+| PC | Count | Routine |
+|----|-------|---------|
+| `0x006202` | 60030 |  |
+| `0x0a1a48` | 396 |  |
+| `0x0a1a44` | 322 |  |
+| `0x001380` | 256 |  |
+| `0x001382` | 256 |  |
+| `0x001384` | 256 |  |
+| `0x0060b3` | 255 |  |
+| `0x001377` | 254 |  |
+| `0x0a1a61` | 180 |  |
+| `0x006129` | 173 |  |
+| `0x00612e` | 173 |  |
+| `0x0a1a5d` | 158 |  |
+| `0x001388` | 99 |  |
+| `0x0a1a3b` | 96 |  |
+| `0x006118` | 87 |  |
+| `0x006133` | 87 |  |
+| `0x00613e` | 87 |  |
+| `0x006145` | 87 |  |
+| `0x00611c` | 87 |  |
+| `0x006114` | 86 |  |
+
+### First 100 Unique PCs (Execution Flow)
+
+0. `0x08c331` (CoorMon)
+1. `0x05c634`
+2. `0x05c67c`
+3. `0x08c339` (CoorMon)
+4. `0x06ce73`
+5. `0x06ce7f`
+6. `0x06ce7b`
+7. `0x06c8ab`
+8. `0x08c33d` (CoorMon)
+9. `0x0a349a`
+10. `0x0a349f`
+11. `0x0a32f9`
+12. `0x0a3301`
+13. `0x08c308`
+14. `0x0a331e`
+15. `0x0a336f`
+16. `0x0a3383`
+17. `0x0a338a`
+18. `0x0a33fb`
+19. `0x0a3408`
+20. `0x0a3404`
+21. `0x0a340f`
+22. `0x0a3392`
+23. `0x0a339a`
+24. `0x0a33e6`
+25. `0x0a33ff`
+26. `0x0a33ee`
+27. `0x0a3403`
+28. `0x0a33a2`
+29. `0x0a33aa`
+30. `0x0a33b2`
+31. `0x0a33ba`
+32. `0x0a33c2`
+33. `0x0a33ca`
+34. `0x0a33da`
+35. `0x0a33e4`
+36. `0x0a34ae`
+37. `0x08c341` (CoorMon)
+38. `0x05c75b`
+39. `0x05c760`
+40. `0x05c768`
+41. `0x05c771`
+42. `0x05c795`
+43. `0x05c7a5`
+44. `0x05c7ad`
+45. `0x05c7b5`
+46. `0x05c7c1`
+47. `0x05c7d7`
+48. `0x05c7dd`
+49. `0x05c7ed`
+50. `0x05c815`
+51. `0x0a237e`
+52. `0x0a2a37`
+53. `0x0a2389`
+54. `0x05c819`
+55. `0x05c82c`
+56. `0x05c832`
+57. `0x05e3d6`
+58. `0x04c973`
+59. `0x05c836`
+60. `0x05c838`
+61. `0x05c83e`
+62. `0x05e3f5`
+63. `0x05c842`
+64. `0x05c849`
+65. `0x05c875`
+66. `0x05c87e`
+67. `0x0a1799`
+68. `0x0a17af`
+69. `0x0a17b2`
+70. `0x0a17b8`
+71. `0x07bf3e`
+72. `0x07bf4d`
+73. `0x07bf5c`
+74. `0x000380` (BootArea)
+75. `0x003d85`
+76. `0x07bf61`
+77. `0x0a17c5`
+78. `0x0a2d4c`
+79. `0x0a17d0`
+80. `0x00038c` (BootArea)
+81. `0x005a53`
+82. `0x0a17e9`
+83. `0x0a17ef`
+84. `0x0a17f7`
+85. `0x0a1805`
+86. `0x0a1842`
+87. `0x0a184a`
+88. `0x0a1854`
+89. `0x0a187c`
+90. `0x0a188a`
+91. `0x0a189e`
+92. `0x0a190d`
+93. `0x0a1965`
+94. `0x0a1a3b`
+95. `0x0a1a3f`
+96. `0x0a1a48`
+97. `0x0a1a44`
+98. `0x0a1a4e`
+99. `0x0a1969`
+
+### Loop Pattern (Last 50 Trace PCs)
+
+```
+0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202
+0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202
+0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202
+0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202
+0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202
+```
+
+## Analysis
+
+CoorMon reached GetCSC but NOT ParseInp. The key scan was performed but dispatch did not reach the parser.
+
+## Console Output
+
+```text
+=== Phase 25AD: CoorMon Event Loop Trace with Simulated Keypress ===
+boot: steps=3025 term=halt lastPc=0x0019b5
+post-boot pointers: tempMem=0x000000 FPSbase=0x000000 FPS=0x000000 OPBase=0x000000 OPS=0x000000 errNo=0x00 errSP=0x000000
+
+=== STAGE 1: MEM_INIT ===
+MEM_INIT: returned=true term=return_hit steps=18
+post-MEM_INIT pointers: tempMem=0xd1a881 FPSbase=0xd1a881 FPS=0xd1a881 OPBase=0xd3ffff OPS=0xd3ffff errNo=0x00 errSP=0x000000
+
+=== STAGE 2: Seed Keyboard (ENTER) ===
+keyMatrix[1] set to 0xfe (ENTER pressed)
+kbdScanCode (0xd00587) = 0x09
+kbdFlags (0xd00080) = 0x18 (bits 3,4 set)
+kbdKey (0xd0058c) = 0x05
+kbdGetKy (0xd0058d) = 0x05
+cxCurApp (0xd007e0) = 0x00
+
+=== STAGE 3: CoorMon (Event Loop) ===
+CoorMon: term=halt steps=65860 finalPc=0x0019b5
+CoorMon: returned=false missingBlock=false
+CoorMon: unique PCs visited=531 trace entries=5000
+post-CoorMon pointers: tempMem=0x000000 FPSbase=0x000000 FPS=0x000000 OPBase=0x000000 OPS=0x000000 errNo=0x00 errSP=0x000000
+
+Post-CoorMon keyboard state:
+  kbdScanCode = 0x00
+  kbdFlags = 0x00
+  kbdKey = 0x00
+  kbdGetKy = 0x00
+  cxCurApp = 0x00
+
+=== Routine Hit Analysis ===
+CoorMon: 18 hits, unique PCs: 0x08c331, 0x08c339, 0x08c33d, 0x08c341, 0x08c345, 0x08c359, 0x08c366, 0x08c38a, 0x08c3a0, 0x08c3a8, 0x08c3ac, 0x08c3c3, 0x08c3c9, 0x08c3ee, 0x08c3f2, 0x08c3f6, 0x08c3fa, 0x08c3fc
+BootArea: 23 hits, unique PCs: 0x000380, 0x00038c, 0x000578, 0x000000, 0x000003, 0x000658, 0x000673, 0x000679, 0x00067e, 0x000688, 0x000697, 0x00069a, 0x0006d8, 0x0006db, 0x000d7e, 0x000dc2, 0x000dca, 0x000d82
+GetCSC: 1 hits, unique PCs: 0x03fa09
+
+=== Specific Address Checks ===
+GetCSC (0x03fa09): visited=true count=1
+ParseInp (0x099914): visited=false count=0
+CoorMon entry (0x08c331): count=1
+
+=== Top 20 Most-Visited PCs ===
+  0x006202: 60030 hits (unknown)
+  0x0a1a48: 396 hits (unknown)
+  0x0a1a44: 322 hits (unknown)
+  0x001380: 256 hits (unknown)
+  0x001382: 256 hits (unknown)
+  0x001384: 256 hits (unknown)
+  0x0060b3: 255 hits (unknown)
+  0x001377: 254 hits (unknown)
+  0x0a1a61: 180 hits (unknown)
+  0x006129: 173 hits (unknown)
+  0x00612e: 173 hits (unknown)
+  0x0a1a5d: 158 hits (unknown)
+  0x001388: 99 hits (unknown)
+  0x0a1a3b: 96 hits (unknown)
+  0x006118: 87 hits (unknown)
+  0x006133: 87 hits (unknown)
+  0x00613e: 87 hits (unknown)
+  0x006145: 87 hits (unknown)
+  0x00611c: 87 hits (unknown)
+  0x006114: 86 hits (unknown)
+
+=== First 100 Unique PCs (execution flow) ===
+  [0] 0x08c331 (CoorMon)
+  [1] 0x05c634 
+  [2] 0x05c67c 
+  [3] 0x08c339 (CoorMon)
+  [4] 0x06ce73 
+  [5] 0x06ce7f 
+  [6] 0x06ce7b 
+  [7] 0x06c8ab 
+  [8] 0x08c33d (CoorMon)
+  [9] 0x0a349a 
+  [10] 0x0a349f 
+  [11] 0x0a32f9 
+  [12] 0x0a3301 
+  [13] 0x08c308 
+  [14] 0x0a331e 
+  [15] 0x0a336f 
+  [16] 0x0a3383 
+  [17] 0x0a338a 
+  [18] 0x0a33fb 
+  [19] 0x0a3408 
+  [20] 0x0a3404 
+  [21] 0x0a340f 
+  [22] 0x0a3392 
+  [23] 0x0a339a 
+  [24] 0x0a33e6 
+  [25] 0x0a33ff 
+  [26] 0x0a33ee 
+  [27] 0x0a3403 
+  [28] 0x0a33a2 
+  [29] 0x0a33aa 
+  [30] 0x0a33b2 
+  [31] 0x0a33ba 
+  [32] 0x0a33c2 
+  [33] 0x0a33ca 
+  [34] 0x0a33da 
+  [35] 0x0a33e4 
+  [36] 0x0a34ae 
+  [37] 0x08c341 (CoorMon)
+  [38] 0x05c75b 
+  [39] 0x05c760 
+  [40] 0x05c768 
+  [41] 0x05c771 
+  [42] 0x05c795 
+  [43] 0x05c7a5 
+  [44] 0x05c7ad 
+  [45] 0x05c7b5 
+  [46] 0x05c7c1 
+  [47] 0x05c7d7 
+  [48] 0x05c7dd 
+  [49] 0x05c7ed 
+  [50] 0x05c815 
+  [51] 0x0a237e 
+  [52] 0x0a2a37 
+  [53] 0x0a2389 
+  [54] 0x05c819 
+  [55] 0x05c82c 
+  [56] 0x05c832 
+  [57] 0x05e3d6 
+  [58] 0x04c973 
+  [59] 0x05c836 
+  [60] 0x05c838 
+  [61] 0x05c83e 
+  [62] 0x05e3f5 
+  [63] 0x05c842 
+  [64] 0x05c849 
+  [65] 0x05c875 
+  [66] 0x05c87e 
+  [67] 0x0a1799 
+  [68] 0x0a17af 
+  [69] 0x0a17b2 
+  [70] 0x0a17b8 
+  [71] 0x07bf3e 
+  [72] 0x07bf4d 
+  [73] 0x07bf5c 
+  [74] 0x000380 (BootArea)
+  [75] 0x003d85 
+  [76] 0x07bf61 
+  [77] 0x0a17c5 
+  [78] 0x0a2d4c 
+  [79] 0x0a17d0 
+  [80] 0x00038c (BootArea)
+  [81] 0x005a53 
+  [82] 0x0a17e9 
+  [83] 0x0a17ef 
+  [84] 0x0a17f7 
+  [85] 0x0a1805 
+  [86] 0x0a1842 
+  [87] 0x0a184a 
+  [88] 0x0a1854 
+  [89] 0x0a187c 
+  [90] 0x0a188a 
+  [91] 0x0a189e 
+  [92] 0x0a190d 
+  [93] 0x0a1965 
+  [94] 0x0a1a3b 
+  [95] 0x0a1a3f 
+  [96] 0x0a1a48 
+  [97] 0x0a1a44 
+  [98] 0x0a1a4e 
+  [99] 0x0a1969 
+
+=== Loop Pattern Analysis ===
+Last 50 trace PCs: 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202 0x006202
+```
