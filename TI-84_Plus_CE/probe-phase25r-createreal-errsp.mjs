@@ -26,6 +26,7 @@ import { writeReal, readReal } from './fp-real.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPORT_PATH = path.join(__dirname, 'phase25r-createreal-errsp-report.md');
+const REPORT_TITLE = 'Phase 25R - CreateReal errSP Probe';
 
 const romBytes = fs.readFileSync(path.join(__dirname, 'ROM.rom'));
 const romModule = await import(pathToFileURL(path.join(__dirname, 'ROM.transpiled.js')).href);
@@ -46,6 +47,7 @@ const JERROR_ENTRY = 0x061DB2;
 
 const OP1_ADDR = 0xD005F8;
 const OP1_LEN = 9;
+const OP1_SNAPSHOT_PTR_ADDR = OP1_ADDR + 3;
 const OP4_ADDR = 0xD00619;
 const ERR_NO_ADDR = 0xD008DF;
 const ERR_SP_ADDR = 0xD008E0;
@@ -62,8 +64,13 @@ const VAT_FALLBACKS = {
 
 const FAKE_RET = 0x7FFFFE;
 const ERR_CATCH_ADDR = 0x7FFFFA;
+const SENTINEL_RET = 0xFFFFFF;
 const ERR_FRAME_LEN = 6;
 const EXPECTED_ERRNO = 0x8F;
+const HEAP_TOP_ADDR = 0xD0258A;
+const VAT_END_ADDR = 0xD3FFFF;
+const VAT_TAIL_LEN = 32;
+const VAT_TAIL_START = VAT_END_ADDR - VAT_TAIL_LEN;
 
 const INSN_BUDGET = 500000;
 const MAX_LOOP_ITER = 8192;
@@ -89,6 +96,10 @@ function hexBytes(mem, addr, len) {
 function formatValue(value) {
   if (typeof value === 'number' && Number.isFinite(value)) return `${value}`;
   return String(value);
+}
+
+function formatTransition(before, after) {
+  return `${hex(before)} -> ${hex(after)}${before === after ? ' (unchanged)' : ' (changed)'}`;
 }
 
 function recentPcText(pcs) {
@@ -170,6 +181,25 @@ function describeErrNo(errNo) {
   }
   if (errNo === 0x00) return `${hex(errNo, 2)} (clear)`;
   return hex(errNo, 2);
+}
+
+function snapshotPostAllocState(mem, run, vatBeforeCall, heapTopBefore) {
+  return {
+    de: run.de & 0xFFFFFF,
+    op1BytesHex: hexBytes(mem, OP1_ADDR, OP1_LEN),
+    op1SnapshotPtr: read24(mem, OP1_SNAPSHOT_PTR_ADDR),
+    opBaseBefore: vatBeforeCall.opBase,
+    opBase: read24(mem, OPBASE_ADDR),
+    pTempBefore: vatBeforeCall.pTemp,
+    pTemp: read24(mem, PTEMP_ADDR),
+    progPtrBefore: vatBeforeCall.progPtr,
+    progPtr: read24(mem, PROG_PTR_ADDR),
+    vatTailStart: VAT_TAIL_START,
+    vatTailHex: hexBytes(mem, VAT_TAIL_START, VAT_TAIL_LEN),
+    heapTopBefore,
+    heapTop: read24(mem, HEAP_TOP_ADDR),
+    errNo: mem[ERR_NO_ADDR] & 0xFF,
+  };
 }
 
 function coldBoot(executor, cpu, mem) {
@@ -299,6 +329,7 @@ function runCreateReal(executor, cpu, mem) {
   return {
     returnHit,
     errCaught,
+    sentinelRet: finalPc === SENTINEL_RET && resultSummary?.termination === 'missing_block',
     finalPc,
     steps: resultSummary?.steps ?? lastStep,
     blockCount,
@@ -319,7 +350,7 @@ function runCreateReal(executor, cpu, mem) {
 function writeReport(details) {
   const lines = [];
 
-  lines.push('# Phase 25R - CreateReal errSP Probe');
+  lines.push(`# ${REPORT_TITLE}`);
   lines.push('');
   lines.push('## Goal');
   lines.push('');
@@ -330,6 +361,7 @@ function writeReport(details) {
   lines.push('- Cold boot + post-init pattern copied from earlier Phase 25 probes.');
   lines.push(`- \`CreateReal\` entry: \`${hex(CREATE_REAL_ENTRY)}\``);
   lines.push(`- Static failure path: \`${hex(CREATE_REAL_TYPE_DISPATCH)}\` seeds \`${hex(EXPECTED_ERRNO, 2)}\`, then tails into \`${hex(JERROR_ENTRY)}\``);
+  lines.push(`- Sentinel success path: \`${hex(SENTINEL_RET)}\` with \`errNo=${hex(0x00, 2)}\` is treated as normal completion through the missing-block terminator.`);
   lines.push(`- Timer IRQ disabled via \`createPeripheralBus({ timerInterrupt: false })\``);
   lines.push(`- Instruction budget: ${INSN_BUDGET}`);
   lines.push(`- Loop cap: ${MAX_LOOP_ITER}`);
@@ -345,9 +377,11 @@ function writeReport(details) {
   lines.push('## Outcome');
   lines.push('');
   lines.push(`- Classification: **${details.classification}**`);
+  lines.push(`- passKind=${details.passKind ?? 'n/a'}`);
   lines.push(`- informative=${details.informative}`);
   lines.push(`- returnHit=${details.run.returnHit}`);
   lines.push(`- errCaught=${details.run.errCaught}`);
+  lines.push(`- sentinelRet=${details.run.sentinelRet}`);
   lines.push(`- termination=${details.run.termination}`);
   lines.push(`- finalPc=\`${hex(details.run.finalPc)}\``);
   lines.push(`- steps=${details.run.steps}`);
@@ -363,9 +397,26 @@ function writeReport(details) {
   lines.push(`- Dynamic targets: \`${details.dynamicTargetsText}\``);
   lines.push(`- Missing blocks: \`${details.missingBlocksText}\``);
   lines.push('');
+  if (details.postAlloc) {
+    lines.push('## Post-Allocation State');
+    lines.push('');
+    lines.push(`- DE register: \`${hex(details.postAlloc.de)}\``);
+    lines.push(`- \`OP1\` bytes [0..8] @ \`${hex(OP1_ADDR)}\`: \`${details.postAlloc.op1BytesHex}\``);
+    lines.push(`- \`OP1+3\` snapshot pointer @ \`${hex(OP1_SNAPSHOT_PTR_ADDR)}\`: \`${hex(details.postAlloc.op1SnapshotPtr)}\``);
+    lines.push(`- \`OPBase\` @ \`${hex(OPBASE_ADDR)}\`: ${formatTransition(details.postAlloc.opBaseBefore, details.postAlloc.opBase)}`);
+    lines.push(`- \`pTemp\` @ \`${hex(PTEMP_ADDR)}\`: ${formatTransition(details.postAlloc.pTempBefore, details.postAlloc.pTemp)}`);
+    lines.push(`- \`progPtr\` @ \`${hex(PROG_PTR_ADDR)}\`: ${formatTransition(details.postAlloc.progPtrBefore, details.postAlloc.progPtr)}`);
+    lines.push(`- VAT tail @ \`${hex(details.postAlloc.vatTailStart)}\` (${VAT_TAIL_LEN} bytes): \`${details.postAlloc.vatTailHex}\``);
+    lines.push(`- Heap top @ \`${hex(HEAP_TOP_ADDR)}\`: ${formatTransition(details.postAlloc.heapTopBefore, details.postAlloc.heapTop)}`);
+    lines.push(`- \`errNo\` @ \`${hex(ERR_NO_ADDR)}\`: \`${details.postAllocErrNoText}\``);
+    lines.push('');
+  }
+
   lines.push('## Interpretation');
   lines.push('');
-  if (details.classification === 'PASS') {
+  if (details.passKind === 'SENTINEL_RETURN') {
+    lines.push(`CreateReal completed normally and returned through the sentinel address \`${hex(SENTINEL_RET)}\` with \`errNo=0x00\`. The allocator's own RET popped the stack to the missing_block terminator, confirming successful completion.`);
+  } else if (details.passKind === 'FAKE_RET') {
     lines.push(`CreateReal returned normally to \`${hex(FAKE_RET)}\`. The errSP frame was not needed on this run.`);
   } else if (details.classification === 'INFORMATIVE_FAIL') {
     lines.push(`The errSP frame worked: JError unwound through \`${hex(JERROR_ENTRY)}\` and returned to the probe sentinel \`${hex(ERR_CATCH_ADDR)}\`, with \`errNo=${hex(details.run.errNo, 2)}\`.`);
@@ -384,7 +435,7 @@ function writeReport(details) {
 
 function writeFailureReport(errorText, transcript) {
   const lines = [
-    '# Phase 25R - CreateReal errSP Probe FAILED',
+    `# ${REPORT_TITLE} FAILED`,
     '',
     '## Console Output',
     '',
@@ -429,6 +480,7 @@ async function main() {
   primeProbeState(mem);
 
   const vatBeforeCall = snapshotVatPointers(mem);
+  const heapTopBefore = read24(mem, HEAP_TOP_ADDR);
   const op1PreHex = hexBytes(mem, OP1_ADDR, OP1_LEN);
   const op4Before = mem[OP4_ADDR] & 0xFF;
 
@@ -453,17 +505,24 @@ async function main() {
 
   const run = runCreateReal(executor, cpu, mem);
 
-  const classification = run.returnHit
+  const passKind = run.returnHit
+    ? 'FAKE_RET'
+    : (run.sentinelRet && run.errNo === 0x00)
+      ? 'SENTINEL_RETURN'
+      : null;
+  const classification = passKind
     ? 'PASS'
     : run.errCaught
       ? 'INFORMATIVE_FAIL'
       : 'BAD_FAIL';
-  const informative = run.returnHit || run.errCaught;
+  const informative = Boolean(passKind) || run.errCaught;
 
   const op1PostHex = hexBytes(mem, OP1_ADDR, OP1_LEN);
   const op1Decoded = safeReadReal(memWrap, OP1_ADDR);
   const vatAfterCall = snapshotVatPointers(mem);
+  const postAlloc = snapshotPostAllocState(mem, run, vatBeforeCall, heapTopBefore);
   const errNoText = describeErrNo(run.errNo);
+  const postAllocErrNoText = describeErrNo(postAlloc.errNo);
   const recentPcsText = recentPcText(run.recentPcs);
   const dynamicTargetsText = run.dynamicTargets.length
     ? run.dynamicTargets.map((pc) => hex(pc)).join(' ')
@@ -474,6 +533,8 @@ async function main() {
 
   if (run.returnHit) {
     log(`CreateReal returned to FAKE_RET @ ${hex(FAKE_RET)}`);
+  } else if (passKind === 'SENTINEL_RETURN') {
+    log(`CreateReal completed via sentinel return @ ${hex(SENTINEL_RET)} (missing-block terminator)`);
   } else if (run.errCaught) {
     log(`CreateReal unwound to ERR_CATCH_ADDR @ ${hex(ERR_CATCH_ADDR)}`);
   } else {
@@ -484,12 +545,22 @@ async function main() {
   log(`OP1 post-call @ ${hex(OP1_ADDR)} [${op1PostHex}]`);
   log(`OP1 decoded via readReal: ${formatValue(op1Decoded)}`);
   log(`VAT after call: ${formatVatPointers(vatAfterCall)}`);
+  log(`DE after call: ${hex(postAlloc.de)}`);
+  log(`OP1+3 snapshot pointer @ ${hex(OP1_SNAPSHOT_PTR_ADDR)} = ${hex(postAlloc.op1SnapshotPtr)}`);
+  log(`OPBase @ ${hex(OPBASE_ADDR)}: ${formatTransition(postAlloc.opBaseBefore, postAlloc.opBase)}`);
+  log(`pTemp @ ${hex(PTEMP_ADDR)}: ${formatTransition(postAlloc.pTempBefore, postAlloc.pTemp)}`);
+  log(`progPtr @ ${hex(PROG_PTR_ADDR)}: ${formatTransition(postAlloc.progPtrBefore, postAlloc.progPtr)}`);
+  log(`VAT tail @ ${hex(postAlloc.vatTailStart)} [${postAlloc.vatTailHex}]`);
+  log(`Heap top @ ${hex(HEAP_TOP_ADDR)}: ${formatTransition(postAlloc.heapTopBefore, postAlloc.heapTop)}`);
+  log(`errNo slot @ ${hex(ERR_NO_ADDR)} = ${postAllocErrNoText}`);
+
   log(`recent PCs: ${recentPcsText}`);
-  log(`result=${classification}`);
+  log(`result=${classification}${passKind ? ` (${passKind})` : ''}`);
 
   writeReport({
     transcript,
     classification,
+    passKind,
     informative,
     errFrame,
     op1PreHex,
@@ -502,9 +573,11 @@ async function main() {
     vatSeedApplied: vatSeed.applied,
     run,
     errNoText,
+    postAllocErrNoText,
     recentPcsText,
     dynamicTargetsText,
     missingBlocksText,
+    postAlloc,
   });
 
   log(`report=${REPORT_PATH}`);
