@@ -1,143 +1,211 @@
-# Phase 25S — errNo=0x88 Investigation Report
+# Phase 25S - errNo 0x88 / ParseInp VAT loop
 
-## Error Code 0x88 Identification
+## What 0x88 means
 
-Error code `0x88` = decimal 136 = **E_Syntax** (Syntax Error).
+- `TI-84_Plus_CE/references/ti84pceg.inc` defines `?E_EDIT := 1 shl 7 = 0x80`.
+- The same section defines `?E_Syntax := 8 + E_EDIT = 0x88`.
+- So `errNo=0x88` means **Syntax error**, with the edit / re-entry bit set.
 
-From `ti84pceg.inc`:
-```
-E_EDITF  := 7              ; allow re-entering application
-E_EDIT   := 1 shl E_EDITF  ; = 0x80 (128)
-E_Syntax := 8 + E_EDIT     ; = 8 + 128 = 136 = 0x88
-```
+## Local report hits
 
-The high bit (`E_EDIT` = 0x80) means the error allows cursor-repositioning to the offending token. The low 7 bits (`0x08`) identify the error type as "Syntax". This is the standard error the OS raises when it encounters an unparseable token during expression evaluation.
+- Relevant:
+  - `phase25p-vat-disasm-report.md` already shows `0x061d1a: ld a, 0x88`, which is the shared syntax-error dispatch stub.
+  - `phase25r-parseinp-errsp-report.md` records the later ParseInp run ending with `errNo=0x88` while the PC spins in the VAT walker.
+- Unrelated false positives:
+  - `phase141-report.md` mentions token `0x88`, but that is a token-table entry, not an OS error code.
+  - Several other `0x88` hits are just raw byte dumps or non-error contexts.
 
-## All errNo Write Locations in ROM
+## Annotated disassembly
 
-ROM scan found 7 locations that write `LD (0xD008DF),A`:
+### VAT backstep helper `0x082BE2`
 
-| Address | Context |
-|---------|---------|
-| `0x061DB2` | **Error handler / longjmp** — the canonical ThrowError path |
-| `0x085164` | Parser region — **clears** errNo to 0 (saves old, writes AF=0) |
-| `0x08516D` | Parser region — **restores** errNo from stack |
-| `0x08A6DD` | VAT/variable region — clears errNo to 0 (`XOR A` before write) |
-| `0x0A5D78` | `SUB A` (= clear A) before write — another clear-errNo site |
-| `0x0B3326` | System region — writes errNo then tests bit 7 |
-| `0x0B6E59` | Duplicate of 0x08A6DD pattern — clears errNo to 0 |
+This is the exact call target used by the VAT loop. It is only the 6-byte backstep body.
 
-## Annotated Disassembly
-
-### Error Handler (longjmp) at 0x061DA0
-
-This is the canonical `ThrowError` dispatch table. Multiple entry points load A with a specific error code, then all converge at `0x061DB2`:
-
-```asm
-061DA0: JR 0x061DB2           ; entry: error code already in A (from caller)
-061DA2: LD A,0xB4             ; entry: error 0xB4
-061DA4: JR 0x061DB2
-061DA6: LD A,0x9F             ; entry: error 0x9F
-061DA8: JR 0x061DB2
-061DAA: LD A,0xB5             ; entry: error 0xB5
-061DAC: JR 0x061DB2
-061DAE: LD A,0x36             ; entry: error 0x36
-061DB0: JR 0x061DB2
-061DB2: LD (0xD008DF),A       ; *write errNo*
-061DB6: CALL 0x03E1B4         ; continue error dispatch (longjmp)
-061DBA: RES 1,(IY+0x4B)      ; clear flags
-061DBE: RES 2,(IY+0x12)
-061DC2: RES 4,(IY+0x24)
-061DC6: RES 1,(IY+0x49)
-061DCA: LD SP,(0xD008E0)      ; *longjmp*: restore SP from errSP
-061DCF: POP AF                ; pop saved context
+```text
+0x082be2: 2b                   dec hl  ; back up 1 byte
+0x082be3: 2b                   dec hl  ; back up 2 bytes
+0x082be4: 2b                   dec hl  ; back up 3 bytes
+0x082be5: 2b                   dec hl  ; back up 4 bytes
+0x082be6: 2b                   dec hl  ; back up 5 bytes
+0x082be7: 2b                   dec hl  ; back up 6 bytes
+0x082be8: c9                   ret
 ```
 
-### Parser Bounce / VAT Search Loop at 0x084711
+Important detail: there is another `dec hl` at `0x082be1`, but the loop calls `0x082be2`, not `0x082be1`. So the loop backs up **6 bytes**, not 7.
 
-```asm
-084711: LD A,(HL)             ; read VAT entry type byte
-084712: CALL 0x082BE2         ; helper: DEC HL x6, RET (skip 6-byte name)
-084716: AND 0x3F              ; mask type bits
-084718: SBC HL,DE             ; compare HL vs DE (search bound?)
-08471A: RET C                 ; if HL < DE, search exhausted — return
-08471B: ADD HL,DE             ; undo subtraction (restore HL)
-08471C: LD A,(0xD005F9)       ; load search key byte 1
-084720: CP (HL)               ; compare with VAT entry
-084721: JR Z,0x08472C         ; match first byte — jump to deeper check
-084723: LD BC,0x000003        ; skip 3 more bytes
-084727: OR A                  ; clear carry
-084728: SBC HL,BC             ; HL -= 3
-08472A: JR 0x084711           ; loop back: try next VAT entry
-; --- First byte matched, check second and third ---
-08472C: PUSH HL
-08472D: DEC HL
-08472E: LD A,(0xD005FA)       ; search key byte 2
-084732: CP (HL)
-084733: JR NZ,0x084751        ; mismatch — skip
-084735: DEC HL
-084736: LD A,(0xD005FB)       ; search key byte 3
-08473A: CP (HL)
-08473B: JR NZ,0x084751        ; mismatch — skip
-08473D: POP HL                ; all 3 bytes matched — found it
-08473E: INC HL
+### FindSym VAT scan `0x084711`
+
+```text
+0x084711: 7e                   ld a, (hl)           ; read current VAT byte
+0x084712: cd e2 2b 08          call 0x082be2        ; back up 6 bytes to candidate name area
+0x084716: e6 3f                and 0x3f             ; mask flag bits off the VAT byte
+0x084718: ed 52                sbc hl, de           ; compare against lower bound
+0x08471a: d8                   ret c                ; not found once cursor moves below bound
+0x08471b: 19                   add hl, de           ; restore backtracked cursor
+0x08471c: 3a f9 05 d0          ld a, (0xd005f9)     ; OP1+1 = first name byte
+0x084720: be                   cp (hl)              ; compare first name byte
+0x084721: 28 09                jr z, 0x08472c       ; first byte matched
+0x084723: 01 03 00 00          ld bc, 0x000003
+0x084727: b7                   or a                 ; clear carry before SBC
+0x084728: ed 42                sbc hl, bc           ; move back 3 more bytes
+0x08472a: 18 e5                jr 0x084711          ; try previous VAT slot
+
+0x08472c: e5                   push hl
+0x08472d: 2b                   dec hl
+0x08472e: 3a fa 05 d0          ld a, (0xd005fa)     ; OP1+2
+0x084732: be                   cp (hl)
+0x084733: 20 1c                jr nz, 0x084751      ; second byte mismatch
+0x084735: 2b                   dec hl
+0x084736: 3a fb 05 d0          ld a, (0xd005fb)     ; OP1+3
+0x08473a: be                   cp (hl)
+0x08473b: 20 14                jr nz, 0x084751      ; third byte mismatch
+0x08473d: e1                   pop hl
+0x08473e: 23                   inc hl
+0x08473f: 46                   ld b, (hl)
+0x084740: 23                   inc hl
+0x084741: 56                   ld d, (hl)
+0x084742: 23                   inc hl
+0x084743: 5e                   ld e, (hl)
+0x084744: cd 85 c8 04          call 0x04c885        ; convert stored pointer
+0x084748: 23                   inc hl
+0x084749: 23                   inc hl
+0x08474a: 23                   inc hl
+0x08474b: 7e                   ld a, (hl)
+0x08474c: 32 f8 05 d0          ld (0xd005f8), a     ; OP1[0] = object type
+0x084750: c9                   ret                  ; found
+
+0x084751: e1                   pop hl
+0x084752: 3a f9 05 d0          ld a, (0xd005f9)
+0x084756: 18 cb                jr 0x084723          ; partial-name miss, continue scan
 ```
 
-This is a **Variable Allocation Table (VAT) linear search**. It walks backward through the VAT comparing 3-byte name keys at `0xD005F9-FB`. Each entry is 6 bytes of name followed by type/data bytes.
+The net miss stride is:
 
-### Parser Save/Restore errNo at 0x085150
+- `call 0x082be2` => `HL -= 6`
+- `sbc hl, bc` at `0x084728` => `HL -= 3`
+- Total per miss iteration => **9 bytes**
 
-```asm
-; Context: checking token type in A
-085150: CP 0x4B               ; token 'K'?
-085152: JR Z,...
-085154: CP 0x4C               ; token 'L' (List)?
-085156: JR Z,...
-085158: CP 0x44               ; token 'D'?
-08515A: JR Z,...
-08515C: JR NZ,+0x15           ; not one of these tokens — skip
+### FindSym setup context `0x0846EA`
 
-; *Save/clear/restore errNo pattern*:
-08515E: LD A,(0xD008DF)       ; READ current errNo
-085162: PUSH AF               ; save it on stack
-085163: XOR A                 ; A = 0
-085164: LD (0xD008DF),A       ; CLEAR errNo to 0
-085168: CALL 0x062160         ; call inner function (variable lookup)
-08516C: POP AF                ; restore original errNo
-08516D: LD (0xD008DF),A       ; RESTORE errNo
-08516F: JR +0x0C              ; continue
+This explains why the loop range can become enormous:
+
+```text
+0x0846ea: cd 1f 01 08          call 0x08011f
+0x0846ee: ca 33 38 08          jp z, 0x083833
+0x0846f2: ed 5b 9d 25 d0       ld de, (0xd0259d)    ; progPtr
+0x0846f7: 3a f9 05 d0          ld a, (0xd005f9)     ; OP1+1
+0x0846fb: fe 24                cp 0x24              ; '$' temp-variable path?
+0x0846fd: 20 0b                jr nz, 0x08470a
+0x0846ff: 2a 9a 25 d0          ld hl, (0xd0259a)    ; pTemp
+0x084703: ed 5b 90 25 d0       ld de, (0xd02590)    ; OPBase
+0x084708: 18 04                jr 0x08470e
+0x08470a: 21 ff ff d3          ld hl, 0xd3ffff      ; top of VAT
+0x08470e: 13                   inc de               ; lower bound becomes base + 1
+0x08470f: af                   xor a
+0x084710: 47                   ld b, a
 ```
 
-This is a **speculative lookup**: the parser temporarily clears `errNo`, calls a function that might set it (e.g., if a variable is not found), then **unconditionally restores** the original `errNo`. The inner function at `0x062160` reads `errNo` at `0x06218F` to format error messages.
+For non-temp names, the search starts at `HL=0xD3FFFF` and stops only when the backtracked cursor drops below `DE=progPtr+1`.
 
-## Hypothesis: Why errNo=0x88 Without Longjmp
+### ChkFindSym context `0x08383D`
 
-The evidence points to a **non-fatal error path** in the parser:
+This is the parser-side entry that drops into `FindSym`:
 
-1. **ParseInp calls the expression evaluator**, which encounters a syntax it cannot parse (e.g., an empty input buffer, end-of-line token, or unrecognized token during initial home-screen idle).
+```text
+0x08383d: cd 80 00 08          call 0x080080
+0x083841: 28 0e                jr z, 0x083851
+0x083843: c3 ea 46 08          jp 0x0846ea          ; generic symbol lookup -> FindSym
+```
 
-2. **The error is raised via `ThrowError` at `0x061DB2`**, which writes `0x88` (E_Syntax) to `errNo` at `0xD008DF`.
+That is why ParseInp ends up in VAT search code at all: once it believes it is resolving a symbol, it naturally lands in `ChkFindSym` / `FindSym`.
 
-3. **However, the longjmp at `0x061DCA` (`LD SP,(errSP)`) does fire** — it restores SP from `errSP` and returns to the error handler established by `PushErrorHandler`. The key insight is that **the error handler catches the error and continues normally**. The OS uses `PushErrorHandler`/`PopErrorHandler` as a try/catch mechanism:
-   - Before calling ParseInp, the OS pushes an error handler (setting `errSP`)
-   - ParseInp encounters a syntax error and throws via `0x061DB2`
-   - The longjmp fires, restoring SP to the pushed handler
-   - The handler sees `errNo=0x88`, decides the error is non-fatal (e.g., empty input), and continues
+## Analysis
 
-4. **The errNo value persists** because no code clears it after the handler catches it. The save/restore pattern at `0x08515E-08516D` only operates on specific token paths (List/D/K variables), not on the general post-error path.
+### 1. Why ParseInp enters VAT search code
 
-5. **This is normal TI-OS behavior**: on the home screen with no user input, ParseInp is called on an empty expression. The empty expression triggers E_Syntax. The error handler catches it, and the OS simply returns to the main loop waiting for keystrokes. `errNo=0x88` remains as a latent value in RAM — it does not cause a visible error because the handler suppressed it.
+- `ParseInp` helper `0x099b18` calls `0x08383d` (`ChkFindSym`).
+- `0x083843` immediately jumps into `0x0846ea` (`FindSym`) on the generic symbol path.
+- So the parser is not "randomly" entering VAT logic. It is following the ordinary symbol-resolution path.
+- In the phase25R probe, OP1 ended as `ff 58 00 00 00 00 00 00 00`, so the walker is trying to resolve a name whose first byte is `0x58`.
 
-### Summary
+### 2. What condition exits the loop
 
-- **Error 0x88 = E_Syntax** (Syntax Error, with re-edit flag set)
-- **The longjmp likely does fire** but is caught by a `PushErrorHandler` frame
-- **errNo persists** because nothing clears it after the handler runs
-- **This is expected behavior** for an empty-input ParseInp call on the home screen
-- **No bug in the transpiler** — the errNo=0x88 residue is normal OS state
+- Success exit:
+  - First-byte match at `0x084721`.
+  - Remaining-name-byte checks at `0x08472e` and `0x084736`.
+  - Pointer/type extraction at `0x08473e..0x08474c`.
+  - Final `ret` at `0x084750`.
+- Failure exit:
+  - `0x08471a ret c` after `sbc hl, de`.
+  - That happens once the backtracked cursor (`current - 6`) falls below the lower bound in `DE`.
 
-### Next Steps
+### 3. Why the observed run does not exit within the probe budget
 
-- Instrument `0x061DCA` (the `LD SP,(errSP)` longjmp) to confirm it fires during ParseInp
-- Trace the `PushErrorHandler` call that sets up the catch frame before ParseInp
-- Verify that the error handler at the caught address simply returns to the main loop
+The key phase25R snapshot was:
+
+```text
+OP1 post-call [ff 58 00 00 00 00 00 00 00]
+OPS/progPtr/pTemp/OPBase after: OPBase=0x000000 OPS=0xd1a877 pTemp=0x000000 progPtr=0x000000 errSP=0xd1a869 errNo=0x88
+```
+
+That means the non-temp FindSym path uses:
+
+- Start cursor: `HL = 0xD3FFFF`
+- Lower bound: `DE = progPtr + 1 = 0x000001`
+- Miss stride: 9 bytes per iteration
+
+If no matching name is found, the loop needs about:
+
+- `1,543,737` miss iterations before `ret c`
+- About `7,718,685` basic-block hits at roughly 5 blocks per miss iteration
+
+The phase25R probe only allowed:
+
+- `500,000` total block hits
+- Roughly `100,000` miss iterations
+- About `6.48%` of the full walk
+
+So the observed tail loop is not actually an impossible infinite loop. With `progPtr=0`, it is just scanning far too much address space to finish within the budget.
+
+### 4. Hypothesis for `errNo=0x88` without longjmp
+
+The static evidence is strong on one point: the VAT loop itself does **not** write `errNo`.
+
+- `0x082be2` only decrements `HL`.
+- `0x084711..0x084756` only compares bytes, moves `HL`, and returns on success / lower-bound failure.
+- None of those addresses stores to `0xD008DF`.
+- None of those addresses jumps to `0x061DB2`.
+
+So `errNo=0x88` has to come from outside this loop window.
+
+The most plausible explanation is:
+
+1. The parser has already decided the current parse state is syntactically invalid and latched `E_Syntax` (`0x88`).
+2. Control then falls into symbol lookup anyway.
+3. Because `progPtr=0`, `FindSym` walks almost the entire VAT address range.
+4. The probe budget expires while still in VAT search, so the old syntax-error latch is still sitting in `errNo`.
+
+In other words:
+
+- `errNo=0x88` is real.
+- The VAT loop is real.
+- But they are not produced by the same tiny loop body.
+
+This also matches a broader TI-OS pattern: `errNo` is a latch, not proof that the shared JError unwind just happened. Static ROM search in this workspace found direct `errNo` stores at multiple sites, for example:
+
+- `0x061db2`
+- `0x08a6dd`
+- `0x0b3326`
+- `0x08516d`
+- `0x0a5d78`
+- `0x0b6e59`
+
+So "errNo is set" and "the longjmp ran" are separable facts.
+
+## Bottom line
+
+- `0x88` means **Syntax error** (`E_Syntax`) with the edit bit set.
+- ParseInp enters VAT code because it is going through `ChkFindSym` / `FindSym` symbol resolution.
+- The loop exits on full-name match or when the cursor drops below `progPtr+1`.
+- In the observed probe, `progPtr=0`, so the lower bound is `0x000001` and the walk is enormous.
+- The most likely explanation for `errNo=0x88` without a visible `0x061db2` unwind is: the syntax error was latched earlier, then the parser fell into a badly bounded VAT search that never finished before the probe timed out.
