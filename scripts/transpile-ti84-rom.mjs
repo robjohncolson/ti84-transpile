@@ -22083,6 +22083,8 @@ function walkBlocks() {
     ...phase179Seeds,
     // Phase 198: CEmu boot-trace seeds (22,235 novel ROM PCs from ~3s emulated boot).
     ...cemuTraceSeeds,
+    // Phase 25S: VAT insertion endpoint discovered by CreateReal errSP probe (session 77).
+    { pc: 0x0821a3, mode: 'adl' },
     // Phase 200: coverage-analyzer "suggested seeds" targeting top CODE? gaps.
     ...phase200Seeds,
   ];
