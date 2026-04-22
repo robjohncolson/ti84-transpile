@@ -1,0 +1,55 @@
+# Phase 25R - ParseInp errSP Probe
+
+## Goal
+
+Call `ParseInp` at `0x099914` after a cold boot, seed `?OPS` with tokenized `2+3`, seed `?errSP` with a fake recovery frame, and distinguish a normal return from the longjmp-style error unwind through `0x061DB2`.
+
+## Setup
+
+- Cold-boot and post-init sequence copied from the existing Phase 25 probes
+- Token buffer @ `0xd1a881`: `32 70 33 3f`
+- `?OPS` @ `0xd02593` -> `0xd1a881`
+- `?errSP` @ `0xd008e0` -> `0xd1a869`
+- Error catch sentinel @ `0x7ffffa`; normal return sentinel @ `0x7ffffe`
+- Fake err frame @ `0xd1a869`: `00 00 00 fa ff 7f`
+- VAT-related pointers before call: `OPBase=0x000000 OPS=0xd1a881 pTemp=0x000000 progPtr=0x000000 errSP=0xd1a869 errNo=0x00`
+- Timer IRQ disabled; call budget = 500000 steps; loop cap = 8192
+
+## Observed
+
+```text
+=== Phase 25R: ParseInp with errSP catch frame (tokenized 2+3) ===
+boot: steps=3025 term=halt lastPc=0x0019b5
+input bytes @ 0xd1a881: [32 70 33 3f]
+OP1 pre-call [00 00 00 00 00 00 00 00 00]
+OPS/progPtr/pTemp/OPBase before: OPBase=0x000000 OPS=0xd1a881 pTemp=0x000000 progPtr=0x000000 errSP=0xd1a869 errNo=0x00
+err frame @ 0xd1a869: [00 00 00 fa ff 7f]
+IY before call: 0xd00080
+call done: steps=500000 term=max_steps lastPc=0x082be2
+OP1 post-call [ff 58 00 00 00 00 00 00 00]
+OPS/progPtr/pTemp/OPBase after: OPBase=0x000000 OPS=0xd1a877 pTemp=0x000000 progPtr=0x000000 errSP=0xd1a869 errNo=0x88
+got=0  expected=5  diff=5
+finalPc=0x082be2  blocks=500000  recent=0x082be2 0x084716 0x08471b 0x084723 0x084711 0x082be2 0x084716 0x08471b 0x084723 0x084711 0x082be2 0x084716 0x08471b 0x084723 0x084711 0x082be2 0x084716 0x08471b 0x084723 0x084711 0x082be2 0x084716 0x08471b 0x084723 0x084711 0x082be2 0x084716 0x08471b 0x084723 0x084711 0x082be2 0x084716 0x08471b 0x084723 0x084711 0x082be2 0x084716 0x08471b 0x084723 0x084711 0x082be2 0x084716 0x08471b 0x084723 0x084711 0x082be2 0x084716 0x08471b 0x084723 0x084711
+FAIL
+```
+
+## Result
+
+- **FAIL**
+- returnHit=false
+- errCaught=false
+- termination=max_steps
+- finalPc=0x082be2
+- blockCount=500000
+- errNo=n/a
+- got=0
+- expected=5
+- diff=5
+
+## State After Call
+
+- OP1 bytes: `ff 58 00 00 00 00 00 00 00`
+- Pointers before: `OPBase=0x000000 OPS=0xd1a881 pTemp=0x000000 progPtr=0x000000 errSP=0xd1a869 errNo=0x00`
+- Pointers after: `OPBase=0x000000 OPS=0xd1a877 pTemp=0x000000 progPtr=0x000000 errSP=0xd1a869 errNo=0x88`
+- Recent PCs: `0x082be2 0x084716 0x08471b 0x084723 0x084711 0x082be2 0x084716 0x08471b 0x084723 0x084711 0x082be2 0x084716 0x08471b 0x084723 0x084711 0x082be2 0x084716 0x08471b 0x084723 0x084711 0x082be2 0x084716 0x08471b 0x084723 0x084711 0x082be2 0x084716 0x08471b 0x084723 0x084711 0x082be2 0x084716 0x08471b 0x084723 0x084711 0x082be2 0x084716 0x08471b 0x084723 0x084711 0x082be2 0x084716 0x08471b 0x084723 0x084711 0x082be2 0x084716 0x08471b 0x084723 0x084711`
+- Known dispatch-table codes tracked: `8f 28 2e ab ac af 2f 30 31 b4 9f b5 36`
