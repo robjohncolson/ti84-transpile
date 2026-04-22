@@ -39,14 +39,14 @@ Only ~13 KB is plausibly executable code, scattered across ~3,400 tiny ranges (t
 
 ## Next-Session Priorities
 
-### 1. ★★★ ParseInp stuck at PC=0x006202 after 500K steps — analyze the loop
-Session 83 eliminated ErrMemory but ParseInp now runs 500K steps and gets stuck at PC=0x006202. This is real ROM code (byte=0xB7 = OR A). Need to: (a) disassemble the 0x006200 region to understand what routine this is, (b) trace the PC history at higher resolution around step 490K-500K to see if it's a tight loop or wandering, (c) check if 0x006202 is reachable from FindSym/ChkFindSym (the parser calls these early at steps 6-7). The parser enters ChkFindSym (0x08383d) → FindSym (0x0846ea) at step 17 — it's likely stuck in a VAT search loop with no variables to find.
+### 1. ★★★ Reproduce Sonnet P3's "OP1=5.0 in 918 steps" result and fix errNo=0x8D
+Sonnet P3's alternate probe variant reported ParseInp computing **OP1=5.0** (correct for "2+3") in only **918 steps** with errNo=0x8D (ErrSyntax, NOT ErrMemory). Key differences from the Codex probe (500K steps, stuck at 0x006202): Sonnet likely set up the errSP/error-handler frame differently, allowing the parser to catch its own ErrSyntax and return cleanly. **CRITICAL**: (a) Recreate the Sonnet probe's errSP setup (it may have used the PushErrorHandler frame format from session 79 — 18-byte ADL frame with OPS-OPBase/FPS-FPSbase deltas). (b) Verify OP1 actually contains 5.0 (BCD: type=0x00, exponent=0x80, mantissa=0x50...). (c) Investigate why errNo=0x8D — ErrSyntax may be from a missing newline/EOS token. Try appending 0x3F (newline) or 0x04 (→) after "2+3\0". (d) curPC advanced to 0xD00804 (past endPC 0xD00803) confirming all tokens consumed.
 
-### 2. ★★ All allocator pointers zeroed after ParseInp — diagnose when/why
-After 500K steps, tempMem/FPSbase/FPS/OPBase/OPS/pTemp/progPtr/newDataPtr ALL read as 0x000000. This is suspicious — did the parser do a deliberate memory clear, or did a wild write corrupt the pointer block? Need to: (a) instrument the probe to snapshot pointer state every 50K steps, (b) find the step where pointers first go to zero, (c) check if 0x006202 itself is part of a memory-clear routine.
+### 2. ★★ Codex probe variant: stuck at 0x006202 after 500K steps — compare with Sonnet
+The Codex probe (committed version) runs 500K steps and gets stuck at PC=0x006202, all pointers zeroed. The Sonnet probe returns in 918 steps. The difference is error-handler setup. Need to: (a) diff the two probe versions' errSP handling, (b) understand why the Codex version loops — missing error-handler frame means longjmp can't recover, causing the parser to fall through into unrelated code.
 
 ### 3. ★★ Verify ParseInp reads tokens from begPC/curPC — not another pointer
-Session 83 set begPC/curPC/endPC to the token buffer. But does ParseInp actually read from these? The PC trace shows it enters ChkFindSym at step 6 — this might be looking up the FIRST token "2" as a variable name (literal vs variable disambiguation). If the parser reads from a different pointer (e.g., the one at 0xD022BE that session 73 noticed), the tokens may never be consumed. Disassemble 0x099914..0x099930 (first 20 bytes of ParseInp) to see what it reads.
+Session 83 set begPC/curPC/endPC to the token buffer. Sonnet confirms curPC advanced to 0xD00804 (past endPC). But: does ParseInp always read from curPC, or only when called from certain entry points? Disassemble 0x099914..0x099930 (first 20 bytes of ParseInp) to confirm.
 
 ### 4. ★ Stat-var — exhaustive coverage (low priority)
 Session 75 brought total to 9 validated tokens. Diminishing returns — the slot formula 0xD0117F + (A×9) is proven solid.
