@@ -118,6 +118,16 @@ button.active { background: #2a5a2a; border-color: #4a8a4a; }
       <button id="btnFlashTest" disabled>Flash Test</button>
       <button id="btnStoreResults" disabled>Store Results?</button>
     </div>
+    <div class="control-section-title">Direct Eval (ParseInp bypass)</div>
+    <div style="background: #0d0d1a; border: 1px solid #333; padding: 10px; border-radius: 4px; margin-bottom: 12px;">
+      <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 8px;">
+        <input id="evalInput" type="text" placeholder="e.g. 2+3" style="flex:1; background:#141428; color:#e0e0e0; border:1px solid #555; padding:6px 10px; font-family:inherit; font-size:14px; border-radius:3px;" />
+        <button id="btnEval">Eval</button>
+        <button id="btnEvalClear">C</button>
+      </div>
+      <div id="evalResult" style="color: #7ddf7d; font-size: 13px; min-height: 1.4em;"></div>
+      <div style="color: #666; font-size: 10px; margin-top: 4px;">Supports: 0-9 + - * / ( ) . negation(-)</div>
+    </div>
     <div class="controls">
       <button id="btnInEqMain" disabled>InEqGraph Main</button>
       <button id="btnTransGraph" disabled>TransGraph Main</button>
@@ -1490,6 +1500,269 @@ $('btnReset').addEventListener('click', () => {
   syncErrorBannerControls();
   updateRegs();
   setStatus('Ready. Click Boot to start.');
+});
+
+// ---- Direct Eval: ParseInp bypass ----
+// Runs the validated pipeline from probe-phase25ag-store-recall-roundtrip.mjs
+// directly in the browser: MEM_INIT -> token buffer -> ParseInp -> read OP1.
+
+const EVAL_TOKEN_MAP = {
+  '0': 0x30, '1': 0x31, '2': 0x32, '3': 0x33, '4': 0x34,
+  '5': 0x35, '6': 0x36, '7': 0x37, '8': 0x38, '9': 0x39,
+  '+': 0x70, '-': 0x71, '*': 0x82, '/': 0x83,
+  '.': 0x3A, '(': 0x10, ')': 0x11,
+};
+// TI-OS negation token (distinct from subtraction)
+const TI_NEGATE_TOKEN = 0xB0;
+
+const EVAL_MEMINIT_ENTRY   = 0x09DEE0;
+const EVAL_PARSEINP_ENTRY  = 0x099914;
+const EVAL_OP1_ADDR        = 0xD005F8;
+const EVAL_ERRNO_ADDR      = 0xD008DF;
+const EVAL_ERRSP_ADDR      = 0xD008E0;
+const EVAL_BEGPC_ADDR      = 0xD02317;
+const EVAL_CURPC_ADDR      = 0xD0231A;
+const EVAL_ENDPC_ADDR      = 0xD0231D;
+const EVAL_FPSBASE_ADDR    = 0xD0258A;
+const EVAL_FPS_ADDR        = 0xD0258D;
+const EVAL_OPBASE_ADDR     = 0xD02590;
+const EVAL_OPS_ADDR        = 0xD02593;
+const EVAL_USERMEM_ADDR    = 0xD1A881;
+const EVAL_FAKE_RET        = 0x7FFFFE;
+const EVAL_ERR_CATCH       = 0x7FFFFA;
+const EVAL_MEMINIT_RET     = 0x7FFFF6;
+
+function evalWrite24(mem, addr, val) {
+  mem[addr]     =  val        & 0xFF;
+  mem[addr + 1] = (val >>> 8) & 0xFF;
+  mem[addr + 2] = (val >>> 16) & 0xFF;
+}
+
+function evalRead24(mem, addr) {
+  return ((mem[addr] & 0xFF) | ((mem[addr + 1] & 0xFF) << 8) | ((mem[addr + 2] & 0xFF) << 16)) >>> 0;
+}
+
+function tokenizeExpression(expr) {
+  const tokens = [];
+  for (let i = 0; i < expr.length; i++) {
+    const ch = expr[i];
+    if (ch === ' ') continue;
+
+    // Handle negation: '-' is negation when it's at the start,
+    // after '(', or after an operator
+    if (ch === '-') {
+      const prev = tokens.length > 0 ? tokens[tokens.length - 1] : null;
+      const isNegation = prev === null
+        || prev === 0x70  // +
+        || prev === 0x71  // -
+        || prev === 0x82  // *
+        || prev === 0x83  // /
+        || prev === 0x10  // (
+        || prev === TI_NEGATE_TOKEN;
+      if (isNegation) {
+        tokens.push(TI_NEGATE_TOKEN);
+        continue;
+      }
+    }
+
+    const tok = EVAL_TOKEN_MAP[ch];
+    if (tok === undefined) return { error: `Unknown character: '${ch}'` };
+    tokens.push(tok);
+  }
+  // Append 0x3F (newline/end token) as ParseInp expects
+  tokens.push(0x3F);
+  return { tokens: Uint8Array.from(tokens) };
+}
+
+function decodeBCD(mem, addr) {
+  const signByte = mem[addr] & 0xFF;
+  const negative = (signByte & 0x80) !== 0;
+  const trueExp = (mem[addr + 1] & 0xFF) - 0x80;
+
+  let mantissa = 0;
+  for (let b = 0; b < 7; b++) {
+    const hi = (mem[addr + 2 + b] >> 4) & 0xF;
+    const lo = mem[addr + 2 + b] & 0xF;
+    mantissa = mantissa * 100 + hi * 10 + lo;
+  }
+
+  let val = mantissa * Math.pow(10, trueExp - 13);
+  return negative ? -val : val;
+}
+
+function formatResult(val) {
+  if (!Number.isFinite(val)) return String(val);
+  // Display integers without decimals, otherwise up to 10 significant digits
+  if (Number.isInteger(val) && Math.abs(val) < 1e14) return String(val);
+  return val.toPrecision(10).replace(/\.?0+$/, '');
+}
+
+function runDirectEval(expr) {
+  if (!PRELIFTED_BLOCKS) return { error: 'Boot the ROM first.' };
+
+  const { tokens, error } = tokenizeExpression(expr);
+  if (error) return { error };
+
+  // Fresh cold boot for a clean environment (same as probe)
+  const romBytes = decodeEmbeddedRom();
+  const mem = new Uint8Array(0x1000000);
+  mem.set(romBytes);
+  const perph = createPeripheralBus({ pllDelay: 2, timerInterrupt: false });
+  const ex = createExecutor(PRELIFTED_BLOCKS, mem, { peripherals: perph });
+  const c = ex.cpu;
+
+  // Stage 0: cold boot
+  ex.runFrom(0x000000, 'z80', { maxSteps: 20000, maxLoopIterations: 32 });
+
+  // Stage 1: kernel init
+  c.halted = false; c.iff1 = 0; c.iff2 = 0;
+  c.sp = SCREEN_STACK_TOP - 3;
+  mem.fill(0xFF, c.sp, c.sp + 3);
+  ex.runFrom(0x08C331, 'adl', { maxSteps: 100000, maxLoopIterations: 10000 });
+
+  // Stage 2: post-init
+  c.mbase = 0xD0; c._iy = 0xD00080; c._hl = 0;
+  c.halted = false; c.iff1 = 0; c.iff2 = 0;
+  c.sp = SCREEN_STACK_TOP - 3;
+  mem.fill(0xFF, c.sp, c.sp + 3);
+  ex.runFrom(0x0802B2, 'adl', { maxSteps: 100, maxLoopIterations: 32 });
+
+  // Stage 3: MEM_INIT (resets heap)
+  c.halted = false; c.iff1 = 0; c.iff2 = 0;
+  c.madl = 1; c.mbase = 0xD0; c._iy = 0xD00080; c.f = 0x40; c._ix = 0xD1A860;
+  c.sp = SCREEN_STACK_TOP - 12;
+  mem.fill(0xFF, c.sp, c.sp + 12);
+  c.sp -= 3;
+  evalWrite24(mem, c.sp, EVAL_MEMINIT_RET);
+
+  let memInitDone = false;
+  try {
+    ex.runFrom(EVAL_MEMINIT_ENTRY, 'adl', {
+      maxSteps: 100000,
+      maxLoopIterations: 8192,
+      onBlock(pc) { if ((pc & 0xFFFFFF) === EVAL_MEMINIT_RET) throw new Error('__MEMINIT_RET__'); },
+    });
+  } catch (e) {
+    if (e?.message === '__MEMINIT_RET__') memInitDone = true;
+    else return { error: `MEM_INIT failed: ${e.message}` };
+  }
+  if (!memInitDone) return { error: 'MEM_INIT did not return.' };
+
+  // Stage 4: write tokens to userMem and set parse pointers
+  mem.fill(0x00, EVAL_USERMEM_ADDR, EVAL_USERMEM_ADDR + 0x80);
+  mem.set(tokens, EVAL_USERMEM_ADDR);
+  evalWrite24(mem, EVAL_BEGPC_ADDR, EVAL_USERMEM_ADDR);
+  evalWrite24(mem, EVAL_CURPC_ADDR, EVAL_USERMEM_ADDR);
+  evalWrite24(mem, EVAL_ENDPC_ADDR, EVAL_USERMEM_ADDR + tokens.length);
+
+  // Clear OP1
+  mem.fill(0x00, EVAL_OP1_ADDR, EVAL_OP1_ADDR + 9);
+
+  // Prepare call state
+  c.halted = false; c.iff1 = 0; c.iff2 = 0;
+  c.madl = 1; c.mbase = 0xD0; c._iy = 0xD00080; c.f = 0x40; c._ix = 0xD1A860;
+  c.sp = SCREEN_STACK_TOP - 12;
+  mem.fill(0xFF, c.sp, c.sp + 12);
+
+  // Seed error frame (same pattern as probe)
+  c.sp -= 3;
+  evalWrite24(mem, c.sp, EVAL_FAKE_RET);
+  const errBase = (c.sp - 6) & 0xFFFFFF;
+  evalWrite24(mem, errBase, EVAL_ERR_CATCH);
+  evalWrite24(mem, errBase + 3, 0);
+  evalWrite24(mem, EVAL_ERRSP_ADDR, errBase);
+  mem[EVAL_ERRNO_ADDR] = 0x00;
+
+  // Stage 5: run ParseInp
+  let parseReturnHit = false;
+  let parseErrCaught = false;
+  let parseSteps = 0;
+  try {
+    const res = ex.runFrom(EVAL_PARSEINP_ENTRY, 'adl', {
+      maxSteps: 1500000,
+      maxLoopIterations: 8192,
+      onBlock(pc, _m, _meta, step) {
+        const norm = pc & 0xFFFFFF;
+        if (step !== undefined) parseSteps = Math.max(parseSteps, step + 1);
+        if (norm === EVAL_FAKE_RET) throw new Error('__RET__');
+        if (norm === EVAL_ERR_CATCH) throw new Error('__ERR__');
+      },
+      onMissingBlock(pc, _m, step) {
+        const norm = pc & 0xFFFFFF;
+        if (step !== undefined) parseSteps = Math.max(parseSteps, step + 1);
+        if (norm === EVAL_FAKE_RET) throw new Error('__RET__');
+        if (norm === EVAL_ERR_CATCH) throw new Error('__ERR__');
+      },
+    });
+    parseSteps = Math.max(parseSteps, res.steps ?? 0);
+  } catch (e) {
+    if (e?.message === '__RET__') parseReturnHit = true;
+    else if (e?.message === '__ERR__') parseErrCaught = true;
+    else return { error: `ParseInp crashed: ${e.message}` };
+  }
+
+  const errNo = mem[EVAL_ERRNO_ADDR] & 0xFF;
+
+  if (parseErrCaught) {
+    return { error: `ParseInp error (errNo=0x${hex(errNo, 2)}), ${parseSteps} steps` };
+  }
+
+  if (!parseReturnHit) {
+    return { error: `ParseInp did not return (errNo=0x${hex(errNo, 2)}), ${parseSteps} steps` };
+  }
+
+  // Stage 6: read and decode OP1
+  const val = decodeBCD(mem, EVAL_OP1_ADDR);
+  const op1Hex = Array.from(mem.slice(EVAL_OP1_ADDR, EVAL_OP1_ADDR + 9), b => hex(b, 2)).join(' ');
+
+  // Reset FPS/OPS as noted in the task
+  const fpsBase = evalRead24(mem, EVAL_FPSBASE_ADDR);
+  evalWrite24(mem, EVAL_FPS_ADDR, fpsBase);
+  evalWrite24(mem, EVAL_OPBASE_ADDR, 0xD3FFFF);
+  evalWrite24(mem, EVAL_OPS_ADDR, 0xD3FFFF);
+
+  return {
+    value: val,
+    display: formatResult(val),
+    steps: parseSteps,
+    errNo,
+    op1Hex,
+  };
+}
+
+$('btnEval').addEventListener('click', () => {
+  const expr = $('evalInput').value.trim();
+  if (!expr) return;
+  const resultEl = $('evalResult');
+
+  const t0 = performance.now();
+  const result = runDirectEval(expr);
+  const dt = Math.round(performance.now() - t0);
+
+  if (result.error) {
+    resultEl.style.color = '#df7d7d';
+    resultEl.textContent = result.error;
+    log(`<span class="info">--- Direct Eval "${expr}": ERROR: ${result.error} ---</span>`);
+    return;
+  }
+
+  resultEl.style.color = '#7ddf7d';
+  resultEl.textContent = `= ${result.display}`;
+  log(`<span class="info">--- Direct Eval "${expr}" = ${result.display} (${result.steps} steps, ${dt} ms, OP1=[${result.op1Hex}], errNo=0x${hex(result.errNo, 2)}) ---</span>`);
+});
+
+$('btnEvalClear').addEventListener('click', () => {
+  $('evalInput').value = '';
+  $('evalResult').textContent = '';
+});
+
+// Allow pressing Enter in the eval input to trigger evaluation
+$('evalInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    e.stopPropagation();
+    $('btnEval').click();
+  }
 });
 
 loadErrorBannerOptions();
