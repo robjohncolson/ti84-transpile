@@ -45,12 +45,12 @@ Plus subroutines called by those (0x0825D1, 0x082266).
 | `0xd0257b` | RAM_0xd0257b | immediate | `0x0827e7 ld hl, 0xd0257b` | Post-move / VAT pointer walker (0x082739) |
 | `0xd0257e` | RAM_0xd0257e | immediate | `0x0827ef ld hl, 0xd0257e` | Post-move / VAT pointer walker (0x082739) |
 | `0xd02581` | RAM_0xd02581 | immediate | `0x0827f7 ld hl, 0xd02581` | Post-move / VAT pointer walker (0x082739) |
-| `0xd02317` | editCursor | read | `0x0824d6 ld hl, (0xd02317)` | Tail helper A (0x0824D6) — D02317/D0231A/D0231D adjuster |
-| `0xd02317` | editCursor | write | `0x0824e2 ld (0xd02317), hl` | Tail helper A (0x0824D6) — D02317/D0231A/D0231D adjuster |
-| `0xd0231a` | editTail | read | `0x0824e6 ld hl, (0xd0231a)` | Tail helper A (0x0824D6) — D02317/D0231A/D0231D adjuster |
-| `0xd0231a` | editTail | write | `0x0824ed ld (0xd0231a), hl` | Tail helper A (0x0824D6) — D02317/D0231A/D0231D adjuster |
-| `0xd0231d` | editBtm | read | `0x0824f1 ld hl, (0xd0231d)` | Tail helper A (0x0824D6) — D02317/D0231A/D0231D adjuster |
-| `0xd0231d` | editBtm | write | `0x0824f8 ld (0xd0231d), hl` | Tail helper A (0x0824D6) — D02317/D0231A/D0231D adjuster |
+| `0xd02317` | begPC | read | `0x0824d6 ld hl, (0xd02317)` | Tail helper A (0x0824D6) — D02317/D0231A/D0231D adjuster |
+| `0xd02317` | begPC | write | `0x0824e2 ld (0xd02317), hl` | Tail helper A (0x0824D6) — D02317/D0231A/D0231D adjuster |
+| `0xd0231a` | curPC | read | `0x0824e6 ld hl, (0xd0231a)` | Tail helper A (0x0824D6) — D02317/D0231A/D0231D adjuster |
+| `0xd0231a` | curPC | write | `0x0824ed ld (0xd0231a), hl` | Tail helper A (0x0824D6) — D02317/D0231A/D0231D adjuster |
+| `0xd0231d` | endPC | read | `0x0824f1 ld hl, (0xd0231d)` | Tail helper A (0x0824D6) — D02317/D0231A/D0231D adjuster |
+| `0xd0231d` | endPC | write | `0x0824f8 ld (0xd0231d), hl` | Tail helper A (0x0824D6) — D02317/D0231A/D0231D adjuster |
 | `0xd0066f` | ptrSlot_066F | immediate | `0x0824fd ld hl, 0xd0066f` | Tail helper A (0x0824D6) — D02317/D0231A/D0231D adjuster |
 | `0xd00672` | ptrSlot_0672 | immediate | `0x082505 ld hl, 0xd00672` | Tail helper A (0x0824D6) — D02317/D0231A/D0231D adjuster |
 | `0xd00675` | ptrSlot_0675 | immediate | `0x08250d ld hl, 0xd00675` | Tail helper A (0x0824D6) — D02317/D0231A/D0231D adjuster |
@@ -204,22 +204,22 @@ Plus subroutines called by those (0x0825D1, 0x082266).
 ### Tail helper A (0x0824D6) — D02317/D0231A/D0231D adjuster
 
 ```text
-0x0824d6: 2a 17 23 d0          ld hl, (0xd02317) ; editCursor
+0x0824d6: 2a 17 23 d0          ld hl, (0xd02317) ; begPC
 0x0824da: b7                   or a
 0x0824db: ed 52                sbc hl, de
 0x0824dd: d8                   ret c
 0x0824de: c8                   ret z
 0x0824df: 19                   add hl, de
 0x0824e0: ed 42                sbc hl, bc
-0x0824e2: 22 17 23 d0          ld (0xd02317), hl ; editCursor
-0x0824e6: 2a 1a 23 d0          ld hl, (0xd0231a) ; editTail
+0x0824e2: 22 17 23 d0          ld (0xd02317), hl ; begPC
+0x0824e6: 2a 1a 23 d0          ld hl, (0xd0231a) ; curPC
 0x0824ea: b7                   or a
 0x0824eb: ed 42                sbc hl, bc
-0x0824ed: 22 1a 23 d0          ld (0xd0231a), hl ; editTail
-0x0824f1: 2a 1d 23 d0          ld hl, (0xd0231d) ; editBtm
+0x0824ed: 22 1a 23 d0          ld (0xd0231a), hl ; curPC
+0x0824f1: 2a 1d 23 d0          ld hl, (0xd0231d) ; endPC
 0x0824f5: b7                   or a
 0x0824f6: ed 42                sbc hl, bc
-0x0824f8: 22 1d 23 d0          ld (0xd0231d), hl ; editBtm
+0x0824f8: 22 1d 23 d0          ld (0xd0231d), hl ; endPC
 0x0824fc: c9                   ret
 0x0824fd: 21 6f 06 d0          ld hl, 0xd0066f ; = ptrSlot_066F
 0x082501: cd d1 25 08          call 0x0825d1 ; pointer update sub
@@ -427,15 +427,15 @@ This is the most complex routine. It:
 The loop walks backward from 0xD3FFFF down to OPBase, adjusting any VAT pointer entries
 that point into the moved region.
 
-### 0x0824D6 — Tail helper A (editCursor/editTail/editBtm adjuster)
+### 0x0824D6 — Tail helper A (begPC/curPC/endPC adjuster)
 
 Adjusts three edit-buffer pointers stored at:
-- `0xD02317` (editCursor): reads, compares vs DE (insertion point), if >= DE: subtracts BC
-- `0xD0231A` (editTail): unconditionally subtracts BC
-- `0xD0231D` (editBtm): unconditionally subtracts BC
+- `0xD02317` (begPC): reads, compares vs DE (insertion point), if >= DE: subtracts BC
+- `0xD0231A` (curPC): unconditionally subtracts BC
+- `0xD0231D` (endPC): unconditionally subtracts BC
 
 The adjustment formula for each: `pointer = pointer - BC` (where BC = negated insertion size = effectively adding the insertion size).
-The first pointer (editCursor) is only adjusted if it was >= the insertion point (DE).
+The first pointer (begPC) is only adjusted if it was >= the insertion point (DE).
 
 ### 0x0824FD — Tail helper B (per-pointer updater via 0x0825D1)
 

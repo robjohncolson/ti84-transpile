@@ -28,9 +28,9 @@ const TARGETS = [
 const SYMBOLS = new Map([
   [0xd005f8, 'OP1'],
   [0xd005f9, 'OP1+1'],
-  [0xd02317, 'editCursor'],
-  [0xd0231a, 'editTail'],
-  [0xd0231d, 'editBtm'],
+  [0xd02317, 'begPC'],
+  [0xd0231a, 'curPC'],
+  [0xd0231d, 'endPC'],
   [0xd02577, 'slot_D02577'],
   [0xd02587, 'tempMem'],
   [0xd0258a, 'FPSbase'],
@@ -402,15 +402,15 @@ lines.push('The loop walks backward from 0xD3FFFF down to OPBase, adjusting any 
 lines.push('that point into the moved region.');
 lines.push('');
 
-lines.push('### 0x0824D6 — Tail helper A (editCursor/editTail/editBtm adjuster)');
+lines.push('### 0x0824D6 — Tail helper A (begPC/curPC/endPC adjuster)');
 lines.push('');
 lines.push('Adjusts three edit-buffer pointers stored at:');
-lines.push('- `0xD02317` (editCursor): reads, compares vs DE (insertion point), if >= DE: subtracts BC');
-lines.push('- `0xD0231A` (editTail): unconditionally subtracts BC');
-lines.push('- `0xD0231D` (editBtm): unconditionally subtracts BC');
+lines.push('- `0xD02317` (begPC): reads, compares vs DE (insertion point), if >= DE: subtracts BC');
+lines.push('- `0xD0231A` (curPC): unconditionally subtracts BC');
+lines.push('- `0xD0231D` (endPC): unconditionally subtracts BC');
 lines.push('');
 lines.push('The adjustment formula for each: `pointer = pointer - BC` (where BC = negated insertion size = effectively adding the insertion size).');
-lines.push('The first pointer (editCursor) is only adjusted if it was >= the insertion point (DE).');
+lines.push('The first pointer (begPC) is only adjusted if it was >= the insertion point (DE).');
 lines.push('');
 
 lines.push('### 0x0824FD — Tail helper B (per-pointer updater via 0x0825D1)');
