@@ -15,11 +15,11 @@ Real text rendering is SPARSE (most pixels untouched between glyphs) — we saw 
 
 ### Neither 0x046878 nor 0x03dc1b is a function entry
 
-- 0x046878 is inside block 0x04685c (which contains `ld hl, 0x0004e0 ; call 0x0a1cac`).
-- 0x03dc1b is inside block 0x03dc11 (which contains `ld a, 0x01 ; call 0x0a1cac`).
+- 0x046878 is inside block 0x04685c (which contains `ld hl, 0x0004e0 ; call 0x0a1cac (= PutS)`).
+- 0x03dc1b is inside block 0x03dc11 (which contains `ld a, 0x01 ; call 0x0a1cac (= PutS)`).
 - Phase 69's `findFunctionEntry` fallback to `heuristic='caller'` meant the backward RET scan found nothing, so the caller PC itself was used as the entry.
 
-### Block 0x03dc11 is reached only via `0x03dc0d: call 0x0a2032 (call-return)`
+### Block 0x03dc11 is reached only via `0x03dc0d: call 0x0a2032 (= NewLine) (call-return)`
 
 - 0x03dbf8 (function entry containing 0x03dc11) has **zero** incoming references in the lifted call graph
 - Neither instruction targets nor block exits point to 0x03dbf8
@@ -57,12 +57,12 @@ The 12,800 and 5,440 render sizes are the **background-fill steps** for parts of
 
 - TI-OS top status bar contains: "NORMAL FLOAT AUTO REAL RADIAN MP" + battery indicator
 - TI-OS bottom status bar on home screen: `$` (cursor prompt) or similar
-- Scan ROM for string literals matching these patterns ("NORMAL", "FLOAT", "AUTO", "REAL", "RADIAN", "MP", "DEGREE") near `call 0x0a1cac` or `call 0x0059c6` sites
+- Scan ROM for string literals matching these patterns ("NORMAL", "FLOAT", "AUTO", "REAL", "RADIAN", "MP", "DEGREE") near `call 0x0a1cac (= PutS)` or `call 0x0059c6` sites
 
 ### Pivot 3: Probe the Phase 71 OS-init state-resume entries
 
 - 0x08c366 (JT slot 21 target) — the state-resume entry for OS init
-- 0x08c33d — the "post-stage-1 init" entry
+- 0x08c33d (= Mon) — the "post-stage-1 init" entry
 
 These are the real dispatch entries for OS init. If invoked correctly, they might cascade into the home-screen render path.
 

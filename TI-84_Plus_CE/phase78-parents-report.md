@@ -1,6 +1,6 @@
 # Phase 78 — Parent Caller Probes
 
-Probe the 3+5 callers of 0x0a2b72 / 0x0a29ec as possible home-screen parent renderers.
+Probe the 3+5 callers of 0x0a2b72 (= PutBPat) / 0x0a29ec (= RStrCurRow) as possible home-screen parent renderers.
 
 ## Results
 

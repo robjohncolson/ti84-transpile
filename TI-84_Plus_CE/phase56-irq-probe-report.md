@@ -4,7 +4,7 @@
 
 **Verdict: no, not from this post-init setup.**
 
-Using the existing Phase 14 IRQ infrastructure plus a post-boot RAM image from `0x08C331`, forcing the callback pointer to `0x0019BE`, setting `0xD0009B |= 0x40`, `cpu.mbase = 0xD0`, `IM 1`, and `IFF1=1` was **not** enough to drive the OS event loop end-to-end.
+Using the existing Phase 14 IRQ infrastructure plus a post-boot RAM image from `0x08C331 (= CoorMon)`, forcing the callback pointer to `0x0019BE`, setting `0xD0009B |= 0x40`, `cpu.mbase = 0xD0`, `IM 1`, and `IFF1=1` was **not** enough to drive the OS event loop end-to-end.
 
 The probe resumed through the event-wait helper at `0x001794` and terminated after **32 steps** in both passes, with:
 

@@ -6,11 +6,11 @@ Re-run of the promising candidates with maxSteps=80000 to get past the missing_b
 
 | probe | entry | drawn | fg | bg | bbox | steps | termination |
 |-------|-------|------:|---:|---:|------|------:|-------------|
-| `0a2b72_de4f_x80k` | 0x0a2b72 | 5692 | 188 | 5504 | r0-34 c0-319 | 3868 | missing_block |
-| `0a2b72_de52_x80k` | 0x0a2b72 | 5692 | 172 | 5520 | r0-34 c0-319 | 3867 | missing_block |
-| `0a29ec_x80k` | 0x0a29ec | 5652 | 4716 | 936 | r17-34 c0-313 | 20742 | missing_block |
-| `0a237e_x80k` | 0x0a237e | 0 | 0 | 0 | none | 3 | missing_block |
-| `02398e_known_radian` | 0x02398e | 0 | 0 | 0 | none | 4 | missing_block |
+| `0a2b72_de4f_x80k` | 0x0a2b72 (= PutBPat) | 5692 | 188 | 5504 | r0-34 c0-319 | 3868 | missing_block |
+| `0a2b72_de52_x80k` | 0x0a2b72 (= PutBPat) | 5692 | 172 | 5520 | r0-34 c0-319 | 3867 | missing_block |
+| `0a29ec_x80k` | 0x0a29ec (= RStrCurRow) | 5652 | 4716 | 936 | r17-34 c0-313 | 20742 | missing_block |
+| `0a237e_x80k` | 0x0a237e (= GetCurloc) | 0 | 0 | 0 | none | 3 | missing_block |
+| `02398e_known_radian` | 0x02398e (= CallLocalizeHook) | 0 | 0 | 0 | none | 4 | missing_block |
 
 ## ASCII Previews
 

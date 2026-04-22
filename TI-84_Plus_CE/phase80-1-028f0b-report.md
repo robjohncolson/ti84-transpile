@@ -25,10 +25,10 @@ Harness: boot -> OS init -> SetTextFgColor -> snapshot/restore -> direct entry p
 - Steps: 850
 - Termination: missing_block
 - Last PC: 0xffffff:adl
-- Hit 0x0a1cac: yes
-- Hit 0x0a1b5b: yes
-- Hit 0x0a1799: yes
-- First 15 blocks: 0x028f0a -> 0x0a1cac -> 0x0a1cb9 -> 0x0a1b5b -> 0x0a1b77 -> 0x0a1799 -> 0x0a17aa -> 0x0a237e -> 0x0a2a37 -> 0x0a2389 -> 0x0a17ae -> 0x0a17b2 -> 0x0a17b8 -> 0x07bf3e -> 0x07bf44
+- Hit 0x0a1cac (= PutS): yes
+- Hit 0x0a1b5b (= PutC): yes
+- Hit 0x0a1799 (= PutMap): yes
+- First 15 blocks: 0x028f0a -> 0x0a1cac (= PutS) -> 0x0a1cb9 -> 0x0a1b5b (= PutC) -> 0x0a1b77 -> 0x0a1799 (= PutMap) -> 0x0a17aa -> 0x0a237e (= GetCurloc) -> 0x0a2a37 -> 0x0a2389 -> 0x0a17ae -> 0x0a17b2 -> 0x0a17b8 -> 0x07bf3e -> 0x07bf44
 
 ### 028f0b_degree
 
@@ -40,10 +40,10 @@ Harness: boot -> OS init -> SetTextFgColor -> snapshot/restore -> direct entry p
 - Steps: 849
 - Termination: missing_block
 - Last PC: 0xffffff:adl
-- Hit 0x0a1cac: yes
-- Hit 0x0a1b5b: yes
-- Hit 0x0a1799: yes
-- First 15 blocks: 0x028f0a -> 0x0a1cac -> 0x0a1cb9 -> 0x0a1b5b -> 0x0a1b77 -> 0x0a1799 -> 0x0a17aa -> 0x0a237e -> 0x0a2a37 -> 0x0a2389 -> 0x0a17ae -> 0x0a17b2 -> 0x0a17b8 -> 0x07bf3e -> 0x07bf44
+- Hit 0x0a1cac (= PutS): yes
+- Hit 0x0a1b5b (= PutC): yes
+- Hit 0x0a1799 (= PutMap): yes
+- First 15 blocks: 0x028f0a -> 0x0a1cac (= PutS) -> 0x0a1cb9 -> 0x0a1b5b (= PutC) -> 0x0a1b77 -> 0x0a1799 (= PutMap) -> 0x0a17aa -> 0x0a237e (= GetCurloc) -> 0x0a2a37 -> 0x0a2389 -> 0x0a17ae -> 0x0a17b2 -> 0x0a17b8 -> 0x07bf3e -> 0x07bf44
 
 ### 028f0b_normal
 
@@ -55,10 +55,10 @@ Harness: boot -> OS init -> SetTextFgColor -> snapshot/restore -> direct entry p
 - Steps: 838
 - Termination: missing_block
 - Last PC: 0xffffff:adl
-- Hit 0x0a1cac: yes
-- Hit 0x0a1b5b: yes
-- Hit 0x0a1799: yes
-- First 15 blocks: 0x028f0a -> 0x0a1cac -> 0x0a1cb9 -> 0x0a1b5b -> 0x0a1b77 -> 0x0a1799 -> 0x0a17aa -> 0x0a237e -> 0x0a2a37 -> 0x0a2389 -> 0x0a17ae -> 0x0a17b2 -> 0x0a17b8 -> 0x07bf3e -> 0x07bf44
+- Hit 0x0a1cac (= PutS): yes
+- Hit 0x0a1b5b (= PutC): yes
+- Hit 0x0a1799 (= PutMap): yes
+- First 15 blocks: 0x028f0a -> 0x0a1cac (= PutS) -> 0x0a1cb9 -> 0x0a1b5b (= PutC) -> 0x0a1b77 -> 0x0a1799 (= PutMap) -> 0x0a17aa -> 0x0a237e (= GetCurloc) -> 0x0a2a37 -> 0x0a2389 -> 0x0a17ae -> 0x0a17b2 -> 0x0a17b8 -> 0x07bf3e -> 0x07bf44
 
 ### 028f0b_float
 
@@ -70,10 +70,10 @@ Harness: boot -> OS init -> SetTextFgColor -> snapshot/restore -> direct entry p
 - Steps: 822
 - Termination: missing_block
 - Last PC: 0xffffff:adl
-- Hit 0x0a1cac: yes
-- Hit 0x0a1b5b: yes
-- Hit 0x0a1799: yes
-- First 15 blocks: 0x028f0a -> 0x0a1cac -> 0x0a1cb9 -> 0x0a1b5b -> 0x0a1b77 -> 0x0a1799 -> 0x0a17aa -> 0x0a237e -> 0x0a2a37 -> 0x0a2389 -> 0x0a17ae -> 0x0a17b2 -> 0x0a17b8 -> 0x07bf3e -> 0x07bf44
+- Hit 0x0a1cac (= PutS): yes
+- Hit 0x0a1b5b (= PutC): yes
+- Hit 0x0a1799 (= PutMap): yes
+- First 15 blocks: 0x028f0a -> 0x0a1cac (= PutS) -> 0x0a1cb9 -> 0x0a1b5b (= PutC) -> 0x0a1b77 -> 0x0a1799 (= PutMap) -> 0x0a17aa -> 0x0a237e (= GetCurloc) -> 0x0a2a37 -> 0x0a2389 -> 0x0a17ae -> 0x0a17b2 -> 0x0a17b8 -> 0x07bf3e -> 0x07bf44
 
 ### 029374_radian
 
@@ -85,9 +85,9 @@ Harness: boot -> OS init -> SetTextFgColor -> snapshot/restore -> direct entry p
 - Steps: 8
 - Termination: missing_block
 - Last PC: 0xffffff:adl
-- Hit 0x0a1cac: no
-- Hit 0x0a1b5b: no
-- Hit 0x0a1799: no
+- Hit 0x0a1cac (= PutS): no
+- Hit 0x0a1b5b (= PutC): no
+- Hit 0x0a1799 (= PutMap): no
 - First 15 blocks: 0x029374 -> 0x029379 -> 0x029379 -> 0x029379 -> 0x029379 -> 0x029379 -> 0x029379 -> 0x02937f
 
 ### 029374_degree
@@ -100,16 +100,16 @@ Harness: boot -> OS init -> SetTextFgColor -> snapshot/restore -> direct entry p
 - Steps: 8
 - Termination: missing_block
 - Last PC: 0xffffff:adl
-- Hit 0x0a1cac: no
-- Hit 0x0a1b5b: no
-- Hit 0x0a1799: no
+- Hit 0x0a1cac (= PutS): no
+- Hit 0x0a1b5b (= PutC): no
+- Hit 0x0a1799 (= PutMap): no
 - First 15 blocks: 0x029374 -> 0x029379 -> 0x029379 -> 0x029379 -> 0x029379 -> 0x029379 -> 0x029379 -> 0x02937f
 
 ## ASCII Previews
 
 ### 028f0b_radian (0x028f0b, drawn=252, bbox=r18-35 c180-193)
 
-First 15 blocks: 0x028f0a -> 0x0a1cac -> 0x0a1cb9 -> 0x0a1b5b -> 0x0a1b77 -> 0x0a1799 -> 0x0a17aa -> 0x0a237e -> 0x0a2a37 -> 0x0a2389 -> 0x0a17ae -> 0x0a17b2 -> 0x0a17b8 -> 0x07bf3e -> 0x07bf44
+First 15 blocks: 0x028f0a -> 0x0a1cac (= PutS) -> 0x0a1cb9 -> 0x0a1b5b (= PutC) -> 0x0a1b77 -> 0x0a1799 (= PutMap) -> 0x0a17aa -> 0x0a237e (= GetCurloc) -> 0x0a2a37 -> 0x0a2389 -> 0x0a17ae -> 0x0a17b2 -> 0x0a17b8 -> 0x07bf3e -> 0x07bf44
 
 ```
 ##############
@@ -134,7 +134,7 @@ First 15 blocks: 0x028f0a -> 0x0a1cac -> 0x0a1cb9 -> 0x0a1b5b -> 0x0a1b77 -> 0x0
 
 ### 028f0b_degree (0x028f0b, drawn=252, bbox=r18-35 c180-193)
 
-First 15 blocks: 0x028f0a -> 0x0a1cac -> 0x0a1cb9 -> 0x0a1b5b -> 0x0a1b77 -> 0x0a1799 -> 0x0a17aa -> 0x0a237e -> 0x0a2a37 -> 0x0a2389 -> 0x0a17ae -> 0x0a17b2 -> 0x0a17b8 -> 0x07bf3e -> 0x07bf44
+First 15 blocks: 0x028f0a -> 0x0a1cac (= PutS) -> 0x0a1cb9 -> 0x0a1b5b (= PutC) -> 0x0a1b77 -> 0x0a1799 (= PutMap) -> 0x0a17aa -> 0x0a237e (= GetCurloc) -> 0x0a2a37 -> 0x0a2389 -> 0x0a17ae -> 0x0a17b2 -> 0x0a17b8 -> 0x07bf3e -> 0x07bf44
 
 ```
 ##############
@@ -159,7 +159,7 @@ First 15 blocks: 0x028f0a -> 0x0a1cac -> 0x0a1cb9 -> 0x0a1b5b -> 0x0a1b77 -> 0x0
 
 ### 028f0b_normal (0x028f0b, drawn=252, bbox=r18-35 c180-193)
 
-First 15 blocks: 0x028f0a -> 0x0a1cac -> 0x0a1cb9 -> 0x0a1b5b -> 0x0a1b77 -> 0x0a1799 -> 0x0a17aa -> 0x0a237e -> 0x0a2a37 -> 0x0a2389 -> 0x0a17ae -> 0x0a17b2 -> 0x0a17b8 -> 0x07bf3e -> 0x07bf44
+First 15 blocks: 0x028f0a -> 0x0a1cac (= PutS) -> 0x0a1cb9 -> 0x0a1b5b (= PutC) -> 0x0a1b77 -> 0x0a1799 (= PutMap) -> 0x0a17aa -> 0x0a237e (= GetCurloc) -> 0x0a2a37 -> 0x0a2389 -> 0x0a17ae -> 0x0a17b2 -> 0x0a17b8 -> 0x07bf3e -> 0x07bf44
 
 ```
 ##############
@@ -184,7 +184,7 @@ First 15 blocks: 0x028f0a -> 0x0a1cac -> 0x0a1cb9 -> 0x0a1b5b -> 0x0a1b77 -> 0x0
 
 ### 028f0b_float (0x028f0b, drawn=252, bbox=r18-35 c180-193)
 
-First 15 blocks: 0x028f0a -> 0x0a1cac -> 0x0a1cb9 -> 0x0a1b5b -> 0x0a1b77 -> 0x0a1799 -> 0x0a17aa -> 0x0a237e -> 0x0a2a37 -> 0x0a2389 -> 0x0a17ae -> 0x0a17b2 -> 0x0a17b8 -> 0x07bf3e -> 0x07bf44
+First 15 blocks: 0x028f0a -> 0x0a1cac (= PutS) -> 0x0a1cb9 -> 0x0a1b5b (= PutC) -> 0x0a1b77 -> 0x0a1799 (= PutMap) -> 0x0a17aa -> 0x0a237e (= GetCurloc) -> 0x0a2a37 -> 0x0a2389 -> 0x0a17ae -> 0x0a17b2 -> 0x0a17b8 -> 0x07bf3e -> 0x07bf44
 
 ```
 ##############

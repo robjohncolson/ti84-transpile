@@ -106,7 +106,7 @@ Source: `phase202c-routine-map-report.md` (79 routines labeled **unknown**).
 | 0x04b664 | port-io | `push ix; ld ix, 0x000000; add ix, sp; ld hl, (ix+6); ld bc, 0x003014; out (c), l` |
 | 0x04b67f | still-unknown | `ld a, c; cp 0x15; jr nz, 0x04b67e; pop ix; ret; push ix` |
 | 0x04b684 | still-unknown | `pop ix; ret; push ix; ld ix, 0x000000; add ix, sp; ld a, (ix+6)` |
-| 0x04c973 | still-unknown | `push hl; or a; sbc hl, de; pop hl; ret; push hl` |
+| 0x04c973 (= CpHLDE) | still-unknown | `push hl; or a; sbc hl, de; pop hl; ret; push hl` |
 | 0x04e07b | still-unknown | `call 0x000130; ld a, i; push af; di; ld bc, 0x000062; push bc` |
 | 0x04e07f | still-unknown | `ld a, i; push af; di; ld bc, 0x000062; push bc; ld bc, 0xd176a8` |
 | 0x04e0d6 | still-unknown | `ei; ld sp, ix; pop ix; ret; ld b, e; ld b, c` |

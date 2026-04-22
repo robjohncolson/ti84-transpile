@@ -63,16 +63,16 @@ caller that passes this function's address somewhere.
 **0x003d6e has nothing to do with fonts.** The "28 bytes/glyph" heuristic from
 Phase 80+ item #9 was a false lead. The real TI-84 CE font table is somewhere
 else — possibly accessed via BCALL (we already confirmed BCALL is not used for
-rendering on CE), or via one of the known text renderers (0x0a1799 / 0x0a1cac).
+rendering on CE), or via one of the known text renderers (0x0a1799 (= PutMap) / 0x0a1cac (= PutS)).
 
 ## Follow-up for Phase 98 (font hunt, real version)
 
-1. Instrument `cpu.read8` during a run of `0x0a1799` (the single-char printer)
+1. Instrument `cpu.read8` during a run of `0x0a1799 (= PutMap)` (the single-char printer)
    to trap reads from anywhere in ROM (0x000000-0x3FFFFF). The font bitmap must
    be there.
 2. Correlate reads with the ASCII character being printed to pinpoint the font
    base and stride.
-3. Alternative: run `0x0a1cac` (string printer) with a known string and watch
+3. Alternative: run `0x0a1cac (= PutS)` (string printer) with a known string and watch
    ROM reads during VRAM pixel writes.
 
 ## Deliverables

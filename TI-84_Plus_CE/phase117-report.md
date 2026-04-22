@@ -21,7 +21,7 @@
 0x08c5dc  3a 8e 05 d0     ld a, (0xd0058e)
 0x08c5e0  80              add b
 0x08c5e1  fe 5c           cp 0x5c
-0x08c5e3  30 4b           jr nc, 0x08c630
+0x08c5e3  30 4b           jr nc, 0x08c630 (= JForceCmdNoChar)
 0x08c5e5  47              ld b, a
 0x08c5e6  4f              ld c, a
 0x08c5e7  3a e0 07 d0     ld a, (0xd007e0)
@@ -29,7 +29,7 @@
 0x08c5ed  20 09           jr nz, 0x08c5f8
 0x08c5ef  78              ld a, b
 0x08c5f0  fe 40           cp 0x40
-0x08c5f2  28 3c           jr z, 0x08c630
+0x08c5f2  28 3c           jr z, 0x08c630 (= JForceCmdNoChar)
 0x08c5f4  3e 50           ld a, 0x50
 0x08c5f6  18 09           jr 0x08c601
 0x08c5f8  fe 52           cp 0x52
@@ -37,7 +37,7 @@
 0x08c5fb  20 04           jr nz, 0x08c601
 0x08c5fd  fe 40           cp 0x40
 0x08c5ff  20 92           jr nz, 0x08c593
-0x08c601  cd ad c7 08     call 0x08c7ad
+0x08c601  cd ad c7 08     call 0x08c7ad (= NewContext0)
 0x08c605  78              ld a, b
 0x08c606  c3 19 c5 08     jp 0x08c519
 0x08c60a  fd 21 80 00 d0  ld iy, 0xd00080

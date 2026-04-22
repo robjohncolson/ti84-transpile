@@ -19,20 +19,20 @@
 ## Writer PCs
 
 `0x0012ea`, `0x0013c7`, `0x001853`, `0x001881`, `0x002873`, `0x00287d`,
-`0x005bb1`, `0x02fd8f`, `0x02fdb6`, `0x03fa09`, `0x03fad6`, `0x05c634`,
-`0x05c768`, `0x05c883`, `0x06ce73`, `0x0802b2`, `0x08c331`, `0x08c345`,
-`0x0a1799`, `0x0a1a30`, `0x0a349f`
+`0x005bb1`, `0x02fd8f`, `0x02fdb6`, `0x03fa09 (= GetCSC)`, `0x03fad6`, `0x05c634 (= CursorOff)`,
+`0x05c768`, `0x05c883`, `0x06ce73 (= CoorDisp)`, `0x0802b2`, `0x08c331 (= CoorMon)`, `0x08c345`,
+`0x0a1799 (= PutMap)`, `0x0a1a30`, `0x0a349f`
 
 ## Phase 100E Recommendation
 
-Boot does reach the region, so the next target is not an unreachable ISR/BCALL-only populator. Phase 100E should trace the dominant bulk writers `0x001881` and `0x00287d` first, then the smaller targeted setters `0x02fdb6`, `0x03fad6`, `0x05c768`, and `0x05c883`. If semantic mode bytes are assigned later, they must happen after the blanket `0x00287d` fill or behind the current `missing_block` stop in the `0x08c331` init path.
+Boot does reach the region, so the next target is not an unreachable ISR/BCALL-only populator. Phase 100E should trace the dominant bulk writers `0x001881` and `0x00287d` first, then the smaller targeted setters `0x02fdb6`, `0x03fad6`, `0x05c768`, and `0x05c883`. If semantic mode bytes are assigned later, they must happen after the blanket `0x00287d` fill or behind the current `missing_block` stop in the `0x08c331 (= CoorMon)` init path.
 
 ## Probe Stdout
 
 ```text
 === Phase 100D - Mode State Initializer Probe ===
 boot: steps=3062 term=halt lastPc=0x0019b5
-osInit: entry=0x08c331 steps=691 term=missing_block lastPc=0xffffff
+osInit: entry=0x08c331 (= CoorMon) steps=691 term=missing_block lastPc=0xffffff
 postInit: entry=0x0802b2 steps=1 term=missing_block lastPc=0xffffff
 mode state dump (0xD00080-0xD000FF):
   0xd00080: 00 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
@@ -46,9 +46,9 @@ mode state dump (0xD00080-0xD000FF):
 nonzero ranges: 1
   0xd00081-0xd000ff = 0xff
 write log sorted by addr (captured=279, dropped=0):
-  0xd00080: [step=478 pc=0x001881 value=0x00] [step=651 pc=0x03fa09 value=0x00] [step=690 pc=0x002873 value=0x00]
+  0xd00080: [step=478 pc=0x001881 value=0x00] [step=651 pc=0x03fa09 (= GetCSC) value=0x00] [step=690 pc=0x002873 value=0x00]
   0xd00081: [step=478 pc=0x001881 value=0x00] [step=691 pc=0x00287d value=0xff]
-  0xd00082: [step=5 pc=0x06ce73 value=0x00] [step=153 pc=0x0a1799 value=0x00] [step=419 pc=0x0a1799 value=0x00] [step=478 pc=0x001881 value=0x00] [step=691 pc=0x00287d value=0xff]
+  0xd00082: [step=5 pc=0x06ce73 (= CoorDisp) value=0x00] [step=153 pc=0x0a1799 (= PutMap) value=0x00] [step=419 pc=0x0a1799 (= PutMap) value=0x00] [step=478 pc=0x001881 value=0x00] [step=691 pc=0x00287d value=0xff]
   0xd00083: [step=478 pc=0x001881 value=0x00] [step=691 pc=0x00287d value=0xff]
   0xd00084: [step=478 pc=0x001881 value=0x00] [step=691 pc=0x00287d value=0xff]
   0xd00085: [step=373 pc=0x001853 value=0x00] [step=478 pc=0x001881 value=0x00] [step=691 pc=0x00287d value=0xff]
@@ -58,7 +58,7 @@ write log sorted by addr (captured=279, dropped=0):
   0xd00089: [step=478 pc=0x001881 value=0x00] [step=691 pc=0x00287d value=0xff]
   0xd0008a: [step=478 pc=0x001881 value=0x00] [step=691 pc=0x00287d value=0xff]
   0xd0008b: [step=478 pc=0x001881 value=0x00] [step=691 pc=0x00287d value=0xff]
-  0xd0008c: [step=2 pc=0x05c634 value=0x00] [step=125 pc=0x05c768 value=0x04] [step=383 pc=0x05c883 value=0x0c] [step=478 pc=0x001881 value=0x00] [step=649 pc=0x05c883 value=0x0c] [step=691 pc=0x00287d value=0xff]
+  0xd0008c: [step=2 pc=0x05c634 (= CursorOff) value=0x00] [step=125 pc=0x05c768 value=0x04] [step=383 pc=0x05c883 value=0x0c] [step=478 pc=0x001881 value=0x00] [step=649 pc=0x05c883 value=0x0c] [step=691 pc=0x00287d value=0xff]
   0xd0008d: [step=478 pc=0x001881 value=0x00] [step=691 pc=0x00287d value=0xff]
   0xd0008e: [step=478 pc=0x001881 value=0x00] [step=691 pc=0x00287d value=0xff]
   0xd0008f: [step=478 pc=0x001881 value=0x00] [step=691 pc=0x00287d value=0xff]
@@ -66,7 +66,7 @@ write log sorted by addr (captured=279, dropped=0):
   0xd00091: [step=478 pc=0x001881 value=0x00] [step=691 pc=0x00287d value=0xff]
   0xd00092: [step=11 pc=0x0a349f value=0x00] [step=478 pc=0x001881 value=0x00] [step=691 pc=0x00287d value=0xff]
   0xd00093: [step=478 pc=0x001881 value=0x00] [step=691 pc=0x00287d value=0xff]
-  0xd00094: [step=1 pc=0x08c331 value=0x00] [step=478 pc=0x001881 value=0x00] [step=691 pc=0x00287d value=0xff]
+  0xd00094: [step=1 pc=0x08c331 (= CoorMon) value=0x00] [step=478 pc=0x001881 value=0x00] [step=691 pc=0x00287d value=0xff]
   0xd00095: [step=478 pc=0x001881 value=0x00] [step=691 pc=0x00287d value=0xff]
   0xd00096: [step=478 pc=0x001881 value=0x00] [step=691 pc=0x00287d value=0xff]
   0xd00097: [step=478 pc=0x001881 value=0x00] [step=691 pc=0x00287d value=0xff]
@@ -174,6 +174,6 @@ write log sorted by addr (captured=279, dropped=0):
   0xd000fd: [step=478 pc=0x001881 value=0x00] [step=691 pc=0x00287d value=0xff]
   0xd000fe: [step=478 pc=0x001881 value=0x00] [step=691 pc=0x00287d value=0xff]
   0xd000ff: [step=478 pc=0x001881 value=0x00] [step=691 pc=0x00287d value=0xff]
-writer PCs: 0x001881 x128, 0x00287d x127, 0x001853 x2, 0x02fdb6 x2, 0x05c883 x2, 0x0a1799 x2, 0x0a1a30 x2, 0x0012ea x1, 0x0013c7 x1, 0x002873 x1, 0x005bb1 x1, 0x02fd8f x1, 0x03fa09 x1, 0x03fad6 x1, 0x05c634 x1, 0x05c768 x1, 0x06ce73 x1, 0x0802b2 x1, 0x08c331 x1, 0x08c345 x1, 0x0a349f x1
+writer PCs: 0x001881 x128, 0x00287d x127, 0x001853 x2, 0x02fdb6 x2, 0x05c883 x2, 0x0a1799 (= PutMap) x2, 0x0a1a30 x2, 0x0012ea x1, 0x0013c7 x1, 0x002873 x1, 0x005bb1 x1, 0x02fd8f x1, 0x03fa09 (= GetCSC) x1, 0x03fad6 x1, 0x05c634 (= CursorOff) x1, 0x05c768 x1, 0x06ce73 (= CoorDisp) x1, 0x0802b2 x1, 0x08c331 (= CoorMon) x1, 0x08c345 x1, 0x0a349f x1
 MODE STATE INITIALIZER FOUND
 ```

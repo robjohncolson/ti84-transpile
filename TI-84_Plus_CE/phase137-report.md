@@ -1,17 +1,17 @@
-# Phase 137 — 0x0800A0 Caller Analysis (IY+0x14 bit 3 flag)
+# Phase 137 — 0x0800A0 (= CheckSplitFlag) Caller Analysis (IY+0x14 bit 3 flag)
 
 ## Summary
 
-`0x0800A0` tests bit 3 of `(IY+0x14)` = memory `0xD00094`, returning Z flag.
+`0x0800A0 (= CheckSplitFlag)` tests bit 3 of `(IY+0x14)` = memory `0xD00094`, returning Z flag.
 `0x0800C2` clears that same bit (RES 3).
 
-- **CALL 0x0800A0**: 111 occurrences in ROM
+- **CALL 0x0800A0 (= CheckSplitFlag)**: 111 occurrences in ROM
 - **CALL 0x0800C2**: 3 occurrences in ROM
-- **Inline BIT 3,(IY+0x14)**: 0 (excluding 0x0800A0 itself)
+- **Inline BIT 3,(IY+0x14)**: 0 (excluding 0x0800A0 (= CheckSplitFlag) itself)
 - **Inline SET 3,(IY+0x14)**: 17
 - **Inline RES 3,(IY+0x14)**: 21 (excluding 0x0800C2 itself)
 
-## All CALL 0x0800A0 Addresses
+## All CALL 0x0800A0 (= CheckSplitFlag) Addresses
 
 ```
 0x0455a2
@@ -30,7 +30,7 @@
 0x06da98
 0x06f151
 0x06f2c7
-0x06f41a
+0x06f41a (= DrawSplitLine)
 0x06fcf5
 0x06fdca
 0x06ff18
@@ -196,7 +196,7 @@
 | unknown (0xc4) | 1 |
 | unknown (0x3e) | 1 |
 
-## Sample Caller Details (First 20 of 0x0800A0)
+## Sample Caller Details (First 20 of 0x0800A0 (= CheckSplitFlag))
 
 ### 0x0455a2
 ```
@@ -294,7 +294,7 @@ hex: 84 d9 fd cb 14 4e 20 0c 06 a5 cd a0 00 08 28 0a 06 51 18 06 06 91 d9 0e 5c 
 next opcode: 0x28 = JR Z,dd -> 0x06f2d7
 ```
 
-### 0x06f41a
+### 0x06f41a (= DrawSplitLine)
 ```
 hex: 05 d9 c2 8e f3 06 c3 82 f3 06 cd a0 00 08 c8 fd cb 2b 56 f5 fd cb 2b d6 fd cb 02 4e f5 fd
 next opcode: 0xc8 = RET Z
@@ -351,9 +351,9 @@ next opcode: 0xcd = unknown (0xcd)
 
 ### phase127-report.md
 
-- Line 118: 0x08c8b9  cd a0 00 08           call 0x0800a0
-- Line 208: | `0x08c8b9` | call | - | `0x0800a0` |  |
-- Line 297: 0x08c8b9  cd a0 00 08           call 0x0800a0
+- Line 118: 0x08c8b9  cd a0 00 08           call 0x0800a0 (= CheckSplitFlag)
+- Line 208: | `0x08c8b9` | call | - | `0x0800a0 (= CheckSplitFlag)` |  |
+- Line 297: 0x08c8b9  cd a0 00 08           call 0x0800a0 (= CheckSplitFlag)
 - Line 117: 0x08c8b5  cd c2 00 08           call 0x0800c2
 - Line 207: | `0x08c8b5` | call | - | `0x0800c2` |  |
 - Line 296: 0x08c8b5  cd c2 00 08           call 0x0800c2
@@ -365,24 +365,24 @@ next opcode: 0xcd = unknown (0xcd)
 
 ### phase131-report.md
 
-- Line 225: 0x06fcf5  cd a0 00 08           call target=0x0800a0
+- Line 225: 0x06fcf5  cd a0 00 08           call target=0x0800a0 (= CheckSplitFlag)
 
 ### phase133-report.md
 
-- Line 28: 0x0800ee  cd a0 00 08           call 0x0800a0  ; -> home-handler-2
-- Line 111: | `0x0800ee` | - | `0x0800a0` | home-handler-2 |
-- Line 131: ### home-handler-2 (0x0800a0)
-- Line 134: 0x0800a0  fd cb 14 5e           indexed-cb-bit
-- Line 164: 0x0800ee  cd a0 00 08           call 0x0800a0  ; -> home-handler-2
-- Line 237: | `0x0800ee` | - | `0x0800a0` | home-handler-2 |
-- Line 416: ### home-handler-2 (0x0800a0)
-- Line 437: 0x0800a0, 0x0800a6
-- Line 476: ### home-handler-2 (0x0800a0)
+- Line 28: 0x0800ee  cd a0 00 08           call 0x0800a0 (= CheckSplitFlag)  ; -> home-handler-2
+- Line 111: | `0x0800ee` | - | `0x0800a0 (= CheckSplitFlag)` | home-handler-2 |
+- Line 131: ### home-handler-2 (0x0800a0 (= CheckSplitFlag))
+- Line 134: 0x0800a0 (= CheckSplitFlag)  fd cb 14 5e           indexed-cb-bit
+- Line 164: 0x0800ee  cd a0 00 08           call 0x0800a0 (= CheckSplitFlag)  ; -> home-handler-2
+- Line 237: | `0x0800ee` | - | `0x0800a0 (= CheckSplitFlag)` | home-handler-2 |
+- Line 416: ### home-handler-2 (0x0800a0 (= CheckSplitFlag))
+- Line 437: 0x0800a0 (= CheckSplitFlag), 0x0800a6
+- Line 476: ### home-handler-2 (0x0800a0 (= CheckSplitFlag))
 - Line 9: ### home-handler-1 (0x0800c2)
 
 ### phase137-report.md
 
-- Line 5: `0x0800A0` tests bit 3 of `(IY+0x14)` = memory `0xD00094`, returning Z flag.
+- Line 5: `0x0800A0 (= CheckSplitFlag)` tests bit 3 of `(IY+0x14)` = memory `0xD00094`, returning Z flag.
 - Line 345: - Line 79: - 0xd00094 = 0xf7
 - Line 346: - Line 84: - 0xd00094 = 0xe7
 - Line 347: - Line 111: - 0xd00094 = 0xf7

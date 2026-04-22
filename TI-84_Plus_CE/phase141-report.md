@@ -23,7 +23,7 @@ section is selected by the current modifier state stored in `(IY+0x12)`:
 The lookup code at `0x03010D` adds the section offset to the scan code, then
 indexes into the table: `A = table[scanCode + sectionOffset]`.
 
-**Key finding**: The internal codes at `0x08759D` (the classifier from Phase 136)
+**Key finding**: The internal codes at `0x08759D (= IsFullCntx)` (the classifier from Phase 136)
 use values from Section 0 of this table. Letter codes 0x41-0x5A appear in the
 unmodified section for the function key row (GRAPH=D, TRACE=Z, WINDOW=H, Y\==I,
 MODE=E) -- these are the alpha labels printed on those keys.
@@ -355,7 +355,7 @@ labels. This matches the physical keyboard layout of the TI-84 Plus CE:
 
 ## Phase 136 Classifier Cross-Reference
 
-The classifier at `0x08759D` uses CPIR to check if a key code belongs to
+The classifier at `0x08759D (= IsFullCntx)` uses CPIR to check if a key code belongs to
 specific groups. Here is how the classifier tables map to the translation
 table entries:
 

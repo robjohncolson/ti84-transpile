@@ -238,7 +238,7 @@ It is called in a loop with `LD B, 0x12; CALL 0x0AD459` (18 iterations).
           push hl              ; save current pointer
           push de              ; save DE (0)
           bit 6, (ix+0)        ; test bit 6 of flags
-          jr z, 0x0AD48E       ; if clear, call 0x09BAC9
+          jr z, 0x0AD48E       ; if clear, call 0x09BAC9 (= NxtFetch)
 ```
 
 ### Key Observations
@@ -250,7 +250,7 @@ It is called in a loop with `LD B, 0x12; CALL 0x0AD459` (18 iterations).
 5. **At 0x0AD69B** (exit): writes HL to 0xD0231A — final pointer update
 6. The function processes one entry per call, advancing the current pointer (0xD0231A)
 7. B register carries flags between calls (bit 6 tested, bit 0 tested at various points)
-8. Calls to 0x09BAC9, 0x09BBAD suggest token parsing / string comparison
+8. Calls to 0x09BAC9 (= NxtFetch), 0x09BBAD suggest token parsing / string comparison
 
 ## 0x056900 Region Analysis
 
@@ -307,7 +307,7 @@ Reconstructed from `ROM.transpiled.js` blocks:
   push HL, push DE
   bit 6, (IX+0) -> branch
 
-0x0AD48E: call 0x09BAC9  (token reader / string scanner)
+0x0AD48E: call 0x09BAC9 (= NxtFetch)  (token reader / string scanner)
 
 0x0AD492: cp 0x3E         (compare A with '>')
   if A != 0x3E -> 0x0AD4BD (call 0x09BBAD, another scanner)
@@ -327,7 +327,7 @@ Reconstructed from `ROM.transpiled.js` blocks:
 
 The function is a **token parser / command dispatcher**. Each call:
 1. Reads the current position from `0xD0231A`
-2. Scans forward through token bytes (calls to 0x09BAC9/0x09BBAD)
+2. Scans forward through token bytes (calls to 0x09BAC9 (= NxtFetch)/0x09BBAD)
 3. Classifies the token (comparisons against 0x3E `>`, 0xBB, 0x2A `*`, etc.)
 4. Writes the new position back to `0xD0231A`
 

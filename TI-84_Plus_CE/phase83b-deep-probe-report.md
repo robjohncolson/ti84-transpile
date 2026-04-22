@@ -9,9 +9,9 @@
 
 ## 0x09c98c - 0px
 
-No chars decoded (0x0a1799 never hit).
+No chars decoded (0x0a1799 (= PutMap) never hit).
 
 
 ## 0x09cd5a - 0px
 
-No chars decoded (0x0a1799 never hit).
+No chars decoded (0x0a1799 (= PutMap) never hit).

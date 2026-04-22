@@ -1,6 +1,6 @@
 # Phase 90 — Direct Caller Probe
 
-Goal: find which of the 5 callers of 0x0a29ec is the home screen event handler.
+Goal: find which of the 5 callers of 0x0a29ec (= RStrCurRow) is the home screen event handler.
 
 
 ## Summary

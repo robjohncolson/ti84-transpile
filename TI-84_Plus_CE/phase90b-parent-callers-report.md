@@ -1,6 +1,6 @@
 # Phase 90b — Parent Caller Probe
 
-Goal: find which caller of fn-containing-CALL-0x0a29ec draws the full home screen.
+Goal: find which caller of fn-containing-CALL-0x0a29ec (= RStrCurRow) draws the full home screen.
 
 
 ## Summary

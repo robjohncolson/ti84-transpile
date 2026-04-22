@@ -145,7 +145,7 @@ Total routines analyzed: 135
 | 0x04b664 | `dd e5 dd 21 00 00 00 dd 39 dd 27 06` | db 0xdd; push hl; ld ix, 0x000000; db 0xdd; db 0x39; db 0xdd; db 0x27; db 0x06 | **unknown** |
 | 0x04b67f | `79 fe 15 20 fa dd e1 c9 dd e5 dd 21` | db 0x79; db 0xfe; db 0x15; db 0x20; jp m, 0xc9e1dd; db 0xdd; push hl; db 0xdd; db 0x21 | **unknown** |
 | 0x04b684 | `dd e1 c9 dd e5 dd 21 00 00 00 dd 39` | db 0xdd; pop hl; ret; db 0xdd; push hl; ld ix, 0x000000; db 0xdd; db 0x39 | **unknown** |
-| 0x04c973 | `e5 b7 ed 52 e1 c9 e5 b7 52 ed 52 e1` | push hl; db 0xb7; db 0xed; db 0x52; pop hl; ret; push hl; db 0xb7; db 0x52; db 0xed; db 0x52; pop hl | **unknown** |
+| 0x04c973 (= CpHLDE) | `e5 b7 ed 52 e1 c9 e5 b7 52 ed 52 e1` | push hl; db 0xb7; db 0xed; db 0x52; pop hl; ret; push hl; db 0xb7; db 0x52; db 0xed; db 0x52; pop hl | **unknown** |
 | 0x04ca7b | `fd 21 80 00 d0 c3 11 0d 04 3e 0c c9` | ld iy, 0xd00080; jp 0x040d11; db 0x3e; db 0x0c; ret | **dispatch** |
 | 0x04e07b | `cd 30 01 00 ed 57 f5 f3 01 62 00 00` | call 0x000130; db 0xed; db 0x57; push af; db 0xf3; ld bc, 0x000062 | **unknown** |
 | 0x04e07f | `ed 57 f5 f3 01 62 00 00 c5 01 a8 76` | db 0xed; db 0x57; push af; db 0xf3; ld bc, 0x000062; push bc; db 0x01; db 0xa8; db 0x76 | **unknown** |

@@ -73,20 +73,20 @@ First 30 blocks:
   0x08c543 [adl] step=4
   0x08c549 [adl] step=5
   0x08c558 [adl] step=6
-  0x04c973 [adl] step=7
+  0x04c973 (= CpHLDE) [adl] step=7
   0x08c561 [adl] step=8
   0x08c583 [adl] step=9
-  0x08c33d [adl] step=10
-  0x0a349a [adl] step=11
+  0x08c33d (= Mon) [adl] step=10
+  0x0a349a (= RunIndicOff) [adl] step=11
   0x08c341 [adl] step=12
-  0x05c75b [adl] step=13
+  0x05c75b (= CursorOn) [adl] step=13
   0x08c345 [adl] step=14
   0x08c34f [adl] step=15
-  0x08c366 [adl] step=16
+  0x08c366 (= MonForceKey) [adl] step=16
   0x08c378 [adl] step=17
   0x08c384 [adl] step=18
   0x08c3a8 [adl] step=19
-  0x0a27dd [adl] step=20
+  0x0a27dd (= RunIndicOn) [adl] step=20
   0x0a27fe [adl] step=21
   0x0a1a36 [adl] step=22
   0x08c3ac [adl] step=23
@@ -99,7 +99,7 @@ First 30 blocks:
 ...
 Last 20 blocks:
   0x08c40f [adl] step=604
-  0x08c509 [adl] step=605
+  0x08c509 (= SendKPress) [adl] step=605
   0x08c511 [adl] step=606
   0x08c519 [adl] step=607
   0x08c526 [adl] step=608
@@ -110,7 +110,7 @@ Last 20 blocks:
   0x022336 [adl] step=613
   0x022344 [adl] step=614
   0x08c536 [adl] step=615
-  0x08c72f [adl] step=616
+  0x08c72f (= CallMain) [adl] step=616
   0x05622e [adl] step=617
   0x05623d [adl] step=618
   0x056244 [adl] step=619

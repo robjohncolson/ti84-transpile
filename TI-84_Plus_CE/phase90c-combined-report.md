@@ -15,7 +15,7 @@
 | G_caller_5e7d2 | 10228 | 3756 | 6472 | r0-34 c0-319 |
 | G_caller_9cb14 | 10444 | 3954 | 6490 | r0-34 c0-319 |
 
-## ASCII preview of Scenario C (0x0a2b72 + 0x0a29ec) — r0-50
+## ASCII preview of Scenario C (0x0a2b72 (= PutBPat) + 0x0a29ec (= RStrCurRow)) — r0-50
 
 ```
 r000:                                                                                 

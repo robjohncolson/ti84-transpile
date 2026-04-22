@@ -8,7 +8,7 @@ screen render function (should render the full Y1=, Y2=, … equation list).
 
 - ROM booted, OS init, SetTextFgColor(black) — shared state snapshot
 - Each probe: reset RAM + CPU + VRAM (sentinel 0xAAAA), then `runFrom(entry, adl, {maxSteps: 30000})`
-- Pass 2: for probes with >5000 pixels, re-run with `onBlock` hook at 0x0A1799 to capture char codes
+- Pass 2: for probes with >5000 pixels, re-run with `onBlock` hook at 0x0A1799 (= PutMap) to capture char codes
 
 ## Results Table
 
@@ -183,7 +183,7 @@ Clipped to 80 chars wide, 50 rows tall from top-left of bounding box.
 
 ## Methodology Notes
 
-- `0x0A1799` intercept captures `cpu.a` (A register) at block entry as char code,
+- `0x0A1799 (= PutMap)` intercept captures `cpu.a` (A register) at block entry as char code,
   and `cpu._de & 0xFFFF` as approximate column position.
 - Some chars may be captured out of order if the renderer draws non-sequentially;
   results are sorted by DE value.

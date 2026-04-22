@@ -11,7 +11,7 @@ Initial upbase at executor construction: `0xd40000`
 | Phase | Entry | Steps | Termination | Last PC | LCD W | LCD R | Upbase W | Final Upbase |
 | --- | --- | ---: | --- | --- | ---: | ---: | ---: | --- |
 | cold_boot | `0x000000` | 3025 | `halt` | `0x0019b5` | 6 | 0 | 0 | `0xd40000` |
-| os_init | `0x08c331` | 304440 | `halt` | `0x0019b5` | 6 | 0 | 0 | `0xd40000` |
+| os_init | `0x08c331 (= CoorMon)` | 304440 | `halt` | `0x0019b5` | 6 | 0 | 0 | `0xd40000` |
 | post_init | `0x0802b2` | 1 | `missing_block` | `0xffffff` | 0 | 0 | 0 | `0xd40000` |
 
 ## Upbase Writes

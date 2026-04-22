@@ -15,11 +15,11 @@ Executed by Sonnet fallback on 2026-04-20.
 ```text
 === Phase 202G - LCD Mirror Probe ===
 boot: steps=3025 term=halt lastPc=0x0019b5
-stage 1 status bar background: entry=0x0a2b72 steps=28 term=missing_block lastPc=0xffffff
+stage 1 status bar background: entry=0x0a2b72 (= PutBPat) steps=28 term=missing_block lastPc=0xffffff
 stage 2 status dots: entry=0x0a3301 steps=107 term=missing_block lastPc=0xffffff
 stage 3 seed mode buffer: "Normal Float Radian       "
-stage 3 home row strip: entry=0x0a29ec steps=17848 term=missing_block lastPc=0xffffff
-stage 4 history area: entry=0x0a2854 steps=514 term=missing_block lastPc=0xffffff
+stage 3 home row strip: entry=0x0a29ec (= RStrCurRow) steps=17848 term=missing_block lastPc=0xffffff
+stage 4 history area: entry=0x0a2854 (= RStrShadow) steps=514 term=missing_block lastPc=0xffffff
 stage 5 workspace fill: rows 75-219 -> 0xFFFF
 stage 6 entry line fill: rows 220-239 -> 0xFFFF
 0xF80000 writes: 0
@@ -36,11 +36,11 @@ PASS — re-run by Sonnet fallback on 2026-04-20 after applying the mirror inter
 === Phase 99D - Home Screen Verification Probe ===
 fontDecoder: base=0x0040ee glyph=16x14
 boot: steps=3025 term=halt lastPc=0x0019b5
-stage 1 status bar background: entry=0x0a2b72 steps=28 term=missing_block lastPc=0xffffff
+stage 1 status bar background: entry=0x0a2b72 (= PutBPat) steps=28 term=missing_block lastPc=0xffffff
 stage 2 status dots: entry=0x0a3301 steps=107 term=missing_block lastPc=0xffffff
 stage 3 seed mode buffer: "Normal Float Radian       "
-stage 3 home row strip: entry=0x0a29ec steps=17848 term=missing_block lastPc=0xffffff
-stage 4 history area: entry=0x0a2854 steps=514 term=missing_block lastPc=0xffffff
+stage 3 home row strip: entry=0x0a29ec (= RStrCurRow) steps=17848 term=missing_block lastPc=0xffffff
+stage 4 history area: entry=0x0a2854 (= RStrShadow) steps=514 term=missing_block lastPc=0xffffff
 stage 5 workspace fill: rows 75-219 -> 0xFFFF
 stage 6 entry line fill: rows 220-239 -> 0xFFFF
 drawn=59836 fg=1004 bg=58832 rMin=6 rMax=239

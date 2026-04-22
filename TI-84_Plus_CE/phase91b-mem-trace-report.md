@@ -1,7 +1,7 @@
 # Phase 91b — Memory Read Trace
 
 
-## Char captures (26 calls to 0x0a1799)
+## Char captures (26 calls to 0x0a1799 (= PutMap))
 
 | idx | charCode | col | last D-bank reads |
 |-----|----------|-----|---------------------|

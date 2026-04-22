@@ -357,7 +357,7 @@ First 50 RAM changes after ENTER injection:
 
 Key findings:
 
-1. History rows (37-74) ARE written during 0x085E16 dispatch
+1. History rows (37-74) ARE written during 0x085E16 (= MenCatRet) dispatch
 2. Found 53 ROM references to history-area VRAM addresses
 3. "Ans" string found 4 times in ROM
 4. After digit "2" injection: 81 RAM bytes changed, 0 new 0x32 bytes, 0 new 0x31 bytes

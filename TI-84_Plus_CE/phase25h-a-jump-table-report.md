@@ -17,723 +17,723 @@ Source: CE-Programming/toolchain `src/include/ti84pceg.inc` (master)
 
 | # | Slot | JP? | Target | Name |
 |--:|:---|:---:|:---|:---|
-| 0 | `0x020104` | ✓ | `0x0BD6BA` | OSSize |
-| 1 | `0x020108` | ✓ | `0x0401DF` | BootOS |
-| 2 | `0x02010C` | ✓ | `0x03CF7D` | InterruptHandler |
-| 3 | `0x020110` | ✓ | `0x04AB5D` | Rst10Handler |
-| 4 | `0x020114` | ✓ | `0x04AB61` | Rst18Handler |
-| 5 | `0x020118` | ✓ | `0x04AB65` | Rst20Handler |
-| 6 | `0x02011C` | ✓ | `0x04AB69` | Rst28Handler |
-| 7 | `0x020120` | ✓ | `0x04AB6D` | Rst30Handler |
+| 0 | `0x020104 (= OSSize)` | ✓ | `0x0BD6BA (= OSSize)` | OSSize |
+| 1 | `0x020108 (= BootOS)` | ✓ | `0x0401DF (= BootOS)` | BootOS |
+| 2 | `0x02010C (= InterruptHandler)` | ✓ | `0x03CF7D (= InterruptHandler)` | InterruptHandler |
+| 3 | `0x020110 (= Rst10Handler)` | ✓ | `0x04AB5D (= Rst10Handler)` | Rst10Handler |
+| 4 | `0x020114 (= Rst18Handler)` | ✓ | `0x04AB61 (= Rst18Handler)` | Rst18Handler |
+| 5 | `0x020118 (= Rst20Handler)` | ✓ | `0x04AB65 (= Rst20Handler)` | Rst20Handler |
+| 6 | `0x02011C (= Rst28Handler)` | ✓ | `0x04AB69 (= Rst28Handler)` | Rst28Handler |
+| 7 | `0x020120 (= Rst30Handler)` | ✓ | `0x04AB6D (= Rst30Handler)` | Rst30Handler |
 | 8 | `0x020124` | ✓ | `0x0272C9` | _(unnamed)_ |
 | 9 | `0x020128` | ✓ | `0x040E7E` | _(unnamed)_ |
-| 10 | `0x02012C` | ✓ | `0x061DB6` | JErrorNo |
-| 11 | `0x020130` | ✓ | `0x023A1C` | CallFontHook |
-| 12 | `0x020134` | ✓ | `0x02398E` | CallLocalizeHook |
-| 13 | `0x020138` | ✓ | `0x04C916` | LoadHLInd_s |
-| 14 | `0x02013C` | ✓ | `0x04C973` | CpHLDE |
-| 15 | `0x020140` | ✓ | `0x04C950` | DivHLBy10_s |
-| 16 | `0x020144` | ✓ | `0x04C952` | DivHLByA_s |
-| 17 | `0x020148` | ✓ | `0x03F994` | KbdScan |
-| 18 | `0x02014C` | ✓ | `0x03FA09` | GetCSC |
-| 19 | `0x020150` | ✓ | `0x08C331` | CoorMon |
-| 20 | `0x020154` | ✓ | `0x08C33D` | Mon |
-| 21 | `0x020158` | ✓ | `0x08C366` | MonForceKey |
-| 22 | `0x02015C` | ✓ | `0x08C509` | SendKPress |
-| 23 | `0x020160` | ✓ | `0x08C630` | JForceCmdNoChar |
-| 24 | `0x020164` | ✓ | `0x08C631` | JForceCmd |
-| 25 | `0x020168` | ✓ | `0x08C66D` | SysErrHandler |
-| 26 | `0x02016C` | ✓ | `0x08C79F` | NewContext |
-| 27 | `0x020170` | ✓ | `0x08C7AD` | NewContext0 |
-| 28 | `0x020174` | ✓ | `0x08C67C` | PPutawayPrompt |
-| 29 | `0x020178` | ✓ | `0x08C689` | PPutAway |
-| 30 | `0x02017C` | ✓ | `0x08C69E` | PutAway |
-| 31 | `0x020180` | ✓ | `0x08C708` | SizeWind |
-| 32 | `0x020184` | ✓ | `0x08C721` | ErrorEP |
-| 33 | `0x020188` | ✓ | `0x08C72F` | CallMain |
-| 34 | `0x02018C` | ✓ | `0x08C754` | MonErrHand |
-| 35 | `0x020190` | ✓ | `0x08C782` | AppInit |
-| 36 | `0x020194` | ✓ | `0x040B34` | Initialize |
-| 37 | `0x020198` | ✓ | `0x07C705` | Min |
-| 38 | `0x02019C` | ✓ | `0x07C711` | Max |
-| 39 | `0x0201A0` | ✓ | `0x07C723` | AbsO1PAbsO2 |
-| 40 | `0x0201A4` | ✓ | `0x07C72D` | Intgr |
-| 41 | `0x0201A8` | ✓ | `0x07C747` | TRunc |
-| 42 | `0x0201AC` | ✓ | `0x07C74F` | InvSub |
-| 43 | `0x0201B0` | ✓ | `0x07C755` | Times2 |
-| 44 | `0x0201B4` | ✓ | `0x07C75B` | Plus1 |
-| 45 | `0x0201B8` | ✓ | `0x07C76D` | Minus1 |
-| 46 | `0x0201BC` | ✓ | `0x07C771` | FPSub |
-| 47 | `0x0201C0` | ✓ | `0x07C77F` | FPAdd |
-| 48 | `0x0201C4` | ✓ | `0x07C88B` | DToR |
-| 49 | `0x0201C8` | ✓ | `0x07C897` | RToD |
-| 50 | `0x0201CC` | ✓ | `0x07C8A3` | Cube |
-| 51 | `0x0201D0` | ✓ | `0x07C8A9` | TimesPT5 |
-| 52 | `0x0201D4` | ✓ | `0x07C8B3` | FPSquare |
-| 53 | `0x0201D8` | ✓ | `0x07C8B7` | FPMult |
-| 54 | `0x0201DC` | ✓ | `0x07C9AF` | LJRnd |
-| 55 | `0x0201E0` | ✓ | `0x07CA02` | InvOP1Sc |
-| 56 | `0x0201E4` | ✓ | `0x07CA06` | InvOP1S |
-| 57 | `0x0201E8` | ✓ | `0x07CA27` | InvOP2S |
-| 58 | `0x0201EC` | ✓ | `0x07CA48` | Frac |
-| 59 | `0x0201F0` | ✓ | `0x07CAB1` | FPRecip |
-| 60 | `0x0201F4` | ✓ | `0x07CAB9` | FPDiv |
-| 61 | `0x0201F8` | ✓ | `0x07DF66` | SqRoot |
-| 62 | `0x0201FC` | ✓ | `0x0685DF` | RndGuard |
-| 63 | `0x020200` | ✓ | `0x0685FE` | Rnfx |
-| 64 | `0x020204` | ✓ | `0x07CBB3` | Int |
-| 65 | `0x020208` | ✓ | `0x07CBB5` | Round |
-| 66 | `0x02020C` | ✓ | `0x07E053` | LnX |
-| 67 | `0x020210` | ✓ | `0x07E071` | LogX |
-| 68 | `0x020214` | ✓ | `0x07CB98` | LJNoRnd |
-| 69 | `0x020218` | ✓ | `0x07E20D` | EToX |
-| 70 | `0x02021C` | ✓ | `0x07E219` | TenX |
-| 71 | `0x020220` | ✓ | `0x07E543` | SinCosRad |
-| 72 | `0x020224` | ✓ | `0x07E57B` | Sin |
-| 73 | `0x020228` | ✓ | `0x07E5B5` | Cos |
-| 74 | `0x02022C` | ✓ | `0x07E5D8` | Tan |
-| 75 | `0x020230` | ✓ | `0x07EB41` | SinhCosh |
-| 76 | `0x020234` | ✓ | `0x07EB45` | Tanh |
-| 77 | `0x020238` | ✓ | `0x07EB49` | Cosh |
-| 78 | `0x02023C` | ✓ | `0x07EB4D` | Sinh |
-| 79 | `0x020240` | ✓ | `0x07EC12` | ACosRad |
-| 80 | `0x020244` | ✓ | `0x07EC18` | ATanRad |
-| 81 | `0x020248` | ✓ | `0x07EC1E` | ATan2Rad |
-| 82 | `0x02024C` | ✓ | `0x07EC25` | ASinRad |
-| 83 | `0x020250` | ✓ | `0x07EC2F` | ACos |
-| 84 | `0x020254` | ✓ | `0x07EC40` | ATan |
-| 85 | `0x020258` | ✓ | `0x07EC4F` | ASin |
-| 86 | `0x02025C` | ✓ | `0x07ECBF` | ATan2 |
-| 87 | `0x020260` | ✓ | `0x07EED3` | ATanh |
-| 88 | `0x020264` | ✓ | `0x07EF5A` | ASinh |
-| 89 | `0x020268` | ✓ | `0x07EF6B` | ACosh |
-| 90 | `0x02026C` | ✓ | `0x07DAD0` | PToR |
-| 91 | `0x020270` | ✓ | `0x07DAF8` | RToP |
-| 92 | `0x020274` | ✓ | `0x07F796` | HLTimes9 |
-| 93 | `0x020278` | ✓ | `0x07F7A4` | CkOP1Cplx |
-| 94 | `0x02027C` | ✓ | `0x07F7BD` | CkOP1Real |
-| 95 | `0x020280` | ✓ | `0x0685AA` | Angle |
-| 96 | `0x020284` | ✓ | `0x07F7F2` | COP1Set0 |
-| 97 | `0x020288` | ✓ | `0x07F813` | Cpop4OP3 |
-| 98 | `0x02028C` | ✓ | `0x07F81D` | Mov9OP2Cp |
-| 99 | `0x020290` | ✓ | `0x07F829` | AbsO1O2Cp |
-| 100 | `0x020294` | ✓ | `0x07F831` | CpOP1OP2 |
-| 101 | `0x020298` | ✓ | `0x07F898` | OP3ToOP4 |
-| 102 | `0x02029C` | ✓ | `0x07F8A2` | OP1ToOP4 |
-| 103 | `0x0202A0` | ✓ | `0x07F8AC` | OP2ToOP4 |
-| 104 | `0x0202A4` | ✓ | `0x07F8B6` | OP4ToOP2 |
-| 105 | `0x0202A8` | ✓ | `0x07F8C0` | OP3ToOP2 |
-| 106 | `0x0202AC` | ✓ | `0x07F8CC` | OP1ToOP3 |
-| 107 | `0x0202B0` | ✓ | `0x07F8D8` | OP5ToOP2 |
-| 108 | `0x0202B4` | ✓ | `0x07F8E4` | OP5ToOP6 |
-| 109 | `0x0202B8` | ✓ | `0x07F8F0` | OP5ToOP4 |
-| 110 | `0x0202BC` | ✓ | `0x07F8FA` | OP1ToOP2 |
-| 111 | `0x0202C0` | ✓ | `0x07F904` | OP6ToOP2 |
-| 112 | `0x0202C4` | ✓ | `0x07F90E` | OP6ToOP1 |
-| 113 | `0x0202C8` | ✓ | `0x07F914` | OP4ToOP1 |
-| 114 | `0x0202CC` | ✓ | `0x07F91A` | OP5ToOP1 |
-| 115 | `0x0202D0` | ✓ | `0x07F920` | OP3ToOP1 |
-| 116 | `0x0202D4` | ✓ | `0x07F926` | OP6ToOP5 |
-| 117 | `0x0202D8` | ✓ | `0x07F92C` | OP4ToOP5 |
-| 118 | `0x0202DC` | ✓ | `0x07F936` | OP3ToOP5 |
-| 119 | `0x0202E0` | ✓ | `0x07F940` | OP2ToOP5 |
-| 120 | `0x0202E4` | ✓ | `0x07F94A` | OP2ToOP6 |
-| 121 | `0x0202E8` | ✓ | `0x07F954` | OP1ToOP6 |
-| 122 | `0x0202EC` | ✓ | `0x07F95E` | OP1ToOP5 |
-| 123 | `0x0202F0` | ✓ | `0x07F968` | OP2ToOP1 |
-| 124 | `0x0202F4` | ✓ | `0x07F974` | Mov11b |
-| 125 | `0x0202F8` | ✓ | `0x07F976` | Mov10b |
-| 126 | `0x0202FC` | ✓ | `0x07F978` | Mov9b |
-| 127 | `0x020300` | ✓ | `0x07F978` | Mov9b_ |
-| 128 | `0x020304` | ✓ | `0x07F97A` | Mov8b |
-| 129 | `0x020308` | ✓ | `0x07F97C` | Mov7b |
-| 130 | `0x02030C` | ✓ | `0x07F97C` | Mov7b_ |
-| 131 | `0x020310` | ✓ | `0x07F9D9` | OP2ToOP3 |
-| 132 | `0x020314` | ✓ | `0x07F9E3` | OP4ToOP3 |
-| 133 | `0x020318` | ✓ | `0x07F9E9` | OP5ToOP3 |
-| 134 | `0x02031C` | ✓ | `0x07F9EF` | OP4ToOP6 |
-| 135 | `0x020320` | ✓ | `0x07F9FB` | Mov9ToOP1 |
-| 136 | `0x020324` | ✓ | `0x07FA03` | Mov9OP1OP2 |
-| 137 | `0x020328` | ✓ | `0x07FA07` | Mov9ToOP2 |
-| 138 | `0x02032C` | ✓ | `0x07FA0D` | MovFrOP1 |
-| 139 | `0x020330` | ✓ | `0x07FA19` | OP4Set1 |
-| 140 | `0x020334` | ✓ | `0x07FA1F` | OP3Set1 |
-| 141 | `0x020338` | ✓ | `0x07FA25` | OP2Set8 |
-| 142 | `0x02033C` | ✓ | `0x07FA2D` | OP2Set5 |
-| 143 | `0x020340` | ✓ | `0x07FA2F` | OP2SetA |
-| 144 | `0x020344` | ✓ | `0x07FA35` | OP2Set4 |
-| 145 | `0x020348` | ✓ | `0x07FA3D` | OP2Set3 |
-| 146 | `0x02034C` | ✓ | `0x07FA46` | OP1Set1 |
-| 147 | `0x020350` | ✓ | `0x07FA4C` | OP1Set4 |
-| 148 | `0x020354` | ✓ | `0x07FA54` | OP1Set3 |
-| 149 | `0x020358` | ✓ | `0x07FA5C` | OP3Set2 |
-| 150 | `0x02035C` | ✓ | `0x07FA62` | OP1Set2 |
-| 151 | `0x020360` | ✓ | `0x07FA68` | OP2Set2 |
-| 152 | `0x020364` | ✓ | `0x07FA74` | OP2Set1 |
-| 153 | `0x020368` | ✓ | `0x07FA84` | Zero16D |
-| 154 | `0x02036C` | ✓ | `0x07FA95` | OP5Set0 |
-| 155 | `0x020370` | ✓ | `0x07FA9B` | OP4Set0 |
-| 156 | `0x020374` | ✓ | `0x07FAA1` | OP3Set0 |
-| 157 | `0x020378` | ✓ | `0x07FAAF` | OP2Set0 |
-| 158 | `0x02037C` | ✓ | `0x07FAC2` | OP1Set0 |
-| 159 | `0x020380` | ✓ | `0x07FAC6` | SetNum0 |
-| 160 | `0x020384` | ✓ | `0x07FACF` | ZeroOP1 |
-| 161 | `0x020388` | ✓ | `0x07FAD5` | ZeroOP2 |
-| 162 | `0x02038C` | ✓ | `0x07FADB` | ZeroOP3 |
-| 163 | `0x020390` | ✓ | `0x07FADF` | ZeroOP |
-| 164 | `0x020394` | ✓ | `0x07FAE7` | ClrLP |
-| 165 | `0x020398` | ✓ | `0x07FAED` | ShrACC |
-| 166 | `0x02039C` | ✓ | `0x07FAF5` | ShlACC |
-| 167 | `0x0203A0` | ✓ | `0x07FB05` | Shr18 |
-| 168 | `0x0203A4` | ✓ | `0x07FB06` | Shr18a |
-| 169 | `0x0203A8` | ✓ | `0x07FB19` | Shr16 |
-| 170 | `0x0203AC` | ✓ | `0x07FB1D` | Shr14 |
-| 171 | `0x0203B0` | ✓ | `0x07FB4C` | Shl16 |
-| 172 | `0x0203B4` | ✓ | `0x07FB50` | Shl14 |
-| 173 | `0x0203B8` | ✓ | `0x07FB70` | Srdo1 |
-| 174 | `0x0203BC` | ✓ | `0x07FB80` | ShrdRnd |
-| 175 | `0x0203C0` | ✓ | `0x07FBCC` | MantPa |
-| 176 | `0x0203C4` | ✓ | `0x07FBCE` | AddPrOP |
-| 177 | `0x0203C8` | ✓ | `0x07FBCF` | AddPrOPlP |
+| 10 | `0x02012C (= JErrorNo)` | ✓ | `0x061DB6 (= JErrorNo)` | JErrorNo |
+| 11 | `0x020130 (= CallFontHook)` | ✓ | `0x023A1C (= CallFontHook)` | CallFontHook |
+| 12 | `0x020134 (= CallLocalizeHook)` | ✓ | `0x02398E (= CallLocalizeHook)` | CallLocalizeHook |
+| 13 | `0x020138 (= LoadHLInd_s)` | ✓ | `0x04C916 (= LoadHLInd_s)` | LoadHLInd_s |
+| 14 | `0x02013C (= CpHLDE)` | ✓ | `0x04C973 (= CpHLDE)` | CpHLDE |
+| 15 | `0x020140 (= DivHLBy10_s)` | ✓ | `0x04C950 (= DivHLBy10_s)` | DivHLBy10_s |
+| 16 | `0x020144 (= DivHLByA_s)` | ✓ | `0x04C952 (= DivHLByA_s)` | DivHLByA_s |
+| 17 | `0x020148 (= KbdScan)` | ✓ | `0x03F994 (= KbdScan)` | KbdScan |
+| 18 | `0x02014C (= GetCSC)` | ✓ | `0x03FA09 (= GetCSC)` | GetCSC |
+| 19 | `0x020150 (= CoorMon)` | ✓ | `0x08C331 (= CoorMon)` | CoorMon |
+| 20 | `0x020154 (= Mon)` | ✓ | `0x08C33D (= Mon)` | Mon |
+| 21 | `0x020158 (= MonForceKey)` | ✓ | `0x08C366 (= MonForceKey)` | MonForceKey |
+| 22 | `0x02015C (= SendKPress)` | ✓ | `0x08C509 (= SendKPress)` | SendKPress |
+| 23 | `0x020160 (= JForceCmdNoChar)` | ✓ | `0x08C630 (= JForceCmdNoChar)` | JForceCmdNoChar |
+| 24 | `0x020164 (= JForceCmd)` | ✓ | `0x08C631 (= JForceCmd)` | JForceCmd |
+| 25 | `0x020168 (= SysErrHandler)` | ✓ | `0x08C66D (= SysErrHandler)` | SysErrHandler |
+| 26 | `0x02016C (= NewContext)` | ✓ | `0x08C79F (= NewContext)` | NewContext |
+| 27 | `0x020170 (= NewContext0)` | ✓ | `0x08C7AD (= NewContext0)` | NewContext0 |
+| 28 | `0x020174 (= PPutawayPrompt)` | ✓ | `0x08C67C (= PPutawayPrompt)` | PPutawayPrompt |
+| 29 | `0x020178 (= PPutAway)` | ✓ | `0x08C689 (= PPutAway)` | PPutAway |
+| 30 | `0x02017C (= PutAway)` | ✓ | `0x08C69E (= PutAway)` | PutAway |
+| 31 | `0x020180 (= SizeWind)` | ✓ | `0x08C708 (= SizeWind)` | SizeWind |
+| 32 | `0x020184 (= ErrorEP)` | ✓ | `0x08C721 (= ErrorEP)` | ErrorEP |
+| 33 | `0x020188 (= CallMain)` | ✓ | `0x08C72F (= CallMain)` | CallMain |
+| 34 | `0x02018C (= MonErrHand)` | ✓ | `0x08C754 (= MonErrHand)` | MonErrHand |
+| 35 | `0x020190 (= AppInit)` | ✓ | `0x08C782 (= AppInit)` | AppInit |
+| 36 | `0x020194 (= Initialize)` | ✓ | `0x040B34 (= Initialize)` | Initialize |
+| 37 | `0x020198 (= Min)` | ✓ | `0x07C705 (= Min)` | Min |
+| 38 | `0x02019C (= Max)` | ✓ | `0x07C711 (= Max)` | Max |
+| 39 | `0x0201A0 (= AbsO1PAbsO2)` | ✓ | `0x07C723 (= AbsO1PAbsO2)` | AbsO1PAbsO2 |
+| 40 | `0x0201A4 (= Intgr)` | ✓ | `0x07C72D (= Intgr)` | Intgr |
+| 41 | `0x0201A8 (= TRunc)` | ✓ | `0x07C747 (= TRunc)` | TRunc |
+| 42 | `0x0201AC (= InvSub)` | ✓ | `0x07C74F (= InvSub)` | InvSub |
+| 43 | `0x0201B0 (= Times2)` | ✓ | `0x07C755 (= Times2)` | Times2 |
+| 44 | `0x0201B4 (= Plus1)` | ✓ | `0x07C75B (= Plus1)` | Plus1 |
+| 45 | `0x0201B8 (= Minus1)` | ✓ | `0x07C76D (= Minus1)` | Minus1 |
+| 46 | `0x0201BC (= FPSub)` | ✓ | `0x07C771 (= FPSub)` | FPSub |
+| 47 | `0x0201C0 (= FPAdd)` | ✓ | `0x07C77F (= FPAdd)` | FPAdd |
+| 48 | `0x0201C4 (= DToR)` | ✓ | `0x07C88B (= DToR)` | DToR |
+| 49 | `0x0201C8 (= RToD)` | ✓ | `0x07C897 (= RToD)` | RToD |
+| 50 | `0x0201CC (= Cube)` | ✓ | `0x07C8A3 (= Cube)` | Cube |
+| 51 | `0x0201D0 (= TimesPT5)` | ✓ | `0x07C8A9 (= TimesPT5)` | TimesPT5 |
+| 52 | `0x0201D4 (= FPSquare)` | ✓ | `0x07C8B3 (= FPSquare)` | FPSquare |
+| 53 | `0x0201D8 (= FPMult)` | ✓ | `0x07C8B7 (= FPMult)` | FPMult |
+| 54 | `0x0201DC (= LJRnd)` | ✓ | `0x07C9AF (= LJRnd)` | LJRnd |
+| 55 | `0x0201E0 (= InvOP1Sc)` | ✓ | `0x07CA02 (= InvOP1Sc)` | InvOP1Sc |
+| 56 | `0x0201E4 (= InvOP1S)` | ✓ | `0x07CA06 (= InvOP1S)` | InvOP1S |
+| 57 | `0x0201E8 (= InvOP2S)` | ✓ | `0x07CA27 (= InvOP2S)` | InvOP2S |
+| 58 | `0x0201EC (= Frac)` | ✓ | `0x07CA48 (= Frac)` | Frac |
+| 59 | `0x0201F0 (= FPRecip)` | ✓ | `0x07CAB1 (= FPRecip)` | FPRecip |
+| 60 | `0x0201F4 (= FPDiv)` | ✓ | `0x07CAB9 (= FPDiv)` | FPDiv |
+| 61 | `0x0201F8 (= SqRoot)` | ✓ | `0x07DF66 (= SqRoot)` | SqRoot |
+| 62 | `0x0201FC (= RndGuard)` | ✓ | `0x0685DF (= RndGuard)` | RndGuard |
+| 63 | `0x020200 (= Rnfx)` | ✓ | `0x0685FE (= Rnfx)` | Rnfx |
+| 64 | `0x020204 (= Int)` | ✓ | `0x07CBB3 (= Int)` | Int |
+| 65 | `0x020208 (= Round)` | ✓ | `0x07CBB5 (= Round)` | Round |
+| 66 | `0x02020C (= LnX)` | ✓ | `0x07E053 (= LnX)` | LnX |
+| 67 | `0x020210 (= LogX)` | ✓ | `0x07E071 (= LogX)` | LogX |
+| 68 | `0x020214 (= LJNoRnd)` | ✓ | `0x07CB98 (= LJNoRnd)` | LJNoRnd |
+| 69 | `0x020218 (= EToX)` | ✓ | `0x07E20D (= EToX)` | EToX |
+| 70 | `0x02021C (= TenX)` | ✓ | `0x07E219 (= TenX)` | TenX |
+| 71 | `0x020220 (= SinCosRad)` | ✓ | `0x07E543 (= SinCosRad)` | SinCosRad |
+| 72 | `0x020224 (= Sin)` | ✓ | `0x07E57B (= Sin)` | Sin |
+| 73 | `0x020228 (= Cos)` | ✓ | `0x07E5B5 (= Cos)` | Cos |
+| 74 | `0x02022C (= Tan)` | ✓ | `0x07E5D8 (= Tan)` | Tan |
+| 75 | `0x020230 (= SinhCosh)` | ✓ | `0x07EB41 (= SinhCosh)` | SinhCosh |
+| 76 | `0x020234 (= Tanh)` | ✓ | `0x07EB45 (= Tanh)` | Tanh |
+| 77 | `0x020238 (= Cosh)` | ✓ | `0x07EB49 (= Cosh)` | Cosh |
+| 78 | `0x02023C (= Sinh)` | ✓ | `0x07EB4D (= Sinh)` | Sinh |
+| 79 | `0x020240 (= ACosRad)` | ✓ | `0x07EC12 (= ACosRad)` | ACosRad |
+| 80 | `0x020244 (= ATanRad)` | ✓ | `0x07EC18 (= ATanRad)` | ATanRad |
+| 81 | `0x020248 (= ATan2Rad)` | ✓ | `0x07EC1E (= ATan2Rad)` | ATan2Rad |
+| 82 | `0x02024C (= ASinRad)` | ✓ | `0x07EC25 (= ASinRad)` | ASinRad |
+| 83 | `0x020250 (= ACos)` | ✓ | `0x07EC2F (= ACos)` | ACos |
+| 84 | `0x020254 (= ATan)` | ✓ | `0x07EC40 (= ATan)` | ATan |
+| 85 | `0x020258 (= ASin)` | ✓ | `0x07EC4F (= ASin)` | ASin |
+| 86 | `0x02025C (= ATan2)` | ✓ | `0x07ECBF (= ATan2)` | ATan2 |
+| 87 | `0x020260 (= ATanh)` | ✓ | `0x07EED3 (= ATanh)` | ATanh |
+| 88 | `0x020264 (= ASinh)` | ✓ | `0x07EF5A (= ASinh)` | ASinh |
+| 89 | `0x020268 (= ACosh)` | ✓ | `0x07EF6B (= ACosh)` | ACosh |
+| 90 | `0x02026C (= PToR)` | ✓ | `0x07DAD0 (= PToR)` | PToR |
+| 91 | `0x020270 (= RToP)` | ✓ | `0x07DAF8 (= RToP)` | RToP |
+| 92 | `0x020274 (= HLTimes9)` | ✓ | `0x07F796 (= HLTimes9)` | HLTimes9 |
+| 93 | `0x020278 (= CkOP1Cplx)` | ✓ | `0x07F7A4 (= CkOP1Cplx)` | CkOP1Cplx |
+| 94 | `0x02027C (= CkOP1Real)` | ✓ | `0x07F7BD (= CkOP1Real)` | CkOP1Real |
+| 95 | `0x020280 (= Angle)` | ✓ | `0x0685AA (= Angle)` | Angle |
+| 96 | `0x020284 (= COP1Set0)` | ✓ | `0x07F7F2 (= COP1Set0)` | COP1Set0 |
+| 97 | `0x020288 (= Cpop4OP3)` | ✓ | `0x07F813 (= Cpop4OP3)` | Cpop4OP3 |
+| 98 | `0x02028C (= Mov9OP2Cp)` | ✓ | `0x07F81D (= Mov9OP2Cp)` | Mov9OP2Cp |
+| 99 | `0x020290 (= AbsO1O2Cp)` | ✓ | `0x07F829 (= AbsO1O2Cp)` | AbsO1O2Cp |
+| 100 | `0x020294 (= CpOP1OP2)` | ✓ | `0x07F831 (= CpOP1OP2)` | CpOP1OP2 |
+| 101 | `0x020298 (= OP3ToOP4)` | ✓ | `0x07F898 (= OP3ToOP4)` | OP3ToOP4 |
+| 102 | `0x02029C (= OP1ToOP4)` | ✓ | `0x07F8A2 (= OP1ToOP4)` | OP1ToOP4 |
+| 103 | `0x0202A0 (= OP2ToOP4)` | ✓ | `0x07F8AC (= OP2ToOP4)` | OP2ToOP4 |
+| 104 | `0x0202A4 (= OP4ToOP2)` | ✓ | `0x07F8B6 (= OP4ToOP2)` | OP4ToOP2 |
+| 105 | `0x0202A8 (= OP3ToOP2)` | ✓ | `0x07F8C0 (= OP3ToOP2)` | OP3ToOP2 |
+| 106 | `0x0202AC (= OP1ToOP3)` | ✓ | `0x07F8CC (= OP1ToOP3)` | OP1ToOP3 |
+| 107 | `0x0202B0 (= OP5ToOP2)` | ✓ | `0x07F8D8 (= OP5ToOP2)` | OP5ToOP2 |
+| 108 | `0x0202B4 (= OP5ToOP6)` | ✓ | `0x07F8E4 (= OP5ToOP6)` | OP5ToOP6 |
+| 109 | `0x0202B8 (= OP5ToOP4)` | ✓ | `0x07F8F0 (= OP5ToOP4)` | OP5ToOP4 |
+| 110 | `0x0202BC (= OP1ToOP2)` | ✓ | `0x07F8FA (= OP1ToOP2)` | OP1ToOP2 |
+| 111 | `0x0202C0 (= OP6ToOP2)` | ✓ | `0x07F904 (= OP6ToOP2)` | OP6ToOP2 |
+| 112 | `0x0202C4 (= OP6ToOP1)` | ✓ | `0x07F90E (= OP6ToOP1)` | OP6ToOP1 |
+| 113 | `0x0202C8 (= OP4ToOP1)` | ✓ | `0x07F914 (= OP4ToOP1)` | OP4ToOP1 |
+| 114 | `0x0202CC (= OP5ToOP1)` | ✓ | `0x07F91A (= OP5ToOP1)` | OP5ToOP1 |
+| 115 | `0x0202D0 (= OP3ToOP1)` | ✓ | `0x07F920 (= OP3ToOP1)` | OP3ToOP1 |
+| 116 | `0x0202D4 (= OP6ToOP5)` | ✓ | `0x07F926 (= OP6ToOP5)` | OP6ToOP5 |
+| 117 | `0x0202D8 (= OP4ToOP5)` | ✓ | `0x07F92C (= OP4ToOP5)` | OP4ToOP5 |
+| 118 | `0x0202DC (= OP3ToOP5)` | ✓ | `0x07F936 (= OP3ToOP5)` | OP3ToOP5 |
+| 119 | `0x0202E0 (= OP2ToOP5)` | ✓ | `0x07F940 (= OP2ToOP5)` | OP2ToOP5 |
+| 120 | `0x0202E4 (= OP2ToOP6)` | ✓ | `0x07F94A (= OP2ToOP6)` | OP2ToOP6 |
+| 121 | `0x0202E8 (= OP1ToOP6)` | ✓ | `0x07F954 (= OP1ToOP6)` | OP1ToOP6 |
+| 122 | `0x0202EC (= OP1ToOP5)` | ✓ | `0x07F95E (= OP1ToOP5)` | OP1ToOP5 |
+| 123 | `0x0202F0 (= OP2ToOP1)` | ✓ | `0x07F968 (= OP2ToOP1)` | OP2ToOP1 |
+| 124 | `0x0202F4 (= Mov11b)` | ✓ | `0x07F974 (= Mov11b)` | Mov11b |
+| 125 | `0x0202F8 (= Mov10b)` | ✓ | `0x07F976 (= Mov10b)` | Mov10b |
+| 126 | `0x0202FC (= Mov9b)` | ✓ | `0x07F978 (= Mov9b)` | Mov9b |
+| 127 | `0x020300 (= Mov9b_)` | ✓ | `0x07F978 (= Mov9b)` | Mov9b_ |
+| 128 | `0x020304 (= Mov8b)` | ✓ | `0x07F97A (= Mov8b)` | Mov8b |
+| 129 | `0x020308 (= Mov7b)` | ✓ | `0x07F97C (= Mov7b)` | Mov7b |
+| 130 | `0x02030C (= Mov7b_)` | ✓ | `0x07F97C (= Mov7b)` | Mov7b_ |
+| 131 | `0x020310 (= OP2ToOP3)` | ✓ | `0x07F9D9 (= OP2ToOP3)` | OP2ToOP3 |
+| 132 | `0x020314 (= OP4ToOP3)` | ✓ | `0x07F9E3 (= OP4ToOP3)` | OP4ToOP3 |
+| 133 | `0x020318 (= OP5ToOP3)` | ✓ | `0x07F9E9 (= OP5ToOP3)` | OP5ToOP3 |
+| 134 | `0x02031C (= OP4ToOP6)` | ✓ | `0x07F9EF (= OP4ToOP6)` | OP4ToOP6 |
+| 135 | `0x020320 (= Mov9ToOP1)` | ✓ | `0x07F9FB (= Mov9ToOP1)` | Mov9ToOP1 |
+| 136 | `0x020324 (= Mov9OP1OP2)` | ✓ | `0x07FA03 (= Mov9OP1OP2)` | Mov9OP1OP2 |
+| 137 | `0x020328 (= Mov9ToOP2)` | ✓ | `0x07FA07 (= Mov9ToOP2)` | Mov9ToOP2 |
+| 138 | `0x02032C (= MovFrOP1)` | ✓ | `0x07FA0D (= MovFrOP1)` | MovFrOP1 |
+| 139 | `0x020330 (= OP4Set1)` | ✓ | `0x07FA19 (= OP4Set1)` | OP4Set1 |
+| 140 | `0x020334 (= OP3Set1)` | ✓ | `0x07FA1F (= OP3Set1)` | OP3Set1 |
+| 141 | `0x020338 (= OP2Set8)` | ✓ | `0x07FA25 (= OP2Set8)` | OP2Set8 |
+| 142 | `0x02033C (= OP2Set5)` | ✓ | `0x07FA2D (= OP2Set5)` | OP2Set5 |
+| 143 | `0x020340 (= OP2SetA)` | ✓ | `0x07FA2F (= OP2SetA)` | OP2SetA |
+| 144 | `0x020344 (= OP2Set4)` | ✓ | `0x07FA35 (= OP2Set4)` | OP2Set4 |
+| 145 | `0x020348 (= OP2Set3)` | ✓ | `0x07FA3D (= OP2Set3)` | OP2Set3 |
+| 146 | `0x02034C (= OP1Set1)` | ✓ | `0x07FA46 (= OP1Set1)` | OP1Set1 |
+| 147 | `0x020350 (= OP1Set4)` | ✓ | `0x07FA4C (= OP1Set4)` | OP1Set4 |
+| 148 | `0x020354 (= OP1Set3)` | ✓ | `0x07FA54 (= OP1Set3)` | OP1Set3 |
+| 149 | `0x020358 (= OP3Set2)` | ✓ | `0x07FA5C (= OP3Set2)` | OP3Set2 |
+| 150 | `0x02035C (= OP1Set2)` | ✓ | `0x07FA62 (= OP1Set2)` | OP1Set2 |
+| 151 | `0x020360 (= OP2Set2)` | ✓ | `0x07FA68 (= OP2Set2)` | OP2Set2 |
+| 152 | `0x020364 (= OP2Set1)` | ✓ | `0x07FA74 (= OP2Set1)` | OP2Set1 |
+| 153 | `0x020368 (= Zero16D)` | ✓ | `0x07FA84 (= Zero16D)` | Zero16D |
+| 154 | `0x02036C (= OP5Set0)` | ✓ | `0x07FA95 (= OP5Set0)` | OP5Set0 |
+| 155 | `0x020370 (= OP4Set0)` | ✓ | `0x07FA9B (= OP4Set0)` | OP4Set0 |
+| 156 | `0x020374 (= OP3Set0)` | ✓ | `0x07FAA1 (= OP3Set0)` | OP3Set0 |
+| 157 | `0x020378 (= OP2Set0)` | ✓ | `0x07FAAF (= OP2Set0)` | OP2Set0 |
+| 158 | `0x02037C (= OP1Set0)` | ✓ | `0x07FAC2 (= OP1Set0)` | OP1Set0 |
+| 159 | `0x020380 (= SetNum0)` | ✓ | `0x07FAC6 (= SetNum0)` | SetNum0 |
+| 160 | `0x020384 (= ZeroOP1)` | ✓ | `0x07FACF (= ZeroOP1)` | ZeroOP1 |
+| 161 | `0x020388 (= ZeroOP2)` | ✓ | `0x07FAD5 (= ZeroOP2)` | ZeroOP2 |
+| 162 | `0x02038C (= ZeroOP3)` | ✓ | `0x07FADB (= ZeroOP3)` | ZeroOP3 |
+| 163 | `0x020390 (= ZeroOP)` | ✓ | `0x07FADF (= ZeroOP)` | ZeroOP |
+| 164 | `0x020394 (= ClrLP)` | ✓ | `0x07FAE7 (= ClrLP)` | ClrLP |
+| 165 | `0x020398 (= ShrACC)` | ✓ | `0x07FAED (= ShrACC)` | ShrACC |
+| 166 | `0x02039C (= ShlACC)` | ✓ | `0x07FAF5 (= ShlACC)` | ShlACC |
+| 167 | `0x0203A0 (= Shr18)` | ✓ | `0x07FB05 (= Shr18)` | Shr18 |
+| 168 | `0x0203A4 (= Shr18a)` | ✓ | `0x07FB06 (= Shr18a)` | Shr18a |
+| 169 | `0x0203A8 (= Shr16)` | ✓ | `0x07FB19 (= Shr16)` | Shr16 |
+| 170 | `0x0203AC (= Shr14)` | ✓ | `0x07FB1D (= Shr14)` | Shr14 |
+| 171 | `0x0203B0 (= Shl16)` | ✓ | `0x07FB4C (= Shl16)` | Shl16 |
+| 172 | `0x0203B4 (= Shl14)` | ✓ | `0x07FB50 (= Shl14)` | Shl14 |
+| 173 | `0x0203B8 (= Srdo1)` | ✓ | `0x07FB70 (= Srdo1)` | Srdo1 |
+| 174 | `0x0203BC (= ShrdRnd)` | ✓ | `0x07FB80 (= ShrdRnd)` | ShrdRnd |
+| 175 | `0x0203C0 (= MantPa)` | ✓ | `0x07FBCC (= MantPa)` | MantPa |
+| 176 | `0x0203C4 (= AddPrOP)` | ✓ | `0x07FBCE (= AddPrOP)` | AddPrOP |
+| 177 | `0x0203C8 (= AddPrOPlP)` | ✓ | `0x07FBCF (= AddPrOPlP)` | AddPrOPlP |
 | 178 | `0x0203CC` | ✓ | `0x07FC0E` | _(unnamed)_ |
 | 179 | `0x0203D0` | ✓ | `0x07FC14` | _(unnamed)_ |
-| 180 | `0x0203D4` | ✓ | `0x07FC94` | Sub16d |
-| 181 | `0x0203D8` | ✓ | `0x07FC9A` | Sub14d |
-| 182 | `0x0203DC` | ✓ | `0x07FCE2` | OP2ExOP6 |
-| 183 | `0x0203E0` | ✓ | `0x07FCE8` | OP5ExOP6 |
-| 184 | `0x0203E4` | ✓ | `0x07FCF2` | OP1ExOP5 |
-| 185 | `0x0203E8` | ✓ | `0x07FCF8` | OP1ExOP6 |
-| 186 | `0x0203EC` | ✓ | `0x07FCFE` | OP2ExOP4 |
-| 187 | `0x0203F0` | ✓ | `0x07FD04` | OP2ExOP5 |
-| 188 | `0x0203F4` | ✓ | `0x07FD0E` | OP1ExOP3 |
-| 189 | `0x0203F8` | ✓ | `0x07FD14` | OP1ExOP4 |
-| 190 | `0x0203FC` | ✓ | `0x07FD30` | OP1ExOP2 |
-| 191 | `0x020400` | ✓ | `0x07FD3A` | ExLP |
-| 192 | `0x020404` | ✓ | `0x07FD44` | CkOP10 |
-| 193 | `0x020408` | ✓ | `0x07FD4A` | CkOP1FP0 |
-| 194 | `0x02040C` | ✓ | `0x07FD50` | CkOP2FP0 |
-| 195 | `0x020410` | ✓ | `0x07FD5B` | PosNo0Int |
-| 196 | `0x020414` | ✓ | `0x07FD62` | CkPosInt |
-| 197 | `0x020418` | ✓ | `0x07FD6D` | CkInt |
-| 198 | `0x02041C` | ✓ | `0x07FD71` | CkOdd |
-| 199 | `0x020420` | ✓ | `0x07FDA9` | CkOP1EX |
-| 200 | `0x020424` | ✓ | `0x07F166` | GetCon1 |
-| 201 | `0x020428` | ✓ | `0x07F16C` | GetCon |
-| 202 | `0x02042C` | ✓ | `0x07F19F` | PiDiv2 |
-| 203 | `0x020430` | ✓ | `0x07F1A8` | PiDiv4 |
-| 204 | `0x020434` | ✓ | `0x07F1D5` | TwoPi |
-| 205 | `0x020438` | ✓ | `0x07F1DC` | PiCon |
-| 206 | `0x02043C` | ✓ | `0x07FDB9` | ExpToHex |
-| 207 | `0x020440` | ✓ | `0x07FDFB` | OP1ExpToDec |
-| 208 | `0x020444` | ✓ | `0x07FDC3` | CkOP2Pos |
-| 209 | `0x020448` | ✓ | `0x07FDC9` | CkOP1Pos |
-| 210 | `0x02044C` | ✓ | `0x07FDD0` | ClrOP2S |
-| 211 | `0x020450` | ✓ | `0x07FDD6` | ClrOP1S |
-| 212 | `0x020454` | ✓ | `0x07FAB4` | FDiv100 |
-| 213 | `0x020458` | ✓ | `0x07FAB8` | FDiv10 |
-| 214 | `0x02045C` | ✓ | `0x07FDF1` | DecO1Exp |
-| 215 | `0x020460` | ✓ | `0x07FE1A` | IncO1exp |
-| 216 | `0x020464` | ✓ | `0x07FE1E` | IncExp |
-| 217 | `0x020468` | ✓ | `0x07FEB6` | CkValidNum |
-| 218 | `0x02046C` | ✓ | `0x07FF38` | GetExp |
-| 219 | `0x020470` | ✓ | `0x07FF46` | HtimesL |
-| 220 | `0x020474` | ✓ | `0x07FF4E` | EOP1NotReal |
-| 221 | `0x020478` | ✓ | `0x07FFAF` | ThetaName |
-| 222 | `0x02047C` | ✓ | `0x07FFB3` | RName |
-| 223 | `0x020480` | ✓ | `0x07FFB7` | RegEqName |
-| 224 | `0x020484` | ✓ | `0x07FFBF` | RecurNName |
-| 225 | `0x020488` | ✓ | `0x07FFC7` | XName |
-| 226 | `0x02048C` | ✓ | `0x07FFCB` | YName |
-| 227 | `0x020490` | ✓ | `0x07FFCF` | TName |
-| 228 | `0x020494` | ✓ | `0x07FFD1` | RealName |
-| 229 | `0x020498` | ✓ | `0x07FFDC` | SetEStoFPS |
-| 230 | `0x02049C` | ✓ | `0x07FFE5` | ChkTempDirt |
-| 231 | `0x0204A0` | ✓ | `0x080037` | OP1ExOP2Exp |
-| 232 | `0x0204A4` | ✓ | `0x080043` | OP1ExpMinusE |
-| 233 | `0x0204A8` | ✓ | `0x080051` | ChkErrBreak |
-| 234 | `0x0204AC` | ✓ | `0x080065` | Isa2ByteTok |
-| 235 | `0x0204B0` | ✓ | `0x092FA0` | GetLastEntry |
-| 236 | `0x0204B4` | ✓ | `0x092FDD` | GetLastEntryPtr |
-| 237 | `0x0204B8` | ✓ | `0x09E60C` | RegRclrChng |
-| 238 | `0x0204BC` | ✓ | `0x0800EC` | ResetWinTop |
-| 239 | `0x0204C0` | ✓ | `0x080115` | IsO1NonTLstOrProg |
-| 240 | `0x0204C4` | ✓ | `0x08011F` | IsO1NonTempLst |
-| 241 | `0x0204C8` | ✓ | `0x08012D` | Is_A_LstOrCLst |
-| 242 | `0x0204CC` | ✓ | `0x080133` | Chk_HL_999 |
-| 243 | `0x0204D0` | ✓ | `0x080151` | Equ_Or_NewEqu |
-| 244 | `0x0204D4` | ✓ | `0x080173` | Errd_OP1NotPos |
-| 245 | `0x0204D8` | ✓ | `0x08017C` | Errd_OP1Not_R |
-| 246 | `0x0204DC` | ✓ | `0x080182` | Errd_OP1NotPosInt |
-| 247 | `0x0204E0` | ✓ | `0x080188` | Errd_OP1_le_0 |
-| 248 | `0x0204E4` | ✓ | `0x08018C` | Errd_OP1_0 |
-| 249 | `0x0204E8` | ✓ | `0x080193` | ChkFindSym_Get_Size |
-| 250 | `0x0204EC` | ✓ | `0x09A3BD` | Sto_StatVar |
-| 251 | `0x0204F0` | ✓ | `0x08019F` | Rcl_StatVar |
-| 252 | `0x0204F4` | ✓ | `0x0801A8` | CkOP2Real |
-| 253 | `0x0204F8` | ✓ | `0x0801BE` | Get_X_Indirect |
-| 254 | `0x0204FC` | ✓ | `0x0820B5` | MemChk |
-| 255 | `0x020500` | ✓ | `0x0820CA` | CmpPrgNamLen1 |
-| 256 | `0x020504` | ✓ | `0x0820CD` | CmpPrgNamLen |
-| 257 | `0x020508` | ✓ | `0x08384F` | FindProgSym |
-| 258 | `0x02050C` | ✓ | `0x08383D` | ChkFindSym |
-| 259 | `0x020510` | ✓ | `0x0846EA` | FindSym |
-| 260 | `0x020514` | ✓ | `0x08223D` | InsertMem |
-| 261 | `0x020518` | ✓ | `0x082249` | InsertMemA |
-| 262 | `0x02051C` | ✓ | `0x082266` | EnoughMem |
-| 263 | `0x020520` | ✓ | `0x0822BA` | CmpMemNeed |
-| 264 | `0x020524` | ✓ | `0x0822C6` | CreatePVar4 |
-| 265 | `0x020528` | ✓ | `0x082301` | CreatePVar3 |
-| 266 | `0x02052C` | ✓ | `0x08234E` | CreateVar3 |
-| 267 | `0x020530` | ✓ | `0x082380` | CreateCplx |
-| 268 | `0x020534` | ✓ | `0x08238A` | CreateReal |
-| 269 | `0x020538` | ✓ | `0x082391` | CreateTRList |
-| 270 | `0x02053C` | ✓ | `0x082398` | CreateRList |
-| 271 | `0x020540` | ✓ | `0x0823DB` | CreateTCList |
-| 272 | `0x020544` | ✓ | `0x0823E2` | CreateCList |
-| 273 | `0x020548` | ✓ | `0x0823E8` | CreateTRMat |
-| 274 | `0x02054C` | ✓ | `0x0823F3` | CreateRMat |
-| 275 | `0x020550` | ✓ | `0x082411` | CreateTStrng |
-| 276 | `0x020554` | ✓ | `0x082418` | CreateStrng |
-| 277 | `0x020558` | ✓ | `0x08242B` | Create0Equ |
-| 278 | `0x02055C` | ✓ | `0x082431` | CreatetEqu |
-| 279 | `0x020560` | ✓ | `0x082438` | CreateEqu |
-| 280 | `0x020564` | ✓ | `0x08243C` | CreateGDB |
-| 281 | `0x020568` | ✓ | `0x082448` | CreateProg |
-| 282 | `0x02056C` | ✓ | `0x082482` | ChkDel |
-| 283 | `0x020570` | ✓ | `0x08248E` | ChkDelA |
-| 284 | `0x020574` | ✓ | `0x0824D6` | AdjParser |
-| 285 | `0x020578` | ✓ | `0x0824FD` | AdjMath |
-| 286 | `0x02057C` | ✓ | `0x082525` | AdjM7 |
-| 287 | `0x020580` | ✓ | `0x0825EB` | DelMemA |
-| 288 | `0x020584` | ✓ | `0x082602` | Get_Form_Num |
-| 289 | `0x020588` | ✓ | `0x08267D` | DelVar |
-| 290 | `0x02058C` | ✓ | `0x082686` | DelVarIO |
-| 291 | `0x020590` | ✓ | `0x0826F5` | DelMem |
-| 292 | `0x020594` | ✓ | `0x0826F9` | DelVar3D |
-| 293 | `0x020598` | ✓ | `0x0826FD` | DelVar3C |
-| 294 | `0x02059C` | ✓ | `0x08272C` | DelVar3DC |
-| 295 | `0x0205A0` | ✓ | `0x08279E` | Sym_Prog_non_t_Lst |
-| 296 | `0x0205A4` | ✓ | `0x0827CA` | AdjSymPtrs |
-| 297 | `0x0205A8` | ✓ | `0x08283D` | DataSizeA |
-| 298 | `0x0205AC` | ✓ | `0x08285F` | DataSize |
-| 299 | `0x0205B0` | ✓ | `0x082895` | PopMCplxO1 |
-| 300 | `0x0205B4` | ✓ | `0x082899` | PopMCplx |
-| 301 | `0x0205B8` | ✓ | `0x08289D` | MovCplx |
-| 302 | `0x0205BC` | ✓ | `0x0828A7` | PopOP5 |
-| 303 | `0x0205C0` | ✓ | `0x0828BC` | PopOP3 |
-| 304 | `0x0205C4` | ✓ | `0x0828D1` | PopOP1 |
-| 305 | `0x0205C8` | ✓ | `0x0828E4` | PopRealO6 |
-| 306 | `0x0205CC` | ✓ | `0x0828EA` | PopRealO5 |
-| 307 | `0x0205D0` | ✓ | `0x0828F0` | PopRealO4 |
-| 308 | `0x0205D4` | ✓ | `0x0828F6` | PopRealO3 |
-| 309 | `0x0205D8` | ✓ | `0x0828FC` | PopRealO2 |
-| 310 | `0x0205DC` | ✓ | `0x082902` | PopRealO1 |
-| 311 | `0x0205E0` | ✓ | `0x082906` | PopReal |
-| 312 | `0x0205E4` | ✓ | `0x08290E` | FPopCplx |
-| 313 | `0x0205E8` | ✓ | `0x082912` | FPopReal |
-| 314 | `0x0205EC` | ✓ | `0x082916` | FPopFPS |
-| 315 | `0x0205F0` | ✓ | `0x08291F` | DeallocFPS |
-| 316 | `0x0205F4` | ✓ | `0x082924` | DeallocFPS1 |
-| 317 | `0x0205F8` | ✓ | `0x082930` | AllocFPS |
-| 318 | `0x0205FC` | ✓ | `0x082934` | AllocFPS1 |
-| 319 | `0x020600` | ✓ | `0x08293F` | PushRealO6 |
-| 320 | `0x020604` | ✓ | `0x082945` | PushRealO5 |
-| 321 | `0x020608` | ✓ | `0x08294B` | PushRealO4 |
-| 322 | `0x02060C` | ✓ | `0x082951` | PushRealO3 |
-| 323 | `0x020610` | ✓ | `0x082957` | PushRealO2 |
-| 324 | `0x020614` | ✓ | `0x082961` | PushRealO1 |
-| 325 | `0x020618` | ✓ | `0x082965` | PushReal |
-| 326 | `0x02061C` | ✓ | `0x08297E` | PushOP5 |
-| 327 | `0x020620` | ✓ | `0x082990` | PushOP3 |
-| 328 | `0x020624` | ✓ | `0x0829AE` | PushMCplxO3 |
-| 329 | `0x020628` | ✓ | `0x0829B4` | PushOP1 |
-| 330 | `0x02062C` | ✓ | `0x0829C2` | PushMCplxO1 |
-| 331 | `0x020630` | ✓ | `0x0829C6` | PushMCplx |
-| 332 | `0x020634` | ✓ | `0x0829DD` | ExMCplxO1 |
-| 333 | `0x020638` | ✓ | `0x0829F2` | Exch9 |
-| 334 | `0x02063C` | ✓ | `0x0829F8` | CpyTo1FPS11 |
-| 335 | `0x020640` | ✓ | `0x082A06` | CpyTo2FPS5 |
-| 336 | `0x020644` | ✓ | `0x082A0C` | CpyTo1FPS5 |
-| 337 | `0x020648` | ✓ | `0x082A1A` | CpyTo2FPS6 |
-| 338 | `0x02064C` | ✓ | `0x082A20` | CpyTo1FPS6 |
-| 339 | `0x020650` | ✓ | `0x082A2C` | CpyTo2FPS7 |
-| 340 | `0x020654` | ✓ | `0x082A32` | CpyTo1FPS7 |
-| 341 | `0x020658` | ✓ | `0x082A40` | CpyTo1FPS8 |
-| 342 | `0x02065C` | ✓ | `0x082A46` | CpyTo2FPS8 |
-| 343 | `0x020660` | ✓ | `0x082A52` | CpyTo1FPS10 |
-| 344 | `0x020664` | ✓ | `0x082A5E` | CpyTo1FPS9 |
-| 345 | `0x020668` | ✓ | `0x082A6A` | CpyTo2FPS4 |
-| 346 | `0x02066C` | ✓ | `0x082A76` | CpyTo6FPS3 |
-| 347 | `0x020670` | ✓ | `0x082A7C` | CpyTo6FPS2 |
-| 348 | `0x020674` | ✓ | `0x082A82` | CpyTo2FPS3 |
-| 349 | `0x020678` | ✓ | `0x082A88` | Cpycto1FPS3 |
-| 350 | `0x02067C` | ✓ | `0x082A8C` | CpyTo1FPS3 |
-| 351 | `0x020680` | ✓ | `0x082A90` | CpyFPS3 |
-| 352 | `0x020684` | ✓ | `0x082A98` | CpyTo1FPS4 |
-| 353 | `0x020688` | ✓ | `0x082A9E` | CpyTo3FPS2 |
-| 354 | `0x02068C` | ✓ | `0x082AA4` | CpyTo5FPST |
-| 355 | `0x020690` | ✓ | `0x082AAA` | CpyTo6FPST |
-| 356 | `0x020694` | ✓ | `0x082AB0` | CpyTo4FPST |
-| 357 | `0x020698` | ✓ | `0x082AB6` | CpyTo3FPST |
-| 358 | `0x02069C` | ✓ | `0x082ABC` | CpyTo2FPST |
-| 359 | `0x0206A0` | ✓ | `0x082AC2` | CpyTo1FPST |
-| 360 | `0x0206A4` | ✓ | `0x082AC6` | CpyFPST |
-| 361 | `0x0206A8` | ✓ | `0x082ACC` | CpyStack |
-| 362 | `0x0206AC` | ✓ | `0x082AD8` | CpyTo3FPS1 |
-| 363 | `0x0206B0` | ✓ | `0x082ADE` | CpyTo2FPS1 |
-| 364 | `0x0206B4` | ✓ | `0x082AE4` | CpyTo1FPS1 |
-| 365 | `0x0206B8` | ✓ | `0x082AE8` | CpyFPS1 |
-| 366 | `0x0206BC` | ✓ | `0x082AF0` | CpyTo2FPS2 |
-| 367 | `0x0206C0` | ✓ | `0x082AF6` | CpyTo1FPS2 |
-| 368 | `0x0206C4` | ✓ | `0x082AFA` | CpyFPS2 |
-| 369 | `0x0206C8` | ✓ | `0x082B02` | CpyO3ToFPST |
-| 370 | `0x0206CC` | ✓ | `0x082B08` | CpyO2ToFPST |
-| 371 | `0x0206D0` | ✓ | `0x082B0E` | CpyO6ToFPST |
-| 372 | `0x0206D4` | ✓ | `0x082B14` | CpyO1ToFPST |
-| 373 | `0x0206D8` | ✓ | `0x082B18` | CpyToFPST |
-| 374 | `0x0206DC` | ✓ | `0x082B1E` | CpyToStack |
-| 375 | `0x0206E0` | ✓ | `0x082B2B` | CpyO3ToFPS1 |
-| 376 | `0x0206E4` | ✓ | `0x082B31` | CpyO5ToFPS1 |
-| 377 | `0x0206E8` | ✓ | `0x082B37` | CpyO2ToFPS1 |
-| 378 | `0x0206EC` | ✓ | `0x082B3D` | CpyO1ToFPS1 |
-| 379 | `0x0206F0` | ✓ | `0x082B41` | CpyToFPS1 |
-| 380 | `0x0206F4` | ✓ | `0x082B49` | CpyO2ToFPS2 |
-| 381 | `0x0206F8` | ✓ | `0x082B4F` | CpyO3ToFPS2 |
-| 382 | `0x0206FC` | ✓ | `0x082B55` | CpyO6ToFPS2 |
-| 383 | `0x020700` | ✓ | `0x082B5B` | CpyO1ToFPS2 |
-| 384 | `0x020704` | ✓ | `0x082B5F` | CpyToFPS2 |
-| 385 | `0x020708` | ✓ | `0x082B67` | CpyO5ToFPS3 |
-| 386 | `0x02070C` | ✓ | `0x082B6D` | CpyO2ToFPS3 |
-| 387 | `0x020710` | ✓ | `0x082B73` | CpyO1ToFPS3 |
-| 388 | `0x020714` | ✓ | `0x082B77` | CpyToFPS3 |
-| 389 | `0x020718` | ✓ | `0x082B7F` | CpyO1ToFPS6 |
-| 390 | `0x02071C` | ✓ | `0x082B87` | CpyO1ToFPS7 |
-| 391 | `0x020720` | ✓ | `0x082B93` | CpyO1ToFPS5 |
-| 392 | `0x020724` | ✓ | `0x082BA1` | CpyO2ToFPS4 |
-| 393 | `0x020728` | ✓ | `0x082BA7` | CpyO1ToFPS4 |
-| 394 | `0x02072C` | ✓ | `0x082BB5` | ErrNotEnoughMem |
-| 395 | `0x020730` | ✓ | `0x082BC4` | FPSMinus9 |
-| 396 | `0x020734` | ✓ | `0x082BC8` | HLMinus9 |
-| 397 | `0x020738` | ✓ | `0x061D02` | ErrOverflow |
-| 398 | `0x02073C` | ✓ | `0x061D06` | ErrDivBy0 |
-| 399 | `0x020740` | ✓ | `0x061D0A` | ErrSingularMat |
-| 400 | `0x020744` | ✓ | `0x061D0E` | ErrDomain |
-| 401 | `0x020748` | ✓ | `0x061D12` | ErrIncrement |
-| 402 | `0x02074C` | ✓ | `0x061D16` | ErrNon_Real |
-| 403 | `0x020750` | ✓ | `0x061D1A` | ErrSyntax |
-| 404 | `0x020754` | ✓ | `0x061D22` | ErrDataType |
-| 405 | `0x020758` | ✓ | `0x061D2C` | ErrArgument |
-| 406 | `0x02075C` | ✓ | `0x061D32` | ErrDimMismatch |
-| 407 | `0x020760` | ✓ | `0x061D36` | ErrDimension |
-| 408 | `0x020764` | ✓ | `0x061D3A` | ErrUndefined |
-| 409 | `0x020768` | ✓ | `0x061D3E` | ErrMemory |
-| 410 | `0x02076C` | ✓ | `0x061D46` | ErrInvalid |
-| 411 | `0x020770` | ✓ | `0x061D5A` | ErrBreak |
-| 412 | `0x020774` | ✓ | `0x061D5E` | ErrStat |
-| 413 | `0x020778` | ✓ | `0x061D66` | ErrSignChange |
-| 414 | `0x02077C` | ✓ | `0x061D6A` | ErrIterations |
-| 415 | `0x020780` | ✓ | `0x061D6E` | ErrBadGuess |
-| 416 | `0x020784` | ✓ | `0x061D72` | ErrTolTooSmall |
-| 417 | `0x020788` | ✓ | `0x061D76` | ErrStatPlot |
-| 418 | `0x02078C` | ✓ | `0x061DA6` | ErrLinkXmit |
-| 419 | `0x020790` | ✓ | `0x061DB2` | JError |
-| 420 | `0x020794` | ✓ | `0x061DEE` | NoErrorEntry |
-| 421 | `0x020798` | ✓ | `0x061DEF` | PushErrorHandler |
-| 422 | `0x02079C` | ✓ | `0x061E20` | PopErrorHandler |
-| 423 | `0x0207A0` | ✓ | `0x0473F9` | StrCopy |
-| 424 | `0x0207A4` | ✓ | `0x047401` | StrngCat |
-| 425 | `0x0207A8` | ✓ | `0x04740C` | IsInSet |
-| 426 | `0x0207AC` | ✓ | `0x091DF7` | GEQNameA |
-| 427 | `0x0207B0` | ✓ | `0x091E0D` | RecName |
-| 428 | `0x0207B4` | ✓ | `0x0A1799` | PutMap |
-| 429 | `0x0207B8` | ✓ | `0x0A1B5B` | PutC |
-| 430 | `0x0207BC` | ✓ | `0x0A1C62` | DispHL_s |
-| 431 | `0x0207C0` | ✓ | `0x0A1CAC` | PutS |
-| 432 | `0x0207C4` | ✓ | `0x0A1CC8` | PutPSB |
-| 433 | `0x0207C8` | ✓ | `0x0A1CEC` | PutPS |
-| 434 | `0x0207CC` | ✓ | `0x0A1D05` | WPutPS |
-| 435 | `0x0207D0` | ✓ | `0x0A1D14` | PutBuf |
-| 436 | `0x0207D4` | ✓ | `0x0A1D15` | PutBuf1 |
-| 437 | `0x0207D8` | ✓ | `0x0A1DD0` | WPutC |
-| 438 | `0x0207DC` | ✓ | `0x0A1E9A` | WPutS |
-| 439 | `0x0207E0` | ✓ | `0x0A1EAD` | WPutSEOL |
-| 440 | `0x0207E4` | ✓ | `0x0A1ECB` | WDispEOL |
-| 441 | `0x0207E8` | ✓ | `0x0A1EFB` | WHomeUp |
-| 442 | `0x0207EC` | ✓ | `0x0A1F12` | SetNumWindow |
-| 443 | `0x0207F0` | ✓ | `0x0A2032` | NewLine |
-| 444 | `0x0207F4` | ✓ | `0x0A20F5` | MoveDown |
-| 445 | `0x0207F8` | ✓ | `0x0A2106` | ScrollUp |
-| 446 | `0x0207FC` | ✓ | `0x0A215B` | ShrinkWindow |
-| 447 | `0x020800` | ✓ | `0x0A2172` | MoveUp |
-| 448 | `0x020804` | ✓ | `0x0A321D` | ScrollDown |
-| 449 | `0x020808` | ✓ | `0x0A21BB` | ClrLCDFull |
-| 450 | `0x02080C` | ✓ | `0x0A21C1` | ClrLCD |
-| 451 | `0x020810` | ✓ | `0x0A21EC` | ClrScrnFull |
-| 452 | `0x020814` | ✓ | `0x0A21F2` | ClrScrn |
-| 453 | `0x020818` | ✓ | `0x0A21FB` | ClrTxtShd |
-| 454 | `0x02081C` | ✓ | `0x0A223A` | ClrWindow |
-| 455 | `0x020820` | ✓ | `0x0A22B1` | EraseEOL |
-| 456 | `0x020824` | ✓ | `0x0A2330` | EraseEOW |
-| 457 | `0x020828` | ✓ | `0x0A235E` | HomeUp |
-| 458 | `0x02082C` | ✓ | `0x0A237E` | GetCurloc |
-| 459 | `0x020830` | ✓ | `0x0A23E5` | VPutMap |
-| 460 | `0x020834` | ✓ | `0x0A2718` | VPutS |
-| 461 | `0x020838` | ✓ | `0x0A26EE` | VPutSN |
-| 462 | `0x02083C` | ✓ | `0x0A2730` | VPutSNG |
-| 463 | `0x020840` | ✓ | `0x0A27A8` | VPutSNT |
-| 464 | `0x020844` | ✓ | `0x0A27DD` | RunIndicOn |
-| 465 | `0x020848` | ✓ | `0x0A349A` | RunIndicOff |
-| 466 | `0x02084C` | ✓ | `0x0A1FD1` | SaveCmdShadow |
-| 467 | `0x020850` | ✓ | `0x0A2802` | SaveShadow |
-| 468 | `0x020854` | ✓ | `0x0A2854` | RStrShadow |
-| 469 | `0x020858` | ✓ | `0x0A29B9` | RStrPartial |
-| 470 | `0x02085C` | ✓ | `0x0A29EC` | RStrCurRow |
-| 471 | `0x020860` | ✓ | `0x0A29FE` | RStrUnderMenu |
-| 472 | `0x020864` | ✓ | `0x0A2A28` | RStrbotRow |
-| 473 | `0x020868` | ✓ | `0x0A2A3E` | GetKeypress |
-| 474 | `0x02086C` | ✓ | `0x0A2A45` | GetTokLen |
-| 475 | `0x020870` | ✓ | `0x0A2A4B` | Get_Tok_Strng |
-| 476 | `0x020874` | ✓ | `0x0A2A68` | GetTokString |
-| 477 | `0x020878` | ✓ | `0x0A2B66` | PutBPatBuf2 |
-| 478 | `0x02087C` | ✓ | `0x0A2B6E` | PutBPatBuf |
-| 479 | `0x020880` | ✓ | `0x0A2B72` | PutBPat |
-| 480 | `0x020884` | ✓ | `0x0A2C2A` | PutcChkScroll |
-| 481 | `0x020888` | ✓ | `0x0A2C6C` | DispEOL |
-| 482 | `0x02088C` | ✓ | `0x0A2CA6` | FDispEOL |
-| 483 | `0x020890` | ✓ | `0x0A2D4C` | MakeRowCmd |
-| 484 | `0x020894` | ✓ | `0x0A2D57` | ToToStrp |
-| 485 | `0x020898` | ✓ | `0x0A32AF` | SetVarName |
-| 486 | `0x02089C` | ✓ | `0x0A2D6D` | DispDone |
-| 487 | `0x0208A0` | ✓ | `0x0A2D89` | FinishOutput |
-| 488 | `0x0208A4` | ✓ | `0x05C623` | CurBlink |
-| 489 | `0x0208A8` | ✓ | `0x05C634` | CursorOff |
-| 490 | `0x0208AC` | ✓ | `0x05C67C` | HideCursor |
-| 491 | `0x0208B0` | ✓ | `0x05C75B` | CursorOn |
-| 492 | `0x0208B4` | ✓ | `0x05C76C` | ShowCursor |
-| 493 | `0x0208B8` | ✓ | `0x07B9F8` | KeyToString |
-| 494 | `0x0208BC` | ✓ | `0x084989` | PullDownChk |
-| 495 | `0x0208C0` | ✓ | `0x084A00` | MenuCatCommon |
-| 496 | `0x0208C4` | ✓ | `0x084A24` | LoadCurCat |
-| 497 | `0x0208C8` | ✓ | `0x084D0F` | NCIFPrgmedMode |
-| 498 | `0x0208CC` | ✓ | `0x084D2A` | LoadMenuNum |
-| 499 | `0x0208D0` | ✓ | `0x084D2C` | LoadMenuNuml |
-| 500 | `0x0208D4` | ✓ | `0x0856A8` | MenuEdKey |
-| 501 | `0x0208D8` | ✓ | `0x085E16` | MenCatRet |
-| 502 | `0x0208DC` | ✓ | `0x085F78` | NotAlphNum |
-| 503 | `0x0208E0` | ✓ | `0x086438` | SetMenuFlags |
-| 504 | `0x0208E4` | ✓ | `0x0864AB` | ResetSomeFlags |
+| 180 | `0x0203D4 (= Sub16d)` | ✓ | `0x07FC94 (= Sub16d)` | Sub16d |
+| 181 | `0x0203D8 (= Sub14d)` | ✓ | `0x07FC9A (= Sub14d)` | Sub14d |
+| 182 | `0x0203DC (= OP2ExOP6)` | ✓ | `0x07FCE2 (= OP2ExOP6)` | OP2ExOP6 |
+| 183 | `0x0203E0 (= OP5ExOP6)` | ✓ | `0x07FCE8 (= OP5ExOP6)` | OP5ExOP6 |
+| 184 | `0x0203E4 (= OP1ExOP5)` | ✓ | `0x07FCF2 (= OP1ExOP5)` | OP1ExOP5 |
+| 185 | `0x0203E8 (= OP1ExOP6)` | ✓ | `0x07FCF8 (= OP1ExOP6)` | OP1ExOP6 |
+| 186 | `0x0203EC (= OP2ExOP4)` | ✓ | `0x07FCFE (= OP2ExOP4)` | OP2ExOP4 |
+| 187 | `0x0203F0 (= OP2ExOP5)` | ✓ | `0x07FD04 (= OP2ExOP5)` | OP2ExOP5 |
+| 188 | `0x0203F4 (= OP1ExOP3)` | ✓ | `0x07FD0E (= OP1ExOP3)` | OP1ExOP3 |
+| 189 | `0x0203F8 (= OP1ExOP4)` | ✓ | `0x07FD14 (= OP1ExOP4)` | OP1ExOP4 |
+| 190 | `0x0203FC (= OP1ExOP2)` | ✓ | `0x07FD30 (= OP1ExOP2)` | OP1ExOP2 |
+| 191 | `0x020400 (= ExLP)` | ✓ | `0x07FD3A (= ExLP)` | ExLP |
+| 192 | `0x020404 (= CkOP10)` | ✓ | `0x07FD44 (= CkOP10)` | CkOP10 |
+| 193 | `0x020408 (= CkOP1FP0)` | ✓ | `0x07FD4A (= CkOP1FP0)` | CkOP1FP0 |
+| 194 | `0x02040C (= CkOP2FP0)` | ✓ | `0x07FD50 (= CkOP2FP0)` | CkOP2FP0 |
+| 195 | `0x020410 (= PosNo0Int)` | ✓ | `0x07FD5B (= PosNo0Int)` | PosNo0Int |
+| 196 | `0x020414 (= CkPosInt)` | ✓ | `0x07FD62 (= CkPosInt)` | CkPosInt |
+| 197 | `0x020418 (= CkInt)` | ✓ | `0x07FD6D (= CkInt)` | CkInt |
+| 198 | `0x02041C (= CkOdd)` | ✓ | `0x07FD71 (= CkOdd)` | CkOdd |
+| 199 | `0x020420 (= CkOP1EX)` | ✓ | `0x07FDA9 (= CkOP1EX)` | CkOP1EX |
+| 200 | `0x020424 (= GetCon1)` | ✓ | `0x07F166 (= GetCon1)` | GetCon1 |
+| 201 | `0x020428 (= GetCon)` | ✓ | `0x07F16C (= GetCon)` | GetCon |
+| 202 | `0x02042C (= PiDiv2)` | ✓ | `0x07F19F (= PiDiv2)` | PiDiv2 |
+| 203 | `0x020430 (= PiDiv4)` | ✓ | `0x07F1A8 (= PiDiv4)` | PiDiv4 |
+| 204 | `0x020434 (= TwoPi)` | ✓ | `0x07F1D5 (= TwoPi)` | TwoPi |
+| 205 | `0x020438 (= PiCon)` | ✓ | `0x07F1DC (= PiCon)` | PiCon |
+| 206 | `0x02043C (= ExpToHex)` | ✓ | `0x07FDB9 (= ExpToHex)` | ExpToHex |
+| 207 | `0x020440 (= OP1ExpToDec)` | ✓ | `0x07FDFB (= OP1ExpToDec)` | OP1ExpToDec |
+| 208 | `0x020444 (= CkOP2Pos)` | ✓ | `0x07FDC3 (= CkOP2Pos)` | CkOP2Pos |
+| 209 | `0x020448 (= CkOP1Pos)` | ✓ | `0x07FDC9 (= CkOP1Pos)` | CkOP1Pos |
+| 210 | `0x02044C (= ClrOP2S)` | ✓ | `0x07FDD0 (= ClrOP2S)` | ClrOP2S |
+| 211 | `0x020450 (= ClrOP1S)` | ✓ | `0x07FDD6 (= ClrOP1S)` | ClrOP1S |
+| 212 | `0x020454 (= FDiv100)` | ✓ | `0x07FAB4 (= FDiv100)` | FDiv100 |
+| 213 | `0x020458 (= FDiv10)` | ✓ | `0x07FAB8 (= FDiv10)` | FDiv10 |
+| 214 | `0x02045C (= DecO1Exp)` | ✓ | `0x07FDF1 (= DecO1Exp)` | DecO1Exp |
+| 215 | `0x020460 (= IncO1exp)` | ✓ | `0x07FE1A (= IncO1exp)` | IncO1exp |
+| 216 | `0x020464 (= IncExp)` | ✓ | `0x07FE1E (= IncExp)` | IncExp |
+| 217 | `0x020468 (= CkValidNum)` | ✓ | `0x07FEB6 (= CkValidNum)` | CkValidNum |
+| 218 | `0x02046C (= GetExp)` | ✓ | `0x07FF38 (= GetExp)` | GetExp |
+| 219 | `0x020470 (= HtimesL)` | ✓ | `0x07FF46 (= HtimesL)` | HtimesL |
+| 220 | `0x020474 (= EOP1NotReal)` | ✓ | `0x07FF4E (= EOP1NotReal)` | EOP1NotReal |
+| 221 | `0x020478 (= ThetaName)` | ✓ | `0x07FFAF (= ThetaName)` | ThetaName |
+| 222 | `0x02047C (= RName)` | ✓ | `0x07FFB3 (= RName)` | RName |
+| 223 | `0x020480 (= RegEqName)` | ✓ | `0x07FFB7 (= RegEqName)` | RegEqName |
+| 224 | `0x020484 (= RecurNName)` | ✓ | `0x07FFBF (= RecurNName)` | RecurNName |
+| 225 | `0x020488 (= XName)` | ✓ | `0x07FFC7 (= XName)` | XName |
+| 226 | `0x02048C (= YName)` | ✓ | `0x07FFCB (= YName)` | YName |
+| 227 | `0x020490 (= TName)` | ✓ | `0x07FFCF (= TName)` | TName |
+| 228 | `0x020494 (= RealName)` | ✓ | `0x07FFD1 (= RealName)` | RealName |
+| 229 | `0x020498 (= SetEStoFPS)` | ✓ | `0x07FFDC (= SetEStoFPS)` | SetEStoFPS |
+| 230 | `0x02049C (= ChkTempDirt)` | ✓ | `0x07FFE5 (= ChkTempDirt)` | ChkTempDirt |
+| 231 | `0x0204A0 (= OP1ExOP2Exp)` | ✓ | `0x080037 (= OP1ExOP2Exp)` | OP1ExOP2Exp |
+| 232 | `0x0204A4 (= OP1ExpMinusE)` | ✓ | `0x080043 (= OP1ExpMinusE)` | OP1ExpMinusE |
+| 233 | `0x0204A8 (= ChkErrBreak)` | ✓ | `0x080051 (= ChkErrBreak)` | ChkErrBreak |
+| 234 | `0x0204AC (= Isa2ByteTok)` | ✓ | `0x080065 (= Isa2ByteTok)` | Isa2ByteTok |
+| 235 | `0x0204B0 (= GetLastEntry)` | ✓ | `0x092FA0 (= GetLastEntry)` | GetLastEntry |
+| 236 | `0x0204B4 (= GetLastEntryPtr)` | ✓ | `0x092FDD (= GetLastEntryPtr)` | GetLastEntryPtr |
+| 237 | `0x0204B8 (= RegRclrChng)` | ✓ | `0x09E60C (= RegRclrChng)` | RegRclrChng |
+| 238 | `0x0204BC (= ResetWinTop)` | ✓ | `0x0800EC (= ResetWinTop)` | ResetWinTop |
+| 239 | `0x0204C0 (= IsO1NonTLstOrProg)` | ✓ | `0x080115 (= IsO1NonTLstOrProg)` | IsO1NonTLstOrProg |
+| 240 | `0x0204C4 (= IsO1NonTempLst)` | ✓ | `0x08011F (= IsO1NonTempLst)` | IsO1NonTempLst |
+| 241 | `0x0204C8 (= Is_A_LstOrCLst)` | ✓ | `0x08012D (= Is_A_LstOrCLst)` | Is_A_LstOrCLst |
+| 242 | `0x0204CC (= Chk_HL_999)` | ✓ | `0x080133 (= Chk_HL_999)` | Chk_HL_999 |
+| 243 | `0x0204D0 (= Equ_Or_NewEqu)` | ✓ | `0x080151 (= Equ_Or_NewEqu)` | Equ_Or_NewEqu |
+| 244 | `0x0204D4 (= Errd_OP1NotPos)` | ✓ | `0x080173 (= Errd_OP1NotPos)` | Errd_OP1NotPos |
+| 245 | `0x0204D8 (= Errd_OP1Not_R)` | ✓ | `0x08017C (= Errd_OP1Not_R)` | Errd_OP1Not_R |
+| 246 | `0x0204DC (= Errd_OP1NotPosInt)` | ✓ | `0x080182 (= Errd_OP1NotPosInt)` | Errd_OP1NotPosInt |
+| 247 | `0x0204E0 (= Errd_OP1_le_0)` | ✓ | `0x080188 (= Errd_OP1_le_0)` | Errd_OP1_le_0 |
+| 248 | `0x0204E4 (= Errd_OP1_0)` | ✓ | `0x08018C (= Errd_OP1_0)` | Errd_OP1_0 |
+| 249 | `0x0204E8 (= ChkFindSym_Get_Size)` | ✓ | `0x080193 (= ChkFindSym_Get_Size)` | ChkFindSym_Get_Size |
+| 250 | `0x0204EC (= Sto_StatVar)` | ✓ | `0x09A3BD (= Sto_StatVar)` | Sto_StatVar |
+| 251 | `0x0204F0 (= Rcl_StatVar)` | ✓ | `0x08019F (= Rcl_StatVar)` | Rcl_StatVar |
+| 252 | `0x0204F4 (= CkOP2Real)` | ✓ | `0x0801A8 (= CkOP2Real)` | CkOP2Real |
+| 253 | `0x0204F8 (= Get_X_Indirect)` | ✓ | `0x0801BE (= Get_X_Indirect)` | Get_X_Indirect |
+| 254 | `0x0204FC (= MemChk)` | ✓ | `0x0820B5 (= MemChk)` | MemChk |
+| 255 | `0x020500 (= CmpPrgNamLen1)` | ✓ | `0x0820CA (= CmpPrgNamLen1)` | CmpPrgNamLen1 |
+| 256 | `0x020504 (= CmpPrgNamLen)` | ✓ | `0x0820CD (= CmpPrgNamLen)` | CmpPrgNamLen |
+| 257 | `0x020508 (= FindProgSym)` | ✓ | `0x08384F (= FindProgSym)` | FindProgSym |
+| 258 | `0x02050C (= ChkFindSym)` | ✓ | `0x08383D (= ChkFindSym)` | ChkFindSym |
+| 259 | `0x020510 (= FindSym)` | ✓ | `0x0846EA (= FindSym)` | FindSym |
+| 260 | `0x020514 (= InsertMem)` | ✓ | `0x08223D (= InsertMem)` | InsertMem |
+| 261 | `0x020518 (= InsertMemA)` | ✓ | `0x082249 (= InsertMemA)` | InsertMemA |
+| 262 | `0x02051C (= EnoughMem)` | ✓ | `0x082266 (= EnoughMem)` | EnoughMem |
+| 263 | `0x020520 (= CmpMemNeed)` | ✓ | `0x0822BA (= CmpMemNeed)` | CmpMemNeed |
+| 264 | `0x020524 (= CreatePVar4)` | ✓ | `0x0822C6 (= CreatePVar4)` | CreatePVar4 |
+| 265 | `0x020528 (= CreatePVar3)` | ✓ | `0x082301 (= CreatePVar3)` | CreatePVar3 |
+| 266 | `0x02052C (= CreateVar3)` | ✓ | `0x08234E (= CreateVar3)` | CreateVar3 |
+| 267 | `0x020530 (= CreateCplx)` | ✓ | `0x082380 (= CreateCplx)` | CreateCplx |
+| 268 | `0x020534 (= CreateReal)` | ✓ | `0x08238A (= CreateReal)` | CreateReal |
+| 269 | `0x020538 (= CreateTRList)` | ✓ | `0x082391 (= CreateTRList)` | CreateTRList |
+| 270 | `0x02053C (= CreateRList)` | ✓ | `0x082398 (= CreateRList)` | CreateRList |
+| 271 | `0x020540 (= CreateTCList)` | ✓ | `0x0823DB (= CreateTCList)` | CreateTCList |
+| 272 | `0x020544 (= CreateCList)` | ✓ | `0x0823E2 (= CreateCList)` | CreateCList |
+| 273 | `0x020548 (= CreateTRMat)` | ✓ | `0x0823E8 (= CreateTRMat)` | CreateTRMat |
+| 274 | `0x02054C (= CreateRMat)` | ✓ | `0x0823F3 (= CreateRMat)` | CreateRMat |
+| 275 | `0x020550 (= CreateTStrng)` | ✓ | `0x082411 (= CreateTStrng)` | CreateTStrng |
+| 276 | `0x020554 (= CreateStrng)` | ✓ | `0x082418 (= CreateStrng)` | CreateStrng |
+| 277 | `0x020558 (= Create0Equ)` | ✓ | `0x08242B (= Create0Equ)` | Create0Equ |
+| 278 | `0x02055C (= CreatetEqu)` | ✓ | `0x082431 (= CreatetEqu)` | CreatetEqu |
+| 279 | `0x020560 (= CreateEqu)` | ✓ | `0x082438 (= CreateEqu)` | CreateEqu |
+| 280 | `0x020564 (= CreateGDB)` | ✓ | `0x08243C (= CreateGDB)` | CreateGDB |
+| 281 | `0x020568 (= CreateProg)` | ✓ | `0x082448 (= CreateProg)` | CreateProg |
+| 282 | `0x02056C (= ChkDel)` | ✓ | `0x082482 (= ChkDel)` | ChkDel |
+| 283 | `0x020570 (= ChkDelA)` | ✓ | `0x08248E (= ChkDelA)` | ChkDelA |
+| 284 | `0x020574 (= AdjParser)` | ✓ | `0x0824D6 (= AdjParser)` | AdjParser |
+| 285 | `0x020578 (= AdjMath)` | ✓ | `0x0824FD (= AdjMath)` | AdjMath |
+| 286 | `0x02057C (= AdjM7)` | ✓ | `0x082525 (= AdjM7)` | AdjM7 |
+| 287 | `0x020580 (= DelMemA)` | ✓ | `0x0825EB (= DelMemA)` | DelMemA |
+| 288 | `0x020584 (= Get_Form_Num)` | ✓ | `0x082602 (= Get_Form_Num)` | Get_Form_Num |
+| 289 | `0x020588 (= DelVar)` | ✓ | `0x08267D (= DelVar)` | DelVar |
+| 290 | `0x02058C (= DelVarIO)` | ✓ | `0x082686 (= DelVarIO)` | DelVarIO |
+| 291 | `0x020590 (= DelMem)` | ✓ | `0x0826F5 (= DelMem)` | DelMem |
+| 292 | `0x020594 (= DelVar3D)` | ✓ | `0x0826F9 (= DelVar3D)` | DelVar3D |
+| 293 | `0x020598 (= DelVar3C)` | ✓ | `0x0826FD (= DelVar3C)` | DelVar3C |
+| 294 | `0x02059C (= DelVar3DC)` | ✓ | `0x08272C (= DelVar3DC)` | DelVar3DC |
+| 295 | `0x0205A0 (= Sym_Prog_non_t_Lst)` | ✓ | `0x08279E (= Sym_Prog_non_t_Lst)` | Sym_Prog_non_t_Lst |
+| 296 | `0x0205A4 (= AdjSymPtrs)` | ✓ | `0x0827CA (= AdjSymPtrs)` | AdjSymPtrs |
+| 297 | `0x0205A8 (= DataSizeA)` | ✓ | `0x08283D (= DataSizeA)` | DataSizeA |
+| 298 | `0x0205AC (= DataSize)` | ✓ | `0x08285F (= DataSize)` | DataSize |
+| 299 | `0x0205B0 (= PopMCplxO1)` | ✓ | `0x082895 (= PopMCplxO1)` | PopMCplxO1 |
+| 300 | `0x0205B4 (= PopMCplx)` | ✓ | `0x082899 (= PopMCplx)` | PopMCplx |
+| 301 | `0x0205B8 (= MovCplx)` | ✓ | `0x08289D (= MovCplx)` | MovCplx |
+| 302 | `0x0205BC (= PopOP5)` | ✓ | `0x0828A7 (= PopOP5)` | PopOP5 |
+| 303 | `0x0205C0 (= PopOP3)` | ✓ | `0x0828BC (= PopOP3)` | PopOP3 |
+| 304 | `0x0205C4 (= PopOP1)` | ✓ | `0x0828D1 (= PopOP1)` | PopOP1 |
+| 305 | `0x0205C8 (= PopRealO6)` | ✓ | `0x0828E4 (= PopRealO6)` | PopRealO6 |
+| 306 | `0x0205CC (= PopRealO5)` | ✓ | `0x0828EA (= PopRealO5)` | PopRealO5 |
+| 307 | `0x0205D0 (= PopRealO4)` | ✓ | `0x0828F0 (= PopRealO4)` | PopRealO4 |
+| 308 | `0x0205D4 (= PopRealO3)` | ✓ | `0x0828F6 (= PopRealO3)` | PopRealO3 |
+| 309 | `0x0205D8 (= PopRealO2)` | ✓ | `0x0828FC (= PopRealO2)` | PopRealO2 |
+| 310 | `0x0205DC (= PopRealO1)` | ✓ | `0x082902 (= PopRealO1)` | PopRealO1 |
+| 311 | `0x0205E0 (= PopReal)` | ✓ | `0x082906 (= PopReal)` | PopReal |
+| 312 | `0x0205E4 (= FPopCplx)` | ✓ | `0x08290E (= FPopCplx)` | FPopCplx |
+| 313 | `0x0205E8 (= FPopReal)` | ✓ | `0x082912 (= FPopReal)` | FPopReal |
+| 314 | `0x0205EC (= FPopFPS)` | ✓ | `0x082916 (= FPopFPS)` | FPopFPS |
+| 315 | `0x0205F0 (= DeallocFPS)` | ✓ | `0x08291F (= DeallocFPS)` | DeallocFPS |
+| 316 | `0x0205F4 (= DeallocFPS1)` | ✓ | `0x082924 (= DeallocFPS1)` | DeallocFPS1 |
+| 317 | `0x0205F8 (= AllocFPS)` | ✓ | `0x082930 (= AllocFPS)` | AllocFPS |
+| 318 | `0x0205FC (= AllocFPS1)` | ✓ | `0x082934 (= AllocFPS1)` | AllocFPS1 |
+| 319 | `0x020600 (= PushRealO6)` | ✓ | `0x08293F (= PushRealO6)` | PushRealO6 |
+| 320 | `0x020604 (= PushRealO5)` | ✓ | `0x082945 (= PushRealO5)` | PushRealO5 |
+| 321 | `0x020608 (= PushRealO4)` | ✓ | `0x08294B (= PushRealO4)` | PushRealO4 |
+| 322 | `0x02060C (= PushRealO3)` | ✓ | `0x082951 (= PushRealO3)` | PushRealO3 |
+| 323 | `0x020610 (= PushRealO2)` | ✓ | `0x082957 (= PushRealO2)` | PushRealO2 |
+| 324 | `0x020614 (= PushRealO1)` | ✓ | `0x082961 (= PushRealO1)` | PushRealO1 |
+| 325 | `0x020618 (= PushReal)` | ✓ | `0x082965 (= PushReal)` | PushReal |
+| 326 | `0x02061C (= PushOP5)` | ✓ | `0x08297E (= PushOP5)` | PushOP5 |
+| 327 | `0x020620 (= PushOP3)` | ✓ | `0x082990 (= PushOP3)` | PushOP3 |
+| 328 | `0x020624 (= PushMCplxO3)` | ✓ | `0x0829AE (= PushMCplxO3)` | PushMCplxO3 |
+| 329 | `0x020628 (= PushOP1)` | ✓ | `0x0829B4 (= PushOP1)` | PushOP1 |
+| 330 | `0x02062C (= PushMCplxO1)` | ✓ | `0x0829C2 (= PushMCplxO1)` | PushMCplxO1 |
+| 331 | `0x020630 (= PushMCplx)` | ✓ | `0x0829C6 (= PushMCplx)` | PushMCplx |
+| 332 | `0x020634 (= ExMCplxO1)` | ✓ | `0x0829DD (= ExMCplxO1)` | ExMCplxO1 |
+| 333 | `0x020638 (= Exch9)` | ✓ | `0x0829F2 (= Exch9)` | Exch9 |
+| 334 | `0x02063C (= CpyTo1FPS11)` | ✓ | `0x0829F8 (= CpyTo1FPS11)` | CpyTo1FPS11 |
+| 335 | `0x020640 (= CpyTo2FPS5)` | ✓ | `0x082A06 (= CpyTo2FPS5)` | CpyTo2FPS5 |
+| 336 | `0x020644 (= CpyTo1FPS5)` | ✓ | `0x082A0C (= CpyTo1FPS5)` | CpyTo1FPS5 |
+| 337 | `0x020648 (= CpyTo2FPS6)` | ✓ | `0x082A1A (= CpyTo2FPS6)` | CpyTo2FPS6 |
+| 338 | `0x02064C (= CpyTo1FPS6)` | ✓ | `0x082A20 (= CpyTo1FPS6)` | CpyTo1FPS6 |
+| 339 | `0x020650 (= CpyTo2FPS7)` | ✓ | `0x082A2C (= CpyTo2FPS7)` | CpyTo2FPS7 |
+| 340 | `0x020654 (= CpyTo1FPS7)` | ✓ | `0x082A32 (= CpyTo1FPS7)` | CpyTo1FPS7 |
+| 341 | `0x020658 (= CpyTo1FPS8)` | ✓ | `0x082A40 (= CpyTo1FPS8)` | CpyTo1FPS8 |
+| 342 | `0x02065C (= CpyTo2FPS8)` | ✓ | `0x082A46 (= CpyTo2FPS8)` | CpyTo2FPS8 |
+| 343 | `0x020660 (= CpyTo1FPS10)` | ✓ | `0x082A52 (= CpyTo1FPS10)` | CpyTo1FPS10 |
+| 344 | `0x020664 (= CpyTo1FPS9)` | ✓ | `0x082A5E (= CpyTo1FPS9)` | CpyTo1FPS9 |
+| 345 | `0x020668 (= CpyTo2FPS4)` | ✓ | `0x082A6A (= CpyTo2FPS4)` | CpyTo2FPS4 |
+| 346 | `0x02066C (= CpyTo6FPS3)` | ✓ | `0x082A76 (= CpyTo6FPS3)` | CpyTo6FPS3 |
+| 347 | `0x020670 (= CpyTo6FPS2)` | ✓ | `0x082A7C (= CpyTo6FPS2)` | CpyTo6FPS2 |
+| 348 | `0x020674 (= CpyTo2FPS3)` | ✓ | `0x082A82 (= CpyTo2FPS3)` | CpyTo2FPS3 |
+| 349 | `0x020678 (= Cpycto1FPS3)` | ✓ | `0x082A88 (= Cpycto1FPS3)` | Cpycto1FPS3 |
+| 350 | `0x02067C (= CpyTo1FPS3)` | ✓ | `0x082A8C (= CpyTo1FPS3)` | CpyTo1FPS3 |
+| 351 | `0x020680 (= CpyFPS3)` | ✓ | `0x082A90 (= CpyFPS3)` | CpyFPS3 |
+| 352 | `0x020684 (= CpyTo1FPS4)` | ✓ | `0x082A98 (= CpyTo1FPS4)` | CpyTo1FPS4 |
+| 353 | `0x020688 (= CpyTo3FPS2)` | ✓ | `0x082A9E (= CpyTo3FPS2)` | CpyTo3FPS2 |
+| 354 | `0x02068C (= CpyTo5FPST)` | ✓ | `0x082AA4 (= CpyTo5FPST)` | CpyTo5FPST |
+| 355 | `0x020690 (= CpyTo6FPST)` | ✓ | `0x082AAA (= CpyTo6FPST)` | CpyTo6FPST |
+| 356 | `0x020694 (= CpyTo4FPST)` | ✓ | `0x082AB0 (= CpyTo4FPST)` | CpyTo4FPST |
+| 357 | `0x020698 (= CpyTo3FPST)` | ✓ | `0x082AB6 (= CpyTo3FPST)` | CpyTo3FPST |
+| 358 | `0x02069C (= CpyTo2FPST)` | ✓ | `0x082ABC (= CpyTo2FPST)` | CpyTo2FPST |
+| 359 | `0x0206A0 (= CpyTo1FPST)` | ✓ | `0x082AC2 (= CpyTo1FPST)` | CpyTo1FPST |
+| 360 | `0x0206A4 (= CpyFPST)` | ✓ | `0x082AC6 (= CpyFPST)` | CpyFPST |
+| 361 | `0x0206A8 (= CpyStack)` | ✓ | `0x082ACC (= CpyStack)` | CpyStack |
+| 362 | `0x0206AC (= CpyTo3FPS1)` | ✓ | `0x082AD8 (= CpyTo3FPS1)` | CpyTo3FPS1 |
+| 363 | `0x0206B0 (= CpyTo2FPS1)` | ✓ | `0x082ADE (= CpyTo2FPS1)` | CpyTo2FPS1 |
+| 364 | `0x0206B4 (= CpyTo1FPS1)` | ✓ | `0x082AE4 (= CpyTo1FPS1)` | CpyTo1FPS1 |
+| 365 | `0x0206B8 (= CpyFPS1)` | ✓ | `0x082AE8 (= CpyFPS1)` | CpyFPS1 |
+| 366 | `0x0206BC (= CpyTo2FPS2)` | ✓ | `0x082AF0 (= CpyTo2FPS2)` | CpyTo2FPS2 |
+| 367 | `0x0206C0 (= CpyTo1FPS2)` | ✓ | `0x082AF6 (= CpyTo1FPS2)` | CpyTo1FPS2 |
+| 368 | `0x0206C4 (= CpyFPS2)` | ✓ | `0x082AFA (= CpyFPS2)` | CpyFPS2 |
+| 369 | `0x0206C8 (= CpyO3ToFPST)` | ✓ | `0x082B02 (= CpyO3ToFPST)` | CpyO3ToFPST |
+| 370 | `0x0206CC (= CpyO2ToFPST)` | ✓ | `0x082B08 (= CpyO2ToFPST)` | CpyO2ToFPST |
+| 371 | `0x0206D0 (= CpyO6ToFPST)` | ✓ | `0x082B0E (= CpyO6ToFPST)` | CpyO6ToFPST |
+| 372 | `0x0206D4 (= CpyO1ToFPST)` | ✓ | `0x082B14 (= CpyO1ToFPST)` | CpyO1ToFPST |
+| 373 | `0x0206D8 (= CpyToFPST)` | ✓ | `0x082B18 (= CpyToFPST)` | CpyToFPST |
+| 374 | `0x0206DC (= CpyToStack)` | ✓ | `0x082B1E (= CpyToStack)` | CpyToStack |
+| 375 | `0x0206E0 (= CpyO3ToFPS1)` | ✓ | `0x082B2B (= CpyO3ToFPS1)` | CpyO3ToFPS1 |
+| 376 | `0x0206E4 (= CpyO5ToFPS1)` | ✓ | `0x082B31 (= CpyO5ToFPS1)` | CpyO5ToFPS1 |
+| 377 | `0x0206E8 (= CpyO2ToFPS1)` | ✓ | `0x082B37 (= CpyO2ToFPS1)` | CpyO2ToFPS1 |
+| 378 | `0x0206EC (= CpyO1ToFPS1)` | ✓ | `0x082B3D (= CpyO1ToFPS1)` | CpyO1ToFPS1 |
+| 379 | `0x0206F0 (= CpyToFPS1)` | ✓ | `0x082B41 (= CpyToFPS1)` | CpyToFPS1 |
+| 380 | `0x0206F4 (= CpyO2ToFPS2)` | ✓ | `0x082B49 (= CpyO2ToFPS2)` | CpyO2ToFPS2 |
+| 381 | `0x0206F8 (= CpyO3ToFPS2)` | ✓ | `0x082B4F (= CpyO3ToFPS2)` | CpyO3ToFPS2 |
+| 382 | `0x0206FC (= CpyO6ToFPS2)` | ✓ | `0x082B55 (= CpyO6ToFPS2)` | CpyO6ToFPS2 |
+| 383 | `0x020700 (= CpyO1ToFPS2)` | ✓ | `0x082B5B (= CpyO1ToFPS2)` | CpyO1ToFPS2 |
+| 384 | `0x020704 (= CpyToFPS2)` | ✓ | `0x082B5F (= CpyToFPS2)` | CpyToFPS2 |
+| 385 | `0x020708 (= CpyO5ToFPS3)` | ✓ | `0x082B67 (= CpyO5ToFPS3)` | CpyO5ToFPS3 |
+| 386 | `0x02070C (= CpyO2ToFPS3)` | ✓ | `0x082B6D (= CpyO2ToFPS3)` | CpyO2ToFPS3 |
+| 387 | `0x020710 (= CpyO1ToFPS3)` | ✓ | `0x082B73 (= CpyO1ToFPS3)` | CpyO1ToFPS3 |
+| 388 | `0x020714 (= CpyToFPS3)` | ✓ | `0x082B77 (= CpyToFPS3)` | CpyToFPS3 |
+| 389 | `0x020718 (= CpyO1ToFPS6)` | ✓ | `0x082B7F (= CpyO1ToFPS6)` | CpyO1ToFPS6 |
+| 390 | `0x02071C (= CpyO1ToFPS7)` | ✓ | `0x082B87 (= CpyO1ToFPS7)` | CpyO1ToFPS7 |
+| 391 | `0x020720 (= CpyO1ToFPS5)` | ✓ | `0x082B93 (= CpyO1ToFPS5)` | CpyO1ToFPS5 |
+| 392 | `0x020724 (= CpyO2ToFPS4)` | ✓ | `0x082BA1 (= CpyO2ToFPS4)` | CpyO2ToFPS4 |
+| 393 | `0x020728 (= CpyO1ToFPS4)` | ✓ | `0x082BA7 (= CpyO1ToFPS4)` | CpyO1ToFPS4 |
+| 394 | `0x02072C (= ErrNotEnoughMem)` | ✓ | `0x082BB5 (= ErrNotEnoughMem)` | ErrNotEnoughMem |
+| 395 | `0x020730 (= FPSMinus9)` | ✓ | `0x082BC4 (= FPSMinus9)` | FPSMinus9 |
+| 396 | `0x020734 (= HLMinus9)` | ✓ | `0x082BC8 (= HLMinus9)` | HLMinus9 |
+| 397 | `0x020738 (= ErrOverflow)` | ✓ | `0x061D02 (= ErrOverflow)` | ErrOverflow |
+| 398 | `0x02073C (= ErrDivBy0)` | ✓ | `0x061D06 (= ErrDivBy0)` | ErrDivBy0 |
+| 399 | `0x020740 (= ErrSingularMat)` | ✓ | `0x061D0A (= ErrSingularMat)` | ErrSingularMat |
+| 400 | `0x020744 (= ErrDomain)` | ✓ | `0x061D0E (= ErrDomain)` | ErrDomain |
+| 401 | `0x020748 (= ErrIncrement)` | ✓ | `0x061D12 (= ErrIncrement)` | ErrIncrement |
+| 402 | `0x02074C (= ErrNon_Real)` | ✓ | `0x061D16 (= ErrNon_Real)` | ErrNon_Real |
+| 403 | `0x020750 (= ErrSyntax)` | ✓ | `0x061D1A (= ErrSyntax)` | ErrSyntax |
+| 404 | `0x020754 (= ErrDataType)` | ✓ | `0x061D22 (= ErrDataType)` | ErrDataType |
+| 405 | `0x020758 (= ErrArgument)` | ✓ | `0x061D2C (= ErrArgument)` | ErrArgument |
+| 406 | `0x02075C (= ErrDimMismatch)` | ✓ | `0x061D32 (= ErrDimMismatch)` | ErrDimMismatch |
+| 407 | `0x020760 (= ErrDimension)` | ✓ | `0x061D36 (= ErrDimension)` | ErrDimension |
+| 408 | `0x020764 (= ErrUndefined)` | ✓ | `0x061D3A (= ErrUndefined)` | ErrUndefined |
+| 409 | `0x020768 (= ErrMemory)` | ✓ | `0x061D3E (= ErrMemory)` | ErrMemory |
+| 410 | `0x02076C (= ErrInvalid)` | ✓ | `0x061D46 (= ErrInvalid)` | ErrInvalid |
+| 411 | `0x020770 (= ErrBreak)` | ✓ | `0x061D5A (= ErrBreak)` | ErrBreak |
+| 412 | `0x020774 (= ErrStat)` | ✓ | `0x061D5E (= ErrStat)` | ErrStat |
+| 413 | `0x020778 (= ErrSignChange)` | ✓ | `0x061D66 (= ErrSignChange)` | ErrSignChange |
+| 414 | `0x02077C (= ErrIterations)` | ✓ | `0x061D6A (= ErrIterations)` | ErrIterations |
+| 415 | `0x020780 (= ErrBadGuess)` | ✓ | `0x061D6E (= ErrBadGuess)` | ErrBadGuess |
+| 416 | `0x020784 (= ErrTolTooSmall)` | ✓ | `0x061D72 (= ErrTolTooSmall)` | ErrTolTooSmall |
+| 417 | `0x020788 (= ErrStatPlot)` | ✓ | `0x061D76 (= ErrStatPlot)` | ErrStatPlot |
+| 418 | `0x02078C (= ErrLinkXmit)` | ✓ | `0x061DA6 (= ErrLinkXmit)` | ErrLinkXmit |
+| 419 | `0x020790 (= JError)` | ✓ | `0x061DB2 (= JError)` | JError |
+| 420 | `0x020794 (= NoErrorEntry)` | ✓ | `0x061DEE (= NoErrorEntry)` | NoErrorEntry |
+| 421 | `0x020798 (= PushErrorHandler)` | ✓ | `0x061DEF (= PushErrorHandler)` | PushErrorHandler |
+| 422 | `0x02079C (= PopErrorHandler)` | ✓ | `0x061E20 (= PopErrorHandler)` | PopErrorHandler |
+| 423 | `0x0207A0 (= StrCopy)` | ✓ | `0x0473F9 (= StrCopy)` | StrCopy |
+| 424 | `0x0207A4 (= StrngCat)` | ✓ | `0x047401 (= StrngCat)` | StrngCat |
+| 425 | `0x0207A8 (= IsInSet)` | ✓ | `0x04740C (= IsInSet)` | IsInSet |
+| 426 | `0x0207AC (= GEQNameA)` | ✓ | `0x091DF7 (= GEQNameA)` | GEQNameA |
+| 427 | `0x0207B0 (= RecName)` | ✓ | `0x091E0D (= RecName)` | RecName |
+| 428 | `0x0207B4 (= PutMap)` | ✓ | `0x0A1799 (= PutMap)` | PutMap |
+| 429 | `0x0207B8 (= PutC)` | ✓ | `0x0A1B5B (= PutC)` | PutC |
+| 430 | `0x0207BC (= DispHL_s)` | ✓ | `0x0A1C62 (= DispHL_s)` | DispHL_s |
+| 431 | `0x0207C0 (= PutS)` | ✓ | `0x0A1CAC (= PutS)` | PutS |
+| 432 | `0x0207C4 (= PutPSB)` | ✓ | `0x0A1CC8 (= PutPSB)` | PutPSB |
+| 433 | `0x0207C8 (= PutPS)` | ✓ | `0x0A1CEC (= PutPS)` | PutPS |
+| 434 | `0x0207CC (= WPutPS)` | ✓ | `0x0A1D05 (= WPutPS)` | WPutPS |
+| 435 | `0x0207D0 (= PutBuf)` | ✓ | `0x0A1D14 (= PutBuf)` | PutBuf |
+| 436 | `0x0207D4 (= PutBuf1)` | ✓ | `0x0A1D15 (= PutBuf1)` | PutBuf1 |
+| 437 | `0x0207D8 (= WPutC)` | ✓ | `0x0A1DD0 (= WPutC)` | WPutC |
+| 438 | `0x0207DC (= WPutS)` | ✓ | `0x0A1E9A (= WPutS)` | WPutS |
+| 439 | `0x0207E0 (= WPutSEOL)` | ✓ | `0x0A1EAD (= WPutSEOL)` | WPutSEOL |
+| 440 | `0x0207E4 (= WDispEOL)` | ✓ | `0x0A1ECB (= WDispEOL)` | WDispEOL |
+| 441 | `0x0207E8 (= WHomeUp)` | ✓ | `0x0A1EFB (= WHomeUp)` | WHomeUp |
+| 442 | `0x0207EC (= SetNumWindow)` | ✓ | `0x0A1F12 (= SetNumWindow)` | SetNumWindow |
+| 443 | `0x0207F0 (= NewLine)` | ✓ | `0x0A2032 (= NewLine)` | NewLine |
+| 444 | `0x0207F4 (= MoveDown)` | ✓ | `0x0A20F5 (= MoveDown)` | MoveDown |
+| 445 | `0x0207F8 (= ScrollUp)` | ✓ | `0x0A2106 (= ScrollUp)` | ScrollUp |
+| 446 | `0x0207FC (= ShrinkWindow)` | ✓ | `0x0A215B (= ShrinkWindow)` | ShrinkWindow |
+| 447 | `0x020800 (= MoveUp)` | ✓ | `0x0A2172 (= MoveUp)` | MoveUp |
+| 448 | `0x020804 (= ScrollDown)` | ✓ | `0x0A321D (= ScrollDown)` | ScrollDown |
+| 449 | `0x020808 (= ClrLCDFull)` | ✓ | `0x0A21BB (= ClrLCDFull)` | ClrLCDFull |
+| 450 | `0x02080C (= ClrLCD)` | ✓ | `0x0A21C1 (= ClrLCD)` | ClrLCD |
+| 451 | `0x020810 (= ClrScrnFull)` | ✓ | `0x0A21EC (= ClrScrnFull)` | ClrScrnFull |
+| 452 | `0x020814 (= ClrScrn)` | ✓ | `0x0A21F2 (= ClrScrn)` | ClrScrn |
+| 453 | `0x020818 (= ClrTxtShd)` | ✓ | `0x0A21FB (= ClrTxtShd)` | ClrTxtShd |
+| 454 | `0x02081C (= ClrWindow)` | ✓ | `0x0A223A (= ClrWindow)` | ClrWindow |
+| 455 | `0x020820 (= EraseEOL)` | ✓ | `0x0A22B1 (= EraseEOL)` | EraseEOL |
+| 456 | `0x020824 (= EraseEOW)` | ✓ | `0x0A2330 (= EraseEOW)` | EraseEOW |
+| 457 | `0x020828 (= HomeUp)` | ✓ | `0x0A235E (= HomeUp)` | HomeUp |
+| 458 | `0x02082C (= GetCurloc)` | ✓ | `0x0A237E (= GetCurloc)` | GetCurloc |
+| 459 | `0x020830 (= VPutMap)` | ✓ | `0x0A23E5 (= VPutMap)` | VPutMap |
+| 460 | `0x020834 (= VPutS)` | ✓ | `0x0A2718 (= VPutS)` | VPutS |
+| 461 | `0x020838 (= VPutSN)` | ✓ | `0x0A26EE (= VPutSN)` | VPutSN |
+| 462 | `0x02083C (= VPutSNG)` | ✓ | `0x0A2730 (= VPutSNG)` | VPutSNG |
+| 463 | `0x020840 (= VPutSNT)` | ✓ | `0x0A27A8 (= VPutSNT)` | VPutSNT |
+| 464 | `0x020844 (= RunIndicOn)` | ✓ | `0x0A27DD (= RunIndicOn)` | RunIndicOn |
+| 465 | `0x020848 (= RunIndicOff)` | ✓ | `0x0A349A (= RunIndicOff)` | RunIndicOff |
+| 466 | `0x02084C (= SaveCmdShadow)` | ✓ | `0x0A1FD1 (= SaveCmdShadow)` | SaveCmdShadow |
+| 467 | `0x020850 (= SaveShadow)` | ✓ | `0x0A2802 (= SaveShadow)` | SaveShadow |
+| 468 | `0x020854 (= RStrShadow)` | ✓ | `0x0A2854 (= RStrShadow)` | RStrShadow |
+| 469 | `0x020858 (= RStrPartial)` | ✓ | `0x0A29B9 (= RStrPartial)` | RStrPartial |
+| 470 | `0x02085C (= RStrCurRow)` | ✓ | `0x0A29EC (= RStrCurRow)` | RStrCurRow |
+| 471 | `0x020860 (= RStrUnderMenu)` | ✓ | `0x0A29FE (= RStrUnderMenu)` | RStrUnderMenu |
+| 472 | `0x020864 (= RStrbotRow)` | ✓ | `0x0A2A28 (= RStrbotRow)` | RStrbotRow |
+| 473 | `0x020868 (= GetKeypress)` | ✓ | `0x0A2A3E (= GetKeypress)` | GetKeypress |
+| 474 | `0x02086C (= GetTokLen)` | ✓ | `0x0A2A45 (= GetTokLen)` | GetTokLen |
+| 475 | `0x020870 (= Get_Tok_Strng)` | ✓ | `0x0A2A4B (= Get_Tok_Strng)` | Get_Tok_Strng |
+| 476 | `0x020874 (= GetTokString)` | ✓ | `0x0A2A68 (= GetTokString)` | GetTokString |
+| 477 | `0x020878 (= PutBPatBuf2)` | ✓ | `0x0A2B66 (= PutBPatBuf2)` | PutBPatBuf2 |
+| 478 | `0x02087C (= PutBPatBuf)` | ✓ | `0x0A2B6E (= PutBPatBuf)` | PutBPatBuf |
+| 479 | `0x020880 (= PutBPat)` | ✓ | `0x0A2B72 (= PutBPat)` | PutBPat |
+| 480 | `0x020884 (= PutcChkScroll)` | ✓ | `0x0A2C2A (= PutcChkScroll)` | PutcChkScroll |
+| 481 | `0x020888 (= DispEOL)` | ✓ | `0x0A2C6C (= DispEOL)` | DispEOL |
+| 482 | `0x02088C (= FDispEOL)` | ✓ | `0x0A2CA6 (= FDispEOL)` | FDispEOL |
+| 483 | `0x020890 (= MakeRowCmd)` | ✓ | `0x0A2D4C (= MakeRowCmd)` | MakeRowCmd |
+| 484 | `0x020894 (= ToToStrp)` | ✓ | `0x0A2D57 (= ToToStrp)` | ToToStrp |
+| 485 | `0x020898 (= SetVarName)` | ✓ | `0x0A32AF (= SetVarName)` | SetVarName |
+| 486 | `0x02089C (= DispDone)` | ✓ | `0x0A2D6D (= DispDone)` | DispDone |
+| 487 | `0x0208A0 (= FinishOutput)` | ✓ | `0x0A2D89 (= FinishOutput)` | FinishOutput |
+| 488 | `0x0208A4 (= CurBlink)` | ✓ | `0x05C623 (= CurBlink)` | CurBlink |
+| 489 | `0x0208A8 (= CursorOff)` | ✓ | `0x05C634 (= CursorOff)` | CursorOff |
+| 490 | `0x0208AC (= HideCursor)` | ✓ | `0x05C67C (= HideCursor)` | HideCursor |
+| 491 | `0x0208B0 (= CursorOn)` | ✓ | `0x05C75B (= CursorOn)` | CursorOn |
+| 492 | `0x0208B4 (= ShowCursor)` | ✓ | `0x05C76C (= ShowCursor)` | ShowCursor |
+| 493 | `0x0208B8 (= KeyToString)` | ✓ | `0x07B9F8 (= KeyToString)` | KeyToString |
+| 494 | `0x0208BC (= PullDownChk)` | ✓ | `0x084989 (= PullDownChk)` | PullDownChk |
+| 495 | `0x0208C0 (= MenuCatCommon)` | ✓ | `0x084A00 (= MenuCatCommon)` | MenuCatCommon |
+| 496 | `0x0208C4 (= LoadCurCat)` | ✓ | `0x084A24 (= LoadCurCat)` | LoadCurCat |
+| 497 | `0x0208C8 (= NCIFPrgmedMode)` | ✓ | `0x084D0F (= NCIFPrgmedMode)` | NCIFPrgmedMode |
+| 498 | `0x0208CC (= LoadMenuNum)` | ✓ | `0x084D2A (= LoadMenuNum)` | LoadMenuNum |
+| 499 | `0x0208D0 (= LoadMenuNuml)` | ✓ | `0x084D2C (= LoadMenuNuml)` | LoadMenuNuml |
+| 500 | `0x0208D4 (= MenuEdKey)` | ✓ | `0x0856A8 (= MenuEdKey)` | MenuEdKey |
+| 501 | `0x0208D8 (= MenCatRet)` | ✓ | `0x085E16 (= MenCatRet)` | MenCatRet |
+| 502 | `0x0208DC (= NotAlphNum)` | ✓ | `0x085F78 (= NotAlphNum)` | NotAlphNum |
+| 503 | `0x0208E0 (= SetMenuFlags)` | ✓ | `0x086438 (= SetMenuFlags)` | SetMenuFlags |
+| 504 | `0x0208E4 (= ResetSomeFlags)` | ✓ | `0x0864AB (= ResetSomeFlags)` | ResetSomeFlags |
 | 505 | `0x0208E8` | ✓ | `0x086522` | _(unnamed)_ |
 | 506 | `0x0208EC` | ✓ | `0x086531` | _(unnamed)_ |
-| 507 | `0x0208F0` | ✓ | `0x086977` | DispListName |
-| 508 | `0x0208F4` | ✓ | `0x087508` | DispLAlphaName |
-| 509 | `0x0208F8` | ✓ | `0x087587` | AbortPrgmode |
-| 510 | `0x0208FC` | ✓ | `0x08759D` | IsFullCntx |
-| 511 | `0x020900` | ✓ | `0x0802EC` | AdrMRow |
-| 512 | `0x020904` | ✓ | `0x0802EE` | AdrmeLE |
-| 513 | `0x020908` | ✓ | `0x080319` | GetmatOP1A |
-| 514 | `0x02090C` | ✓ | `0x08032C` | Getm1toOP1 |
-| 515 | `0x020910` | ✓ | `0x080331` | Getm1tOP1A |
-| 516 | `0x020914` | ✓ | `0x080336` | GetMToOP1 |
-| 517 | `0x020918` | ✓ | `0x080359` | PutToM1A |
-| 518 | `0x02091C` | ✓ | `0x080365` | PutToMA1 |
-| 519 | `0x020920` | ✓ | `0x08036A` | PutToMat |
-| 520 | `0x020924` | ✓ | `0x080395` | MatELDiv |
-| 521 | `0x020928` | ✓ | `0x080851` | CMatFun |
-| 522 | `0x02092C` | ✓ | `0x080AAF` | RowEchPoly |
-| 523 | `0x020930` | ✓ | `0x080ACA` | RowEchelon |
-| 524 | `0x020934` | ✓ | `0x07BF90` | AdrLELE |
-| 525 | `0x020938` | ✓ | `0x07BFAA` | Getl1ToOP1 |
-| 526 | `0x02093C` | ✓ | `0x07BFAE` | Getl1TOP1A |
-| 527 | `0x020940` | ✓ | `0x07BFB3` | GetlToOP1 |
-| 528 | `0x020944` | ✓ | `0x07BFC5` | Getl1ToOP2 |
-| 529 | `0x020948` | ✓ | `0x07BFC9` | Getl1TOP2A |
-| 530 | `0x02094C` | ✓ | `0x07BFDC` | Getl2TOP1A |
-| 531 | `0x020950` | ✓ | `0x07BFF6` | PutTola1 |
-| 532 | `0x020954` | ✓ | `0x07BFFB` | PutToL |
-| 533 | `0x020958` | ✓ | `0x07C43C` | MaxMinLst |
-| 534 | `0x02095C` | ✓ | `0x07C4A8` | LLow |
-| 535 | `0x020960` | ✓ | `0x07C4CA` | LHigh |
-| 536 | `0x020964` | ✓ | `0x07C4D6` | LSum |
-| 537 | `0x020968` | ✓ | `0x07C515` | CumSum |
-| 538 | `0x02096C` | ✓ | `0x07D310` | ToFrac |
-| 539 | `0x020970` | ✓ | `0x07D583` | SeqSet |
-| 540 | `0x020974` | ✓ | `0x07D5D3` | SeqSolve |
-| 541 | `0x020978` | ✓ | `0x07D83B` | CmpNumInit |
-| 542 | `0x02097C` | ✓ | `0x066350` | BinopExec |
-| 543 | `0x020980` | ✓ | `0x0671AE` | ExMeanL |
-| 544 | `0x020984` | ✓ | `0x0673DE` | Set2MVLPtrs |
-| 545 | `0x020988` | ✓ | `0x067436` | SetMat1 |
-| 546 | `0x02098C` | ✓ | `0x06746D` | CreateTLIst |
-| 547 | `0x020990` | ✓ | `0x0674A1` | UnopExec |
-| 548 | `0x020994` | ✓ | `0x067E0E` | ThreeExec |
-| 549 | `0x020998` | ✓ | `0x06829E` | RestoreErrNo |
-| 550 | `0x02099C` | ✓ | `0x06837A` | FourExec |
-| 551 | `0x0209A0` | ✓ | `0x068516` | FiveExec |
-| 552 | `0x0209A4` | ✓ | `0x05F4CB` | CpyTo2ES1 |
-| 553 | `0x0209A8` | ✓ | `0x05F4D1` | CpyTo6ES1 |
-| 554 | `0x0209AC` | ✓ | `0x05F4D7` | CpyTo1ES1 |
-| 555 | `0x0209B0` | ✓ | `0x05F4E3` | CpyTo3ES1 |
-| 556 | `0x0209B4` | ✓ | `0x05F4E9` | CpyTo3ES2 |
-| 557 | `0x0209B8` | ✓ | `0x05F4EF` | CpyTo2ES2 |
-| 558 | `0x0209BC` | ✓ | `0x05F4F5` | CpyTo1ES2 |
-| 559 | `0x0209C0` | ✓ | `0x05F501` | CpyTo2ES3 |
-| 560 | `0x0209C4` | ✓ | `0x05F507` | CpyTo1ES3 |
-| 561 | `0x0209C8` | ✓ | `0x05F515` | CpyTo3ES4 |
-| 562 | `0x0209CC` | ✓ | `0x05F51B` | CpyTo6ES3 |
-| 563 | `0x0209D0` | ✓ | `0x05F521` | CpyTo2ES4 |
-| 564 | `0x0209D4` | ✓ | `0x05F527` | CpyTo1ES4 |
-| 565 | `0x0209D8` | ✓ | `0x05F52F` | CpyTo2ES5 |
-| 566 | `0x0209DC` | ✓ | `0x05F535` | CpyTo1ES5 |
-| 567 | `0x0209E0` | ✓ | `0x05F53D` | CpyTo4ESt |
-| 568 | `0x0209E4` | ✓ | `0x05F543` | CpyTo2ESt |
-| 569 | `0x0209E8` | ✓ | `0x05F549` | CpyTo1ESt |
-| 570 | `0x0209EC` | ✓ | `0x05F555` | CpyTo2ES6 |
-| 571 | `0x0209F0` | ✓ | `0x05F55B` | CpyTo1ES6 |
-| 572 | `0x0209F4` | ✓ | `0x05F563` | CpyTo2ES7 |
-| 573 | `0x0209F8` | ✓ | `0x05F569` | CpyTo1ES7 |
-| 574 | `0x0209FC` | ✓ | `0x05F571` | CpyTo2ES8 |
-| 575 | `0x020A00` | ✓ | `0x05F577` | CpyTo1ES8 |
-| 576 | `0x020A04` | ✓ | `0x05F57F` | CpyTo1ES9 |
-| 577 | `0x020A08` | ✓ | `0x05F585` | CpyTo2ES9 |
-| 578 | `0x020A0C` | ✓ | `0x05F58D` | CpyTo2ES10 |
-| 579 | `0x020A10` | ✓ | `0x05F593` | CpyTo1ES10 |
-| 580 | `0x020A14` | ✓ | `0x05F59D` | CpyTo2ES11 |
-| 581 | `0x020A18` | ✓ | `0x05F5A3` | CpyTo1ES11 |
-| 582 | `0x020A1C` | ✓ | `0x05F5AB` | CpyTo2ES12 |
-| 583 | `0x020A20` | ✓ | `0x05F5B1` | CpyTo1ES12 |
-| 584 | `0x020A24` | ✓ | `0x05F5B9` | CpyTo2ES13 |
-| 585 | `0x020A28` | ✓ | `0x05F5BF` | CpyTo1ES13 |
-| 586 | `0x020A2C` | ✓ | `0x05F5C7` | CpyTo1ES14 |
-| 587 | `0x020A30` | ✓ | `0x05F5CF` | CpyTo1ES16 |
-| 588 | `0x020A34` | ✓ | `0x05F5D7` | CpyTo1ES17 |
-| 589 | `0x020A38` | ✓ | `0x05F5DF` | CpyTo1ES18 |
-| 590 | `0x020A3C` | ✓ | `0x05F5E7` | CpyTo1ES15 |
-| 591 | `0x020A40` | ✓ | `0x05F5EF` | CpyTo2ES15 |
-| 592 | `0x020A44` | ✓ | `0x05F5FB` | CpyO1ToESt |
-| 593 | `0x020A48` | ✓ | `0x05F607` | CpyO1ToES1 |
-| 594 | `0x020A4C` | ✓ | `0x05F619` | CpyO6ToES1 |
-| 595 | `0x020A50` | ✓ | `0x05F61F` | CpyO6ToES3 |
-| 596 | `0x020A54` | ✓ | `0x05F627` | CpyO1ToES2 |
-| 597 | `0x020A58` | ✓ | `0x05F62B` | CpyO2ToES2 |
-| 598 | `0x020A5C` | ✓ | `0x05F633` | CpyO1ToES3 |
-| 599 | `0x020A60` | ✓ | `0x05F637` | CpyO1ToES4 |
-| 600 | `0x020A64` | ✓ | `0x05F63B` | CpyO1ToES5 |
-| 601 | `0x020A68` | ✓ | `0x05F63F` | CpyO1ToES6 |
-| 602 | `0x020A6C` | ✓ | `0x05F643` | CpyO1ToES7 |
-| 603 | `0x020A70` | ✓ | `0x05F647` | CpyO2ToES4 |
-| 604 | `0x020A74` | ✓ | `0x05F64B` | CpyO2ToES5 |
-| 605 | `0x020A78` | ✓ | `0x05F64F` | CpyO2ToES6 |
-| 606 | `0x020A7C` | ✓ | `0x05F653` | CpyO2ToES7 |
-| 607 | `0x020A80` | ✓ | `0x05F657` | CpyO2ToES8 |
-| 608 | `0x020A84` | ✓ | `0x05F65B` | CpyO2ToES9 |
-| 609 | `0x020A88` | ✓ | `0x05F65F` | CpyO1ToES8 |
-| 610 | `0x020A8C` | ✓ | `0x05F663` | CpyO1ToES9 |
-| 611 | `0x020A90` | ✓ | `0x05F667` | CpyO1ToES10 |
-| 612 | `0x020A94` | ✓ | `0x05F66B` | CpyO1ToES11 |
-| 613 | `0x020A98` | ✓ | `0x05F66F` | CpyO1ToES12 |
-| 614 | `0x020A9C` | ✓ | `0x05F673` | CpyO1ToES13 |
-| 615 | `0x020AA0` | ✓ | `0x05F677` | CpyO1ToES14 |
-| 616 | `0x020AA4` | ✓ | `0x06306A` | EvalF3A |
-| 617 | `0x020AA8` | ✓ | `0x03FC1C` | GetK |
-| 618 | `0x020AAC` | ✓ | `0x096AF2` | SetTitle |
-| 619 | `0x020AB0` | ✓ | `0x096C26` | DispVarVal |
-| 620 | `0x020AB4` | ✓ | `0x096DC7` | RecallEd |
-| 621 | `0x020AB8` | ✓ | `0x096DF0` | SetUpBuffer |
-| 622 | `0x020ABC` | ✓ | `0x096E09` | CreateNumEditBuf |
-| 623 | `0x020AC0` | ✓ | `0x096E22` | CallCommon |
-| 624 | `0x020AC4` | ✓ | `0x0970AB` | CommonKeys |
-| 625 | `0x020AC8` | ✓ | `0x097106` | LeftMore |
-| 626 | `0x020ACC` | ✓ | `0x0971FA` | FDel |
-| 627 | `0x020AD0` | ✓ | `0x0972AA` | FClear |
-| 628 | `0x020AD4` | ✓ | `0x0972D4` | FInsDisp |
-| 629 | `0x020AD8` | ✓ | `0x0972D8` | FInsDispNoConv |
-| 630 | `0x020ADC` | ✓ | `0x09735E` | SetIndicator |
-| 631 | `0x020AE0` | ✓ | `0x0973BA` | CloseEditBufNoR |
-| 632 | `0x020AE4` | ✓ | `0x09747C` | ReleaseBuffer |
-| 633 | `0x020AE8` | ✓ | `0x09753F` | VarNameToOP1HL |
-| 634 | `0x020AEC` | ✓ | `0x097573` | NameToOP1 |
-| 635 | `0x020AF0` | ✓ | `0x0975AA` | NumpPutAway |
-| 636 | `0x020AF4` | ✓ | `0x0976ED` | NumReDisp |
-| 637 | `0x020AF8` | ✓ | `0x097703` | NumError02 |
-| 638 | `0x020AFC` | ✓ | `0x0A5424` | Load_Sfont |
-| 639 | `0x020B00` | ✓ | `0x0A53FF` | Sfont_Len |
-| 640 | `0x020B04` | ✓ | `0x09E2B6` | InitNumVec |
-| 641 | `0x020B08` | ✓ | `0x0AF89F` | SetxxOP1 |
-| 642 | `0x020B0C` | ✓ | `0x0AF8A5` | SetxxOP2 |
-| 643 | `0x020B10` | ✓ | `0x0AF8C4` | SetxxxxOP2 |
-| 644 | `0x020B14` | ✓ | `0x0AF949` | UCLines |
-| 645 | `0x020B18` | ✓ | `0x0AF966` | CLine |
-| 646 | `0x020B1C` | ✓ | `0x0AF974` | CLines |
-| 647 | `0x020B20` | ✓ | `0x0AFD2D` | XrootY |
-| 648 | `0x020B24` | ✓ | `0x0AFD41` | YtoX |
-| 649 | `0x020B28` | ✓ | `0x0B007A` | ZmStats |
-| 650 | `0x020B2C` | ✓ | `0x0B056C` | PointStatHelp |
-| 651 | `0x020B30` | ✓ | `0x0B05D1` | DrawSPlot |
-| 652 | `0x020B34` | ✓ | `0x0B0978` | InitNewTraceP |
-| 653 | `0x020B38` | ✓ | `0x0B0BAD` | SPlotCoord |
-| 654 | `0x020B3C` | ✓ | `0x0B0C8B` | SPlotRight |
-| 655 | `0x020B40` | ✓ | `0x0B0CFF` | SPlotLeft |
-| 656 | `0x020B44` | ✓ | `0x0B0D86` | CmpBoxInfo |
-| 657 | `0x020B48` | ✓ | `0x0B0DDB` | NextPlot |
-| 658 | `0x020B4C` | ✓ | `0x0B0DEE` | PrevPlot |
-| 659 | `0x020B50` | ✓ | `0x0B0DFF` | ClrPrevPlot |
-| 660 | `0x020B54` | ✓ | `0x0B0E2C` | PutIndexList |
-| 661 | `0x020B58` | ✓ | `0x0B0E43` | GetIndexList |
-| 662 | `0x020B5C` | ✓ | `0x0B0E66` | HeapSort |
-| 663 | `0x020B60` | ✓ | `0x0B0FC1` | StoGDB2 |
-| 664 | `0x020B64` | ✓ | `0x0B119D` | RclGDB2 |
-| 665 | `0x020B68` | ✓ | `0x0B1485` | CircCmd |
-| 666 | `0x020B6C` | ✓ | `0x0B15A0` | GrphCirc |
-| 667 | `0x020B70` | ✓ | `0x07F790` | Mov18b |
-| 668 | `0x020B74` | ✓ | `0x07B241` | DarkLine |
-| 669 | `0x020B78` | ✓ | `0x07B245` | ILine |
-| 670 | `0x020B7C` | ✓ | `0x07B451` | IPoint |
-| 671 | `0x020B80` | ✓ | `0x0284BA` | XYRndBoth |
-| 672 | `0x020B84` | ✓ | `0x0284CB` | XYRnd |
-| 673 | `0x020B88` | ✓ | `0x056A8D` | CheckTOP |
-| 674 | `0x020B8C` | ✓ | `0x02851E` | CheckXY |
-| 675 | `0x020B90` | ✓ | `0x056AB2` | DarkPnt |
-| 676 | `0x020B94` | ✓ | `0x056ABA` | CPointS |
-| 677 | `0x020B98` | ✓ | `0x02870A` | WToV |
-| 678 | `0x020B9C` | ✓ | `0x056AFE` | VtoWHLDE |
-| 679 | `0x020BA0` | ✓ | `0x056B0F` | Xitof |
-| 680 | `0x020BA4` | ✓ | `0x028719` | YftoI |
-| 681 | `0x020BA8` | ✓ | `0x028727` | XftoI |
-| 682 | `0x020BAC` | ✓ | `0x06C7AA` | TraceOff |
-| 683 | `0x020BB0` | ✓ | `0x06C80F` | GrRedisp |
-| 684 | `0x020BB4` | ✓ | `0x06CBE5` | GDispToken |
-| 685 | `0x020BB8` | ✓ | `0x06CC7F` | GrdeCoda |
-| 686 | `0x020BBC` | ✓ | `0x06CE6F` | LabCoor |
-| 687 | `0x020BC0` | ✓ | `0x06CE73` | CoorDisp |
-| 688 | `0x020BC4` | ✓ | `0x06D552` | TmpEquNoSrc |
-| 689 | `0x020BC8` | ✓ | `0x0286D0` | GrLabels |
-| 690 | `0x020BCC` | ✓ | `0x06EC2B` | YPixSet |
-| 691 | `0x020BD0` | ✓ | `0x06EC87` | XPixSet |
-| 692 | `0x020BD4` | ✓ | `0x06ED2A` | CopyRng |
-| 693 | `0x020BD8` | ✓ | `0x06ED3D` | ValCur |
-| 694 | `0x020BDC` | ✓ | `0x06EDAC` | GrPutAway |
-| 695 | `0x020BE0` | ✓ | `0x06EDFE` | RstGFlags |
-| 696 | `0x020BE4` | ✓ | `0x0BCFFA` | GrReset |
-| 697 | `0x020BE8` | ✓ | `0x06EE6A` | XYCent |
-| 698 | `0x020BEC` | ✓ | `0x0B1729` | ZoomXYCmd |
-| 699 | `0x020BF0` | ✓ | `0x06EE8E` | CptDelY |
-| 700 | `0x020BF4` | ✓ | `0x06EF10` | CptDelX |
-| 701 | `0x020BF8` | ✓ | `0x0BD0D8` | SetFuncM |
-| 702 | `0x020BFC` | ✓ | `0x0BD0E9` | SetSeqM |
-| 703 | `0x020C00` | ✓ | `0x0BD0F8` | SetPolM |
-| 704 | `0x020C04` | ✓ | `0x0BD107` | SetParM |
-| 705 | `0x020C08` | ✓ | `0x06EF89` | ZmInt |
-| 706 | `0x020C0C` | ✓ | `0x0BCED3` | ZmDecml |
-| 707 | `0x020C10` | ✓ | `0x06F03A` | ZmPrev |
-| 708 | `0x020C14` | ✓ | `0x06F05F` | ZmUsr |
-| 709 | `0x020C18` | ✓ | `0x06F05C` | SetUZM |
-| 710 | `0x020C1C` | ✓ | `0x0BCD2B` | ZmFit |
-| 711 | `0x020C20` | ✓ | `0x0BCDAA` | ZmSquare |
-| 712 | `0x020C24` | ✓ | `0x0BCE49` | ZmTrig |
-| 713 | `0x020C28` | ✓ | `0x0BCE91` | SetXMinMax |
-| 714 | `0x020C2C` | ✓ | `0x0BCF72` | ZooDefault |
-| 715 | `0x020C30` | ✓ | `0x06F274` | GrBufCpy |
-| 716 | `0x020C34` | ✓ | `0x06F41A` | DrawSplitLine |
+| 507 | `0x0208F0 (= DispListName)` | ✓ | `0x086977 (= DispListName)` | DispListName |
+| 508 | `0x0208F4 (= DispLAlphaName)` | ✓ | `0x087508 (= DispLAlphaName)` | DispLAlphaName |
+| 509 | `0x0208F8 (= AbortPrgmode)` | ✓ | `0x087587 (= AbortPrgmode)` | AbortPrgmode |
+| 510 | `0x0208FC (= IsFullCntx)` | ✓ | `0x08759D (= IsFullCntx)` | IsFullCntx |
+| 511 | `0x020900 (= AdrMRow)` | ✓ | `0x0802EC (= AdrMRow)` | AdrMRow |
+| 512 | `0x020904 (= AdrmeLE)` | ✓ | `0x0802EE (= AdrmeLE)` | AdrmeLE |
+| 513 | `0x020908 (= GetmatOP1A)` | ✓ | `0x080319 (= GetmatOP1A)` | GetmatOP1A |
+| 514 | `0x02090C (= Getm1toOP1)` | ✓ | `0x08032C (= Getm1toOP1)` | Getm1toOP1 |
+| 515 | `0x020910 (= Getm1tOP1A)` | ✓ | `0x080331 (= Getm1tOP1A)` | Getm1tOP1A |
+| 516 | `0x020914 (= GetMToOP1)` | ✓ | `0x080336 (= GetMToOP1)` | GetMToOP1 |
+| 517 | `0x020918 (= PutToM1A)` | ✓ | `0x080359 (= PutToM1A)` | PutToM1A |
+| 518 | `0x02091C (= PutToMA1)` | ✓ | `0x080365 (= PutToMA1)` | PutToMA1 |
+| 519 | `0x020920 (= PutToMat)` | ✓ | `0x08036A (= PutToMat)` | PutToMat |
+| 520 | `0x020924 (= MatELDiv)` | ✓ | `0x080395 (= MatELDiv)` | MatELDiv |
+| 521 | `0x020928 (= CMatFun)` | ✓ | `0x080851 (= CMatFun)` | CMatFun |
+| 522 | `0x02092C (= RowEchPoly)` | ✓ | `0x080AAF (= RowEchPoly)` | RowEchPoly |
+| 523 | `0x020930 (= RowEchelon)` | ✓ | `0x080ACA (= RowEchelon)` | RowEchelon |
+| 524 | `0x020934 (= AdrLELE)` | ✓ | `0x07BF90 (= AdrLELE)` | AdrLELE |
+| 525 | `0x020938 (= Getl1ToOP1)` | ✓ | `0x07BFAA (= Getl1ToOP1)` | Getl1ToOP1 |
+| 526 | `0x02093C (= Getl1TOP1A)` | ✓ | `0x07BFAE (= Getl1TOP1A)` | Getl1TOP1A |
+| 527 | `0x020940 (= GetlToOP1)` | ✓ | `0x07BFB3 (= GetlToOP1)` | GetlToOP1 |
+| 528 | `0x020944 (= Getl1ToOP2)` | ✓ | `0x07BFC5 (= Getl1ToOP2)` | Getl1ToOP2 |
+| 529 | `0x020948 (= Getl1TOP2A)` | ✓ | `0x07BFC9 (= Getl1TOP2A)` | Getl1TOP2A |
+| 530 | `0x02094C (= Getl2TOP1A)` | ✓ | `0x07BFDC (= Getl2TOP1A)` | Getl2TOP1A |
+| 531 | `0x020950 (= PutTola1)` | ✓ | `0x07BFF6 (= PutTola1)` | PutTola1 |
+| 532 | `0x020954 (= PutToL)` | ✓ | `0x07BFFB (= PutToL)` | PutToL |
+| 533 | `0x020958 (= MaxMinLst)` | ✓ | `0x07C43C (= MaxMinLst)` | MaxMinLst |
+| 534 | `0x02095C (= LLow)` | ✓ | `0x07C4A8 (= LLow)` | LLow |
+| 535 | `0x020960 (= LHigh)` | ✓ | `0x07C4CA (= LHigh)` | LHigh |
+| 536 | `0x020964 (= LSum)` | ✓ | `0x07C4D6 (= LSum)` | LSum |
+| 537 | `0x020968 (= CumSum)` | ✓ | `0x07C515 (= CumSum)` | CumSum |
+| 538 | `0x02096C (= ToFrac)` | ✓ | `0x07D310 (= ToFrac)` | ToFrac |
+| 539 | `0x020970 (= SeqSet)` | ✓ | `0x07D583 (= SeqSet)` | SeqSet |
+| 540 | `0x020974 (= SeqSolve)` | ✓ | `0x07D5D3 (= SeqSolve)` | SeqSolve |
+| 541 | `0x020978 (= CmpNumInit)` | ✓ | `0x07D83B (= CmpNumInit)` | CmpNumInit |
+| 542 | `0x02097C (= BinopExec)` | ✓ | `0x066350 (= BinopExec)` | BinopExec |
+| 543 | `0x020980 (= ExMeanL)` | ✓ | `0x0671AE (= ExMeanL)` | ExMeanL |
+| 544 | `0x020984 (= Set2MVLPtrs)` | ✓ | `0x0673DE (= Set2MVLPtrs)` | Set2MVLPtrs |
+| 545 | `0x020988 (= SetMat1)` | ✓ | `0x067436 (= SetMat1)` | SetMat1 |
+| 546 | `0x02098C (= CreateTLIst)` | ✓ | `0x06746D (= CreateTLIst)` | CreateTLIst |
+| 547 | `0x020990 (= UnopExec)` | ✓ | `0x0674A1 (= UnopExec)` | UnopExec |
+| 548 | `0x020994 (= ThreeExec)` | ✓ | `0x067E0E (= ThreeExec)` | ThreeExec |
+| 549 | `0x020998 (= RestoreErrNo)` | ✓ | `0x06829E (= RestoreErrNo)` | RestoreErrNo |
+| 550 | `0x02099C (= FourExec)` | ✓ | `0x06837A (= FourExec)` | FourExec |
+| 551 | `0x0209A0 (= FiveExec)` | ✓ | `0x068516 (= FiveExec)` | FiveExec |
+| 552 | `0x0209A4 (= CpyTo2ES1)` | ✓ | `0x05F4CB (= CpyTo2ES1)` | CpyTo2ES1 |
+| 553 | `0x0209A8 (= CpyTo6ES1)` | ✓ | `0x05F4D1 (= CpyTo6ES1)` | CpyTo6ES1 |
+| 554 | `0x0209AC (= CpyTo1ES1)` | ✓ | `0x05F4D7 (= CpyTo1ES1)` | CpyTo1ES1 |
+| 555 | `0x0209B0 (= CpyTo3ES1)` | ✓ | `0x05F4E3 (= CpyTo3ES1)` | CpyTo3ES1 |
+| 556 | `0x0209B4 (= CpyTo3ES2)` | ✓ | `0x05F4E9 (= CpyTo3ES2)` | CpyTo3ES2 |
+| 557 | `0x0209B8 (= CpyTo2ES2)` | ✓ | `0x05F4EF (= CpyTo2ES2)` | CpyTo2ES2 |
+| 558 | `0x0209BC (= CpyTo1ES2)` | ✓ | `0x05F4F5 (= CpyTo1ES2)` | CpyTo1ES2 |
+| 559 | `0x0209C0 (= CpyTo2ES3)` | ✓ | `0x05F501 (= CpyTo2ES3)` | CpyTo2ES3 |
+| 560 | `0x0209C4 (= CpyTo1ES3)` | ✓ | `0x05F507 (= CpyTo1ES3)` | CpyTo1ES3 |
+| 561 | `0x0209C8 (= CpyTo3ES4)` | ✓ | `0x05F515 (= CpyTo3ES4)` | CpyTo3ES4 |
+| 562 | `0x0209CC (= CpyTo6ES3)` | ✓ | `0x05F51B (= CpyTo6ES3)` | CpyTo6ES3 |
+| 563 | `0x0209D0 (= CpyTo2ES4)` | ✓ | `0x05F521 (= CpyTo2ES4)` | CpyTo2ES4 |
+| 564 | `0x0209D4 (= CpyTo1ES4)` | ✓ | `0x05F527 (= CpyTo1ES4)` | CpyTo1ES4 |
+| 565 | `0x0209D8 (= CpyTo2ES5)` | ✓ | `0x05F52F (= CpyTo2ES5)` | CpyTo2ES5 |
+| 566 | `0x0209DC (= CpyTo1ES5)` | ✓ | `0x05F535 (= CpyTo1ES5)` | CpyTo1ES5 |
+| 567 | `0x0209E0 (= CpyTo4ESt)` | ✓ | `0x05F53D (= CpyTo4ESt)` | CpyTo4ESt |
+| 568 | `0x0209E4 (= CpyTo2ESt)` | ✓ | `0x05F543 (= CpyTo2ESt)` | CpyTo2ESt |
+| 569 | `0x0209E8 (= CpyTo1ESt)` | ✓ | `0x05F549 (= CpyTo1ESt)` | CpyTo1ESt |
+| 570 | `0x0209EC (= CpyTo2ES6)` | ✓ | `0x05F555 (= CpyTo2ES6)` | CpyTo2ES6 |
+| 571 | `0x0209F0 (= CpyTo1ES6)` | ✓ | `0x05F55B (= CpyTo1ES6)` | CpyTo1ES6 |
+| 572 | `0x0209F4 (= CpyTo2ES7)` | ✓ | `0x05F563 (= CpyTo2ES7)` | CpyTo2ES7 |
+| 573 | `0x0209F8 (= CpyTo1ES7)` | ✓ | `0x05F569 (= CpyTo1ES7)` | CpyTo1ES7 |
+| 574 | `0x0209FC (= CpyTo2ES8)` | ✓ | `0x05F571 (= CpyTo2ES8)` | CpyTo2ES8 |
+| 575 | `0x020A00 (= CpyTo1ES8)` | ✓ | `0x05F577 (= CpyTo1ES8)` | CpyTo1ES8 |
+| 576 | `0x020A04 (= CpyTo1ES9)` | ✓ | `0x05F57F (= CpyTo1ES9)` | CpyTo1ES9 |
+| 577 | `0x020A08 (= CpyTo2ES9)` | ✓ | `0x05F585 (= CpyTo2ES9)` | CpyTo2ES9 |
+| 578 | `0x020A0C (= CpyTo2ES10)` | ✓ | `0x05F58D (= CpyTo2ES10)` | CpyTo2ES10 |
+| 579 | `0x020A10 (= CpyTo1ES10)` | ✓ | `0x05F593 (= CpyTo1ES10)` | CpyTo1ES10 |
+| 580 | `0x020A14 (= CpyTo2ES11)` | ✓ | `0x05F59D (= CpyTo2ES11)` | CpyTo2ES11 |
+| 581 | `0x020A18 (= CpyTo1ES11)` | ✓ | `0x05F5A3 (= CpyTo1ES11)` | CpyTo1ES11 |
+| 582 | `0x020A1C (= CpyTo2ES12)` | ✓ | `0x05F5AB (= CpyTo2ES12)` | CpyTo2ES12 |
+| 583 | `0x020A20 (= CpyTo1ES12)` | ✓ | `0x05F5B1 (= CpyTo1ES12)` | CpyTo1ES12 |
+| 584 | `0x020A24 (= CpyTo2ES13)` | ✓ | `0x05F5B9 (= CpyTo2ES13)` | CpyTo2ES13 |
+| 585 | `0x020A28 (= CpyTo1ES13)` | ✓ | `0x05F5BF (= CpyTo1ES13)` | CpyTo1ES13 |
+| 586 | `0x020A2C (= CpyTo1ES14)` | ✓ | `0x05F5C7 (= CpyTo1ES14)` | CpyTo1ES14 |
+| 587 | `0x020A30 (= CpyTo1ES16)` | ✓ | `0x05F5CF (= CpyTo1ES16)` | CpyTo1ES16 |
+| 588 | `0x020A34 (= CpyTo1ES17)` | ✓ | `0x05F5D7 (= CpyTo1ES17)` | CpyTo1ES17 |
+| 589 | `0x020A38 (= CpyTo1ES18)` | ✓ | `0x05F5DF (= CpyTo1ES18)` | CpyTo1ES18 |
+| 590 | `0x020A3C (= CpyTo1ES15)` | ✓ | `0x05F5E7 (= CpyTo1ES15)` | CpyTo1ES15 |
+| 591 | `0x020A40 (= CpyTo2ES15)` | ✓ | `0x05F5EF (= CpyTo2ES15)` | CpyTo2ES15 |
+| 592 | `0x020A44 (= CpyO1ToESt)` | ✓ | `0x05F5FB (= CpyO1ToESt)` | CpyO1ToESt |
+| 593 | `0x020A48 (= CpyO1ToES1)` | ✓ | `0x05F607 (= CpyO1ToES1)` | CpyO1ToES1 |
+| 594 | `0x020A4C (= CpyO6ToES1)` | ✓ | `0x05F619 (= CpyO6ToES1)` | CpyO6ToES1 |
+| 595 | `0x020A50 (= CpyO6ToES3)` | ✓ | `0x05F61F (= CpyO6ToES3)` | CpyO6ToES3 |
+| 596 | `0x020A54 (= CpyO1ToES2)` | ✓ | `0x05F627 (= CpyO1ToES2)` | CpyO1ToES2 |
+| 597 | `0x020A58 (= CpyO2ToES2)` | ✓ | `0x05F62B (= CpyO2ToES2)` | CpyO2ToES2 |
+| 598 | `0x020A5C (= CpyO1ToES3)` | ✓ | `0x05F633 (= CpyO1ToES3)` | CpyO1ToES3 |
+| 599 | `0x020A60 (= CpyO1ToES4)` | ✓ | `0x05F637 (= CpyO1ToES4)` | CpyO1ToES4 |
+| 600 | `0x020A64 (= CpyO1ToES5)` | ✓ | `0x05F63B (= CpyO1ToES5)` | CpyO1ToES5 |
+| 601 | `0x020A68 (= CpyO1ToES6)` | ✓ | `0x05F63F (= CpyO1ToES6)` | CpyO1ToES6 |
+| 602 | `0x020A6C (= CpyO1ToES7)` | ✓ | `0x05F643 (= CpyO1ToES7)` | CpyO1ToES7 |
+| 603 | `0x020A70 (= CpyO2ToES4)` | ✓ | `0x05F647 (= CpyO2ToES4)` | CpyO2ToES4 |
+| 604 | `0x020A74 (= CpyO2ToES5)` | ✓ | `0x05F64B (= CpyO2ToES5)` | CpyO2ToES5 |
+| 605 | `0x020A78 (= CpyO2ToES6)` | ✓ | `0x05F64F (= CpyO2ToES6)` | CpyO2ToES6 |
+| 606 | `0x020A7C (= CpyO2ToES7)` | ✓ | `0x05F653 (= CpyO2ToES7)` | CpyO2ToES7 |
+| 607 | `0x020A80 (= CpyO2ToES8)` | ✓ | `0x05F657 (= CpyO2ToES8)` | CpyO2ToES8 |
+| 608 | `0x020A84 (= CpyO2ToES9)` | ✓ | `0x05F65B (= CpyO2ToES9)` | CpyO2ToES9 |
+| 609 | `0x020A88 (= CpyO1ToES8)` | ✓ | `0x05F65F (= CpyO1ToES8)` | CpyO1ToES8 |
+| 610 | `0x020A8C (= CpyO1ToES9)` | ✓ | `0x05F663 (= CpyO1ToES9)` | CpyO1ToES9 |
+| 611 | `0x020A90 (= CpyO1ToES10)` | ✓ | `0x05F667 (= CpyO1ToES10)` | CpyO1ToES10 |
+| 612 | `0x020A94 (= CpyO1ToES11)` | ✓ | `0x05F66B (= CpyO1ToES11)` | CpyO1ToES11 |
+| 613 | `0x020A98 (= CpyO1ToES12)` | ✓ | `0x05F66F (= CpyO1ToES12)` | CpyO1ToES12 |
+| 614 | `0x020A9C (= CpyO1ToES13)` | ✓ | `0x05F673 (= CpyO1ToES13)` | CpyO1ToES13 |
+| 615 | `0x020AA0 (= CpyO1ToES14)` | ✓ | `0x05F677 (= CpyO1ToES14)` | CpyO1ToES14 |
+| 616 | `0x020AA4 (= EvalF3A)` | ✓ | `0x06306A (= EvalF3A)` | EvalF3A |
+| 617 | `0x020AA8 (= GetK)` | ✓ | `0x03FC1C (= GetK)` | GetK |
+| 618 | `0x020AAC (= SetTitle)` | ✓ | `0x096AF2 (= SetTitle)` | SetTitle |
+| 619 | `0x020AB0 (= DispVarVal)` | ✓ | `0x096C26 (= DispVarVal)` | DispVarVal |
+| 620 | `0x020AB4 (= RecallEd)` | ✓ | `0x096DC7 (= RecallEd)` | RecallEd |
+| 621 | `0x020AB8 (= SetUpBuffer)` | ✓ | `0x096DF0 (= SetUpBuffer)` | SetUpBuffer |
+| 622 | `0x020ABC (= CreateNumEditBuf)` | ✓ | `0x096E09 (= CreateNumEditBuf)` | CreateNumEditBuf |
+| 623 | `0x020AC0 (= CallCommon)` | ✓ | `0x096E22 (= CallCommon)` | CallCommon |
+| 624 | `0x020AC4 (= CommonKeys)` | ✓ | `0x0970AB (= CommonKeys)` | CommonKeys |
+| 625 | `0x020AC8 (= LeftMore)` | ✓ | `0x097106 (= LeftMore)` | LeftMore |
+| 626 | `0x020ACC (= FDel)` | ✓ | `0x0971FA (= FDel)` | FDel |
+| 627 | `0x020AD0 (= FClear)` | ✓ | `0x0972AA (= FClear)` | FClear |
+| 628 | `0x020AD4 (= FInsDisp)` | ✓ | `0x0972D4 (= FInsDisp)` | FInsDisp |
+| 629 | `0x020AD8 (= FInsDispNoConv)` | ✓ | `0x0972D8 (= FInsDispNoConv)` | FInsDispNoConv |
+| 630 | `0x020ADC (= SetIndicator)` | ✓ | `0x09735E (= SetIndicator)` | SetIndicator |
+| 631 | `0x020AE0 (= CloseEditBufNoR)` | ✓ | `0x0973BA (= CloseEditBufNoR)` | CloseEditBufNoR |
+| 632 | `0x020AE4 (= ReleaseBuffer)` | ✓ | `0x09747C (= ReleaseBuffer)` | ReleaseBuffer |
+| 633 | `0x020AE8 (= VarNameToOP1HL)` | ✓ | `0x09753F (= VarNameToOP1HL)` | VarNameToOP1HL |
+| 634 | `0x020AEC (= NameToOP1)` | ✓ | `0x097573 (= NameToOP1)` | NameToOP1 |
+| 635 | `0x020AF0 (= NumpPutAway)` | ✓ | `0x0975AA (= NumpPutAway)` | NumpPutAway |
+| 636 | `0x020AF4 (= NumReDisp)` | ✓ | `0x0976ED (= NumReDisp)` | NumReDisp |
+| 637 | `0x020AF8 (= NumError02)` | ✓ | `0x097703 (= NumError02)` | NumError02 |
+| 638 | `0x020AFC (= Load_Sfont)` | ✓ | `0x0A5424 (= Load_Sfont)` | Load_Sfont |
+| 639 | `0x020B00 (= Sfont_Len)` | ✓ | `0x0A53FF (= Sfont_Len)` | Sfont_Len |
+| 640 | `0x020B04 (= InitNumVec)` | ✓ | `0x09E2B6 (= InitNumVec)` | InitNumVec |
+| 641 | `0x020B08 (= SetxxOP1)` | ✓ | `0x0AF89F (= SetxxOP1)` | SetxxOP1 |
+| 642 | `0x020B0C (= SetxxOP2)` | ✓ | `0x0AF8A5 (= SetxxOP2)` | SetxxOP2 |
+| 643 | `0x020B10 (= SetxxxxOP2)` | ✓ | `0x0AF8C4 (= SetxxxxOP2)` | SetxxxxOP2 |
+| 644 | `0x020B14 (= UCLines)` | ✓ | `0x0AF949 (= UCLines)` | UCLines |
+| 645 | `0x020B18 (= CLine)` | ✓ | `0x0AF966 (= CLine)` | CLine |
+| 646 | `0x020B1C (= CLines)` | ✓ | `0x0AF974 (= CLines)` | CLines |
+| 647 | `0x020B20 (= XrootY)` | ✓ | `0x0AFD2D (= XrootY)` | XrootY |
+| 648 | `0x020B24 (= YtoX)` | ✓ | `0x0AFD41 (= YtoX)` | YtoX |
+| 649 | `0x020B28 (= ZmStats)` | ✓ | `0x0B007A (= ZmStats)` | ZmStats |
+| 650 | `0x020B2C (= PointStatHelp)` | ✓ | `0x0B056C (= PointStatHelp)` | PointStatHelp |
+| 651 | `0x020B30 (= DrawSPlot)` | ✓ | `0x0B05D1 (= DrawSPlot)` | DrawSPlot |
+| 652 | `0x020B34 (= InitNewTraceP)` | ✓ | `0x0B0978 (= InitNewTraceP)` | InitNewTraceP |
+| 653 | `0x020B38 (= SPlotCoord)` | ✓ | `0x0B0BAD (= SPlotCoord)` | SPlotCoord |
+| 654 | `0x020B3C (= SPlotRight)` | ✓ | `0x0B0C8B (= SPlotRight)` | SPlotRight |
+| 655 | `0x020B40 (= SPlotLeft)` | ✓ | `0x0B0CFF (= SPlotLeft)` | SPlotLeft |
+| 656 | `0x020B44 (= CmpBoxInfo)` | ✓ | `0x0B0D86 (= CmpBoxInfo)` | CmpBoxInfo |
+| 657 | `0x020B48 (= NextPlot)` | ✓ | `0x0B0DDB (= NextPlot)` | NextPlot |
+| 658 | `0x020B4C (= PrevPlot)` | ✓ | `0x0B0DEE (= PrevPlot)` | PrevPlot |
+| 659 | `0x020B50 (= ClrPrevPlot)` | ✓ | `0x0B0DFF (= ClrPrevPlot)` | ClrPrevPlot |
+| 660 | `0x020B54 (= PutIndexList)` | ✓ | `0x0B0E2C (= PutIndexList)` | PutIndexList |
+| 661 | `0x020B58 (= GetIndexList)` | ✓ | `0x0B0E43 (= GetIndexList)` | GetIndexList |
+| 662 | `0x020B5C (= HeapSort)` | ✓ | `0x0B0E66 (= HeapSort)` | HeapSort |
+| 663 | `0x020B60 (= StoGDB2)` | ✓ | `0x0B0FC1 (= StoGDB2)` | StoGDB2 |
+| 664 | `0x020B64 (= RclGDB2)` | ✓ | `0x0B119D (= RclGDB2)` | RclGDB2 |
+| 665 | `0x020B68 (= CircCmd)` | ✓ | `0x0B1485 (= CircCmd)` | CircCmd |
+| 666 | `0x020B6C (= GrphCirc)` | ✓ | `0x0B15A0 (= GrphCirc)` | GrphCirc |
+| 667 | `0x020B70 (= Mov18b)` | ✓ | `0x07F790 (= Mov18b)` | Mov18b |
+| 668 | `0x020B74 (= DarkLine)` | ✓ | `0x07B241 (= DarkLine)` | DarkLine |
+| 669 | `0x020B78 (= ILine)` | ✓ | `0x07B245 (= ILine)` | ILine |
+| 670 | `0x020B7C (= IPoint)` | ✓ | `0x07B451 (= IPoint)` | IPoint |
+| 671 | `0x020B80 (= XYRndBoth)` | ✓ | `0x0284BA (= XYRndBoth)` | XYRndBoth |
+| 672 | `0x020B84 (= XYRnd)` | ✓ | `0x0284CB (= XYRnd)` | XYRnd |
+| 673 | `0x020B88 (= CheckTOP)` | ✓ | `0x056A8D (= CheckTOP)` | CheckTOP |
+| 674 | `0x020B8C (= CheckXY)` | ✓ | `0x02851E (= CheckXY)` | CheckXY |
+| 675 | `0x020B90 (= DarkPnt)` | ✓ | `0x056AB2 (= DarkPnt)` | DarkPnt |
+| 676 | `0x020B94 (= CPointS)` | ✓ | `0x056ABA (= CPointS)` | CPointS |
+| 677 | `0x020B98 (= WToV)` | ✓ | `0x02870A (= WToV)` | WToV |
+| 678 | `0x020B9C (= VtoWHLDE)` | ✓ | `0x056AFE (= VtoWHLDE)` | VtoWHLDE |
+| 679 | `0x020BA0 (= Xitof)` | ✓ | `0x056B0F (= Xitof)` | Xitof |
+| 680 | `0x020BA4 (= YftoI)` | ✓ | `0x028719 (= YftoI)` | YftoI |
+| 681 | `0x020BA8 (= XftoI)` | ✓ | `0x028727 (= XftoI)` | XftoI |
+| 682 | `0x020BAC (= TraceOff)` | ✓ | `0x06C7AA (= TraceOff)` | TraceOff |
+| 683 | `0x020BB0 (= GrRedisp)` | ✓ | `0x06C80F (= GrRedisp)` | GrRedisp |
+| 684 | `0x020BB4 (= GDispToken)` | ✓ | `0x06CBE5 (= GDispToken)` | GDispToken |
+| 685 | `0x020BB8 (= GrdeCoda)` | ✓ | `0x06CC7F (= GrdeCoda)` | GrdeCoda |
+| 686 | `0x020BBC (= LabCoor)` | ✓ | `0x06CE6F (= LabCoor)` | LabCoor |
+| 687 | `0x020BC0 (= CoorDisp)` | ✓ | `0x06CE73 (= CoorDisp)` | CoorDisp |
+| 688 | `0x020BC4 (= TmpEquNoSrc)` | ✓ | `0x06D552 (= TmpEquNoSrc)` | TmpEquNoSrc |
+| 689 | `0x020BC8 (= GrLabels)` | ✓ | `0x0286D0 (= GrLabels)` | GrLabels |
+| 690 | `0x020BCC (= YPixSet)` | ✓ | `0x06EC2B (= YPixSet)` | YPixSet |
+| 691 | `0x020BD0 (= XPixSet)` | ✓ | `0x06EC87 (= XPixSet)` | XPixSet |
+| 692 | `0x020BD4 (= CopyRng)` | ✓ | `0x06ED2A (= CopyRng)` | CopyRng |
+| 693 | `0x020BD8 (= ValCur)` | ✓ | `0x06ED3D (= ValCur)` | ValCur |
+| 694 | `0x020BDC (= GrPutAway)` | ✓ | `0x06EDAC (= GrPutAway)` | GrPutAway |
+| 695 | `0x020BE0 (= RstGFlags)` | ✓ | `0x06EDFE (= RstGFlags)` | RstGFlags |
+| 696 | `0x020BE4 (= GrReset)` | ✓ | `0x0BCFFA (= GrReset)` | GrReset |
+| 697 | `0x020BE8 (= XYCent)` | ✓ | `0x06EE6A (= XYCent)` | XYCent |
+| 698 | `0x020BEC (= ZoomXYCmd)` | ✓ | `0x0B1729 (= ZoomXYCmd)` | ZoomXYCmd |
+| 699 | `0x020BF0 (= CptDelY)` | ✓ | `0x06EE8E (= CptDelY)` | CptDelY |
+| 700 | `0x020BF4 (= CptDelX)` | ✓ | `0x06EF10 (= CptDelX)` | CptDelX |
+| 701 | `0x020BF8 (= SetFuncM)` | ✓ | `0x0BD0D8 (= SetFuncM)` | SetFuncM |
+| 702 | `0x020BFC (= SetSeqM)` | ✓ | `0x0BD0E9 (= SetSeqM)` | SetSeqM |
+| 703 | `0x020C00 (= SetPolM)` | ✓ | `0x0BD0F8 (= SetPolM)` | SetPolM |
+| 704 | `0x020C04 (= SetParM)` | ✓ | `0x0BD107 (= SetParM)` | SetParM |
+| 705 | `0x020C08 (= ZmInt)` | ✓ | `0x06EF89 (= ZmInt)` | ZmInt |
+| 706 | `0x020C0C (= ZmDecml)` | ✓ | `0x0BCED3 (= ZmDecml)` | ZmDecml |
+| 707 | `0x020C10 (= ZmPrev)` | ✓ | `0x06F03A (= ZmPrev)` | ZmPrev |
+| 708 | `0x020C14 (= ZmUsr)` | ✓ | `0x06F05F (= ZmUsr)` | ZmUsr |
+| 709 | `0x020C18 (= SetUZM)` | ✓ | `0x06F05C (= SetUZM)` | SetUZM |
+| 710 | `0x020C1C (= ZmFit)` | ✓ | `0x0BCD2B (= ZmFit)` | ZmFit |
+| 711 | `0x020C20 (= ZmSquare)` | ✓ | `0x0BCDAA (= ZmSquare)` | ZmSquare |
+| 712 | `0x020C24 (= ZmTrig)` | ✓ | `0x0BCE49 (= ZmTrig)` | ZmTrig |
+| 713 | `0x020C28 (= SetXMinMax)` | ✓ | `0x0BCE91 (= SetXMinMax)` | SetXMinMax |
+| 714 | `0x020C2C (= ZooDefault)` | ✓ | `0x0BCF72 (= ZooDefault)` | ZooDefault |
+| 715 | `0x020C30 (= GrBufCpy)` | ✓ | `0x06F274 (= GrBufCpy)` | GrBufCpy |
+| 716 | `0x020C34 (= DrawSplitLine)` | ✓ | `0x06F41A (= DrawSplitLine)` | DrawSplitLine |
 | 717 | `0x020C38` | ✓ | `0x06F461` | _(unnamed)_ |
 | 718 | `0x020C3C` | ✓ | `0x06F4C3` | _(unnamed)_ |
 | 719 | `0x020C40` | ✓ | `0x06F4D3` | _(unnamed)_ |
@@ -742,258 +742,258 @@ Source: CE-Programming/toolchain `src/include/ti84pceg.inc` (master)
 | 722 | `0x020C4C` | ✓ | `0x06F67F` | _(unnamed)_ |
 | 723 | `0x020C50` | ✓ | `0x06F7E4` | _(unnamed)_ |
 | 724 | `0x020C54` | ✓ | `0x06F811` | _(unnamed)_ |
-| 725 | `0x020C58` | ✓ | `0x06F9E2` | ChkTextCurs |
-| 726 | `0x020C5C` | ✓ | `0x06C68B` | Regraph |
-| 727 | `0x020C60` | ✓ | `0x044409` | DoRefFlags02 |
-| 728 | `0x020C64` | ✓ | `0x044753` | InitNSeq |
-| 729 | `0x020C68` | ✓ | `0x0450BE` | YRes |
-| 730 | `0x020C6C` | ✓ | `0x0450FB` | Ceiling |
-| 731 | `0x020C70` | ✓ | `0x09EB8A` | PutXY |
-| 732 | `0x020C74` | ✓ | `0x06AABF` | PutEquNo |
-| 733 | `0x020C78` | ✓ | `0x06AC2B` | PDspGrph |
-| 734 | `0x020C7C` | ✓ | `0x05DA51` | HorizCmd |
-| 735 | `0x020C80` | ✓ | `0x05DAA5` | VertCmd |
-| 736 | `0x020C84` | ✓ | `0x05DAC3` | LineCmd |
-| 737 | `0x020C88` | ✓ | `0x05DB12` | UnLineCmd |
-| 738 | `0x020C8C` | ✓ | `0x05DB2E` | PointCmd |
-| 739 | `0x020C90` | ✓ | `0x05DB45` | PixelTest |
-| 740 | `0x020C94` | ✓ | `0x05DBA0` | PixelCmd |
-| 741 | `0x020C98` | ✓ | `0x05DBA5` | TanLnF |
-| 742 | `0x020C9C` | ✓ | `0x05DC04` | DrawCmdInit |
-| 743 | `0x020CA0` | ✓ | `0x05DD96` | DrawCmd |
-| 744 | `0x020CA4` | ✓ | `0x05DDD7` | ShadeCmd |
-| 745 | `0x020CA8` | ✓ | `0x05DE59` | InvCmd |
-| 746 | `0x020CAC` | ✓ | `0x05E062` | StatShade |
-| 747 | `0x020CB0` | ✓ | `0x0A545B` | DspMatTable |
-| 748 | `0x020CB4` | ✓ | `0x081670` | DspLsts |
-| 749 | `0x020CB8` | ✓ | `0x0AC2CB` | CloseEditBuf |
-| 750 | `0x020CBC` | ✓ | `0x0AC8C5` | ParseEditBuf |
-| 751 | `0x020CC0` | ✓ | `0x0ACC4C` | PutSM |
-| 752 | `0x020CC4` | ✓ | `0x0B2A15` | DspCurTbl |
-| 753 | `0x020CC8` | ✓ | `0x0B2AA4` | DspGrTbl |
-| 754 | `0x020CCC` | ✓ | `0x0B2BC0` | ZeroTemplate |
-| 755 | `0x020CD0` | ✓ | `0x0B37F9` | SetTblRefs |
-| 756 | `0x020CD4` | ✓ | `0x0B3AE7` | DispTblBot |
-| 757 | `0x020CD8` | ✓ | `0x0B3C24` | DispTblTop |
-| 758 | `0x020CDC` | ✓ | `0x0B40E7` | DispTblBody |
-| 759 | `0x020CE0` | ✓ | `0x0B4EE2` | VPutBlank |
-| 760 | `0x020CE4` | ✓ | `0x0B52E1` | TblTrace |
-| 761 | `0x020CE8` | ✓ | `0x0B19C7` | DispListNameY |
-| 762 | `0x020CEC` | ✓ | `0x0B1E84` | CurNameLength |
-| 763 | `0x020CF0` | ✓ | `0x0B1F19` | NameToBuf |
-| 764 | `0x020CF4` | ✓ | `0x05E8B6` | JPromptCursor |
-| 765 | `0x020CF8` | ✓ | `0x05E242` | BufLeft |
-| 766 | `0x020CFC` | ✓ | `0x05E27E` | BufRight |
-| 767 | `0x020D00` | ✓ | `0x05E2A0` | BufInsert |
-| 768 | `0x020D04` | ✓ | `0x05E2C0` | BufQueueChar |
-| 769 | `0x020D08` | ✓ | `0x05E307` | BufReplace |
-| 770 | `0x020D0C` | ✓ | `0x05E367` | BufDelete |
-| 771 | `0x020D10` | ✓ | `0x05E37D` | BufPeek |
-| 772 | `0x020D14` | ✓ | `0x05E381` | BufPeek1 |
-| 773 | `0x020D18` | ✓ | `0x05E386` | BufPeek2 |
-| 774 | `0x020D1C` | ✓ | `0x05E38B` | BufPeek3 |
-| 775 | `0x020D20` | ✓ | `0x05E820` | BufToBtm |
-| 776 | `0x020D24` | ✓ | `0x05E39E` | SetupEditEqu |
-| 777 | `0x020D28` | ✓ | `0x05E3AE` | BufToTop |
-| 778 | `0x020D2C` | ✓ | `0x05E3D6` | IsEditFull |
-| 779 | `0x020D30` | ✓ | `0x05E3E3` | IsEditEmpty |
-| 780 | `0x020D34` | ✓ | `0x05E3E8` | IsAtTop |
-| 781 | `0x020D38` | ✓ | `0x05E3F5` | IsAtBtm |
-| 782 | `0x020D3C` | ✓ | `0x0972C3` | BufClear |
-| 783 | `0x020D40` | ✓ | `0x05E402` | JCursorFirst |
-| 784 | `0x020D44` | ✓ | `0x05E42A` | JCursorLast |
-| 785 | `0x020D48` | ✓ | `0x05E448` | CursorLeft |
-| 786 | `0x020D4C` | ✓ | `0x05E490` | CursorRight |
-| 787 | `0x020D50` | ✓ | `0x05E522` | CursorUp |
-| 788 | `0x020D54` | ✓ | `0x05E580` | CursorDown |
-| 789 | `0x020D58` | ✓ | `0x05E60E` | CursorToOffset |
-| 790 | `0x020D5C` | ✓ | `0x05E630` | InsDisp |
-| 791 | `0x020D60` | ✓ | `0x05E6B1` | FDispBOL1 |
-| 792 | `0x020D64` | ✓ | `0x05E6D3` | FDispBOL |
-| 793 | `0x020D68` | ✓ | `0x05E787` | DispEOW |
-| 794 | `0x020D6C` | ✓ | `0x05E7CD` | DispHead |
-| 795 | `0x020D70` | ✓ | `0x05E7D8` | DispTail |
-| 796 | `0x020D74` | ✓ | `0x05E7E3` | PutTokString |
-| 797 | `0x020D78` | ✓ | `0x05E7F7` | SetUpEditCmd |
-| 798 | `0x020D7C` | ✓ | `0x05E849` | SetEmptyeditEqu |
-| 799 | `0x020D80` | ✓ | `0x05E84D` | SetEmptyEditPtr |
-| 800 | `0x020D84` | ✓ | `0x05E872` | CloseEditEqu |
-| 801 | `0x020D88` | ✓ | `0x05E8A7` | GetPrevTok |
-| 802 | `0x020D8C` | ✓ | `0x02FCB3` | GetKey |
-| 803 | `0x020D90` | ✓ | `0x030157` | CanIndic |
-| 804 | `0x020D94` | ✓ | `0x05D5D8` | DFMin |
-| 805 | `0x020D98` | ✓ | `0x097AC8` | FormDisp |
-| 806 | `0x020D9C` | ✓ | `0x098320` | FormMatrix |
-| 807 | `0x020DA0` | ✓ | `0x098342` | WScrollLeft |
-| 808 | `0x020DA4` | ✓ | `0x098355` | WScrollUp |
-| 809 | `0x020DA8` | ✓ | `0x09836D` | WScrollDown |
-| 810 | `0x020DAC` | ✓ | `0x098383` | WScrollRight |
-| 811 | `0x020DB0` | ✓ | `0x09878B` | FormEReal |
-| 812 | `0x020DB4` | ✓ | `0x0987A7` | FormERealTok |
-| 813 | `0x020DB8` | ✓ | `0x098B80` | FormDCplx |
-| 814 | `0x020DBC` | ✓ | `0x098D7C` | FormReal |
-| 815 | `0x020DC0` | ✓ | `0x099174` | SetWinAbove |
-| 816 | `0x020DC4` | ✓ | `0x099211` | DisarmScroll |
-| 817 | `0x020DC8` | ✓ | `0x09923A` | MinToEdit |
-| 818 | `0x020DCC` | ✓ | `0x09927F` | RclVarToEdit |
-| 819 | `0x020DD0` | ✓ | `0x099283` | RclVarToEditPtr |
-| 820 | `0x020DD4` | ✓ | `0x0992A0` | RclEntryToEdit |
-| 821 | `0x020DD8` | ✓ | `0x0992C3` | RclToQueue |
-| 822 | `0x020DDC` | ✓ | `0x0B184C` | FormToTok |
-| 823 | `0x020DE0` | ✓ | `0x099491` | DispInterval |
-| 824 | `0x020DE4` | ✓ | `0x0ACEF7` | DispLstName |
-| 825 | `0x020DE8` | ✓ | `0x0ACF43` | DispSLstNameHL |
-| 826 | `0x020DEC` | ✓ | `0x060B8D` | EditEqu |
-| 827 | `0x020DF0` | ✓ | `0x060C23` | CloseEquField |
-| 828 | `0x020DF4` | ✓ | `0x060C39` | AutoSelect |
-| 829 | `0x020DF8` | ✓ | `0x060EF5` | DispYEOS |
-| 830 | `0x020DFC` | ✓ | `0x060F85` | DispNumEOS |
-| 831 | `0x020E00` | ✓ | `0x060FEA` | SetupDispEq |
-| 832 | `0x020E04` | ✓ | `0x061003` | DispForward |
-| 833 | `0x020E08` | ✓ | `0x06118A` | DispYPrompt2 |
-| 834 | `0x020E0C` | ✓ | `0x0BD19F` | StringWidth |
-| 835 | `0x020E10` | ✓ | `0x062160` | DispErrorScreen |
-| 836 | `0x020E14` | ✓ | `0x063033` | PopCX |
-| 837 | `0x020E18` | ✓ | `0x063051` | LoadNoEEntry |
-| 838 | `0x020E1C` | ✓ | `0x08A835` | SaveScreen |
-| 839 | `0x020E20` | ✓ | `0x08A850` | RetScreen |
-| 840 | `0x020E24` | ✓ | `0x08A88E` | RetScreenErr |
-| 841 | `0x020E28` | ✓ | `0x0800A0` | CheckSplitFlag |
-| 842 | `0x020E2C` | ✓ | `0x08AAA4` | SolveRedisp |
-| 843 | `0x020E30` | ✓ | `0x08AABB` | SolveDisp |
-| 844 | `0x020E34` | ✓ | `0x08B2C6` | ItemName |
-| 845 | `0x020E38` | ✓ | `0x08A98F` | SetNorm_Vals |
-| 846 | `0x020E3C` | ✓ | `0x08A995` | SetYOffset |
-| 847 | `0x020E40` | ✓ | `0x05C52C` | ConvKeyToTok |
-| 848 | `0x020E44` | ✓ | `0x05C58D` | ConvFCKeyToTok |
-| 849 | `0x020E48` | ✓ | `0x05C597` | ConvFEKeyToTok |
-| 850 | `0x020E4C` | ✓ | `0x05C5B3` | TokToKey |
-| 851 | `0x020E50` | ✓ | `0x03D69C` | GetVarCmdUSB |
+| 725 | `0x020C58 (= ChkTextCurs)` | ✓ | `0x06F9E2 (= ChkTextCurs)` | ChkTextCurs |
+| 726 | `0x020C5C (= Regraph)` | ✓ | `0x06C68B (= Regraph)` | Regraph |
+| 727 | `0x020C60 (= DoRefFlags02)` | ✓ | `0x044409 (= DoRefFlags02)` | DoRefFlags02 |
+| 728 | `0x020C64 (= InitNSeq)` | ✓ | `0x044753 (= InitNSeq)` | InitNSeq |
+| 729 | `0x020C68 (= YRes)` | ✓ | `0x0450BE (= YRes)` | YRes |
+| 730 | `0x020C6C (= Ceiling)` | ✓ | `0x0450FB (= Ceiling)` | Ceiling |
+| 731 | `0x020C70 (= PutXY)` | ✓ | `0x09EB8A (= PutXY)` | PutXY |
+| 732 | `0x020C74 (= PutEquNo)` | ✓ | `0x06AABF (= PutEquNo)` | PutEquNo |
+| 733 | `0x020C78 (= PDspGrph)` | ✓ | `0x06AC2B (= PDspGrph)` | PDspGrph |
+| 734 | `0x020C7C (= HorizCmd)` | ✓ | `0x05DA51 (= HorizCmd)` | HorizCmd |
+| 735 | `0x020C80 (= VertCmd)` | ✓ | `0x05DAA5 (= VertCmd)` | VertCmd |
+| 736 | `0x020C84 (= LineCmd)` | ✓ | `0x05DAC3 (= LineCmd)` | LineCmd |
+| 737 | `0x020C88 (= UnLineCmd)` | ✓ | `0x05DB12 (= UnLineCmd)` | UnLineCmd |
+| 738 | `0x020C8C (= PointCmd)` | ✓ | `0x05DB2E (= PointCmd)` | PointCmd |
+| 739 | `0x020C90 (= PixelTest)` | ✓ | `0x05DB45 (= PixelTest)` | PixelTest |
+| 740 | `0x020C94 (= PixelCmd)` | ✓ | `0x05DBA0 (= PixelCmd)` | PixelCmd |
+| 741 | `0x020C98 (= TanLnF)` | ✓ | `0x05DBA5 (= TanLnF)` | TanLnF |
+| 742 | `0x020C9C (= DrawCmdInit)` | ✓ | `0x05DC04 (= DrawCmdInit)` | DrawCmdInit |
+| 743 | `0x020CA0 (= DrawCmd)` | ✓ | `0x05DD96 (= DrawCmd)` | DrawCmd |
+| 744 | `0x020CA4 (= ShadeCmd)` | ✓ | `0x05DDD7 (= ShadeCmd)` | ShadeCmd |
+| 745 | `0x020CA8 (= InvCmd)` | ✓ | `0x05DE59 (= InvCmd)` | InvCmd |
+| 746 | `0x020CAC (= StatShade)` | ✓ | `0x05E062 (= StatShade)` | StatShade |
+| 747 | `0x020CB0 (= DspMatTable)` | ✓ | `0x0A545B (= DspMatTable)` | DspMatTable |
+| 748 | `0x020CB4 (= DspLsts)` | ✓ | `0x081670 (= DspLsts)` | DspLsts |
+| 749 | `0x020CB8 (= CloseEditBuf)` | ✓ | `0x0AC2CB (= CloseEditBuf)` | CloseEditBuf |
+| 750 | `0x020CBC (= ParseEditBuf)` | ✓ | `0x0AC8C5 (= ParseEditBuf)` | ParseEditBuf |
+| 751 | `0x020CC0 (= PutSM)` | ✓ | `0x0ACC4C (= PutSM)` | PutSM |
+| 752 | `0x020CC4 (= DspCurTbl)` | ✓ | `0x0B2A15 (= DspCurTbl)` | DspCurTbl |
+| 753 | `0x020CC8 (= DspGrTbl)` | ✓ | `0x0B2AA4 (= DspGrTbl)` | DspGrTbl |
+| 754 | `0x020CCC (= ZeroTemplate)` | ✓ | `0x0B2BC0 (= ZeroTemplate)` | ZeroTemplate |
+| 755 | `0x020CD0 (= SetTblRefs)` | ✓ | `0x0B37F9 (= SetTblRefs)` | SetTblRefs |
+| 756 | `0x020CD4 (= DispTblBot)` | ✓ | `0x0B3AE7 (= DispTblBot)` | DispTblBot |
+| 757 | `0x020CD8 (= DispTblTop)` | ✓ | `0x0B3C24 (= DispTblTop)` | DispTblTop |
+| 758 | `0x020CDC (= DispTblBody)` | ✓ | `0x0B40E7 (= DispTblBody)` | DispTblBody |
+| 759 | `0x020CE0 (= VPutBlank)` | ✓ | `0x0B4EE2 (= VPutBlank)` | VPutBlank |
+| 760 | `0x020CE4 (= TblTrace)` | ✓ | `0x0B52E1 (= TblTrace)` | TblTrace |
+| 761 | `0x020CE8 (= DispListNameY)` | ✓ | `0x0B19C7 (= DispListNameY)` | DispListNameY |
+| 762 | `0x020CEC (= CurNameLength)` | ✓ | `0x0B1E84 (= CurNameLength)` | CurNameLength |
+| 763 | `0x020CF0 (= NameToBuf)` | ✓ | `0x0B1F19 (= NameToBuf)` | NameToBuf |
+| 764 | `0x020CF4 (= JPromptCursor)` | ✓ | `0x05E8B6 (= JPromptCursor)` | JPromptCursor |
+| 765 | `0x020CF8 (= BufLeft)` | ✓ | `0x05E242 (= BufLeft)` | BufLeft |
+| 766 | `0x020CFC (= BufRight)` | ✓ | `0x05E27E (= BufRight)` | BufRight |
+| 767 | `0x020D00 (= BufInsert)` | ✓ | `0x05E2A0 (= BufInsert)` | BufInsert |
+| 768 | `0x020D04 (= BufQueueChar)` | ✓ | `0x05E2C0 (= BufQueueChar)` | BufQueueChar |
+| 769 | `0x020D08 (= BufReplace)` | ✓ | `0x05E307 (= BufReplace)` | BufReplace |
+| 770 | `0x020D0C (= BufDelete)` | ✓ | `0x05E367 (= BufDelete)` | BufDelete |
+| 771 | `0x020D10 (= BufPeek)` | ✓ | `0x05E37D (= BufPeek)` | BufPeek |
+| 772 | `0x020D14 (= BufPeek1)` | ✓ | `0x05E381 (= BufPeek1)` | BufPeek1 |
+| 773 | `0x020D18 (= BufPeek2)` | ✓ | `0x05E386 (= BufPeek2)` | BufPeek2 |
+| 774 | `0x020D1C (= BufPeek3)` | ✓ | `0x05E38B (= BufPeek3)` | BufPeek3 |
+| 775 | `0x020D20 (= BufToBtm)` | ✓ | `0x05E820 (= BufToBtm)` | BufToBtm |
+| 776 | `0x020D24 (= SetupEditEqu)` | ✓ | `0x05E39E (= SetupEditEqu)` | SetupEditEqu |
+| 777 | `0x020D28 (= BufToTop)` | ✓ | `0x05E3AE (= BufToTop)` | BufToTop |
+| 778 | `0x020D2C (= IsEditFull)` | ✓ | `0x05E3D6 (= IsEditFull)` | IsEditFull |
+| 779 | `0x020D30 (= IsEditEmpty)` | ✓ | `0x05E3E3 (= IsEditEmpty)` | IsEditEmpty |
+| 780 | `0x020D34 (= IsAtTop)` | ✓ | `0x05E3E8 (= IsAtTop)` | IsAtTop |
+| 781 | `0x020D38 (= IsAtBtm)` | ✓ | `0x05E3F5 (= IsAtBtm)` | IsAtBtm |
+| 782 | `0x020D3C (= BufClear)` | ✓ | `0x0972C3 (= BufClear)` | BufClear |
+| 783 | `0x020D40 (= JCursorFirst)` | ✓ | `0x05E402 (= JCursorFirst)` | JCursorFirst |
+| 784 | `0x020D44 (= JCursorLast)` | ✓ | `0x05E42A (= JCursorLast)` | JCursorLast |
+| 785 | `0x020D48 (= CursorLeft)` | ✓ | `0x05E448 (= CursorLeft)` | CursorLeft |
+| 786 | `0x020D4C (= CursorRight)` | ✓ | `0x05E490 (= CursorRight)` | CursorRight |
+| 787 | `0x020D50 (= CursorUp)` | ✓ | `0x05E522 (= CursorUp)` | CursorUp |
+| 788 | `0x020D54 (= CursorDown)` | ✓ | `0x05E580 (= CursorDown)` | CursorDown |
+| 789 | `0x020D58 (= CursorToOffset)` | ✓ | `0x05E60E (= CursorToOffset)` | CursorToOffset |
+| 790 | `0x020D5C (= InsDisp)` | ✓ | `0x05E630 (= InsDisp)` | InsDisp |
+| 791 | `0x020D60 (= FDispBOL1)` | ✓ | `0x05E6B1 (= FDispBOL1)` | FDispBOL1 |
+| 792 | `0x020D64 (= FDispBOL)` | ✓ | `0x05E6D3 (= FDispBOL)` | FDispBOL |
+| 793 | `0x020D68 (= DispEOW)` | ✓ | `0x05E787 (= DispEOW)` | DispEOW |
+| 794 | `0x020D6C (= DispHead)` | ✓ | `0x05E7CD (= DispHead)` | DispHead |
+| 795 | `0x020D70 (= DispTail)` | ✓ | `0x05E7D8 (= DispTail)` | DispTail |
+| 796 | `0x020D74 (= PutTokString)` | ✓ | `0x05E7E3 (= PutTokString)` | PutTokString |
+| 797 | `0x020D78 (= SetUpEditCmd)` | ✓ | `0x05E7F7 (= SetUpEditCmd)` | SetUpEditCmd |
+| 798 | `0x020D7C (= SetEmptyeditEqu)` | ✓ | `0x05E849 (= SetEmptyeditEqu)` | SetEmptyeditEqu |
+| 799 | `0x020D80 (= SetEmptyEditPtr)` | ✓ | `0x05E84D (= SetEmptyEditPtr)` | SetEmptyEditPtr |
+| 800 | `0x020D84 (= CloseEditEqu)` | ✓ | `0x05E872 (= CloseEditEqu)` | CloseEditEqu |
+| 801 | `0x020D88 (= GetPrevTok)` | ✓ | `0x05E8A7 (= GetPrevTok)` | GetPrevTok |
+| 802 | `0x020D8C (= GetKey)` | ✓ | `0x02FCB3 (= GetKey)` | GetKey |
+| 803 | `0x020D90 (= CanIndic)` | ✓ | `0x030157 (= CanIndic)` | CanIndic |
+| 804 | `0x020D94 (= DFMin)` | ✓ | `0x05D5D8 (= DFMin)` | DFMin |
+| 805 | `0x020D98 (= FormDisp)` | ✓ | `0x097AC8 (= FormDisp)` | FormDisp |
+| 806 | `0x020D9C (= FormMatrix)` | ✓ | `0x098320 (= FormMatrix)` | FormMatrix |
+| 807 | `0x020DA0 (= WScrollLeft)` | ✓ | `0x098342 (= WScrollLeft)` | WScrollLeft |
+| 808 | `0x020DA4 (= WScrollUp)` | ✓ | `0x098355 (= WScrollUp)` | WScrollUp |
+| 809 | `0x020DA8 (= WScrollDown)` | ✓ | `0x09836D (= WScrollDown)` | WScrollDown |
+| 810 | `0x020DAC (= WScrollRight)` | ✓ | `0x098383 (= WScrollRight)` | WScrollRight |
+| 811 | `0x020DB0 (= FormEReal)` | ✓ | `0x09878B (= FormEReal)` | FormEReal |
+| 812 | `0x020DB4 (= FormERealTok)` | ✓ | `0x0987A7 (= FormERealTok)` | FormERealTok |
+| 813 | `0x020DB8 (= FormDCplx)` | ✓ | `0x098B80 (= FormDCplx)` | FormDCplx |
+| 814 | `0x020DBC (= FormReal)` | ✓ | `0x098D7C (= FormReal)` | FormReal |
+| 815 | `0x020DC0 (= SetWinAbove)` | ✓ | `0x099174 (= SetWinAbove)` | SetWinAbove |
+| 816 | `0x020DC4 (= DisarmScroll)` | ✓ | `0x099211 (= DisarmScroll)` | DisarmScroll |
+| 817 | `0x020DC8 (= MinToEdit)` | ✓ | `0x09923A (= MinToEdit)` | MinToEdit |
+| 818 | `0x020DCC (= RclVarToEdit)` | ✓ | `0x09927F (= RclVarToEdit)` | RclVarToEdit |
+| 819 | `0x020DD0 (= RclVarToEditPtr)` | ✓ | `0x099283 (= RclVarToEditPtr)` | RclVarToEditPtr |
+| 820 | `0x020DD4 (= RclEntryToEdit)` | ✓ | `0x0992A0 (= RclEntryToEdit)` | RclEntryToEdit |
+| 821 | `0x020DD8 (= RclToQueue)` | ✓ | `0x0992C3 (= RclToQueue)` | RclToQueue |
+| 822 | `0x020DDC (= FormToTok)` | ✓ | `0x0B184C (= FormToTok)` | FormToTok |
+| 823 | `0x020DE0 (= DispInterval)` | ✓ | `0x099491 (= DispInterval)` | DispInterval |
+| 824 | `0x020DE4 (= DispLstName)` | ✓ | `0x0ACEF7 (= DispLstName)` | DispLstName |
+| 825 | `0x020DE8 (= DispSLstNameHL)` | ✓ | `0x0ACF43 (= DispSLstNameHL)` | DispSLstNameHL |
+| 826 | `0x020DEC (= EditEqu)` | ✓ | `0x060B8D (= EditEqu)` | EditEqu |
+| 827 | `0x020DF0 (= CloseEquField)` | ✓ | `0x060C23 (= CloseEquField)` | CloseEquField |
+| 828 | `0x020DF4 (= AutoSelect)` | ✓ | `0x060C39 (= AutoSelect)` | AutoSelect |
+| 829 | `0x020DF8 (= DispYEOS)` | ✓ | `0x060EF5 (= DispYEOS)` | DispYEOS |
+| 830 | `0x020DFC (= DispNumEOS)` | ✓ | `0x060F85 (= DispNumEOS)` | DispNumEOS |
+| 831 | `0x020E00 (= SetupDispEq)` | ✓ | `0x060FEA (= SetupDispEq)` | SetupDispEq |
+| 832 | `0x020E04 (= DispForward)` | ✓ | `0x061003 (= DispForward)` | DispForward |
+| 833 | `0x020E08 (= DispYPrompt2)` | ✓ | `0x06118A (= DispYPrompt2)` | DispYPrompt2 |
+| 834 | `0x020E0C (= StringWidth)` | ✓ | `0x0BD19F (= StringWidth)` | StringWidth |
+| 835 | `0x020E10 (= DispErrorScreen)` | ✓ | `0x062160 (= DispErrorScreen)` | DispErrorScreen |
+| 836 | `0x020E14 (= PopCX)` | ✓ | `0x063033 (= PopCX)` | PopCX |
+| 837 | `0x020E18 (= LoadNoEEntry)` | ✓ | `0x063051 (= LoadNoEEntry)` | LoadNoEEntry |
+| 838 | `0x020E1C (= SaveScreen)` | ✓ | `0x08A835 (= SaveScreen)` | SaveScreen |
+| 839 | `0x020E20 (= RetScreen)` | ✓ | `0x08A850 (= RetScreen)` | RetScreen |
+| 840 | `0x020E24 (= RetScreenErr)` | ✓ | `0x08A88E (= RetScreenErr)` | RetScreenErr |
+| 841 | `0x020E28 (= CheckSplitFlag)` | ✓ | `0x0800A0 (= CheckSplitFlag)` | CheckSplitFlag |
+| 842 | `0x020E2C (= SolveRedisp)` | ✓ | `0x08AAA4 (= SolveRedisp)` | SolveRedisp |
+| 843 | `0x020E30 (= SolveDisp)` | ✓ | `0x08AABB (= SolveDisp)` | SolveDisp |
+| 844 | `0x020E34 (= ItemName)` | ✓ | `0x08B2C6 (= ItemName)` | ItemName |
+| 845 | `0x020E38 (= SetNorm_Vals)` | ✓ | `0x08A98F (= SetNorm_Vals)` | SetNorm_Vals |
+| 846 | `0x020E3C (= SetYOffset)` | ✓ | `0x08A995 (= SetYOffset)` | SetYOffset |
+| 847 | `0x020E40 (= ConvKeyToTok)` | ✓ | `0x05C52C (= ConvKeyToTok)` | ConvKeyToTok |
+| 848 | `0x020E44 (= ConvFCKeyToTok)` | ✓ | `0x05C58D (= ConvFCKeyToTok)` | ConvFCKeyToTok |
+| 849 | `0x020E48 (= ConvFEKeyToTok)` | ✓ | `0x05C597 (= ConvFEKeyToTok)` | ConvFEKeyToTok |
+| 850 | `0x020E4C (= TokToKey)` | ✓ | `0x05C5B3 (= TokToKey)` | TokToKey |
+| 851 | `0x020E50 (= GetVarCmdUSB)` | ✓ | `0x03D69C (= GetVarCmdUSB)` | GetVarCmdUSB |
 | 852 | `0x020E54` | ✓ | `0x070228` | _(unnamed)_ |
-| 853 | `0x020E58` | ✓ | `0x03F1DB` | DeselectAllVars |
-| 854 | `0x020E5C` | ✓ | `0x03E8FB` | DelRes |
-| 855 | `0x020E60` | ✓ | `0x082EC4` | ConvLcToLr |
-| 856 | `0x020E64` | ✓ | `0x082F04` | RedimMat |
-| 857 | `0x020E68` | ✓ | `0x083112` | IncLstSize |
-| 858 | `0x020E6C` | ✓ | `0x08312C` | InsertList |
-| 859 | `0x020E70` | ✓ | `0x083173` | DelListEl |
-| 860 | `0x020E74` | ✓ | `0x0831A4` | EditProg |
-| 861 | `0x020E78` | ✓ | `0x08323B` | CloseProg |
-| 862 | `0x020E7C` | ✓ | `0x083268` | ClrGraphRef |
-| 863 | `0x020E80` | ✓ | `0x08327F` | FixTempCnt |
-| 864 | `0x020E84` | ✓ | `0x0832BE` | SaveData |
-| 865 | `0x020E88` | ✓ | `0x08333A` | RestoreData |
-| 866 | `0x020E8C` | ✓ | `0x083379` | FindAlphaUp |
-| 867 | `0x020E90` | ✓ | `0x08337C` | FindAlphaDn |
-| 868 | `0x020E94` | ✓ | `0x083482` | CmpSyms |
-| 869 | `0x020E98` | ✓ | `0x08359B` | CreateTemp |
-| 870 | `0x020E9C` | ✓ | `0x083623` | CleanAll |
-| 871 | `0x020EA0` | ✓ | `0x0836B7` | MoveToNextSym |
-| 872 | `0x020EA4` | ✓ | `0x0836D7` | ConvLrToLc |
-| 873 | `0x020EA8` | ✓ | `0x0A3526` | TblScreenDown |
-| 874 | `0x020EAC` | ✓ | `0x0A34B3` | TblScreenUp |
-| 875 | `0x020EB0` | ✓ | `0x0A3126` | ScreenScrollPixelsUp |
+| 853 | `0x020E58 (= DeselectAllVars)` | ✓ | `0x03F1DB (= DeselectAllVars)` | DeselectAllVars |
+| 854 | `0x020E5C (= DelRes)` | ✓ | `0x03E8FB (= DelRes)` | DelRes |
+| 855 | `0x020E60 (= ConvLcToLr)` | ✓ | `0x082EC4 (= ConvLcToLr)` | ConvLcToLr |
+| 856 | `0x020E64 (= RedimMat)` | ✓ | `0x082F04 (= RedimMat)` | RedimMat |
+| 857 | `0x020E68 (= IncLstSize)` | ✓ | `0x083112 (= IncLstSize)` | IncLstSize |
+| 858 | `0x020E6C (= InsertList)` | ✓ | `0x08312C (= InsertList)` | InsertList |
+| 859 | `0x020E70 (= DelListEl)` | ✓ | `0x083173 (= DelListEl)` | DelListEl |
+| 860 | `0x020E74 (= EditProg)` | ✓ | `0x0831A4 (= EditProg)` | EditProg |
+| 861 | `0x020E78 (= CloseProg)` | ✓ | `0x08323B (= CloseProg)` | CloseProg |
+| 862 | `0x020E7C (= ClrGraphRef)` | ✓ | `0x083268 (= ClrGraphRef)` | ClrGraphRef |
+| 863 | `0x020E80 (= FixTempCnt)` | ✓ | `0x08327F (= FixTempCnt)` | FixTempCnt |
+| 864 | `0x020E84 (= SaveData)` | ✓ | `0x0832BE (= SaveData)` | SaveData |
+| 865 | `0x020E88 (= RestoreData)` | ✓ | `0x08333A (= RestoreData)` | RestoreData |
+| 866 | `0x020E8C (= FindAlphaUp)` | ✓ | `0x083379 (= FindAlphaUp)` | FindAlphaUp |
+| 867 | `0x020E90 (= FindAlphaDn)` | ✓ | `0x08337C (= FindAlphaDn)` | FindAlphaDn |
+| 868 | `0x020E94 (= CmpSyms)` | ✓ | `0x083482 (= CmpSyms)` | CmpSyms |
+| 869 | `0x020E98 (= CreateTemp)` | ✓ | `0x08359B (= CreateTemp)` | CreateTemp |
+| 870 | `0x020E9C (= CleanAll)` | ✓ | `0x083623 (= CleanAll)` | CleanAll |
+| 871 | `0x020EA0 (= MoveToNextSym)` | ✓ | `0x0836B7 (= MoveToNextSym)` | MoveToNextSym |
+| 872 | `0x020EA4 (= ConvLrToLc)` | ✓ | `0x0836D7 (= ConvLrToLc)` | ConvLrToLc |
+| 873 | `0x020EA8 (= TblScreenDown)` | ✓ | `0x0A3526 (= TblScreenDown)` | TblScreenDown |
+| 874 | `0x020EAC (= TblScreenUp)` | ✓ | `0x0A34B3 (= TblScreenUp)` | TblScreenUp |
+| 875 | `0x020EB0 (= ScreenScrollPixelsUp)` | ✓ | `0x0A3126 (= ScreenScrollPixelsUp)` | ScreenScrollPixelsUp |
 | 876 | `0x020EB4` | ✓ | `0x0A3145` | _(unnamed)_ |
-| 877 | `0x020EB8` | ✓ | `0x09D06B` | ZIfRclHandler |
-| 878 | `0x020EBC` | ✓ | `0x09D086` | ZIfRclKApp |
+| 877 | `0x020EB8 (= ZIfRclHandler)` | ✓ | `0x09D06B (= ZIfRclHandler)` | ZIfRclHandler |
+| 878 | `0x020EBC (= ZIfRclKApp)` | ✓ | `0x09D086 (= ZIfRclKApp)` | ZIfRclKApp |
 | 879 | `0x020EC0` | ✓ | `0x09D362` | _(unnamed)_ |
 | 880 | `0x020EC4` | ✓ | `0x09D367` | _(unnamed)_ |
-| 881 | `0x020EC8` | ✓ | `0x09D446` | InitNamePrompt |
-| 882 | `0x020ECC` | ✓ | `0x09D446` | InitNamePrompt_ |
-| 883 | `0x020ED0` | ✓ | `0x09D50F` | CatalogChk |
-| 884 | `0x020ED4` | ✓ | `0x09D517` | ClrTR |
+| 881 | `0x020EC8 (= InitNamePrompt)` | ✓ | `0x09D446 (= InitNamePrompt)` | InitNamePrompt |
+| 882 | `0x020ECC (= InitNamePrompt_)` | ✓ | `0x09D446 (= InitNamePrompt)` | InitNamePrompt_ |
+| 883 | `0x020ED0 (= CatalogChk)` | ✓ | `0x09D50F (= CatalogChk)` | CatalogChk |
+| 884 | `0x020ED4 (= ClrTR)` | ✓ | `0x09D517 (= ClrTR)` | ClrTR |
 | 885 | `0x020ED8` | ✓ | `0x04E0E4` | _(unnamed)_ |
 | 886 | `0x020EDC` | ✓ | `0x04E958` | _(unnamed)_ |
 | 887 | `0x020EE0` | ✓ | `0x09D54D` | _(unnamed)_ |
 | 888 | `0x020EE4` | ✓ | `0x09DB67` | _(unnamed)_ |
-| 889 | `0x020EE8` | ✓ | `0x059657` | ErrNonReal_FPST_FPS1 |
-| 890 | `0x020EEC` | ✓ | `0x059659` | ErrNonReal |
-| 891 | `0x020EF0` | ✓ | `0x05ACF2` | WriteText |
+| 889 | `0x020EE8 (= ErrNonReal_FPST_FPS1)` | ✓ | `0x059657 (= ErrNonReal_FPST_FPS1)` | ErrNonReal_FPST_FPS1 |
+| 890 | `0x020EEC (= ErrNonReal)` | ✓ | `0x059659 (= ErrNonReal)` | ErrNonReal |
+| 891 | `0x020EF0 (= WriteText)` | ✓ | `0x05ACF2 (= WriteText)` | WriteText |
 | 892 | `0x020EF4` | ✓ | `0x0287EA` | _(unnamed)_ |
-| 893 | `0x020EF8` | ✓ | `0x09986C` | GraphPars |
-| 894 | `0x020EFC` | ✓ | `0x099874` | PlotPars |
-| 895 | `0x020F00` | ✓ | `0x099914` | ParseInp |
-| 896 | `0x020F04` | ✓ | `0x099925` | ParseOn |
-| 897 | `0x020F08` | ✓ | `0x099AA3` | ParseScan |
-| 898 | `0x020F0C` | ✓ | `0x099AAF` | GetParse |
-| 899 | `0x020F10` | ✓ | `0x099AF9` | SaveParse |
-| 900 | `0x020F14` | ✓ | `0x099B81` | InitPFlgs |
-| 901 | `0x020F18` | ✓ | `0x099D2F` | CkEndLineRR |
-| 902 | `0x020F1C` | ✓ | `0x099E72` | OP2Set60 |
-| 903 | `0x020F20` | ✓ | `0x09A39F` | GetStatPtr |
-| 904 | `0x020F24` | ✓ | `0x09A3A5` | CmpStatPtr |
-| 905 | `0x020F28` | ✓ | `0x09A3D0` | VarSysAdr |
-| 906 | `0x020F2C` | ✓ | `0x09A515` | StoSysTok |
-| 907 | `0x020F30` | ✓ | `0x09A546` | StoAns |
-| 908 | `0x020F34` | ✓ | `0x09A554` | StoTheta |
-| 909 | `0x020F38` | ✓ | `0x09A55E` | StoR |
-| 910 | `0x020F3C` | ✓ | `0x09A568` | StoY |
-| 911 | `0x020F40` | ✓ | `0x09A572` | StoN |
-| 912 | `0x020F44` | ✓ | `0x09A5A3` | StoT |
-| 913 | `0x020F48` | ✓ | `0x09A5AD` | StoX |
-| 914 | `0x020F4C` | ✓ | `0x09A5B5` | StoOther |
-| 915 | `0x020F50` | ✓ | `0x09AC5E` | RclAns |
-| 916 | `0x020F54` | ✓ | `0x09AC64` | RclY |
-| 917 | `0x020F58` | ✓ | `0x09AC6A` | RclN |
-| 918 | `0x020F5C` | ✓ | `0x09AC73` | RclX |
-| 919 | `0x020F60` | ✓ | `0x09AC77` | RclVarSym |
-| 920 | `0x020F64` | ✓ | `0x09AD2E` | RclsyStok |
-| 921 | `0x020F68` | ✓ | `0x09B276` | StMatel |
-| 922 | `0x020F6C` | ✓ | `0x09B280` | StLstvecel |
-| 923 | `0x020F70` | ✓ | `0x09BD45` | ConvOP1 |
-| 924 | `0x020F74` | ✓ | `0x09BFA3` | FindParseFormula |
-| 925 | `0x020F78` | ✓ | `0x09BFA7` | ParseFormula |
-| 926 | `0x020F7C` | ✓ | `0x099EB2` | StrngEnt1 |
-| 927 | `0x020F80` | ✓ | `0x099FE5` | Prgrdlp |
-| 928 | `0x020F84` | ✓ | `0x09A01D` | VarEnt |
-| 929 | `0x020F88` | ✓ | `0x099921` | ParseOnC |
-| 930 | `0x020F8C` | ✓ | `0x099925` | ParseOn_ |
-| 931 | `0x020F90` | ✓ | `0x099910` | ParseCmd |
-| 932 | `0x020F94` | ✓ | `0x09AC21` | StoType |
-| 933 | `0x020F98` | ✓ | `0x09AC3C` | CreatePair |
-| 934 | `0x020F9C` | ✓ | `0x09AFC9` | PushNum |
-| 935 | `0x020FA0` | ✓ | `0x09B9C4` | IncCurPCErrEnd |
-| 936 | `0x020FA4` | ✓ | `0x09B9C8` | ErrEnd |
-| 937 | `0x020FA8` | ✓ | `0x09B9D1` | CommaErrF |
-| 938 | `0x020FAC` | ✓ | `0x09B9D5` | CommaErr |
-| 939 | `0x020FB0` | ✓ | `0x09B9E2` | StEQArg2 |
-| 940 | `0x020FB4` | ✓ | `0x09B9E9` | StEQArg |
-| 941 | `0x020FB8` | ✓ | `0x09B9ED` | InpArg |
-| 942 | `0x020FBC` | ✓ | `0x09B9F3` | StEQArg3 |
-| 943 | `0x020FC0` | ✓ | `0x09BAC9` | NxtFetch |
-| 944 | `0x020FC4` | ✓ | `0x09BAFF` | CkFetchVar |
-| 945 | `0x020FC8` | ✓ | `0x09BB03` | FetchVarA |
-| 946 | `0x020FCC` | ✓ | `0x09BB34` | FetchVar |
-| 947 | `0x020FD0` | ✓ | `0x09BBA6` | CkEndLin |
-| 948 | `0x020FD4` | ✓ | `0x09BBAA` | CkEndExp |
-| 949 | `0x020FD8` | ✓ | `0x09BBB2` | CkParsEnd |
-| 950 | `0x020FDC` | ✓ | `0x09BBBA` | StoTypeArg |
-| 951 | `0x020FE0` | ✓ | `0x09BD2C` | ConvDim |
-| 952 | `0x020FE4` | ✓ | `0x09BD30` | ConvDim00 |
-| 953 | `0x020FE8` | ✓ | `0x0AD44B` | AheadEqual |
-| 954 | `0x020FEC` | ✓ | `0x0AD44F` | ParseHeads |
-| 955 | `0x020FF0` | ✓ | `0x0AD453` | ParseHead |
-| 956 | `0x020FF4` | ✓ | `0x09BE7F` | AnsName |
-| 957 | `0x020FF8` | ✓ | `0x09BE8E` | StoCmpReals |
-| 958 | `0x020FFC` | ✓ | `0x0A582A` | GetDEPtr |
-| 959 | `0x021000` | ✓ | `0x09BF16` | Push2BOper |
-| 960 | `0x021004` | ✓ | `0x09BEED` | Push3BOper |
-| 961 | `0x021008` | ✓ | `0x09BF29` | Pop2BOper |
-| 962 | `0x02100C` | ✓ | `0x09BF06` | Pop3BOper |
-| 963 | `0x021010` | ✓ | `0x09BF37` | PushOper |
-| 964 | `0x021014` | ✓ | `0x09BF50` | PopOper |
-| 965 | `0x021018` | ✓ | `0x082C50` | FindEUndef |
-| 966 | `0x02101C` | ✓ | `0x09BA00` | SttmpEQ |
-| 967 | `0x021020` | ✓ | `0x09BA59` | FindEOL |
-| 968 | `0x021024` | ✓ | `0x09BAAB` | BrkInc |
-| 969 | `0x021028` | ✓ | `0x09BAAF` | IncFetch |
-| 970 | `0x02102C` | ✓ | `0x09BAB8` | CurFetch |
-| 971 | `0x021030` | ✓ | `0x0BD1C4` | Random |
-| 972 | `0x021034` | ✓ | `0x0BD217` | StoRand |
-| 973 | `0x021038` | ✓ | `0x0BD2C2` | RandInit |
-| 974 | `0x02103C` | ✓ | `0x09DCAA` | ResetStacks |
-| 975 | `0x021040` | ✓ | `0x069EFD` | Factorial |
-| 976 | `0x021044` | ✓ | `0x07F043` | YEquOnOff |
-| 977 | `0x021048` | ✓ | `0x07F12E` | EquSelUnsel |
-| 978 | `0x02104C` | ✓ | `0x0A75E3` | ITSolver |
-| 979 | `0x021050` | ✓ | `0x0A75FD` | GRITSolver |
+| 893 | `0x020EF8 (= GraphPars)` | ✓ | `0x09986C (= GraphPars)` | GraphPars |
+| 894 | `0x020EFC (= PlotPars)` | ✓ | `0x099874 (= PlotPars)` | PlotPars |
+| 895 | `0x020F00 (= ParseInp)` | ✓ | `0x099914 (= ParseInp)` | ParseInp |
+| 896 | `0x020F04 (= ParseOn)` | ✓ | `0x099925 (= ParseOn)` | ParseOn |
+| 897 | `0x020F08 (= ParseScan)` | ✓ | `0x099AA3 (= ParseScan)` | ParseScan |
+| 898 | `0x020F0C (= GetParse)` | ✓ | `0x099AAF (= GetParse)` | GetParse |
+| 899 | `0x020F10 (= SaveParse)` | ✓ | `0x099AF9 (= SaveParse)` | SaveParse |
+| 900 | `0x020F14 (= InitPFlgs)` | ✓ | `0x099B81 (= InitPFlgs)` | InitPFlgs |
+| 901 | `0x020F18 (= CkEndLineRR)` | ✓ | `0x099D2F (= CkEndLineRR)` | CkEndLineRR |
+| 902 | `0x020F1C (= OP2Set60)` | ✓ | `0x099E72 (= OP2Set60)` | OP2Set60 |
+| 903 | `0x020F20 (= GetStatPtr)` | ✓ | `0x09A39F (= GetStatPtr)` | GetStatPtr |
+| 904 | `0x020F24 (= CmpStatPtr)` | ✓ | `0x09A3A5 (= CmpStatPtr)` | CmpStatPtr |
+| 905 | `0x020F28 (= VarSysAdr)` | ✓ | `0x09A3D0 (= VarSysAdr)` | VarSysAdr |
+| 906 | `0x020F2C (= StoSysTok)` | ✓ | `0x09A515 (= StoSysTok)` | StoSysTok |
+| 907 | `0x020F30 (= StoAns)` | ✓ | `0x09A546 (= StoAns)` | StoAns |
+| 908 | `0x020F34 (= StoTheta)` | ✓ | `0x09A554 (= StoTheta)` | StoTheta |
+| 909 | `0x020F38 (= StoR)` | ✓ | `0x09A55E (= StoR)` | StoR |
+| 910 | `0x020F3C (= StoY)` | ✓ | `0x09A568 (= StoY)` | StoY |
+| 911 | `0x020F40 (= StoN)` | ✓ | `0x09A572 (= StoN)` | StoN |
+| 912 | `0x020F44 (= StoT)` | ✓ | `0x09A5A3 (= StoT)` | StoT |
+| 913 | `0x020F48 (= StoX)` | ✓ | `0x09A5AD (= StoX)` | StoX |
+| 914 | `0x020F4C (= StoOther)` | ✓ | `0x09A5B5 (= StoOther)` | StoOther |
+| 915 | `0x020F50 (= RclAns)` | ✓ | `0x09AC5E (= RclAns)` | RclAns |
+| 916 | `0x020F54 (= RclY)` | ✓ | `0x09AC64 (= RclY)` | RclY |
+| 917 | `0x020F58 (= RclN)` | ✓ | `0x09AC6A (= RclN)` | RclN |
+| 918 | `0x020F5C (= RclX)` | ✓ | `0x09AC73 (= RclX)` | RclX |
+| 919 | `0x020F60 (= RclVarSym)` | ✓ | `0x09AC77 (= RclVarSym)` | RclVarSym |
+| 920 | `0x020F64 (= RclsyStok)` | ✓ | `0x09AD2E (= RclsyStok)` | RclsyStok |
+| 921 | `0x020F68 (= StMatel)` | ✓ | `0x09B276 (= StMatel)` | StMatel |
+| 922 | `0x020F6C (= StLstvecel)` | ✓ | `0x09B280 (= StLstvecel)` | StLstvecel |
+| 923 | `0x020F70 (= ConvOP1)` | ✓ | `0x09BD45 (= ConvOP1)` | ConvOP1 |
+| 924 | `0x020F74 (= FindParseFormula)` | ✓ | `0x09BFA3 (= FindParseFormula)` | FindParseFormula |
+| 925 | `0x020F78 (= ParseFormula)` | ✓ | `0x09BFA7 (= ParseFormula)` | ParseFormula |
+| 926 | `0x020F7C (= StrngEnt1)` | ✓ | `0x099EB2 (= StrngEnt1)` | StrngEnt1 |
+| 927 | `0x020F80 (= Prgrdlp)` | ✓ | `0x099FE5 (= Prgrdlp)` | Prgrdlp |
+| 928 | `0x020F84 (= VarEnt)` | ✓ | `0x09A01D (= VarEnt)` | VarEnt |
+| 929 | `0x020F88 (= ParseOnC)` | ✓ | `0x099921 (= ParseOnC)` | ParseOnC |
+| 930 | `0x020F8C (= ParseOn_)` | ✓ | `0x099925 (= ParseOn)` | ParseOn_ |
+| 931 | `0x020F90 (= ParseCmd)` | ✓ | `0x099910 (= ParseCmd)` | ParseCmd |
+| 932 | `0x020F94 (= StoType)` | ✓ | `0x09AC21 (= StoType)` | StoType |
+| 933 | `0x020F98 (= CreatePair)` | ✓ | `0x09AC3C (= CreatePair)` | CreatePair |
+| 934 | `0x020F9C (= PushNum)` | ✓ | `0x09AFC9 (= PushNum)` | PushNum |
+| 935 | `0x020FA0 (= IncCurPCErrEnd)` | ✓ | `0x09B9C4 (= IncCurPCErrEnd)` | IncCurPCErrEnd |
+| 936 | `0x020FA4 (= ErrEnd)` | ✓ | `0x09B9C8 (= ErrEnd)` | ErrEnd |
+| 937 | `0x020FA8 (= CommaErrF)` | ✓ | `0x09B9D1 (= CommaErrF)` | CommaErrF |
+| 938 | `0x020FAC (= CommaErr)` | ✓ | `0x09B9D5 (= CommaErr)` | CommaErr |
+| 939 | `0x020FB0 (= StEQArg2)` | ✓ | `0x09B9E2 (= StEQArg2)` | StEQArg2 |
+| 940 | `0x020FB4 (= StEQArg)` | ✓ | `0x09B9E9 (= StEQArg)` | StEQArg |
+| 941 | `0x020FB8 (= InpArg)` | ✓ | `0x09B9ED (= InpArg)` | InpArg |
+| 942 | `0x020FBC (= StEQArg3)` | ✓ | `0x09B9F3 (= StEQArg3)` | StEQArg3 |
+| 943 | `0x020FC0 (= NxtFetch)` | ✓ | `0x09BAC9 (= NxtFetch)` | NxtFetch |
+| 944 | `0x020FC4 (= CkFetchVar)` | ✓ | `0x09BAFF (= CkFetchVar)` | CkFetchVar |
+| 945 | `0x020FC8 (= FetchVarA)` | ✓ | `0x09BB03 (= FetchVarA)` | FetchVarA |
+| 946 | `0x020FCC (= FetchVar)` | ✓ | `0x09BB34 (= FetchVar)` | FetchVar |
+| 947 | `0x020FD0 (= CkEndLin)` | ✓ | `0x09BBA6 (= CkEndLin)` | CkEndLin |
+| 948 | `0x020FD4 (= CkEndExp)` | ✓ | `0x09BBAA (= CkEndExp)` | CkEndExp |
+| 949 | `0x020FD8 (= CkParsEnd)` | ✓ | `0x09BBB2 (= CkParsEnd)` | CkParsEnd |
+| 950 | `0x020FDC (= StoTypeArg)` | ✓ | `0x09BBBA (= StoTypeArg)` | StoTypeArg |
+| 951 | `0x020FE0 (= ConvDim)` | ✓ | `0x09BD2C (= ConvDim)` | ConvDim |
+| 952 | `0x020FE4 (= ConvDim00)` | ✓ | `0x09BD30 (= ConvDim00)` | ConvDim00 |
+| 953 | `0x020FE8 (= AheadEqual)` | ✓ | `0x0AD44B (= AheadEqual)` | AheadEqual |
+| 954 | `0x020FEC (= ParseHeads)` | ✓ | `0x0AD44F (= ParseHeads)` | ParseHeads |
+| 955 | `0x020FF0 (= ParseHead)` | ✓ | `0x0AD453 (= ParseHead)` | ParseHead |
+| 956 | `0x020FF4 (= AnsName)` | ✓ | `0x09BE7F (= AnsName)` | AnsName |
+| 957 | `0x020FF8 (= StoCmpReals)` | ✓ | `0x09BE8E (= StoCmpReals)` | StoCmpReals |
+| 958 | `0x020FFC (= GetDEPtr)` | ✓ | `0x0A582A (= GetDEPtr)` | GetDEPtr |
+| 959 | `0x021000 (= Push2BOper)` | ✓ | `0x09BF16 (= Push2BOper)` | Push2BOper |
+| 960 | `0x021004 (= Push3BOper)` | ✓ | `0x09BEED (= Push3BOper)` | Push3BOper |
+| 961 | `0x021008 (= Pop2BOper)` | ✓ | `0x09BF29 (= Pop2BOper)` | Pop2BOper |
+| 962 | `0x02100C (= Pop3BOper)` | ✓ | `0x09BF06 (= Pop3BOper)` | Pop3BOper |
+| 963 | `0x021010 (= PushOper)` | ✓ | `0x09BF37 (= PushOper)` | PushOper |
+| 964 | `0x021014 (= PopOper)` | ✓ | `0x09BF50 (= PopOper)` | PopOper |
+| 965 | `0x021018 (= FindEUndef)` | ✓ | `0x082C50 (= FindEUndef)` | FindEUndef |
+| 966 | `0x02101C (= SttmpEQ)` | ✓ | `0x09BA00 (= SttmpEQ)` | SttmpEQ |
+| 967 | `0x021020 (= FindEOL)` | ✓ | `0x09BA59 (= FindEOL)` | FindEOL |
+| 968 | `0x021024 (= BrkInc)` | ✓ | `0x09BAAB (= BrkInc)` | BrkInc |
+| 969 | `0x021028 (= IncFetch)` | ✓ | `0x09BAAF (= IncFetch)` | IncFetch |
+| 970 | `0x02102C (= CurFetch)` | ✓ | `0x09BAB8 (= CurFetch)` | CurFetch |
+| 971 | `0x021030 (= Random)` | ✓ | `0x0BD1C4 (= Random)` | Random |
+| 972 | `0x021034 (= StoRand)` | ✓ | `0x0BD217 (= StoRand)` | StoRand |
+| 973 | `0x021038 (= RandInit)` | ✓ | `0x0BD2C2 (= RandInit)` | RandInit |
+| 974 | `0x02103C (= ResetStacks)` | ✓ | `0x09DCAA (= ResetStacks)` | ResetStacks |
+| 975 | `0x021040 (= Factorial)` | ✓ | `0x069EFD (= Factorial)` | Factorial |
+| 976 | `0x021044 (= YEquOnOff)` | ✓ | `0x07F043 (= YEquOnOff)` | YEquOnOff |
+| 977 | `0x021048 (= EquSelUnsel)` | ✓ | `0x07F12E (= EquSelUnsel)` | EquSelUnsel |
+| 978 | `0x02104C (= ITSolver)` | ✓ | `0x0A75E3 (= ITSolver)` | ITSolver |
+| 979 | `0x021050 (= GRITSolver)` | ✓ | `0x0A75FD (= GRITSolver)` | GRITSolver |

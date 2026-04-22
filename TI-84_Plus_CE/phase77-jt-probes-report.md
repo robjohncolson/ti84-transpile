@@ -1,6 +1,6 @@
 # Phase 77 JT Probes — Token Helper Candidates
 
-Targets: 0x028f02 (full test), 0x0a2a68/b72/32af/29ec (JT slot targets).
+Targets: 0x028f02 (full test), 0x0a2a68 (= GetTokString)/b72/32af/29ec (JT slot targets).
 
 ## Probe Results
 
@@ -9,15 +9,15 @@ Targets: 0x028f02 (full test), 0x0a2a68/b72/32af/29ec (JT slot targets).
 | `028f02_radian_known` | 0x028f02 | known TEST RADIAN | 252 | 180 | 72 | r18-35 c180-193 | 860 | missing_block |
 | `028f02_degree_known` | 0x028f02 | known TEST DEGREE | 252 | 172 | 80 | r18-35 c180-193 | 859 | missing_block |
 | `028f02_token_normal` | 0x028f02 | token Normal via 028f02 | 252 | 180 | 72 | r18-35 c180-193 | 1317 | missing_block |
-| `0a2a68_de_4f` | 0x0a2a68 | DE=Normal | 0 | 0 | 0 | none | 15 | missing_block |
-| `0a2a68_de_52` | 0x0a2a68 | DE=Float | 0 | 0 | 0 | none | 15 | missing_block |
-| `0a2a68_de_4d` | 0x0a2a68 | DE=Radian | 0 | 0 | 0 | none | 15 | missing_block |
-| `0a2a68_de_5e` | 0x0a2a68 | DE=ZPrevious (>0x5d) | 0 | 0 | 0 | none | 15 | missing_block |
-| `0a2b72_de_4f` | 0x0a2b72 | DE=Normal | 5692 | 188 | 5504 | r0-34 c0-319 | 3868 | missing_block |
-| `0a2b72_de_52` | 0x0a2b72 | DE=Float | 5692 | 172 | 5520 | r0-34 c0-319 | 3867 | missing_block |
-| `0a32af_noseed` | 0x0a32af | no seed | 0 | 0 | 0 | none | 38 | missing_block |
-| `0a32af_seeded` | 0x0a32af | 0xd005f9=Normal, fa=Float | 0 | 0 | 0 | none | 25 | missing_block |
-| `0a29ec_noseed` | 0x0a29ec | no seed | 4092 | 3408 | 684 | r17-34 c0-229 | 15000 | max_steps |
+| `0a2a68_de_4f` | 0x0a2a68 (= GetTokString) | DE=Normal | 0 | 0 | 0 | none | 15 | missing_block |
+| `0a2a68_de_52` | 0x0a2a68 (= GetTokString) | DE=Float | 0 | 0 | 0 | none | 15 | missing_block |
+| `0a2a68_de_4d` | 0x0a2a68 (= GetTokString) | DE=Radian | 0 | 0 | 0 | none | 15 | missing_block |
+| `0a2a68_de_5e` | 0x0a2a68 (= GetTokString) | DE=ZPrevious (>0x5d) | 0 | 0 | 0 | none | 15 | missing_block |
+| `0a2b72_de_4f` | 0x0a2b72 (= PutBPat) | DE=Normal | 5692 | 188 | 5504 | r0-34 c0-319 | 3868 | missing_block |
+| `0a2b72_de_52` | 0x0a2b72 (= PutBPat) | DE=Float | 5692 | 172 | 5520 | r0-34 c0-319 | 3867 | missing_block |
+| `0a32af_noseed` | 0x0a32af (= SetVarName) | no seed | 0 | 0 | 0 | none | 38 | missing_block |
+| `0a32af_seeded` | 0x0a32af (= SetVarName) | 0xd005f9=Normal, fa=Float | 0 | 0 | 0 | none | 25 | missing_block |
+| `0a29ec_noseed` | 0x0a29ec (= RStrCurRow) | no seed | 4092 | 3408 | 684 | r17-34 c0-229 | 15000 | max_steps |
 
 ## First Blocks
 

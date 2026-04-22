@@ -6,7 +6,7 @@
 
 ## Run Summary
 
-- `os_init`: entry=0x08c331 steps=727 term=missing_block lastPc=0xffffff interrupts=2
+- `os_init`: entry=0x08c331 (= CoorMon) steps=727 term=missing_block lastPc=0xffffff interrupts=2
 - `post_init`: entry=0x0802b2 steps=1 term=missing_block lastPc=0xffffff interrupts=0
 - `event_loop`: entry=0x0019be steps=6 term=missing_block lastPc=0xffffff interrupts=0
 
@@ -60,7 +60,7 @@ watchRange=0xd020a6..0xd020bf len=26
 timerInterrupt=true
 coldBoot: entry=0x000000 steps=3062 term=halt lastPc=0x0019b5
 buffer before os_init: 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
-run os_init: entry=0x08c331 mode=adl maxSteps=500000
+run os_init: entry=0x08c331 (= CoorMon) mode=adl maxSteps=500000
 result os_init: steps=727 term=missing_block lastPc=0xffffff interrupts=2
 run post_init: entry=0x0802b2 mode=adl maxSteps=100
 result post_init: steps=1 term=missing_block lastPc=0xffffff interrupts=0

@@ -27,8 +27,8 @@ name to refer to `statsValid` (bit 6 of statFlags). The fresh-OS
 
 ## JT Slot → Impl Mapping
 
-- JT slot: `0x0204f0`
-- Impl:    `0x08019f` (from phase25h-a-jump-table.json)
+- JT slot: `0x0204f0 (= Rcl_StatVar)`
+- Impl:    `0x08019f (= Rcl_StatVar)` (from phase25h-a-jump-table.json)
 
 ## Pre-Call State
 
@@ -41,15 +41,15 @@ name to refer to `statsValid` (bit 6 of statFlags). The fresh-OS
 
 ## Call
 
-- Entry:           `0x0204f0`
+- Entry:           `0x0204f0 (= Rcl_StatVar)`
 - Fake return PC:  `0x7ffffe`
 - Budget:          200000 instructions
 - Instructions executed: 0 (0 when the executor exited via the onBlock throw short-circuit; see block count below)
 - Blocks dispatched: 56
 - Final PC:        `0x7ffffe`
 - Reached fake return: true
-- Recent PCs (last 10): 0x07c6b8 0x06868a 0x07c6bd 0x07f7a4 0x07f7ad 0x07f7b0 0x07f7b7 0x07f7b4 0x07c6c1 0x07c6c5
-- DispErrorScreen (0x062160) hit: false
+- Recent PCs (last 10): 0x07c6b8 0x06868a 0x07c6bd 0x07f7a4 (= CkOP1Cplx) 0x07f7ad 0x07f7b0 0x07f7b7 0x07f7b4 0x07c6c1 0x07c6c5
+- DispErrorScreen (0x062160 (= DispErrorScreen)) hit: false
 
 ## Post-Call State
 
@@ -71,11 +71,11 @@ name to refer to `statsValid` (bit 6 of statFlags). The fresh-OS
 
 **Initial hypothesis (ERR:STAT contract violation) is INCORRECT.** Setup review confirmed: tMean=0x21, statFlags=0xD00089, statsValid=bit 6, IY=0xD00080 at call entry — all verified against `ti84pceg.inc`. Probe setup is trustworthy.
 
-**Actual finding: Rcl_StatVar at 0x08019F is a low-level primitive, not a self-guarded public API.** Disassembly of the impl is three instructions:
+**Actual finding: Rcl_StatVar at 0x08019F (= Rcl_StatVar) is a low-level primitive, not a self-guarded public API.** Disassembly of the impl is three instructions:
 
 ```
-0x08019F  CD A5 A3 09    CALL 0x09A3A5    ; convert token in A → stat-var slot index
-0x0801A3  CD FB F9 07    CALL 0x07F9FB    ; copy 9 bytes from (table_base + index*9) into OP1
+0x08019F (= Rcl_StatVar)  CD A5 A3 09    CALL 0x09A3A5 (= CmpStatPtr)    ; convert token in A → stat-var slot index
+0x0801A3  CD FB F9 07    CALL 0x07F9FB (= Mov9ToOP1)    ; copy 9 bytes from (table_base + index*9) into OP1
 0x0801A7  C9             RET
 ```
 
@@ -83,7 +83,7 @@ There is **no `bit statsValid,(iy+statFlags)` guard at the JT slot.** The classi
 
 **Reframed conclusion**: our transpile faithfully lifts the JT-slot primitive. The observed "no guard" is correct CE behavior at this abstraction level. The OP1 mutation to 0xFFx9 reflects reading uninitialized stat-var table bytes (the table at `table_base + 0x21 * 9` is flash-era 0xFF-fill since no stat command has ever been run). A real calc would behave identically if called the same way.
 
-**What this unlocks**: calling JT slots directly is a valid probe primitive. For positive-path verification in a follow-up phase, we'd either (a) seed the stat-var table with known reals + set statsValid, then call the slot, OR (b) call through the higher-level parser entry (`ParseInp` at 0x099914) to exercise the full guard-then-dispatch path.
+**What this unlocks**: calling JT slots directly is a valid probe primitive. For positive-path verification in a follow-up phase, we'd either (a) seed the stat-var table with known reals + set statsValid, then call the slot, OR (b) call through the higher-level parser entry (`ParseInp` at 0x099914 (= ParseInp)) to exercise the full guard-then-dispatch path.
 
 ## Assertion results, revised
 
@@ -95,4 +95,4 @@ There is **no `bit statsValid,(iy+statFlags)` guard at the JT slot.** The classi
 - before: `cc cc cc cc cc cc cc cc cc`
 - after:  `ff ff ff ff ff ff ff ff ff`
 
-Confirms that `CALL 0x07F9FB` ran and wrote 9 bytes to OP1, reading from the uninitialized stat-var table.
+Confirms that `CALL 0x07F9FB (= Mov9ToOP1)` ran and wrote 9 bytes to OP1, reading from the uninitialized stat-var table.

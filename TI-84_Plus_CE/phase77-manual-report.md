@@ -144,29 +144,29 @@ Found 11 blocks with `call 0x028f02`.
 
 | slot | slotOffset | target | block@target? |
 |------|------------|--------|---------------|
-| 591 | 0x06ed | 0x0a2032 | yes |
-| 595 | 0x06f9 | 0x0a215b | yes |
-| 599 | 0x0705 | 0x0a21bb | yes |
-| 603 | 0x0711 | 0x0a21f2 | yes |
-| 607 | 0x071d | 0x0a22b1 | yes |
-| 611 | 0x0729 | 0x0a237e | yes |
-| 615 | 0x0735 | 0x0a26ee | yes |
-| 619 | 0x0741 | 0x0a27dd | yes |
-| 623 | 0x074d | 0x0a2802 | yes |
-| 627 | 0x0759 | 0x0a29ec | yes |
-| 631 | 0x0765 | 0x0a2a3e | yes |
-| 635 | 0x0771 | 0x0a2a68 | yes |
-| 639 | 0x077d | 0x0a2b72 | yes |
-| 643 | 0x0789 | 0x0a2ca6 | yes |
-| 647 | 0x0795 | 0x0a32af | yes |
-| 851 | 0x09f9 | 0x0a5424 | yes |
+| 591 | 0x06ed | 0x0a2032 (= NewLine) | yes |
+| 595 | 0x06f9 | 0x0a215b (= ShrinkWindow) | yes |
+| 599 | 0x0705 | 0x0a21bb (= ClrLCDFull) | yes |
+| 603 | 0x0711 | 0x0a21f2 (= ClrScrn) | yes |
+| 607 | 0x071d | 0x0a22b1 (= EraseEOL) | yes |
+| 611 | 0x0729 | 0x0a237e (= GetCurloc) | yes |
+| 615 | 0x0735 | 0x0a26ee (= VPutSN) | yes |
+| 619 | 0x0741 | 0x0a27dd (= RunIndicOn) | yes |
+| 623 | 0x074d | 0x0a2802 (= SaveShadow) | yes |
+| 627 | 0x0759 | 0x0a29ec (= RStrCurRow) | yes |
+| 631 | 0x0765 | 0x0a2a3e (= GetKeypress) | yes |
+| 635 | 0x0771 | 0x0a2a68 (= GetTokString) | yes |
+| 639 | 0x077d | 0x0a2b72 (= PutBPat) | yes |
+| 643 | 0x0789 | 0x0a2ca6 (= FDispEOL) | yes |
+| 647 | 0x0795 | 0x0a32af (= SetVarName) | yes |
+| 851 | 0x09f9 | 0x0a5424 (= Load_Sfont) | yes |
 
 ### Mode-region slot target dasm (first 10 insts each)
 
 
-**Slot 591 → 0x0a2032**
+**Slot 591 → 0x0a2032 (= NewLine)**
 ```
-  0x0a2032  push af
+  0x0a2032 (= NewLine)  push af
   0x0a2033  push bc
   0x0a2034  push de
   0x0a2035  push hl
@@ -174,56 +174,56 @@ Found 11 blocks with `call 0x028f02`.
   0x0a2038  call 0x0a2013
 ```
 
-**Slot 595 → 0x0a215b**
+**Slot 595 → 0x0a215b (= ShrinkWindow)**
 ```
-  0x0a215b  ld a, (0xd00595)
+  0x0a215b (= ShrinkWindow)  ld a, (0xd00595)
   0x0a215f  add a, b
   0x0a2160  sub 0x09
   0x0a2162  cp 0x01
   0x0a2164  ret m
   0x0a2165  ld b, a
   0x0a2166  ld hl, 0xd00595
-  0x0a216a  call 0x0a2106
+  0x0a216a  call 0x0a2106 (= ScrollUp)
 ```
 
-**Slot 599 → 0x0a21bb**
+**Slot 599 → 0x0a21bb (= ClrLCDFull)**
 ```
-  0x0a21bb  ld bc, 0x001eef
+  0x0a21bb (= ClrLCDFull)  ld bc, 0x001eef
   0x0a21bf  jr 0x0a21d7
 ```
 
-**Slot 603 → 0x0a21f2**
+**Slot 603 → 0x0a21f2 (= ClrScrn)**
 ```
-  0x0a21f2  call 0x0a21c1
+  0x0a21f2 (= ClrScrn)  call 0x0a21c1 (= ClrLCD)
 ```
 
-**Slot 607 → 0x0a22b1**
+**Slot 607 → 0x0a22b1 (= EraseEOL)**
 ```
-  0x0a22b1  push af
+  0x0a22b1 (= EraseEOL)  push af
   0x0a22b2  bit 1, (iy+42)
   0x0a22b6  jr z, 0x0a22be
   0x0a22b8  pop af
   0x0a22b9  call 0x025c33
 ```
 
-**Slot 611 → 0x0a237e**
+**Slot 611 → 0x0a237e (= GetCurloc)**
 ```
-  0x0a237e  push af
+  0x0a237e (= GetCurloc)  push af
   0x0a237f  push bc
   0x0a2380  push de
   0x0a2381  ld a, (0xd00595)
   0x0a2385  call 0x0a2a37
 ```
 
-**Slot 615 → 0x0a26ee**
+**Slot 615 → 0x0a26ee (= VPutSN)**
 ```
-  0x0a26ee  push af
+  0x0a26ee (= VPutSN)  push af
   0x0a26ef  call 0x0a26f5
 ```
 
-**Slot 619 → 0x0a27dd**
+**Slot 619 → 0x0a27dd (= RunIndicOn)**
 ```
-  0x0a27dd  push af
+  0x0a27dd (= RunIndicOn)  push af
   0x0a27de  push bc
   0x0a27df  push de
   0x0a27e0  push hl
@@ -236,9 +236,9 @@ Found 11 blocks with `call 0x028f02`.
   0x0a27f5  call 0x03d1c3
 ```
 
-**Slot 623 → 0x0a2802**
+**Slot 623 → 0x0a2802 (= SaveShadow)**
 ```
-  0x0a2802  ld hl, (0x000595)
+  0x0a2802 (= SaveShadow)  ld hl, (0x000595)
   0x0a2806  ld (0x0007c4), hl
   0x0a280a  ld a, (0xd02504)
   0x0a280e  ld (0xd007c7), a
@@ -252,22 +252,22 @@ Found 11 blocks with `call 0x028f02`.
   0x0a282c  ret
 ```
 
-**Slot 627 → 0x0a29ec**
+**Slot 627 → 0x0a29ec (= RStrCurRow)**
 ```
-  0x0a29ec  ld hl, (0x0007c4)
+  0x0a29ec (= RStrCurRow)  ld hl, (0x0007c4)
   0x0a29f0  ld h, 0x00
   0x0a29f2  ld (0x000595), hl
-  0x0a29f6  call 0x0a237e
+  0x0a29f6  call 0x0a237e (= GetCurloc)
 ```
 
-**Slot 631 → 0x0a2a3e**
+**Slot 631 → 0x0a2a3e (= GetKeypress)**
 ```
-  0x0a2a3e  call 0x0a2a68
+  0x0a2a3e (= GetKeypress)  call 0x0a2a68 (= GetTokString)
 ```
 
-**Slot 635 → 0x0a2a68**
+**Slot 635 → 0x0a2a68 (= GetTokString)**
 ```
-  0x0a2a68  ld hl, 0x000000
+  0x0a2a68 (= GetTokString)  ld hl, 0x000000
   0x0a2a6c  ld l, e
   0x0a2a6d  ld a, d
   0x0a2a6e  or a
@@ -281,28 +281,28 @@ Found 11 blocks with `call 0x028f02`.
   0x0a2a87  cp 0x60
 ```
 
-**Slot 639 → 0x0a2b72**
+**Slot 639 → 0x0a2b72 (= PutBPat)**
 ```
-  0x0a2b72  xor a
+  0x0a2b72 (= PutBPat)  xor a
   0x0a2b73  push bc
   0x0a2b74  push de
   0x0a2b75  push hl
   0x0a2b76  push af
   0x0a2b77  ld b, 0x00
   0x0a2b79  push bc
-  0x0a2b7a  call 0x0a2a68
+  0x0a2b7a  call 0x0a2a68 (= GetTokString)
 ```
 
-**Slot 643 → 0x0a2ca6**
+**Slot 643 → 0x0a2ca6 (= FDispEOL)**
 ```
-  0x0a2ca6  bit 1, (iy+42)
+  0x0a2ca6 (= FDispEOL)  bit 1, (iy+42)
   0x0a2caa  jr z, 0x0a2cb1
   0x0a2cac  call 0x025dea
 ```
 
-**Slot 647 → 0x0a32af**
+**Slot 647 → 0x0a32af (= SetVarName)**
 ```
-  0x0a32af  ld a, (0xd005f9)
+  0x0a32af (= SetVarName)  ld a, (0xd005f9)
   0x0a32b3  ld d, 0x00
   0x0a32b5  cp 0x5c
   0x0a32b7  jr c, 0x0a32dd
@@ -316,21 +316,21 @@ Found 11 blocks with `call 0x028f02`.
   0x0a32ca  ld de, 0xd00879
 ```
 
-**Slot 851 → 0x0a5424**
+**Slot 851 → 0x0a5424 (= Load_Sfont)**
 ```
-  0x0a5424  push bc
+  0x0a5424 (= Load_Sfont)  push bc
   0x0a5425  bit 1, (iy+53)
   0x0a5429  jr z, 0x0a5439
   0x0a542b  ld b, a
   0x0a542c  ld a, 0x75
-  0x0a542e  call 0x02398e
+  0x0a542e  call 0x02398e (= CallLocalizeHook)
 ```
 
 ## Section 4 — Walker candidate scan
 
 Total blocks with `call 0x0059c6`: **13**
 
-Total blocks with `call 0x0a1cac`: **118**
+Total blocks with `call 0x0a1cac (= PutS)`: **118**
 
 Found 7 clusters total, 5 with 2+ print-call blocks.
 

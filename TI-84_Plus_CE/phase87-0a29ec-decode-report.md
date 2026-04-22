@@ -1,4 +1,4 @@
-# Phase 87 — 0x0a29ec Text Decode (slot 627)
+# Phase 87 — 0x0a29ec (= RStrCurRow) Text Decode (slot 627)
 
 ## Summary
 

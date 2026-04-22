@@ -13,9 +13,9 @@ The `rst 0x28` handler at address 0x000028 is minimal:
 ; falls through to 0x00002b
 ```
 
-Block at 0x00002b then does `jp 0x02011c`, which chains:
-- 0x02011c → jp 0x04ab69
-- 0x04ab69 → jp 0x0003ac
+Block at 0x00002b then does `jp 0x02011c (= Rst28Handler)`, which chains:
+- 0x02011c (= Rst28Handler) → jp 0x04ab69 (= Rst28Handler)
+- 0x04ab69 (= Rst28Handler) → jp 0x0003ac
 - 0x0003ac → jp 0x0019b5 (near the OS event loop at 0x19BE)
 - 0x0019b5 → `di` then `halt`
 
@@ -83,7 +83,7 @@ Our dynamic test started at 0x00ADB9 but the FP workspace was empty/zero, causin
 
 ## Conclusions
 
-1. **rst 0x28 is an EXIT, not an entry.** It terminates FP operations and returns to the OS event loop via the chain 0x28 → 0x2B → 0x02011C → 0x04AB69 → 0x03AC → 0x19B5.
+1. **rst 0x28 is an EXIT, not an entry.** It terminates FP operations and returns to the OS event loop via the chain 0x28 → 0x2B → 0x02011C (= Rst28Handler) → 0x04AB69 (= Rst28Handler) → 0x03AC → 0x19B5.
 
 2. **The 0xAD–0xB6 region is a self-contained FP engine.** All 2019 internal references are within the region. Only 5 external callers exist (at 0x00156x and 0x00161D), all targeting 0x00B69E/0x00B688 (FP normalize/cleanup).
 

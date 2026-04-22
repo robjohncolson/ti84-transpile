@@ -40,4 +40,4 @@
 
 ## Scan findings
 
-No scan findings — 0x0a29ec char output did not change from any single byte modification.
+No scan findings — 0x0a29ec (= RStrCurRow) char output did not change from any single byte modification.

@@ -1,6 +1,6 @@
 # Phase 25I — Sin Probe
 
-**Goal**: Verify that calling Sin at `0x07E57B` with OP1=pi/6 produces OP1=0.5. Non-identity input — genuinely exercises the transcendental engine.
+**Goal**: Verify that calling Sin at `0x07E57B (= Sin)` with OP1=pi/6 produces OP1=0.5. Non-identity input — genuinely exercises the transcendental engine.
 
 **Setup**: Full OS cold-boot + postInitState (same sequence as probe-phase25h-b). `cpu.madl=1` forced before `cpu.push(FAKE_RET)`. OP1 seeded via `writeReal(Math.PI/6)`. Execution stepped until PC equals FAKE_RET `0x7ffffe` or 200000 instructions exhausted. Timer IRQ disabled via `createPeripheralBus({ timerInterrupt: false })`. **PASS requires both** returnHit AND value within tolerance — fixes prior false-positive.
 

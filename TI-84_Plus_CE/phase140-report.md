@@ -5,7 +5,7 @@ Generated from static ROM analysis of [`ROM.rom`](./ROM.rom), the new probe [`pr
 ## Summary
 
 - Direct `FD CB 14 xx` opcode usage is spread across most bits in the byte, with bit 0 and bit 5 slightly ahead of bit 3 in raw opcode count.
-- That does **not** contradict Phase 137: bit 3 testing is centralized through `CALL 0x0800A0`, so the 111 bit-3 test sites do not appear as inline `BIT 3,(IY+0x14)` opcodes.
+- That does **not** contradict Phase 137: bit 3 testing is centralized through `CALL 0x0800A0 (= CheckSplitFlag)`, so the 111 bit-3 test sites do not appear as inline `BIT 3,(IY+0x14)` opcodes.
 - The TI-84 Plus CE include-file naming does **not** support the `textFlags @ 0x14` hypothesis. On the CE, `IY+0x14` is `sGrFlags`, and bit 3 is `grfSplitOverride`.
 - The older `textEraseBelow` / `textScrolled` names belong to classic `textFlags` at `IY+0x05`, not CE byte `IY+0x14`.
 
@@ -34,7 +34,7 @@ The probe scans the ROM for the exact memory-only eZ80/Z80 indexed-bit forms:
 
 - Every bit in this byte is used at least once except `BIT 7,(IY+0x14)`, which does not appear directly in the ROM.
 - The heaviest raw direct usage is bit 0 (`68`) and bit 5 (`65`), followed by bit 1 (`43`) and bit 3 (`40`).
-- Bit 3 has only **one** direct `BIT` opcode because the only raw `BIT 3,(IY+0x14)` instruction is the shared helper at `0x0800A0`.
+- Bit 3 has only **one** direct `BIT` opcode because the only raw `BIT 3,(IY+0x14)` instruction is the shared helper at `0x0800A0 (= CheckSplitFlag)`.
 - Bit 3 has `22` direct `RES` sites, but one of those is the shared clear helper at `0x0800C2`, leaving `21` inline clears. That matches Phase 137.
 
 ## 2. TI-OS Documentation Cross-Reference
@@ -84,7 +84,7 @@ So the older text-related names are real, but they belong to `IY+0x05`, not `IY+
 
 Phase 137 already established:
 
-- `CALL 0x0800A0` = `111` callers
+- `CALL 0x0800A0 (= CheckSplitFlag)` = `111` callers
 - `CALL 0x0800C2` = `3` callers
 
 Those helpers matter because they hide much of bit 3's usage from a raw `FD CB 14 xx` scan.

@@ -1,8 +1,8 @@
-# Phase 64: Novel 0x0a1cac Caller Probes
+# Phase 64: Novel 0x0a1cac (= PutS) Caller Probes
 
 ## Summary
 
-- Probed 7 high-value caller families from the Phase 63 0x0a1cac inventory.
+- Probed 7 high-value caller families from the Phase 63 0x0a1cac (= PutS) inventory.
 - Captured 21 total probe variants across direct anchors, RET backscans, lifted containing blocks, and immediate preludes.
 - 15 probe variant(s) wrote to VRAM.
 - 7 family best-result(s) crossed the Phase 64 browser-shell button threshold (`vramWrites > 200`).
@@ -48,8 +48,8 @@
 ## First 10 Blocks For Top 3 Rankers
 
 - flash_test anchor entry=0x046272: 0x046276, 0x046d18, 0x046d25, 0x046d34, 0x046d37, 0x03d202, 0x04c980, 0x04c986, 0x03d21a, 0x03d21e
-- solver_prompt prelude_call-return entry=0x06affe: 0x06affe, 0x02398e, 0x025758, 0x02399a, 0x02399f, 0x06b004, 0x0a1cac, 0x0a1cb9, 0x0a1b5b, 0x0a1b77
-- os_compat prelude_call-return entry=0x0baa15: 0x0baa15, 0x080244, 0x02398e, 0x025758, 0x02399a, 0x02399f, 0x08024c, 0x0baa1f, 0x0a1cac, 0x0a1cb9
+- solver_prompt prelude_call-return entry=0x06affe: 0x06affe, 0x02398e (= CallLocalizeHook), 0x025758, 0x02399a, 0x02399f, 0x06b004, 0x0a1cac (= PutS), 0x0a1cb9, 0x0a1b5b (= PutC), 0x0a1b77
+- os_compat prelude_call-return entry=0x0baa15: 0x0baa15, 0x080244, 0x02398e (= CallLocalizeHook), 0x025758, 0x02399a, 0x02399f, 0x08024c, 0x0baa1f, 0x0a1cac (= PutS), 0x0a1cb9
 
 ## First Rendered VRAM Row Hex Dumps
 

@@ -4,32 +4,32 @@
 
 | addr | exits | dasm |
 |------|-------|------|
-| 0x09c000 | call:0x082961, call-return:0x09c004 | `call 0x082961` |
-| 0x09c004 | call:0x082961, call-return:0x09c008 | `call 0x082961` |
-| 0x09c008 | call:0x07f968, call-return:0x09c00c | `call 0x07f968` |
-| 0x09c00c | call:0x09a5b5, call-return:0x09c010 | `call 0x09a5b5` |
-| 0x09c010 | call:0x07f8fa, call-return:0x09c014 | `call 0x07f8fa` |
-| 0x09c014 | call:0x082902, call-return:0x09c01c | `res 3, (iy+26) ; call 0x082902` |
+| 0x09c000 | call:0x082961 (= PushRealO1), call-return:0x09c004 | `call 0x082961 (= PushRealO1)` |
+| 0x09c004 | call:0x082961 (= PushRealO1), call-return:0x09c008 | `call 0x082961 (= PushRealO1)` |
+| 0x09c008 | call:0x07f968 (= OP2ToOP1), call-return:0x09c00c | `call 0x07f968 (= OP2ToOP1)` |
+| 0x09c00c | call:0x09a5b5 (= StoOther), call-return:0x09c010 | `call 0x09a5b5 (= StoOther)` |
+| 0x09c010 | call:0x07f8fa (= OP1ToOP2), call-return:0x09c014 | `call 0x07f8fa (= OP1ToOP2)` |
+| 0x09c014 | call:0x082902 (= PopRealO1), call-return:0x09c01c | `res 3, (iy+26) ; call 0x082902 (= PopRealO1)` |
 | 0x09c01c | call:0x07ff3f, call-return:0x09c020 | `call 0x07ff3f` |
 | 0x09c020 | branch:0x09c028, fallthrough:0x09c022 | `jr nz, 0x09c028` |
-| 0x09c022 | call:0x0846ea, call-return:0x09c026 | `call 0x0846ea` |
-| 0x09c026 | call:0x082912, call-return:0x09c02c | `set 7, (hl) ; call 0x082912` |
-| 0x09c028 | call:0x082912, call-return:0x09c02c | `call 0x082912` |
-| 0x09c02c | call:0x09bf29, call-return:0x09c030 | `call 0x09bf29` |
-| 0x09c030 | call:0x09bf06, call-return:0x09c039 | `ld (0x002596), bc ; call 0x09bf06` |
-| 0x09c039 | call:0x082902, call-return:0x09c03e | `push bc ; call 0x082902` |
-| 0x09c03e | call:0x099aaf, call-return:0x09c042 | `call 0x099aaf` |
-| 0x09c042 | jump:0x07f968 | `jp 0x07f968` |
+| 0x09c022 | call:0x0846ea (= FindSym), call-return:0x09c026 | `call 0x0846ea (= FindSym)` |
+| 0x09c026 | call:0x082912 (= FPopReal), call-return:0x09c02c | `set 7, (hl) ; call 0x082912 (= FPopReal)` |
+| 0x09c028 | call:0x082912 (= FPopReal), call-return:0x09c02c | `call 0x082912 (= FPopReal)` |
+| 0x09c02c | call:0x09bf29 (= Pop2BOper), call-return:0x09c030 | `call 0x09bf29 (= Pop2BOper)` |
+| 0x09c030 | call:0x09bf06 (= Pop3BOper), call-return:0x09c039 | `ld (0x002596), bc ; call 0x09bf06 (= Pop3BOper)` |
+| 0x09c039 | call:0x082902 (= PopRealO1), call-return:0x09c03e | `push bc ; call 0x082902 (= PopRealO1)` |
+| 0x09c03e | call:0x099aaf (= GetParse), call-return:0x09c042 | `call 0x099aaf (= GetParse)` |
+| 0x09c042 | jump:0x07f968 (= OP2ToOP1) | `jp 0x07f968 (= OP2ToOP1)` |
 | 0x09c046 | call:0x03d1e4, call-return:0x09c04a | `call 0x03d1e4` |
-| 0x09c04a | call:0x083268, call-return:0x09c04e | `call 0x083268` |
-| 0x09c04e | call:0x03f1db, call-return:0x09c052 | `call 0x03f1db` |
-| 0x09c052 | call:0x09bab8, call-return:0x09c05e | `ld hl, 0x000000 ; ld (0x000630), hl` |
+| 0x09c04a | call:0x083268 (= ClrGraphRef), call-return:0x09c04e | `call 0x083268 (= ClrGraphRef)` |
+| 0x09c04e | call:0x03f1db (= DeselectAllVars), call-return:0x09c052 | `call 0x03f1db (= DeselectAllVars)` |
+| 0x09c052 | call:0x09bab8 (= CurFetch), call-return:0x09c05e | `ld hl, 0x000000 ; ld (0x000630), hl` |
 
 ## External Callers (by target frequency)
 
 | target | callers | caller addresses (first 8) |
 |--------|---------|---------------------------|
-| 0x09c4e0 | 31 | 0x0450be, 0x07ff72, 0x05870f, 0x045134, 0x06ec25, 0x095ea0, 0x0998ac, 0x09afef +23 |
+| 0x09c4e0 | 31 | 0x0450be (= YRes), 0x07ff72, 0x05870f, 0x045134, 0x06ec25, 0x095ea0, 0x0998ac, 0x09afef +23 |
 | 0x09c4e5 | 6 | 0x061ffc, 0x0620ec, 0x0820a2, 0x0ad09e, 0x061ffa, 0x09772d |
 | 0x09c70b | 6 | 0x099d38, 0x059877, 0x05a007, 0x059ff6, 0x09996a, 0x09a2a3 |
 | 0x09ce6b | 5 | 0x097811, 0x05871f, 0x0599b9, 0x040cd5, 0x097810 |

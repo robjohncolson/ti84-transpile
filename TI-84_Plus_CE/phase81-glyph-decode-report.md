@@ -1,7 +1,7 @@
 # Phase 81 — Glyph Decode Report
 
 Re-ran the 3 Phase 78 parent probes and decoded the rendered status-bar text by
-intercepting every call to `0x0a1799` (the single-char printer) and recording
+intercepting every call to `0x0a1799 (= PutMap)` (the single-char printer) and recording
 the character code in register A at each invocation.
 
 This approach gives **exact** character codes — no image matching needed.
@@ -9,9 +9,9 @@ This approach gives **exact** character codes — no image matching needed.
 ## Method
 
 1. Booted ROM → OS init → SetTextFgColor(black).
-2. Installed a `write8` interceptor and `onBlock` hook for `0x0a1799`.
+2. Installed a `write8` interceptor and `onBlock` hook for `0x0a1799 (= PutMap)`.
 3. Ran each Phase 78 probe with sentinel-cleared VRAM.
-4. Collected (charCode, VRAM col) pairs from all `0x0a1799` invocations.
+4. Collected (charCode, VRAM col) pairs from all `0x0a1799 (= PutMap)` invocations.
 5. Sorted by column → left-to-right character sequence.
 
 ## Summary
@@ -265,7 +265,7 @@ VRAM ASCII preview (# = dark/fg, . = white/bg, clipped to first 80 cols of bbox)
 
 ## Font Atlas Verification
 
-Reference glyphs built by calling `0x0a1799` directly for key chars:
+Reference glyphs built by calling `0x0a1799 (= PutMap)` directly for key chars:
 
 **'R' (0x52)** fg=172
 ```

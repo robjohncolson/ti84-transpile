@@ -32,7 +32,11 @@ export function readReal(mem, addr) {
 function encodeReal(num) {
   const bytes = new Uint8Array(9);
 
-  if (num === 0 || !isFinite(num)) {
+  if (!isFinite(num)) {
+    throw new Error(`fp-real: cannot encode ${num}`);
+  }
+
+  if (num === 0) {
     // Zero: sign=0x00, exp=0x80, mantissa all zero.
     bytes[0] = 0x00;
     bytes[1] = 0x80;
@@ -63,6 +67,21 @@ function encodeReal(num) {
     const d = Math.floor(scaled);
     digits.push(d & 0xF);
     scaled = (scaled - d) * 10;
+  }
+
+  // Carry-fix: if rounding pushed any digit to 10+, propagate carry.
+  for (let i = 13; i > 0; i--) {
+    if (digits[i] >= 10) {
+      digits[i] -= 10;
+      digits[i - 1]++;
+    }
+  }
+  if (digits[0] >= 10) {
+    // MSB overflow: shift right, increment exponent.
+    digits[0] -= 10;
+    digits.pop();
+    digits.unshift(1);
+    bytes[1] = ((trueExp + 1) + 0x80) & 0xFF;
   }
 
   // Pack into bytes 2-8 (7 bytes, 2 nibbles each).
@@ -118,6 +137,11 @@ function runSelfTest() {
     { val: 4,    tol: 1e-9 },
     { val: -1,   tol: 1e-9 },
     { val: 0.5,  tol: 1e-9 },
+    { val: 9.999999999999950, tol: 1e-9 },
+    { val: 99999999999999.0,  tol: 1e-2 },
+    { val: 1e-99,             tol: 1e-108 },
+    { val: -0.001,            tol: 1e-12 },
+    { val: Math.PI,           tol: 1e-9 },
   ];
 
   let allPass = true;
@@ -131,6 +155,17 @@ function runSelfTest() {
     const raw = Array.from(buf.slice(0, 9), b => b.toString(16).padStart(2, '0')).join(' ');
     console.log(`${pass ? 'PASS' : 'FAIL'}  write(${val})  read=${got}  raw=[${raw}]`);
   }
+
+  let threw = false;
+  try { writeReal(mem, 0, NaN); } catch { threw = true; }
+  console.log(threw ? 'PASS  NaN throws' : 'FAIL  NaN should throw');
+  if (!threw) allPass = false;
+
+  threw = false;
+  try { writeReal(mem, 0, Infinity); } catch { threw = true; }
+  console.log(threw ? 'PASS  Infinity throws' : 'FAIL  Infinity should throw');
+  if (!threw) allPass = false;
+
   console.log(allPass ? '\nAll self-tests PASSED' : '\nSome self-tests FAILED');
   process.exitCode = allPass ? 0 : 1;
 }

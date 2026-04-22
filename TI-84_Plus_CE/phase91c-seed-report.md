@@ -14,7 +14,7 @@
 | E: token codes | `O R M     Full Func Dec Re` | 5652 | 4712 | false |
 | F: mode bytes 0 + ASCII | `Normal Float Radian       ` | 5024 | 968 | false |
 
-## ASCII preview (composite: 0x0a2b72 + 0x0a29ec with ASCII "Normal Float Radian")
+## ASCII preview (composite: 0x0a2b72 (= PutBPat) + 0x0a29ec (= RStrCurRow) with ASCII "Normal Float Radian")
 
 ```
 r000:                                                                                                                                                                                                                                                                                                                                 

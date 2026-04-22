@@ -16,7 +16,7 @@ chain:
 1. Cold boot from `0x000000` in `z80` mode (20000 max steps).
    - Terminated at `lastPc=0x0019B5` after `3025` steps.
 2. Fresh stack sentinel at `0xD1A87B..0xD1A87D = 0xFF`.
-3. Explicit kernel init at `0x08C331` in `adl` (100000 max steps).
+3. Explicit kernel init at `0x08C331 (= CoorMon)` in `adl` (100000 max steps).
 4. `mbase=0xD0`, `iy=0xD00080`, fresh stack sentinel.
 5. Post-init at `0x0802B2` in `adl` (100 max steps).
 

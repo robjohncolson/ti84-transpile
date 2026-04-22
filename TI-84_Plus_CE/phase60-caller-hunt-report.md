@@ -2,15 +2,15 @@
 
 ## Summary
 - `ROM.transpiled.js` already existed, so no re-transpile was needed.
-- A pure lifted-block reverse scan was not enough for `0x081670`: the literal address has **no lifted direct callers** because it sits behind a short `call-return` wrapper spine.
+- A pure lifted-block reverse scan was not enough for `0x081670 (= DspLsts)`: the literal address has **no lifted direct callers** because it sits behind a short `call-return` wrapper spine.
 - A combined scan worked best:
   - lifted `instruction.target` refs from `ROM.transpiled.js`
   - raw ROM `call/jp` opcode refs for unlifted code/table rows
-- Literal direct refs to `0x081670` are only:
-  - `0x020cb4` (`jp 0x081670`) - jump-table slot 748 row
-  - `0x080dab` (`call 0x081670`) - real wrapper code inside function entry `0x080d85`
-- The nearest callable wrapper chain above `0x081670` is:
-  - `0x081660 -> 0x081664 -> 0x081668 -> 0x08166c -> 0x081670`
+- Literal direct refs to `0x081670 (= DspLsts)` are only:
+  - `0x020cb4 (= DspLsts)` (`jp 0x081670 (= DspLsts)`) - jump-table slot 748 row
+  - `0x080dab` (`call 0x081670 (= DspLsts)`) - real wrapper code inside function entry `0x080d85`
+- The nearest callable wrapper chain above `0x081670 (= DspLsts)` is:
+  - `0x081660 -> 0x081664 -> 0x081668 -> 0x08166c -> 0x081670 (= DspLsts)`
 - Direct callers of that wrapper root `0x081660` are:
   - `0x080cd6`
   - `0x080ed4`
@@ -23,7 +23,7 @@
 
 | Caller PC | Kind | Caller entry/block | Source | Note |
 | --- | --- | --- | --- | --- |
-| `0x020cb4` | `jp` | `0x020cb4` | raw | jump-table slot 748 row (`0x020104 + 748 * 4`) |
+| `0x020cb4 (= DspLsts)` | `jp` | `0x020cb4 (= DspLsts)` | raw | jump-table slot 748 row (`0x020104 (= OSSize) + 748 * 4`) |
 | `0x080dab` | `call` | `0x080d85` | raw | direct wrapper path inside the `0x080d85` function |
 
 ### `0x0059c6` (character print)
@@ -41,11 +41,11 @@
 | `0x015866` | `call` | `0x015864` | lifted |
 | `0x0158ff` | `call` | `0x0158fa` | raw |
 
-### `0x062160` (generic error banner renderer)
+### `0x062160 (= DispErrorScreen)` (generic error banner renderer)
 
 | Caller PC | Kind | Caller entry/block | Source | Note |
 | --- | --- | --- | --- | --- |
-| `0x020e10` | `jp` | `0x020e10` | raw | unlifted raw `jp` row |
+| `0x020e10 (= DispErrorScreen)` | `jp` | `0x020e10 (= DispErrorScreen)` | raw | unlifted raw `jp` row |
 | `0x0744b3` | `call` | `0x0744b3` | lifted | known real caller from Phase 57 |
 | `0x085126` | `call` | `0x085126` | lifted | known real caller from Phase 57 |
 | `0x085168` | `call` | `0x08515e` | lifted | known real caller from Phase 57 |
@@ -69,14 +69,14 @@
 | `0x0288f9` | `call` | `0x0288f5` | lifted |
 | `0x0289c7` | `call` | `0x0289c3` | lifted |
 
-## `0x081670` Two-Level Caller Tree
+## `0x081670 (= DspLsts)` Two-Level Caller Tree
 
 ### Literal direct refs
 
 ```text
-0x020cb4  jp   0x081670        // jump-table slot 748 row
+0x020cb4 (= DspLsts)  jp   0x081670 (= DspLsts)        // jump-table slot 748 row
 0x080d85:
-  0x080dab  call 0x081670
+  0x080dab  call 0x081670 (= DspLsts)
     caller-of-caller:
       0x080e5b via 0x080ecb call 0x080d85
 ```
@@ -84,7 +84,7 @@
 ### Callable wrapper spine
 
 ```text
-0x081660 -> 0x081664 -> 0x081668 -> 0x08166c -> 0x081670
+0x081660 -> 0x081664 -> 0x081668 -> 0x08166c -> 0x081670 (= DspLsts)
 ```
 
 The direct callers of `0x081660` are the practical "one caller back" set:
@@ -109,17 +109,17 @@ The direct callers of `0x081660` are the practical "one caller back" set:
 
 ### Level-1 caller classification
 
-| Probe entry | Reaches `0x081670` through | Range | Calls `0x0059c6`? | Calls `0x062160`? | Notes |
+| Probe entry | Reaches `0x081670 (= DspLsts)` through | Range | Calls `0x0059c6`? | Calls `0x062160 (= DispErrorScreen)`? | Notes |
 | --- | --- | --- | --- | --- | --- |
 | `0x081660` | wrapper-spine root | `0x08xxxx` | no | no | nearest callable wrapper root |
-| `0x080d85` | direct `0x080dab -> 0x081670` | `0x08xxxx` | no | no | literal direct-caller path |
+| `0x080d85` | direct `0x080dab -> 0x081670 (= DspLsts)` | `0x08xxxx` | no | no | literal direct-caller path |
 | `0x080ca3` | `0x080cd6 -> 0x081660` | `0x08xxxx` | no | no | broader setup wrapper |
 | `0x080ed4` | direct `call 0x081660` | `0x08xxxx` | no | no | branch target from `0x08121b` |
 | `0x08193f` | `0x08194b -> 0x081660` | `0x08xxxx` | no | no | only caller that visibly rendered anything |
 
 ## Probe Results For Top 5 Practical Level-1 Callers
 
-I excluded the raw jump-table row `0x020cb4` from the main top-5 probe set because the lifted executor does not start cleanly on that unlifted table row. A direct `runFrom(0x020cb4)` drifted into the adjacent row (`0x020cb8 -> 0x0ac2cb`) instead of reliably landing on `0x081670`.
+I excluded the raw jump-table row `0x020cb4 (= DspLsts)` from the main top-5 probe set because the lifted executor does not start cleanly on that unlifted table row. A direct `runFrom(0x020cb4 (= DspLsts))` drifted into the adjacent row (`0x020cb8 (= CloseEditBuf) -> 0x0ac2cb (= CloseEditBuf)`) instead of reliably landing on `0x081670 (= DspLsts)`.
 
 | Probe entry | Why this entry | Steps | Termination | VRAM writes | BBox | Unique blocks | Verdict |
 | --- | --- | ---: | --- | ---: | --- | ---: | --- |
@@ -137,10 +137,10 @@ I excluded the raw jump-table row `0x020cb4` from the main top-5 probe set becau
   - `0x08193f`
   - `0x0818fc`
   - `0x08187b`
-  - `0x02398e`
+  - `0x02398e (= CallLocalizeHook)`
   - `0x025758`
-  - `0x0a1cac`
-- That dynamic trace strongly suggests `0x08193f` stages text via the `0x0818fc -> 0x0a1cac` string-render path before entering the `0x081660` / `0x081670` family.
+  - `0x0a1cac (= PutS)`
+- That dynamic trace strongly suggests `0x08193f` stages text via the `0x0818fc -> 0x0a1cac (= PutS)` string-render path before entering the `0x081660` / `0x081670 (= DspLsts)` family.
 
 ### Extra quick-look upstream probes
 
@@ -165,13 +165,13 @@ I excluded the raw jump-table row `0x020cb4` from the main top-5 probe set becau
    This is the cleanest fan-out selector above both the visible renderer (`0x08193f`) and the literal direct-caller path (`0x080d85`). Seed its branch conditions instead of calling it from a blank post-init state.
 
 2. `0x08193f`
-   It is the only practical caller that visibly renders. Trace the string/data path behind `0x0818fc -> 0x0a1cac` and inspect the RAM inputs that choose its left-edge strip contents.
+   It is the only practical caller that visibly renders. Trace the string/data path behind `0x0818fc -> 0x0a1cac (= PutS)` and inspect the RAM inputs that choose its left-edge strip contents.
 
 3. `0x08121b`
    This is the only known second-level feeder into `0x080ed4`. It likely controls whether the `0x080ed4 -> 0x081660` branch is even relevant.
 
 4. Authentic jump-table dispatch for slot 748
-   Do not probe `0x020cb4` as a naked entry. Instead find the real bcall/jump-table dispatcher that selects slot 748, then call that dispatcher with the correct selector/register state.
+   Do not probe `0x020cb4 (= DspLsts)` as a naked entry. Instead find the real bcall/jump-table dispatcher that selects slot 748, then call that dispatcher with the correct selector/register state.
 
 ## Probe Output Snippet
 

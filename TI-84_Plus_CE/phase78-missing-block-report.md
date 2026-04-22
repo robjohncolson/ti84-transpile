@@ -1,56 +1,56 @@
 # Phase 78 — Missing block + caller scan
 
-## Section 1 — Callers of 0x0a2b72 and 0x0a29ec
+## Section 1 — Callers of 0x0a2b72 (= PutBPat) and 0x0a29ec (= RStrCurRow)
 
-- Callers of **0x0a2b72**: 3
-- Callers of **0x0a29ec**: 5
-- Callers of **0x0a2a68**: 29
+- Callers of **0x0a2b72 (= PutBPat)**: 3
+- Callers of **0x0a29ec (= RStrCurRow)**: 5
+- Callers of **0x0a2a68 (= GetTokString)**: 29
 
 
-### Callers of 0x0a2b72 (3 total)
-
-| caller block | dasm |
-|--------------|------|
-| 0x05e7d2 | `call 0x0a2b72` |
-| 0x05e481 | `call 0x0a2b72` |
-| 0x09cb14 | `call 0x0a2b72` |
-
-### Callers of 0x0a29ec (5 total)
+### Callers of 0x0a2b72 (= PutBPat) (3 total)
 
 | caller block | dasm |
 |--------------|------|
-| 0x078f69 | `set 5, (iy+76) ; call 0x0a29ec` |
-| 0x025b37 | `call 0x0a29ec` |
-| 0x060a35 | `set 5, (iy+76) ; call 0x0a29ec` |
-| 0x08847f | `set 5, (iy+76) ; call 0x0a29ec` |
-| 0x06c865 | `call 0x0a29ec` |
+| 0x05e7d2 | `call 0x0a2b72 (= PutBPat)` |
+| 0x05e481 | `call 0x0a2b72 (= PutBPat)` |
+| 0x09cb14 | `call 0x0a2b72 (= PutBPat)` |
 
-### Callers of 0x0a2a68 (29 total)
+### Callers of 0x0a29ec (= RStrCurRow) (5 total)
 
 | caller block | dasm |
 |--------------|------|
-| 0x0a2a50 | `call 0x0a2a68` |
-| 0x0a2a45 | `call 0x0a2a68` |
-| 0x0a2b53 | `call 0x0a2a68` |
-| 0x0a8d72 | `ld (0xd00596), a ; call 0x0a2a68` |
-| 0x0a8d71 | `inc a ; ld (0xd00596), a ; call 0x0a2a68` |
-| 0x0a2c7b | `inc hl ; push hl ; call 0x0a2a68` |
-| 0x0a2b79 | `push bc ; call 0x0a2a68` |
-| 0x07ba37 | `call 0x0a2a68` |
-| 0x0a2b72 | `xor a ; push bc ; push de ; push hl ; push af ; ld b, 0x00 ; push bc ; call 0x0a2a68` |
-| 0x0a2a3e | `call 0x0a2a68` |
-| 0x0babb1 | `call 0x0a2a68` |
-| 0x05e7ee | `call 0x0a2a68` |
-| 0x08934e | `call 0x0a2a68` |
-| 0x061013 | `inc hl ; push hl ; call 0x0a2a68` |
-| 0x0232f4 | `ld d, a ; inc hl ; ld e, (hl) ; call 0x0a2a68` |
-| 0x0baba9 | `ld hl, 0x00001f ; ld (0x0026ac), hl ; call 0x0a2a68` |
-| 0x03eae6 | `call 0x0a2a68` |
-| 0x0a2cce | `inc hl ; push hl ; call 0x0a2a68` |
-| 0x02258e | `push bc ; push de ; push hl ; call 0x0a2a68` |
-| 0x0a1d4d | `pop de ; call 0x0a2a68` |
+| 0x078f69 | `set 5, (iy+76) ; call 0x0a29ec (= RStrCurRow)` |
+| 0x025b37 | `call 0x0a29ec (= RStrCurRow)` |
+| 0x060a35 | `set 5, (iy+76) ; call 0x0a29ec (= RStrCurRow)` |
+| 0x08847f | `set 5, (iy+76) ; call 0x0a29ec (= RStrCurRow)` |
+| 0x06c865 | `call 0x0a29ec (= RStrCurRow)` |
 
-## Section 2 — Missing block trace for 0x0a2b72
+### Callers of 0x0a2a68 (= GetTokString) (29 total)
+
+| caller block | dasm |
+|--------------|------|
+| 0x0a2a50 | `call 0x0a2a68 (= GetTokString)` |
+| 0x0a2a45 (= GetTokLen) | `call 0x0a2a68 (= GetTokString)` |
+| 0x0a2b53 | `call 0x0a2a68 (= GetTokString)` |
+| 0x0a8d72 | `ld (0xd00596), a ; call 0x0a2a68 (= GetTokString)` |
+| 0x0a8d71 | `inc a ; ld (0xd00596), a ; call 0x0a2a68 (= GetTokString)` |
+| 0x0a2c7b | `inc hl ; push hl ; call 0x0a2a68 (= GetTokString)` |
+| 0x0a2b79 | `push bc ; call 0x0a2a68 (= GetTokString)` |
+| 0x07ba37 | `call 0x0a2a68 (= GetTokString)` |
+| 0x0a2b72 (= PutBPat) | `xor a ; push bc ; push de ; push hl ; push af ; ld b, 0x00 ; push bc ; call 0x0a2a68 (= GetTokString)` |
+| 0x0a2a3e (= GetKeypress) | `call 0x0a2a68 (= GetTokString)` |
+| 0x0babb1 | `call 0x0a2a68 (= GetTokString)` |
+| 0x05e7ee | `call 0x0a2a68 (= GetTokString)` |
+| 0x08934e | `call 0x0a2a68 (= GetTokString)` |
+| 0x061013 | `inc hl ; push hl ; call 0x0a2a68 (= GetTokString)` |
+| 0x0232f4 | `ld d, a ; inc hl ; ld e, (hl) ; call 0x0a2a68 (= GetTokString)` |
+| 0x0baba9 | `ld hl, 0x00001f ; ld (0x0026ac), hl ; call 0x0a2a68 (= GetTokString)` |
+| 0x03eae6 | `call 0x0a2a68 (= GetTokString)` |
+| 0x0a2cce | `inc hl ; push hl ; call 0x0a2a68 (= GetTokString)` |
+| 0x02258e | `push bc ; push de ; push hl ; call 0x0a2a68 (= GetTokString)` |
+| 0x0a1d4d | `pop de ; call 0x0a2a68 (= GetTokString)` |
+
+## Section 2 — Missing block trace for 0x0a2b72 (= PutBPat)
 
 steps: 3868
 termination: missing_block

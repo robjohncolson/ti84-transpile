@@ -31,7 +31,7 @@ Key covered exits:
 | `0x0b2db8` | `call` | `0x0b341a` | present |
 | `0x0b2dc2` | `call` | `0x0801b9` | present |
 | `0x0b2e11` | `jump` | `0x0b410d` | present |
-| `0x0b341a` | `call` | `0x061def` | present |
+| `0x0b341a` | `call` | `0x061def (= PushErrorHandler)` | present |
 | `0x0b410d` | `call` | `0x0b6140` | present |
 
 There is no clean "missing Phase 100C block" left in the direct mode-display chain.
@@ -50,9 +50,9 @@ Added explicit Phase 100C chain anchors in [phase100c-seeds.txt](/C:/Users/rober
 - `0x0b538f`
 - `0x0b3f75`
 - `0x0b410d`
-- `0x082961`
-- `0x082bb5`
-- `0x082266`
+- `0x082961 (= PushRealO1)`
+- `0x082bb5 (= ErrNotEnoughMem)`
+- `0x082266 (= EnoughMem)`
 
 These seeds are wired into [transpile-ti84-rom.mjs](/C:/Users/rober/Downloads/Projects/school/follow-alongs/scripts/transpile-ti84-rom.mjs) and the transpiler was rerun.
 
@@ -122,6 +122,6 @@ This phase failed because the supposed populator does not touch the buffer at al
 
 ## Follow-Up Candidates
 
-- Trace why `0x0b341a -> 0x061def -> 0x082961 -> 0x082bb5 -> 0x082266` collapses into the `0x082287 / 0x08229c` loop instead of reaching any string-copy path.
-- Instrument the loop inputs around `0x082266` to identify the gating RAM or flag that prevents forward progress.
+- Trace why `0x0b341a -> 0x061def (= PushErrorHandler) -> 0x082961 (= PushRealO1) -> 0x082bb5 (= ErrNotEnoughMem) -> 0x082266 (= EnoughMem)` collapses into the `0x082287 / 0x08229c` loop instead of reaching any string-copy path.
+- Instrument the loop inputs around `0x082266 (= EnoughMem)` to identify the gating RAM or flag that prevents forward progress.
 - Revisit the hypothesis that `0x0b2d8a` is the natural populator at all; current evidence says it is a higher-level mode-management path, not the direct writer for `0xD020A6..0xD020BF`.

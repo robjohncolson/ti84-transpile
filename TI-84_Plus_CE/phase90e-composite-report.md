@@ -1,7 +1,7 @@
 # Phase 90e — Full Home Screen Composite
 
 
-## Composite: 0x0a2b72 + 0x0a29ec + caller_86132 (200k steps)
+## Composite: 0x0a2b72 (= PutBPat) + 0x0a29ec (= RStrCurRow) + caller_86132 (200k steps)
 
 
 Combined drawn=13144 fg=3729 bg=9415 bbox=r0-55 c0-319

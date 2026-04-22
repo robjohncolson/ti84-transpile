@@ -3,7 +3,7 @@
 ## Diff Summary
 
 - `probe-phase99d-home-verify.mjs`
-  - Inserted a CPU-restored `runFrom(0x0a3301)` stage between `0x0a2b72` and `0x0a29ec`.
+  - Inserted a CPU-restored `runFrom(0x0a3301)` stage between `0x0a2b72 (= PutBPat)` and `0x0a29ec (= RStrCurRow)`.
   - Added top-bar cluster counters for `r3-6 c146-150` and `r3-6 c306-310`.
   - Added PASS/FAIL assertions for both clusters and folded them into the probe exit code.
   - Extended the generated `phase99d-report.md` output with before/after/final cluster counts.

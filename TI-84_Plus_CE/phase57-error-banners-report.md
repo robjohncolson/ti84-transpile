@@ -1,7 +1,7 @@
 # Phase 57 Error Banner Render
 
 ## Summary
-- `0x062160` is a RAM-parameterized banner renderer, not a hardcoded OVERFLOW helper.
+- `0x062160 (= DispErrorScreen)` is a RAM-parameterized banner renderer, not a hardcoded OVERFLOW helper.
 - The selector lives at `0xD008DF`: the function reads `(0xD008DF & 0x7F)`, and for nonzero values uses a 1-based index into the 24-bit pointer table at `0x062290`.
 - The pointer table contains 42 valid `0x062xxx` entries (`index 0..41`). The next 24-bit word at `0x06230e` is `0xD025A9`, so the table stops there.
 - Selector `0` is a separate mode/status path keyed by `0xD00824` (`Error in Xmit`, `MemoryFull`, `VERSION`, `ARCHIVED`, `OS Overlaps Apps`, `Unsupported OS`).
@@ -13,7 +13,7 @@
 - If the masked value is nonzero, `0x0621db-0x0621e8` decrements it and resolves `HL = *(0x062290 + 3 * (A - 1))`.
 - If the masked value is zero, `0x0621a2-0x0621d4` switches on `0xD00824` instead.
 - If the masked value is `>= 0x3A`, `HL` falls back to `0x062c99` (`?`).
-- Real callers back this up: `0x0744b3` and `0x085126` call `0x062160` without staging a register argument, while `0x08515e` temporarily clears `0xD008DF` before the call to force the selector-zero path.
+- Real callers back this up: `0x0744b3` and `0x085126` call `0x062160 (= DispErrorScreen)` without staging a register argument, while `0x08515e` temporarily clears `0xD008DF` before the call to force the selector-zero path.
 
 ## Prologue Disassembly
 
@@ -26,7 +26,7 @@
 06216e  21 a9 26 0b       ld hl, 0x0b26a9        ; "ERROR"
 062172  3e 0b             ld a, 0x0b
 062174  fd cb 35 4e       bit 1, (iy+53)
-062178  c4 8e 39 02       call nz, 0x02398e
+062178  c4 8e 39 02       call nz, 0x02398e (= CallLocalizeHook)
 06217c  11 42 08 d0       ld de, 0xd00842
 062180  ed a0             ldi
 062182  7e                ld a, (hl)
@@ -120,7 +120,7 @@ These are outside the pointer-table-backed `error-banners.json` sweep.
 | 21 | 0x062a36 | SOLVER | 72-145 | max_steps@0x0a17e9 |
 | 22 | 0x062a3e | SINGULARITY | 48-121 | max_steps@0x0a17c5 |
 | 23 | 0x062a70 | NO SIGN CHANGE | 24-97 | max_steps@0x000380 |
-| 24 | 0x062af7 | ITERATIONS | 48-121 | max_steps@0x0a2d4c |
+| 24 | 0x062af7 | ITERATIONS | 48-121 | max_steps@0x0a2d4c (= MakeRowCmd) |
 | 25 | 0x062b5e | BAD GUESS | 60-133 | max_steps@0x0a17d0 |
 | 26 | 0x062ba3 | STAT PLOT | 60-133 | max_steps@0x0a17d0 |
 | 27 | 0x062bcd | TOLERANCE NOT MET | 12-85 | max_steps@0x07bf3e |
@@ -135,7 +135,7 @@ These are outside the pointer-table-backed `error-banners.json` sweep.
 | 36 | 0x062c9c | SCALE | 84-157 | max_steps@0x0a17f5 |
 | 37 | 0x062ca3 | OS Overlaps Apps | 12-85 | max_steps@0x07bf4d |
 | 38 | 0x062d01 | NO MODE | 72-145 | max_steps@0x005a53 |
-| 39 | 0x062d0a | VALIDATION | 48-121 | max_steps@0x0a2d4c |
+| 39 | 0x062d0a | VALIDATION | 48-121 | max_steps@0x0a2d4c (= MakeRowCmd) |
 | 40 | 0x062d37 | LENGTH | 72-145 | max_steps@0x0a17e9 |
 | 41 | 0x062d3f | APPLICATION | 48-121 | max_steps@0x0a17c5 |
 
@@ -220,5 +220,5 @@ These are outside the pointer-table-backed `error-banners.json` sweep.
 - Boot once, run OS init, set `cpu.mbase = 0xD0`, and keep the same clean post-init state used by the probe.
 - Populate a dropdown from `error-banners.json` (`index` + label).
 - On selection, set `mem[0xD008DF] = selected.index + 1` and clear `mem[0xD00824] = 0` so the renderer stays on the pointer-table path.
-- Call `0x062160` directly. No register argument is needed for normal error banners.
+- Call `0x062160 (= DispErrorScreen)` directly. No register argument is needed for normal error banners.
 - If the shell later needs the mode/status banners too, expose them as a second dropdown that uses `mem[0xD008DF] = 0` plus the `0xD00824` values above.

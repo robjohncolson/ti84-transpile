@@ -304,7 +304,7 @@ The 0x0b2xxx-0x0b5xxx module is the **mode display management module** with thre
 
 1. **CLEAR functions** (e.g. 0x0b2d6a, 0x0b2e86): zero-fill or LDIR-shift the mode buffer. These are what the static scan found.
 2. **SHIFT functions** (e.g. 0x0b2f16, 0x0b2f36): LDIR-based scroll of mode buffer contents between slots (used when mode settings change to animate the display row).
-3. **FORMAT functions** (e.g. 0x0b3409 via 0x0b33ff): compute display offsets, format float digits using multiply-by-9 (0x07f796), write packed mode data to the buffer's lower half.
+3. **FORMAT functions** (e.g. 0x0b3409 via 0x0b33ff): compute display offsets, format float digits using multiply-by-9 (0x07f796 (= HLTimes9)), write packed mode data to the buffer's lower half.
 
 ### Mode String Table
 

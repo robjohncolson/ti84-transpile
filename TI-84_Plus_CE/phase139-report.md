@@ -24,7 +24,7 @@ step=0647 pc=0x0a1a1d mode=adl
 step=0648 pc=0x0a1a30 mode=adl
 step=0649 pc=0x05c883 mode=adl
 step=0650 pc=0x02fdb6 mode=adl
-step=0651 pc=0x03fa09 mode=adl
+step=0651 pc=0x03fa09 (= GetCSC) mode=adl
 step=0652 pc=0x03fa1c mode=adl
 step=0653 pc=0x03fa93 mode=adl
 step=0654 pc=0x03fa9c mode=adl
@@ -138,9 +138,9 @@ target=0xffffff (missing block)
 | 163 | `0x0a17c5` | `0xd1a855` | `0x05` | write24 |
 | 163 | `0x0a17c5` | `0xd1a854` | `0xd0` | write24 |
 | 163 | `0x0a17c5` | `0xd1a855` | `0x17` | write24 |
-| 164 | `0x0a2d4c` | `0xd1a851` | `0xfc` | write24 |
-| 164 | `0x0a2d4c` | `0xd1a852` | `0xff` | write24 |
-| 164 | `0x0a2d4c` | `0xd1a853` | `0xff` | write24 |
+| 164 | `0x0a2d4c (= MakeRowCmd)` | `0xd1a851` | `0xfc` | write24 |
+| 164 | `0x0a2d4c (= MakeRowCmd)` | `0xd1a852` | `0xff` | write24 |
+| 164 | `0x0a2d4c (= MakeRowCmd)` | `0xd1a853` | `0xff` | write24 |
 | 165 | `0x0a17d0` | `0xd1a854` | `0xe9` | write24 |
 | 165 | `0x0a17d0` | `0xd1a855` | `0x17` | write24 |
 | 176 | `0x0a188a` | `0xd1a854` | `0x05` | write24 |
@@ -207,11 +207,11 @@ target=0xffffff (missing block)
 | 371 | `0x0a188a` | `0xd1a855` | `0x01` | write24 |
 | 373 | `0x0a190d` | `0xd1a854` | `0x05` | write24 |
 | 373 | `0x0a190d` | `0xd1a855` | `0x01` | write24 |
-| 419 | `0x0a1799` | `0xd1a854` | `0x00` | write24 |
-| 419 | `0x0a1799` | `0xd1a855` | `0x00` | write24 |
-| 419 | `0x0a1799` | `0xd1a851` | `0xbd` | write24 |
-| 419 | `0x0a1799` | `0xd1a852` | `0x59` | write24 |
-| 419 | `0x0a1799` | `0xd1a853` | `0x01` | write24 |
+| 419 | `0x0a1799 (= PutMap)` | `0xd1a854` | `0x00` | write24 |
+| 419 | `0x0a1799 (= PutMap)` | `0xd1a855` | `0x00` | write24 |
+| 419 | `0x0a1799 (= PutMap)` | `0xd1a851` | `0xbd` | write24 |
+| 419 | `0x0a1799 (= PutMap)` | `0xd1a852` | `0x59` | write24 |
+| 419 | `0x0a1799 (= PutMap)` | `0xd1a853` | `0x01` | write24 |
 | 422 | `0x0a17b8` | `0xd1a84e` | `0xc5` | write24 |
 | 422 | `0x0a17b8` | `0xd1a84f` | `0x17` | write24 |
 | 422 | `0x0a17b8` | `0xd1a850` | `0x0a` | write24 |
@@ -222,7 +222,7 @@ target=0xffffff (missing block)
 | 429 | `0x0a17c5` | `0xd1a84e` | `0xd0` | write24 |
 | 429 | `0x0a17c5` | `0xd1a84f` | `0x17` | write24 |
 | 429 | `0x0a17c5` | `0xd1a850` | `0x0a` | write24 |
-| 430 | `0x0a2d4c` | `0xd1a84d` | `0xff` | write24 |
+| 430 | `0x0a2d4c (= MakeRowCmd)` | `0xd1a84d` | `0xff` | write24 |
 | 431 | `0x0a17d0` | `0xd1a84e` | `0xe9` | write24 |
 | 431 | `0x0a17d0` | `0xd1a84f` | `0x17` | write24 |
 | 431 | `0x0a17d0` | `0xd1a850` | `0x0a` | write24 |

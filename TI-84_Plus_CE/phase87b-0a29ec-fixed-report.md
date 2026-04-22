@@ -1,4 +1,4 @@
-# Phase 87b — 0x0a29ec + 0x0a2b72 Text Decode (fixed harness)
+# Phase 87b — 0x0a29ec (= RStrCurRow) + 0x0a2b72 (= PutBPat) Text Decode (fixed harness)
 
 ## Summary
 

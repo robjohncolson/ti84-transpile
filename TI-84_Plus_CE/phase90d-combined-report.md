@@ -8,12 +8,12 @@ No RAM/VRAM reset between sequential calls.
 The `mem.set(ramSnap, 0x400000)` in Phase 90c was also resetting VRAM since VRAM_BASE=0xD40000 is within 0x400000-0xE00000.
 
 
-## Sequential Render (0x0a2b72 → 0x0a29ec)
+## Sequential Render (0x0a2b72 (= PutBPat) → 0x0a29ec (= RStrCurRow))
 
 Combined: drawn=11092 fg=4476 bg=6616 bbox=r0-34 c0-319
 
 
-## 0x0a2b72 Char Analysis
+## 0x0a2b72 (= PutBPat) Char Analysis
 
 | col | code | char |
 |-----|------|------|
