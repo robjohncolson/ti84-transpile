@@ -1732,11 +1732,28 @@ function runDirectEval(expr) {
 
 $('btnEval').addEventListener('click', () => {
   const expr = $('evalInput').value.trim();
-  if (!expr) return;
   const resultEl = $('evalResult');
 
+  if (!expr) {
+    resultEl.style.color = '#df7d7d';
+    resultEl.textContent = 'Enter an expression first.';
+    return;
+  }
+
+  resultEl.style.color = '#e0e060';
+  resultEl.textContent = 'Evaluating...';
+
   const t0 = performance.now();
-  const result = runDirectEval(expr);
+  let result;
+  try {
+    result = runDirectEval(expr);
+  } catch (e) {
+    resultEl.style.color = '#df7d7d';
+    resultEl.textContent = `Exception: ${e?.message || e}`;
+    log(`<span class="info">--- Direct Eval "${expr}": EXCEPTION: ${e?.message || e} ---</span>`);
+    console.error('Direct Eval exception:', e);
+    return;
+  }
   const dt = Math.round(performance.now() - t0);
 
   if (result.error) {
