@@ -1,0 +1,641 @@
+# Phase 25AL - Buffer Compaction Trigger Report
+
+Generated: 2026-04-23
+
+## Objective
+
+Identify what triggers the buffer compaction at 0x05E3A2 that leads to
+0x05E836 -> 0x0831A4 (LDDR) zeroing cxCurApp at ~step 18282.
+
+## Setup
+
+Identical seeding to probe-phase25ak:
+- Cold boot + MEM_INIT
+- cx seed: cxMain=0x058241, cxCurApp=0x40, home-context callbacks
+- Pre-yield IY flags cleared
+- Keyboard: ENTER seeded
+- Parser: tokenized "2+3" at userMem
+- CoorMon budget: 25000 steps, maxLoopIterations=8192
+
+## Results
+
+- CoorMon termination: max_steps
+- Total steps: 25000
+- Final PC: 0x0827aa
+- Loops forced: 1
+
+### Watched PC Hits
+
+| Address | Label | First Hit Step |
+|---------|-------|----------------|
+| 0x05e3a2 | compaction_entry_05E3A2 | 18277 |
+| 0x05e836 | edit_wrapper_05E836 | 18278 |
+| 0x0831a4 | EditProg_0831A4 | 18279 |
+| 0x05e872 | close_gate_05E872 | NOT HIT |
+| 0x05e820 | BufToBtm_05E820 | NOT HIT |
+| 0x0585e9 | second_pass_handler_0585E9 | NOT HIT |
+| 0x0973c8 | ENTER_key_path_0973C8 | NOT HIT |
+| 0x08bf22 | yield_mechanism_08BF22 | 2651 |
+
+### Caller Analysis
+
+- **0x05E3A2 (compaction entry)** called from PC=0x05e7ff at step 18277
+- **0x05E836 (edit wrapper)** called from PC=0x05e3a2 at step 18278
+- **0x0831A4 (EditProg/LDDR)** called from PC=0x05e836 at step 18279
+
+### cxCurApp Zero Transitions
+
+- step=18282 pc=0x04c990 prev=0x40 -> 0x00
+
+### Trace Window (steps 18000-18500)
+
+```
+step=18000 PC=0x0a28bf SP=0xd1a854
+step=18001 PC=0x0a28b7 SP=0xd1a854
+step=18002 PC=0x0a28bf SP=0xd1a854
+step=18003 PC=0x0a28b7 SP=0xd1a854
+step=18004 PC=0x0a28bf SP=0xd1a854
+step=18005 PC=0x0a28b7 SP=0xd1a854
+step=18006 PC=0x0a28bf SP=0xd1a854
+step=18007 PC=0x0a28b7 SP=0xd1a854
+step=18008 PC=0x0a28bf SP=0xd1a854
+step=18009 PC=0x0a28b7 SP=0xd1a854
+step=18010 PC=0x0a28bf SP=0xd1a854
+step=18011 PC=0x0a28b7 SP=0xd1a854
+step=18012 PC=0x0a28bf SP=0xd1a854
+step=18013 PC=0x0a28b7 SP=0xd1a854
+step=18014 PC=0x0a28bf SP=0xd1a854
+step=18015 PC=0x0a28b7 SP=0xd1a854
+step=18016 PC=0x0a28bf SP=0xd1a854
+step=18017 PC=0x0a28b7 SP=0xd1a854
+step=18018 PC=0x0a28bf SP=0xd1a854
+step=18019 PC=0x0a28b7 SP=0xd1a854
+step=18020 PC=0x0a28bf SP=0xd1a854
+step=18021 PC=0x0a28b7 SP=0xd1a854
+step=18022 PC=0x0a28bf SP=0xd1a854
+step=18023 PC=0x0a28b7 SP=0xd1a854
+step=18024 PC=0x0a28bf SP=0xd1a854
+step=18025 PC=0x0a28b7 SP=0xd1a854
+step=18026 PC=0x0a28bf SP=0xd1a854
+step=18027 PC=0x0a28b7 SP=0xd1a854
+step=18028 PC=0x0a28bf SP=0xd1a854
+step=18029 PC=0x0a28b7 SP=0xd1a854
+step=18030 PC=0x0a28bf SP=0xd1a854
+step=18031 PC=0x0a28b7 SP=0xd1a854
+step=18032 PC=0x0a28bf SP=0xd1a854
+step=18033 PC=0x0a28b7 SP=0xd1a854
+step=18034 PC=0x0a28bf SP=0xd1a854
+step=18035 PC=0x0a28b7 SP=0xd1a854
+step=18036 PC=0x0a28bf SP=0xd1a854
+step=18037 PC=0x0a28b7 SP=0xd1a854
+step=18038 PC=0x0a28bf SP=0xd1a854
+step=18039 PC=0x0a28b7 SP=0xd1a854
+step=18040 PC=0x0a28bf SP=0xd1a854
+step=18041 PC=0x0a28b7 SP=0xd1a854
+step=18042 PC=0x0a28bf SP=0xd1a854
+step=18043 PC=0x0a28b7 SP=0xd1a854
+step=18044 PC=0x0a28bf SP=0xd1a854
+step=18045 PC=0x0a28b7 SP=0xd1a854
+step=18046 PC=0x0a28bf SP=0xd1a854
+step=18047 PC=0x0a28b7 SP=0xd1a854
+step=18048 PC=0x0a28bf SP=0xd1a854
+step=18049 PC=0x0a28b7 SP=0xd1a854
+step=18050 PC=0x0a28bf SP=0xd1a854
+step=18051 PC=0x0a28b7 SP=0xd1a854
+step=18052 PC=0x0a28bf SP=0xd1a854
+step=18053 PC=0x0a28b7 SP=0xd1a854
+step=18054 PC=0x0a28bf SP=0xd1a854
+step=18055 PC=0x0a28b7 SP=0xd1a854
+step=18056 PC=0x0a28bf SP=0xd1a854
+step=18057 PC=0x0a28b7 SP=0xd1a854
+step=18058 PC=0x0a28bf SP=0xd1a854
+step=18059 PC=0x0a28b7 SP=0xd1a854
+step=18060 PC=0x0a28bf SP=0xd1a854
+step=18061 PC=0x0a28b7 SP=0xd1a854
+step=18062 PC=0x0a28bf SP=0xd1a854
+step=18063 PC=0x0a28b7 SP=0xd1a854
+step=18064 PC=0x0a28bf SP=0xd1a854
+step=18065 PC=0x0a28b7 SP=0xd1a854
+step=18066 PC=0x0a28bf SP=0xd1a854
+step=18067 PC=0x0a28b7 SP=0xd1a854
+step=18068 PC=0x0a28bf SP=0xd1a854
+step=18069 PC=0x0a28b7 SP=0xd1a854
+step=18070 PC=0x0a28bf SP=0xd1a854
+step=18071 PC=0x0a28b7 SP=0xd1a854
+step=18072 PC=0x0a28bf SP=0xd1a854
+step=18073 PC=0x0a28b7 SP=0xd1a854
+step=18074 PC=0x0a28bf SP=0xd1a854
+step=18075 PC=0x0a28b7 SP=0xd1a854
+step=18076 PC=0x0a28bf SP=0xd1a854
+step=18077 PC=0x0a28b7 SP=0xd1a854
+step=18078 PC=0x0a28bf SP=0xd1a854
+step=18079 PC=0x0a28b7 SP=0xd1a854
+step=18080 PC=0x0a28bf SP=0xd1a854
+step=18081 PC=0x0a28b7 SP=0xd1a854
+step=18082 PC=0x0a28bf SP=0xd1a854
+step=18083 PC=0x0a28b7 SP=0xd1a854
+step=18084 PC=0x0a28bf SP=0xd1a854
+step=18085 PC=0x0a28b7 SP=0xd1a854
+step=18086 PC=0x0a28bf SP=0xd1a854
+step=18087 PC=0x0a28b7 SP=0xd1a854
+step=18088 PC=0x0a28bf SP=0xd1a854
+step=18089 PC=0x0a28b7 SP=0xd1a854
+step=18090 PC=0x0a28bf SP=0xd1a854
+step=18091 PC=0x0a28b7 SP=0xd1a854
+step=18092 PC=0x0a28bf SP=0xd1a854
+step=18093 PC=0x0a28b7 SP=0xd1a854
+step=18094 PC=0x0a28bf SP=0xd1a854
+step=18095 PC=0x0a28b7 SP=0xd1a854
+step=18096 PC=0x0a28bf SP=0xd1a854
+step=18097 PC=0x0a28b7 SP=0xd1a854
+step=18098 PC=0x0a28bf SP=0xd1a854
+step=18099 PC=0x0a28b7 SP=0xd1a854
+step=18100 PC=0x0a28bf SP=0xd1a854
+step=18101 PC=0x0a28b7 SP=0xd1a854
+step=18102 PC=0x0a28bf SP=0xd1a854
+step=18103 PC=0x0a28b7 SP=0xd1a854
+step=18104 PC=0x0a28bf SP=0xd1a854
+step=18105 PC=0x0a28b7 SP=0xd1a854
+step=18106 PC=0x0a28bf SP=0xd1a854
+step=18107 PC=0x0a28b7 SP=0xd1a854
+step=18108 PC=0x0a28bf SP=0xd1a854
+step=18109 PC=0x0a28b7 SP=0xd1a854
+step=18110 PC=0x0a28bf SP=0xd1a854
+step=18111 PC=0x0a28b7 SP=0xd1a854
+step=18112 PC=0x0a28bf SP=0xd1a854
+step=18113 PC=0x0a28b7 SP=0xd1a854
+step=18114 PC=0x0a28bf SP=0xd1a854
+step=18115 PC=0x0a28b7 SP=0xd1a854
+step=18116 PC=0x0a28bf SP=0xd1a854
+step=18117 PC=0x0a28b7 SP=0xd1a854
+step=18118 PC=0x0a28bf SP=0xd1a854
+step=18119 PC=0x0a28b7 SP=0xd1a854
+step=18120 PC=0x0a28bf SP=0xd1a854
+step=18121 PC=0x0a28b7 SP=0xd1a854
+step=18122 PC=0x0a28bf SP=0xd1a854
+step=18123 PC=0x0a28b7 SP=0xd1a854
+step=18124 PC=0x0a28bf SP=0xd1a854
+step=18125 PC=0x0a28b7 SP=0xd1a854
+step=18126 PC=0x0a28bf SP=0xd1a854
+step=18127 PC=0x0a28b7 SP=0xd1a854
+step=18128 PC=0x0a28bf SP=0xd1a854
+step=18129 PC=0x0a28b7 SP=0xd1a854
+step=18130 PC=0x0a28bf SP=0xd1a854
+step=18131 PC=0x0a28b7 SP=0xd1a854
+step=18132 PC=0x0a28bf SP=0xd1a854
+step=18133 PC=0x0a28b7 SP=0xd1a854
+step=18134 PC=0x0a28bf SP=0xd1a854
+step=18135 PC=0x0a28b7 SP=0xd1a854
+step=18136 PC=0x0a28bf SP=0xd1a854
+step=18137 PC=0x0a28b7 SP=0xd1a854
+step=18138 PC=0x0a28bf SP=0xd1a854
+step=18139 PC=0x0a28b7 SP=0xd1a854
+step=18140 PC=0x0a28bf SP=0xd1a854
+step=18141 PC=0x0a28b7 SP=0xd1a854
+step=18142 PC=0x0a28bf SP=0xd1a854
+step=18143 PC=0x0a28b7 SP=0xd1a854
+step=18144 PC=0x0a28bf SP=0xd1a854
+step=18145 PC=0x0a28b7 SP=0xd1a854
+step=18146 PC=0x0a28bf SP=0xd1a854
+step=18147 PC=0x0a28b7 SP=0xd1a854
+step=18148 PC=0x0a28bf SP=0xd1a854
+step=18149 PC=0x0a28b7 SP=0xd1a854
+step=18150 PC=0x0a28bf SP=0xd1a854
+step=18151 PC=0x0a28b7 SP=0xd1a854
+step=18152 PC=0x0a28bf SP=0xd1a854
+step=18153 PC=0x0a28b7 SP=0xd1a854
+step=18154 PC=0x0a28bf SP=0xd1a854
+step=18155 PC=0x0a28b7 SP=0xd1a854
+step=18156 PC=0x0a28bf SP=0xd1a854
+step=18157 PC=0x0a28b7 SP=0xd1a854
+step=18158 PC=0x0a28bf SP=0xd1a854
+step=18159 PC=0x0a28b7 SP=0xd1a854
+step=18160 PC=0x0a28bf SP=0xd1a854
+step=18161 PC=0x0a28b7 SP=0xd1a854
+step=18162 PC=0x0a28bf SP=0xd1a854
+step=18163 PC=0x0a28b7 SP=0xd1a854
+step=18164 PC=0x0a28bf SP=0xd1a854
+step=18165 PC=0x0a28b7 SP=0xd1a854
+step=18166 PC=0x0a28bf SP=0xd1a854
+step=18167 PC=0x0a28b7 SP=0xd1a854
+step=18168 PC=0x0a28bf SP=0xd1a854
+step=18169 PC=0x0a28b7 SP=0xd1a854
+step=18170 PC=0x0a28bf SP=0xd1a854
+step=18171 PC=0x0a28b7 SP=0xd1a854
+step=18172 PC=0x0a28bf SP=0xd1a854
+step=18173 PC=0x0a28b7 SP=0xd1a854
+step=18174 PC=0x0a28bf SP=0xd1a854
+step=18175 PC=0x0a28b7 SP=0xd1a854
+step=18176 PC=0x0a28bf SP=0xd1a854
+step=18177 PC=0x0a28b7 SP=0xd1a854
+step=18178 PC=0x0a28bf SP=0xd1a854
+step=18179 PC=0x0a28b7 SP=0xd1a854
+step=18180 PC=0x0a28bf SP=0xd1a854
+step=18181 PC=0x0a28b7 SP=0xd1a854
+step=18182 PC=0x0a28bf SP=0xd1a854
+step=18183 PC=0x0a28b7 SP=0xd1a854
+step=18184 PC=0x0a28bf SP=0xd1a854
+step=18185 PC=0x0a28b7 SP=0xd1a854
+step=18186 PC=0x0a28bf SP=0xd1a854
+step=18187 PC=0x0a28b7 SP=0xd1a854
+step=18188 PC=0x0a28bf SP=0xd1a854
+step=18189 PC=0x0a28b7 SP=0xd1a854
+step=18190 PC=0x0a28bf SP=0xd1a854
+step=18191 PC=0x0a28b7 SP=0xd1a854
+step=18192 PC=0x0a28bf SP=0xd1a854
+step=18193 PC=0x0a28b7 SP=0xd1a854
+step=18194 PC=0x0a28bf SP=0xd1a854
+step=18195 PC=0x0a28b7 SP=0xd1a854
+step=18196 PC=0x0a28bf SP=0xd1a854
+step=18197 PC=0x0a28b7 SP=0xd1a854
+step=18198 PC=0x0a28bf SP=0xd1a854
+step=18199 PC=0x0a28b7 SP=0xd1a854
+step=18200 PC=0x0a28bf SP=0xd1a854
+step=18201 PC=0x0a28b7 SP=0xd1a854
+step=18202 PC=0x0a28bf SP=0xd1a854
+step=18203 PC=0x0a28b7 SP=0xd1a854
+step=18204 PC=0x0a28bf SP=0xd1a854
+step=18205 PC=0x0a28b7 SP=0xd1a854
+step=18206 PC=0x0a28bf SP=0xd1a854
+step=18207 PC=0x0a28b7 SP=0xd1a854
+step=18208 PC=0x0a28bf SP=0xd1a854
+step=18209 PC=0x0a28b7 SP=0xd1a854
+step=18210 PC=0x0a28bf SP=0xd1a854
+step=18211 PC=0x0a28b7 SP=0xd1a854
+step=18212 PC=0x0a28bf SP=0xd1a854
+step=18213 PC=0x0a28b7 SP=0xd1a854
+step=18214 PC=0x0a28bf SP=0xd1a854
+step=18215 PC=0x0a28b7 SP=0xd1a854
+step=18216 PC=0x0a28bf SP=0xd1a854
+step=18217 PC=0x0a28b7 SP=0xd1a854
+step=18218 PC=0x0a28bf SP=0xd1a854
+step=18219 PC=0x0a28b7 SP=0xd1a854
+step=18220 PC=0x0a28bf SP=0xd1a854
+step=18221 PC=0x0a28b7 SP=0xd1a854
+step=18222 PC=0x0a28bf SP=0xd1a854
+step=18223 PC=0x0a28b7 SP=0xd1a854
+step=18224 PC=0x0a28bf SP=0xd1a854
+step=18225 PC=0x0a28b7 SP=0xd1a854
+step=18226 PC=0x0a28bf SP=0xd1a854
+step=18227 PC=0x0a28b7 SP=0xd1a854
+step=18228 PC=0x0a28bf SP=0xd1a854
+step=18229 PC=0x0a28b7 SP=0xd1a854
+step=18230 PC=0x0a28bf SP=0xd1a854
+step=18231 PC=0x0a28b7 SP=0xd1a854
+step=18232 PC=0x0a28bf SP=0xd1a854
+step=18233 PC=0x0a28b7 SP=0xd1a854
+step=18234 PC=0x0a28bf SP=0xd1a854
+step=18235 PC=0x0a28b7 SP=0xd1a854
+step=18236 PC=0x0a28bf SP=0xd1a854
+step=18237 PC=0x0a28b7 SP=0xd1a854
+step=18238 PC=0x0a28bf SP=0xd1a854
+step=18239 PC=0x0a28b7 SP=0xd1a854
+step=18240 PC=0x0a28e6 SP=0xd1a854
+step=18241 PC=0x0a28ee SP=0xd1a85d
+step=18242 PC=0x0a28f8 SP=0xd1a85d
+step=18243 PC=0x0a298c SP=0xd1a85d
+step=18244 PC=0x058348 SP=0xd1a860
+step=18245 PC=0x061def SP=0xd1a85d
+step=18246 PC=0x058350 SP=0xd1a84e
+step=18247 PC=0x09e601 SP=0xd1a84b
+step=18248 PC=0x0800a0 SP=0xd1a848
+step=18249 PC=0x0800bd SP=0xd1a848
+step=18250 PC=0x09e605 SP=0xd1a84b
+step=18251 PC=0x058354 SP=0xd1a84e
+step=18252 PC=0x061e20 SP=0xd1a84b
+step=18253 PC=0x061e27 SP=0xd1a851
+step=18254 PC=0x058358 SP=0xd1a860
+step=18255 PC=0x058368 SP=0xd1a860
+step=18256 PC=0x058396 SP=0xd1a860
+step=18257 PC=0x0800b8 SP=0xd1a85d
+step=18258 PC=0x05839a SP=0xd1a860
+step=18259 PC=0x058415 SP=0xd1a860
+step=18260 PC=0x058423 SP=0xd1a860
+step=18261 PC=0x05e7f7 SP=0xd1a85d
+step=18262 PC=0x07ff7b SP=0xd1a85a
+step=18263 PC=0x07ff85 SP=0xd1a85a
+step=18264 PC=0x07ff99 SP=0xd1a85a
+step=18265 PC=0x04c940 SP=0xd1a857
+step=18266 PC=0x07ff9d SP=0xd1a85a
+step=18267 PC=0x05e7fb SP=0xd1a85d
+step=18268 PC=0x08384f SP=0xd1a85a
+step=18269 PC=0x0820cd SP=0xd1a854
+step=18270 PC=0x0820e1 SP=0xd1a854
+step=18271 PC=0x0820e6 SP=0xd1a854
+step=18272 PC=0x083856 SP=0xd1a857
+step=18273 PC=0x082be2 SP=0xd1a854
+step=18274 PC=0x08386a SP=0xd1a857
+step=18275 PC=0x0838c8 SP=0xd1a857
+step=18276 PC=0x05e7ff SP=0xd1a85d
+step=18277 PC=0x05e3a2 SP=0xd1a85a [compaction_entry_05E3A2] ***
+step=18278 PC=0x05e836 SP=0xd1a857 [edit_wrapper_05E836] ***
+step=18279 PC=0x0831a4 SP=0xd1a854 [EditProg_0831A4] ***
+step=18280 PC=0x0831e5 SP=0xd1a854
+step=18281 PC=0x083214 SP=0xd1a84e
+step=18282 PC=0x04c990 SP=0xd1a84e
+step=18283 PC=0x083232 SP=0xd1a851
+step=18284 PC=0x082525 SP=0xd1a851
+step=18285 PC=0x0825d1 SP=0xd1a84e
+step=18286 PC=0x0825d9 SP=0xd1a84b
+step=18287 PC=0x0825db SP=0xd1a84b
+step=18288 PC=0x08252d SP=0xd1a851
+step=18289 PC=0x0825d1 SP=0xd1a84e
+step=18290 PC=0x0825d9 SP=0xd1a84b
+step=18291 PC=0x0825db SP=0xd1a84b
+step=18292 PC=0x082535 SP=0xd1a851
+step=18293 PC=0x0825d1 SP=0xd1a84e
+step=18294 PC=0x0825d9 SP=0xd1a84b
+step=18295 PC=0x0825db SP=0xd1a84b
+step=18296 PC=0x08253d SP=0xd1a851
+step=18297 PC=0x0825d1 SP=0xd1a84e
+step=18298 PC=0x0825d9 SP=0xd1a84b
+step=18299 PC=0x0825db SP=0xd1a84b
+step=18300 PC=0x082545 SP=0xd1a851
+step=18301 PC=0x0825d1 SP=0xd1a84e
+step=18302 PC=0x0825d9 SP=0xd1a84b
+step=18303 PC=0x0825db SP=0xd1a84b
+step=18304 PC=0x08254d SP=0xd1a851
+step=18305 PC=0x0825d1 SP=0xd1a84e
+step=18306 PC=0x0825d9 SP=0xd1a84b
+step=18307 PC=0x0825db SP=0xd1a84b
+step=18308 PC=0x082555 SP=0xd1a851
+step=18309 PC=0x0825d1 SP=0xd1a84e
+step=18310 PC=0x0825d9 SP=0xd1a84b
+step=18311 PC=0x0825db SP=0xd1a84b
+step=18312 PC=0x08255d SP=0xd1a851
+step=18313 PC=0x0825d1 SP=0xd1a84e
+step=18314 PC=0x0825d9 SP=0xd1a84b
+step=18315 PC=0x0825db SP=0xd1a84b
+step=18316 PC=0x082565 SP=0xd1a851
+step=18317 PC=0x0825d1 SP=0xd1a84e
+step=18318 PC=0x0825d9 SP=0xd1a84b
+step=18319 PC=0x0825db SP=0xd1a84b
+step=18320 PC=0x08256d SP=0xd1a851
+step=18321 PC=0x0825d1 SP=0xd1a84e
+step=18322 PC=0x0825d9 SP=0xd1a84b
+step=18323 PC=0x0825db SP=0xd1a84b
+step=18324 PC=0x082575 SP=0xd1a851
+step=18325 PC=0x0825d1 SP=0xd1a84e
+step=18326 PC=0x0825d9 SP=0xd1a84b
+step=18327 PC=0x0825db SP=0xd1a84b
+step=18328 PC=0x08257d SP=0xd1a851
+step=18329 PC=0x0825d1 SP=0xd1a84e
+step=18330 PC=0x0825d9 SP=0xd1a84b
+step=18331 PC=0x0825db SP=0xd1a84b
+step=18332 PC=0x082585 SP=0xd1a851
+step=18333 PC=0x0825d1 SP=0xd1a84e
+step=18334 PC=0x0825d9 SP=0xd1a84b
+step=18335 PC=0x0825db SP=0xd1a84b
+step=18336 PC=0x08258d SP=0xd1a851
+step=18337 PC=0x0825d1 SP=0xd1a84e
+step=18338 PC=0x0825d9 SP=0xd1a84b
+step=18339 PC=0x0825db SP=0xd1a84b
+step=18340 PC=0x082595 SP=0xd1a851
+step=18341 PC=0x0825d1 SP=0xd1a84e
+step=18342 PC=0x0825d9 SP=0xd1a84b
+step=18343 PC=0x0825db SP=0xd1a84b
+step=18344 PC=0x08259d SP=0xd1a851
+step=18345 PC=0x0825d1 SP=0xd1a84e
+step=18346 PC=0x0825d9 SP=0xd1a84b
+step=18347 PC=0x0825db SP=0xd1a84b
+step=18348 PC=0x0825a5 SP=0xd1a851
+step=18349 PC=0x0825d1 SP=0xd1a84e
+step=18350 PC=0x0825d9 SP=0xd1a84b
+step=18351 PC=0x0825db SP=0xd1a84b
+step=18352 PC=0x0825ad SP=0xd1a851
+step=18353 PC=0x0825d1 SP=0xd1a84e
+step=18354 PC=0x0825d9 SP=0xd1a84b
+step=18355 PC=0x0825db SP=0xd1a84b
+step=18356 PC=0x0825b5 SP=0xd1a851
+step=18357 PC=0x0825d1 SP=0xd1a84e
+step=18358 PC=0x0825d9 SP=0xd1a84b
+step=18359 PC=0x0825db SP=0xd1a84b
+step=18360 PC=0x0825bd SP=0xd1a851
+step=18361 PC=0x0825d1 SP=0xd1a84e
+step=18362 PC=0x0825d9 SP=0xd1a84b
+step=18363 PC=0x0825db SP=0xd1a84b
+step=18364 PC=0x0825c5 SP=0xd1a851
+step=18365 PC=0x0825d1 SP=0xd1a84e
+step=18366 PC=0x0825d9 SP=0xd1a84b
+step=18367 PC=0x0825db SP=0xd1a84b
+step=18368 PC=0x0825cd SP=0xd1a851
+step=18369 PC=0x0825d9 SP=0xd1a84e
+step=18370 PC=0x0825db SP=0xd1a84e
+step=18371 PC=0x083237 SP=0xd1a854
+step=18372 PC=0x0826fd SP=0xd1a854
+step=18373 PC=0x0824d6 SP=0xd1a851
+step=18374 PC=0x082717 SP=0xd1a854
+step=18375 PC=0x082732 SP=0xd1a854
+step=18376 PC=0x08273d SP=0xd1a854
+step=18377 PC=0x04c876 SP=0xd1a84e
+step=18378 PC=0x082750 SP=0xd1a851
+step=18379 PC=0x0821b2 SP=0xd1a84e
+step=18380 PC=0x0821b4 SP=0xd1a84e
+step=18381 PC=0x0821b7 SP=0xd1a84e
+step=18382 PC=0x082754 SP=0xd1a851
+step=18383 PC=0x082756 SP=0xd1a851
+step=18384 PC=0x08275c SP=0xd1a851
+step=18385 PC=0x082c0b SP=0xd1a84b
+step=18386 PC=0x04c8a3 SP=0xd1a845
+step=18387 PC=0x082c10 SP=0xd1a848
+step=18388 PC=0x08276e SP=0xd1a84e
+step=18389 PC=0x082774 SP=0xd1a851
+step=18390 PC=0x08279e SP=0xd1a84e
+step=18391 PC=0x080084 SP=0xd1a84b
+step=18392 PC=0x080087 SP=0xd1a84b
+step=18393 PC=0x08008a SP=0xd1a84b
+step=18394 PC=0x080090 SP=0xd1a84b
+step=18395 PC=0x080093 SP=0xd1a84b
+step=18396 PC=0x080096 SP=0xd1a84b
+step=18397 PC=0x0827a5 SP=0xd1a84e
+step=18398 PC=0x0827a6 SP=0xd1a84e
+step=18399 PC=0x08012d SP=0xd1a84b
+step=18400 PC=0x080130 SP=0xd1a84b
+step=18401 PC=0x0827aa SP=0xd1a84e
+step=18402 PC=0x08277c SP=0xd1a851
+step=18403 PC=0x08278d SP=0xd1a851
+step=18404 PC=0x082799 SP=0xd1a854
+step=18405 PC=0x082745 SP=0xd1a854
+step=18406 PC=0x04c876 SP=0xd1a84e
+step=18407 PC=0x082750 SP=0xd1a851
+step=18408 PC=0x0821b2 SP=0xd1a84e
+step=18409 PC=0x082754 SP=0xd1a851
+step=18410 PC=0x082756 SP=0xd1a851
+step=18411 PC=0x082772 SP=0xd1a851
+step=18412 PC=0x08279e SP=0xd1a84e
+step=18413 PC=0x080084 SP=0xd1a84b
+step=18414 PC=0x080087 SP=0xd1a84b
+step=18415 PC=0x08008a SP=0xd1a84b
+step=18416 PC=0x080090 SP=0xd1a84b
+step=18417 PC=0x080093 SP=0xd1a84b
+step=18418 PC=0x080096 SP=0xd1a84b
+step=18419 PC=0x0827a5 SP=0xd1a84e
+step=18420 PC=0x0827a6 SP=0xd1a84e
+step=18421 PC=0x08012d SP=0xd1a84b
+step=18422 PC=0x080130 SP=0xd1a84b
+step=18423 PC=0x0827aa SP=0xd1a84e
+step=18424 PC=0x08277c SP=0xd1a851
+step=18425 PC=0x08278d SP=0xd1a851
+step=18426 PC=0x082799 SP=0xd1a854
+step=18427 PC=0x082745 SP=0xd1a854
+step=18428 PC=0x04c876 SP=0xd1a84e
+step=18429 PC=0x082750 SP=0xd1a851
+step=18430 PC=0x0821b2 SP=0xd1a84e
+step=18431 PC=0x082754 SP=0xd1a851
+step=18432 PC=0x082756 SP=0xd1a851
+step=18433 PC=0x082772 SP=0xd1a851
+step=18434 PC=0x08279e SP=0xd1a84e
+step=18435 PC=0x080084 SP=0xd1a84b
+step=18436 PC=0x080087 SP=0xd1a84b
+step=18437 PC=0x08008a SP=0xd1a84b
+step=18438 PC=0x080090 SP=0xd1a84b
+step=18439 PC=0x080093 SP=0xd1a84b
+step=18440 PC=0x080096 SP=0xd1a84b
+step=18441 PC=0x0827a5 SP=0xd1a84e
+step=18442 PC=0x0827a6 SP=0xd1a84e
+step=18443 PC=0x08012d SP=0xd1a84b
+step=18444 PC=0x080130 SP=0xd1a84b
+step=18445 PC=0x0827aa SP=0xd1a84e
+step=18446 PC=0x08277c SP=0xd1a851
+step=18447 PC=0x08278d SP=0xd1a851
+step=18448 PC=0x082799 SP=0xd1a854
+step=18449 PC=0x082745 SP=0xd1a854
+step=18450 PC=0x04c876 SP=0xd1a84e
+step=18451 PC=0x082750 SP=0xd1a851
+step=18452 PC=0x0821b2 SP=0xd1a84e
+step=18453 PC=0x082754 SP=0xd1a851
+step=18454 PC=0x082756 SP=0xd1a851
+step=18455 PC=0x082772 SP=0xd1a851
+step=18456 PC=0x08279e SP=0xd1a84e
+step=18457 PC=0x080084 SP=0xd1a84b
+step=18458 PC=0x080087 SP=0xd1a84b
+step=18459 PC=0x08008a SP=0xd1a84b
+step=18460 PC=0x080090 SP=0xd1a84b
+step=18461 PC=0x080093 SP=0xd1a84b
+step=18462 PC=0x080096 SP=0xd1a84b
+step=18463 PC=0x0827a5 SP=0xd1a84e
+step=18464 PC=0x0827a6 SP=0xd1a84e
+step=18465 PC=0x08012d SP=0xd1a84b
+step=18466 PC=0x080130 SP=0xd1a84b
+step=18467 PC=0x0827aa SP=0xd1a84e
+step=18468 PC=0x08277c SP=0xd1a851
+step=18469 PC=0x08278d SP=0xd1a851
+step=18470 PC=0x082799 SP=0xd1a854
+step=18471 PC=0x082745 SP=0xd1a854
+step=18472 PC=0x04c876 SP=0xd1a84e
+step=18473 PC=0x082750 SP=0xd1a851
+step=18474 PC=0x0821b2 SP=0xd1a84e
+step=18475 PC=0x082754 SP=0xd1a851
+step=18476 PC=0x082756 SP=0xd1a851
+step=18477 PC=0x082772 SP=0xd1a851
+step=18478 PC=0x08279e SP=0xd1a84e
+step=18479 PC=0x080084 SP=0xd1a84b
+step=18480 PC=0x080087 SP=0xd1a84b
+step=18481 PC=0x08008a SP=0xd1a84b
+step=18482 PC=0x080090 SP=0xd1a84b
+step=18483 PC=0x080093 SP=0xd1a84b
+step=18484 PC=0x080096 SP=0xd1a84b
+step=18485 PC=0x0827a5 SP=0xd1a84e
+step=18486 PC=0x0827a6 SP=0xd1a84e
+step=18487 PC=0x08012d SP=0xd1a84b
+step=18488 PC=0x080130 SP=0xd1a84b
+step=18489 PC=0x0827aa SP=0xd1a84e
+step=18490 PC=0x08277c SP=0xd1a851
+step=18491 PC=0x08278d SP=0xd1a851
+step=18492 PC=0x082799 SP=0xd1a854
+step=18493 PC=0x082745 SP=0xd1a854
+step=18494 PC=0x04c876 SP=0xd1a84e
+step=18495 PC=0x082750 SP=0xd1a851
+step=18496 PC=0x0821b2 SP=0xd1a84e
+step=18497 PC=0x082754 SP=0xd1a851
+step=18498 PC=0x082756 SP=0xd1a851
+step=18499 PC=0x082772 SP=0xd1a851
+step=18500 PC=0x08279e SP=0xd1a84e
+```
+
+### Disassembly of 0x05E3A2
+
+```text
+0x05e3a2  cd 36 e8 05            call 0x05e836
+0x05e3a6  2a 72 06 d0            ld hl, (0xd00672)
+0x05e3aa  cd 51 e8 05            call 0x05e851
+0x05e3ae  2a 3a 24 d0            ld hl, (0xd0243a)
+0x05e3b2  ed 5b 37 24 d0         ld de, (0xd02437)
+0x05e3b7  b7                     or a
+0x05e3b8  ed 52                  sbc hl, de
+0x05e3ba  c8                     ret z
+0x05e3bb  e5                     push hl
+0x05e3bc  c1                     pop bc
+0x05e3bd  2a 3a 24 d0            ld hl, (0xd0243a)
+0x05e3c1  2b                     dec hl
+0x05e3c2  ed 5b 3d 24 d0         ld de, (0xd0243d)
+0x05e3c7  1b                     dec de
+0x05e3c8  ed b8                  lddr
+0x05e3ca  23                     inc hl
+0x05e3cb  22 3a 24 d0            ld (0xd0243a), hl
+0x05e3cf  13                     inc de
+0x05e3d0  ed 53 3d 24 d0         ld (0xd0243d), de
+0x05e3d5  c9                     ret
+```
+
+### Disassembly Around Caller (0x05e7ff)
+
+```text
+0x05e7bf  30 23                  jr nc, 0x05e7e4
+0x05e7c1  0a                     ld a, (bc)
+0x05e7c2  37                     scf
+0x05e7c3  d1                     pop de
+0x05e7c4  fd 72 0d               ld (iy+13), d
+0x05e7c7  e1                     pop hl
+0x05e7c8  22 95 05 d0            ld (0xd00595), hl
+0x05e7cc  c9                     ret
+0x05e7cd  cd 42 e2 05            call 0x05e242
+0x05e7d1  c8                     ret z
+0x05e7d2  cd 72 2b 0a            call 0x0a2b72
+0x05e7d6  18 f5                  jr 0x05e7cd
+0x05e7d8  cd 7e e2 05            call 0x05e27e
+0x05e7dc  c8                     ret z
+0x05e7dd  cd e3 e7 05            call 0x05e7e3
+0x05e7e1  18 f5                  jr 0x05e7d8
+0x05e7e3  fd cb 2a 4e            bit 1, (iy+42)
+0x05e7e7  28 05                  jr z, 0x05e7ee
+0x05e7e9  cd 15 63 02            call 0x026315
+0x05e7ed  c9                     ret
+0x05e7ee  cd 68 2a 0a            call 0x0a2a68
+0x05e7f2  cd ec 1c 0a            call 0x0a1cec
+0x05e7f6  c9                     ret
+0x05e7f7  cd 7b ff 07            call 0x07ff7b
+0x05e7fb  cd 4f 38 08            call 0x08384f
+0x05e7ff  cd a2 e3 05            call 0x05e3a2 <<<
+0x05e803  40 ed 4b 35 24         sis ld bc, (0x002435)
+0x05e808  79                     ld a, c
+0x05e809  b0                     or b
+0x05e80a  c8                     ret z
+0x05e80b  2a 3d 24 d0            ld hl, (0xd0243d)
+0x05e80f  ed 5b 37 24 d0         ld de, (0xd02437)
+0x05e814  ed b0                  ldir
+0x05e816  ed 53 3a 24 d0         ld (0xd0243a), de
+0x05e81b  22 3d 24 d0            ld (0xd0243d), hl
+```
+
+## Analysis
+
+The compaction entry at 0x05E3A2 is reached from PC=0x05e7ff.
+
+The call chain that destroys cxCurApp is:
+1. 0x05e7ff -> 0x05E3A2 (compaction entry)
+2. 0x05E3A2 -> ... -> 0x05E836 (edit wrapper, from PC=0x05e3a2)
+3. 0x05E836 -> 0x0831A4 (EditProg/LDDR, from PC=0x05e836)
+4. 0x0831A4 executes LDDR which sweeps through cx range as side effect
+
+cxCurApp was zeroed at step 18282 while executing PC=0x04c990.
+
+## Suggestions for Preventing cx-Zeroing
+
+1. **Pre-seed allocator state**: Set workspace pointers (tempMem, FPS, OPS, progPtr)
+   so the LDDR source/dest ranges do not overlap the cx block (0xD007CA-0xD007E1).
+2. **Skip the compaction call**: If the trigger is conditional (IY bit check),
+   seed the IY bit to skip the compaction path entirely.
+3. **Guard cx memory**: Snapshot cx before CoorMon and restore after the
+   compaction step is known to have passed.
+
