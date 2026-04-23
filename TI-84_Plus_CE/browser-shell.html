@@ -1291,7 +1291,16 @@ $('btnBoot').addEventListener('click', async () => {
   updateModifierFlags();
   updateModifierDisplay();
   kbd = createKeyboardManager(peripherals);
+  const isEditableTarget = (e) => {
+    const t = e.target;
+    if (!t) return false;
+    const tag = t.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+    if (t.isContentEditable) return true;
+    return false;
+  };
   kbdDown = (e) => {
+    if (isEditableTarget(e)) return;
     kbd.handleKeyDown(e);
     writeTranslatedKeyEvent(e.code);
     updateKeyStateDisplay();
@@ -1303,6 +1312,7 @@ $('btnBoot').addEventListener('click', async () => {
     }
   };
   kbdUp = (e) => {
+    if (isEditableTarget(e)) return;
     kbd.handleKeyUp(e);
     updateKeyStateDisplay();
     updateKeyboardOverlay();
