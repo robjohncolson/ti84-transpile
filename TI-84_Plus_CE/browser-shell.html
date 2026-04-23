@@ -1537,7 +1537,11 @@ const EVAL_FPSBASE_ADDR    = 0xD0258A;
 const EVAL_FPS_ADDR        = 0xD0258D;
 const EVAL_OPBASE_ADDR     = 0xD02590;
 const EVAL_OPS_ADDR        = 0xD02593;
-const EVAL_USERMEM_ADDR    = 0xD1A881;
+// Token buffer lives in a dedicated scratch region, NOT at userMem
+// (0xD1A881) — userMem is also tempMem/FPSbase/FPS/OPBase after
+// MEM_INIT, so tokens there collide with ParseInp's heap and corrupt
+// the parse. Matches probe-phase25ag-store-recall-roundtrip.mjs.
+const EVAL_TOKEN_BUFFER_ADDR = 0xD00800;
 const EVAL_FAKE_RET        = 0x7FFFFE;
 const EVAL_ERR_CATCH       = 0x7FFFFA;
 const EVAL_MEMINIT_RET     = 0x7FFFF6;
@@ -1662,12 +1666,12 @@ function runDirectEval(expr) {
   }
   if (!memInitDone) return { error: 'MEM_INIT did not return.' };
 
-  // Stage 4: write tokens to userMem and set parse pointers
-  mem.fill(0x00, EVAL_USERMEM_ADDR, EVAL_USERMEM_ADDR + 0x80);
-  mem.set(tokens, EVAL_USERMEM_ADDR);
-  evalWrite24(mem, EVAL_BEGPC_ADDR, EVAL_USERMEM_ADDR);
-  evalWrite24(mem, EVAL_CURPC_ADDR, EVAL_USERMEM_ADDR);
-  evalWrite24(mem, EVAL_ENDPC_ADDR, EVAL_USERMEM_ADDR + tokens.length);
+  // Stage 4: write tokens to scratch buffer and set parse pointers
+  mem.fill(0x00, EVAL_TOKEN_BUFFER_ADDR, EVAL_TOKEN_BUFFER_ADDR + 0x80);
+  mem.set(tokens, EVAL_TOKEN_BUFFER_ADDR);
+  evalWrite24(mem, EVAL_BEGPC_ADDR, EVAL_TOKEN_BUFFER_ADDR);
+  evalWrite24(mem, EVAL_CURPC_ADDR, EVAL_TOKEN_BUFFER_ADDR);
+  evalWrite24(mem, EVAL_ENDPC_ADDR, EVAL_TOKEN_BUFFER_ADDR + tokens.length);
 
   // Clear OP1
   mem.fill(0x00, EVAL_OP1_ADDR, EVAL_OP1_ADDR + 9);
