@@ -1646,11 +1646,15 @@ function runDirectEval(expr) {
   evalWrite24(mem, c.sp, EVAL_MEMINIT_RET);
 
   let memInitDone = false;
+  const checkMemInitRet = (pc) => {
+    if ((pc & 0xFFFFFF) === EVAL_MEMINIT_RET) throw new Error('__MEMINIT_RET__');
+  };
   try {
     ex.runFrom(EVAL_MEMINIT_ENTRY, 'adl', {
       maxSteps: 100000,
       maxLoopIterations: 8192,
-      onBlock(pc) { if ((pc & 0xFFFFFF) === EVAL_MEMINIT_RET) throw new Error('__MEMINIT_RET__'); },
+      onBlock(pc) { checkMemInitRet(pc); },
+      onMissingBlock(pc) { checkMemInitRet(pc); },
     });
   } catch (e) {
     if (e?.message === '__MEMINIT_RET__') memInitDone = true;
