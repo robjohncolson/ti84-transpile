@@ -1572,6 +1572,15 @@ const EVAL_MEMINIT_RET     = 0x7FFFF6;
 const EVAL_CREATEREAL_RET   = 0x7FFFF2;
 const EVAL_ANS_OP1 = [0x00, 0x72, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
 
+// Cached runtime state for multi-expression chaining (Ans persistence)
+let evalCachedMem = null;
+let evalCachedEx = null;
+let evalCachedCpu = null;
+let evalCachedPerph = null;
+let evalCachedPostCreateFps = 0;
+let evalCachedPostCreateFpsBase = 0;
+let evalCachedPostCreateOpBase = 0;
+
 function evalWrite24(mem, addr, val) {
   mem[addr]     =  val        & 0xFF;
   mem[addr + 1] = (val >>> 8) & 0xFF;
@@ -1626,6 +1635,86 @@ function evalRunCreateReal(ex, c, mem) {
 
   const deAddr = c.de & 0xFFFFFF;
   return { returned, errCaught, deAddr };
+}
+
+function evalEnsureRuntime() {
+  if (evalCachedMem) {
+    return {
+      mem: evalCachedMem,
+      ex: evalCachedEx,
+      c: evalCachedCpu,
+      postCreateFps: evalCachedPostCreateFps,
+      postCreateFpsBase: evalCachedPostCreateFpsBase,
+      postCreateOpBase: evalCachedPostCreateOpBase,
+    };
+  }
+
+  const romBytes = decodeEmbeddedRom();
+  const mem = new Uint8Array(0x1000000);
+  mem.set(romBytes);
+  const perph = createPeripheralBus({ pllDelay: 2, timerInterrupt: false });
+  const ex = createExecutor(PRELIFTED_BLOCKS, mem, { peripherals: perph });
+  const c = ex.cpu;
+
+  // Stage 0: cold boot
+  ex.runFrom(0x000000, 'z80', { maxSteps: 20000, maxLoopIterations: 32 });
+
+  // Stage 1: kernel init
+  c.halted = false; c.iff1 = 0; c.iff2 = 0;
+  c.sp = SCREEN_STACK_TOP - 3;
+  mem.fill(0xFF, c.sp, c.sp + 3);
+  ex.runFrom(0x08C331, 'adl', { maxSteps: 100000, maxLoopIterations: 10000 });
+
+  // Stage 2: post-init
+  c.mbase = 0xD0; c._iy = 0xD00080; c._hl = 0;
+  c.halted = false; c.iff1 = 0; c.iff2 = 0;
+  c.sp = SCREEN_STACK_TOP - 3;
+  mem.fill(0xFF, c.sp, c.sp + 3);
+  ex.runFrom(0x0802B2, 'adl', { maxSteps: 100, maxLoopIterations: 32 });
+
+  // Stage 3: MEM_INIT (resets heap)
+  c.halted = false; c.iff1 = 0; c.iff2 = 0;
+  c.madl = 1; c.mbase = 0xD0; c._iy = 0xD00080; c.f = 0x40; c._ix = 0xD1A860;
+  c.sp = SCREEN_STACK_TOP - 12;
+  mem.fill(0xFF, c.sp, c.sp + 12);
+  c.sp -= 3;
+  evalWrite24(mem, c.sp, EVAL_MEMINIT_RET);
+
+  let memInitDone = false;
+  const checkMemInitRet = (pc) => {
+    if ((pc & 0xFFFFFF) === EVAL_MEMINIT_RET) throw new Error('__MEMINIT_RET__');
+  };
+  try {
+    ex.runFrom(EVAL_MEMINIT_ENTRY, 'adl', {
+      maxSteps: 100000,
+      maxLoopIterations: 8192,
+      onBlock(pc) { checkMemInitRet(pc); },
+      onMissingBlock(pc) { checkMemInitRet(pc); },
+    });
+  } catch (e) {
+    if (e?.message === '__MEMINIT_RET__') memInitDone = true;
+    else return { error: `MEM_INIT failed: ${e.message}` };
+  }
+  if (!memInitDone) return { error: 'MEM_INIT did not return.' };
+
+  // Stage 3.5: CreateReal(Ans) - pre-allocate Ans VAT entry
+  const cr1 = evalRunCreateReal(ex, c, mem);
+  if (!cr1.returned) return { error: 'CreateReal(Ans) failed before ParseInp.' };
+
+  const postCreateFps = evalRead24(mem, EVAL_FPS_ADDR);
+  const postCreateFpsBase = evalRead24(mem, EVAL_FPSBASE_ADDR);
+  const postCreateOpBase = evalRead24(mem, EVAL_OPBASE_ADDR);
+
+  // Cache for subsequent evaluations
+  evalCachedMem = mem;
+  evalCachedEx = ex;
+  evalCachedCpu = c;
+  evalCachedPerph = perph;
+  evalCachedPostCreateFps = postCreateFps;
+  evalCachedPostCreateFpsBase = postCreateFpsBase;
+  evalCachedPostCreateOpBase = postCreateOpBase;
+
+  return { mem, ex, c, postCreateFps, postCreateFpsBase, postCreateOpBase };
 }
 
 function tokenizeExpression(expr) {
@@ -1722,63 +1811,15 @@ function runDirectEval(expr) {
   const { tokens, error } = tokenizeExpression(expr);
   if (error) return { error };
 
-  // Fresh cold boot for a clean environment (same as probe)
-  const romBytes = decodeEmbeddedRom();
-  const mem = new Uint8Array(0x1000000);
-  mem.set(romBytes);
-  const perph = createPeripheralBus({ pllDelay: 2, timerInterrupt: false });
-  const ex = createExecutor(PRELIFTED_BLOCKS, mem, { peripherals: perph });
-  const c = ex.cpu;
+  const runtime = evalEnsureRuntime();
+  if (runtime.error) return { error: runtime.error };
 
-  // Stage 0: cold boot
-  ex.runFrom(0x000000, 'z80', { maxSteps: 20000, maxLoopIterations: 32 });
+  const { mem, ex, c, postCreateFps, postCreateFpsBase, postCreateOpBase } = runtime;
 
-  // Stage 1: kernel init
-  c.halted = false; c.iff1 = 0; c.iff2 = 0;
-  c.sp = SCREEN_STACK_TOP - 3;
-  mem.fill(0xFF, c.sp, c.sp + 3);
-  ex.runFrom(0x08C331, 'adl', { maxSteps: 100000, maxLoopIterations: 10000 });
-
-  // Stage 2: post-init
-  c.mbase = 0xD0; c._iy = 0xD00080; c._hl = 0;
-  c.halted = false; c.iff1 = 0; c.iff2 = 0;
-  c.sp = SCREEN_STACK_TOP - 3;
-  mem.fill(0xFF, c.sp, c.sp + 3);
-  ex.runFrom(0x0802B2, 'adl', { maxSteps: 100, maxLoopIterations: 32 });
-
-  // Stage 3: MEM_INIT (resets heap)
-  c.halted = false; c.iff1 = 0; c.iff2 = 0;
-  c.madl = 1; c.mbase = 0xD0; c._iy = 0xD00080; c.f = 0x40; c._ix = 0xD1A860;
-  c.sp = SCREEN_STACK_TOP - 12;
-  mem.fill(0xFF, c.sp, c.sp + 12);
-  c.sp -= 3;
-  evalWrite24(mem, c.sp, EVAL_MEMINIT_RET);
-
-  let memInitDone = false;
-  const checkMemInitRet = (pc) => {
-    if ((pc & 0xFFFFFF) === EVAL_MEMINIT_RET) throw new Error('__MEMINIT_RET__');
-  };
-  try {
-    ex.runFrom(EVAL_MEMINIT_ENTRY, 'adl', {
-      maxSteps: 100000,
-      maxLoopIterations: 8192,
-      onBlock(pc) { checkMemInitRet(pc); },
-      onMissingBlock(pc) { checkMemInitRet(pc); },
-    });
-  } catch (e) {
-    if (e?.message === '__MEMINIT_RET__') memInitDone = true;
-    else return { error: `MEM_INIT failed: ${e.message}` };
-  }
-  if (!memInitDone) return { error: 'MEM_INIT did not return.' };
-
-  // Stage 3.5: CreateReal(Ans) - pre-allocate Ans VAT entry
-  const cr1 = evalRunCreateReal(ex, c, mem);
-  if (!cr1.returned) return { error: 'CreateReal(Ans) failed before ParseInp.' };
-
-  // Save post-CreateReal FPS/FPSbase (they moved past Ans data slot)
-  const postCreateFps = evalRead24(mem, EVAL_FPS_ADDR);
-  const postCreateFpsBase = evalRead24(mem, EVAL_FPSBASE_ADDR);
-  const postCreateOpBase = evalRead24(mem, EVAL_OPBASE_ADDR);
+  // Reset OPS/FPS to post-CreateReal values before ParseInp
+  evalWrite24(mem, EVAL_OPS_ADDR, postCreateOpBase);
+  evalWrite24(mem, EVAL_FPS_ADDR, postCreateFps);
+  evalWrite24(mem, EVAL_FPSBASE_ADDR, postCreateFpsBase);
 
   // Stage 4: write tokens to scratch buffer and set parse pointers
   mem.fill(0x00, EVAL_TOKEN_BUFFER_ADDR, EVAL_TOKEN_BUFFER_ADDR + 0x80);
@@ -1859,11 +1900,16 @@ function runDirectEval(expr) {
 
   // Re-CreateReal(Ans) to rebuild VAT entry destroyed by OPS overflow
   const cr2 = evalRunCreateReal(ex, c, mem);
+  let ansStored = false;
   if (cr2.returned) {
-    // Write saved OP1 BCD into the new Ans data slot
     for (let i = 0; i < 9; i++) mem[cr2.deAddr + i] = savedOp1[i];
+    ansStored = true;
+
+    // Update cached pointers — CreateReal may have shifted them
+    evalCachedPostCreateFps = evalRead24(mem, EVAL_FPS_ADDR);
+    evalCachedPostCreateFpsBase = evalRead24(mem, EVAL_FPSBASE_ADDR);
+    evalCachedPostCreateOpBase = evalRead24(mem, EVAL_OPBASE_ADDR);
   }
-  // If re-CreateReal fails, we still return the correct result - Ans just won't be stored
 
   return {
     value: val,
@@ -1871,6 +1917,7 @@ function runDirectEval(expr) {
     steps: parseSteps,
     errNo,
     op1Hex,
+    ansStored,
   };
 }
 
@@ -1908,13 +1955,18 @@ $('btnEval').addEventListener('click', () => {
   }
 
   resultEl.style.color = '#7ddf7d';
-  resultEl.textContent = `= ${result.display}`;
+  const ansNote = result.ansStored ? '  (Ans stored)' : '';
+  resultEl.textContent = `= ${result.display}${ansNote}`;
   log(`<span class="info">--- Direct Eval "${expr}" = ${result.display} (${result.steps} steps, ${dt} ms, OP1=[${result.op1Hex}], errNo=0x${hex(result.errNo, 2)}) ---</span>`);
 });
 
 $('btnEvalClear').addEventListener('click', () => {
   $('evalInput').value = '';
   $('evalResult').textContent = '';
+  evalCachedMem = null;
+  evalCachedEx = null;
+  evalCachedCpu = null;
+  evalCachedPerph = null;
 });
 
 // Allow pressing Enter in the eval input to trigger evaluation
