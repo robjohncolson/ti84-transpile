@@ -1527,16 +1527,21 @@ const TI_NEGATE_TOKEN = 0xB0;
 
 const EVAL_MEMINIT_ENTRY   = 0x09DEE0;
 const EVAL_PARSEINP_ENTRY  = 0x099914;
+const EVAL_CREATEREAL_ENTRY = 0x08238A;
+const EVAL_RCLVARSYM_ENTRY  = 0x09AC77;
 const EVAL_OP1_ADDR        = 0xD005F8;
 const EVAL_ERRNO_ADDR      = 0xD008DF;
 const EVAL_ERRSP_ADDR      = 0xD008E0;
 const EVAL_BEGPC_ADDR      = 0xD02317;
 const EVAL_CURPC_ADDR      = 0xD0231A;
 const EVAL_ENDPC_ADDR      = 0xD0231D;
+const EVAL_TEMPMEM_ADDR     = 0xD02587;
 const EVAL_FPSBASE_ADDR    = 0xD0258A;
 const EVAL_FPS_ADDR        = 0xD0258D;
 const EVAL_OPBASE_ADDR     = 0xD02590;
 const EVAL_OPS_ADDR        = 0xD02593;
+const EVAL_PTEMP_ADDR       = 0xD0259A;
+const EVAL_PROGPTR_ADDR     = 0xD0259D;
 // Token buffer lives in a dedicated scratch region, NOT at userMem
 // (0xD1A881) — userMem is also tempMem/FPSbase/FPS/OPBase after
 // MEM_INIT, so tokens there collide with ParseInp's heap and corrupt
@@ -1545,6 +1550,8 @@ const EVAL_TOKEN_BUFFER_ADDR = 0xD00800;
 const EVAL_FAKE_RET        = 0x7FFFFE;
 const EVAL_ERR_CATCH       = 0x7FFFFA;
 const EVAL_MEMINIT_RET     = 0x7FFFF6;
+const EVAL_CREATEREAL_RET   = 0x7FFFF2;
+const EVAL_ANS_OP1 = [0x00, 0x72, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
 
 function evalWrite24(mem, addr, val) {
   mem[addr]     =  val        & 0xFF;
@@ -1554,6 +1561,52 @@ function evalWrite24(mem, addr, val) {
 
 function evalRead24(mem, addr) {
   return ((mem[addr] & 0xFF) | ((mem[addr + 1] & 0xFF) << 8) | ((mem[addr + 2] & 0xFF) << 16)) >>> 0;
+}
+
+function evalRunCreateReal(ex, c, mem) {
+  for (let i = 0; i < 9; i++) mem[EVAL_OP1_ADDR + i] = EVAL_ANS_OP1[i];
+
+  c.halted = false; c.iff1 = 0; c.iff2 = 0;
+  c.madl = 1; c.mbase = 0xD0; c._iy = 0xD00080; c.f = 0x40; c._ix = 0xD1A860;
+  c.sp = SCREEN_STACK_TOP - 12;
+  mem.fill(0xFF, c.sp, c.sp + 12);
+
+  c.sp -= 3;
+  evalWrite24(mem, c.sp, EVAL_CREATEREAL_RET);
+  const errBase = (c.sp - 6) & 0xFFFFFF;
+  evalWrite24(mem, errBase, EVAL_ERR_CATCH);
+  evalWrite24(mem, errBase + 3, 0);
+  evalWrite24(mem, EVAL_ERRSP_ADDR, errBase);
+  mem[EVAL_ERRNO_ADDR] = 0x00;
+
+  c.a = 0x00;
+  c._hl = 0x000009;
+
+  let returned = false;
+  let errCaught = false;
+  try {
+    ex.runFrom(EVAL_CREATEREAL_ENTRY, 'adl', {
+      maxSteps: 50000,
+      maxLoopIterations: 8192,
+      onBlock(pc) {
+        const norm = pc & 0xFFFFFF;
+        if (norm === EVAL_CREATEREAL_RET) throw new Error('__CR_RET__');
+        if (norm === EVAL_ERR_CATCH) throw new Error('__CR_ERR__');
+      },
+      onMissingBlock(pc) {
+        const norm = pc & 0xFFFFFF;
+        if (norm === EVAL_CREATEREAL_RET) throw new Error('__CR_RET__');
+        if (norm === EVAL_ERR_CATCH) throw new Error('__CR_ERR__');
+      },
+    });
+  } catch (e) {
+    if (e?.message === '__CR_RET__') returned = true;
+    else if (e?.message === '__CR_ERR__') errCaught = true;
+    else throw e;
+  }
+
+  const deAddr = c.de & 0xFFFFFF;
+  return { returned, errCaught, deAddr };
 }
 
 function tokenizeExpression(expr) {
@@ -1666,6 +1719,15 @@ function runDirectEval(expr) {
   }
   if (!memInitDone) return { error: 'MEM_INIT did not return.' };
 
+  // Stage 3.5: CreateReal(Ans) - pre-allocate Ans VAT entry
+  const cr1 = evalRunCreateReal(ex, c, mem);
+  if (!cr1.returned) return { error: 'CreateReal(Ans) failed before ParseInp.' };
+
+  // Save post-CreateReal FPS/FPSbase (they moved past Ans data slot)
+  const postCreateFps = evalRead24(mem, EVAL_FPS_ADDR);
+  const postCreateFpsBase = evalRead24(mem, EVAL_FPSBASE_ADDR);
+  const postCreateOpBase = evalRead24(mem, EVAL_OPBASE_ADDR);
+
   // Stage 4: write tokens to scratch buffer and set parse pointers
   mem.fill(0x00, EVAL_TOKEN_BUFFER_ADDR, EVAL_TOKEN_BUFFER_ADDR + 0x80);
   mem.set(tokens, EVAL_TOKEN_BUFFER_ADDR);
@@ -1733,11 +1795,23 @@ function runDirectEval(expr) {
   const val = decodeBCD(mem, EVAL_OP1_ADDR);
   const op1Hex = Array.from(mem.slice(EVAL_OP1_ADDR, EVAL_OP1_ADDR + 9), b => hex(b, 2)).join(' ');
 
-  // Reset FPS/OPS as noted in the task
-  const fpsBase = evalRead24(mem, EVAL_FPSBASE_ADDR);
-  evalWrite24(mem, EVAL_FPS_ADDR, fpsBase);
-  evalWrite24(mem, EVAL_OPBASE_ADDR, 0xD3FFFF);
-  evalWrite24(mem, EVAL_OPS_ADDR, 0xD3FFFF);
+  // Save OP1 BCD bytes before any further operations
+  const savedOp1 = new Uint8Array(9);
+  for (let i = 0; i < 9; i++) savedOp1[i] = mem[EVAL_OP1_ADDR + i];
+
+  // Reset OPS to post-CreateReal OPBase (NOT MEM_INIT's 0xD3FFFF)
+  evalWrite24(mem, EVAL_OPS_ADDR, postCreateOpBase);
+  // Reset FPS/FPSbase to post-CreateReal values (past Ans data slot)
+  evalWrite24(mem, EVAL_FPS_ADDR, postCreateFps);
+  evalWrite24(mem, EVAL_FPSBASE_ADDR, postCreateFpsBase);
+
+  // Re-CreateReal(Ans) to rebuild VAT entry destroyed by OPS overflow
+  const cr2 = evalRunCreateReal(ex, c, mem);
+  if (cr2.returned) {
+    // Write saved OP1 BCD into the new Ans data slot
+    for (let i = 0; i < 9; i++) mem[cr2.deAddr + i] = savedOp1[i];
+  }
+  // If re-CreateReal fails, we still return the correct result - Ans just won't be stored
 
   return {
     value: val,
