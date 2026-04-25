@@ -1521,9 +1521,28 @@ const EVAL_TOKEN_MAP = {
   '5': 0x35, '6': 0x36, '7': 0x37, '8': 0x38, '9': 0x39,
   '+': 0x70, '-': 0x71, '*': 0x82, '/': 0x83,
   '.': 0x3A, '(': 0x10, ')': 0x11,
+  'E': 0x3B, '^': 0x0F, ',': 0x2B,
+  '\u03C0': 0xAC,
 };
+for (let code = 0x41; code <= 0x5A; code++) {
+  const upper = String.fromCharCode(code);
+  EVAL_TOKEN_MAP[upper] = code;
+  if (upper !== 'E') EVAL_TOKEN_MAP[upper.toLowerCase()] = code;
+}
+// Reserve uppercase E for scientific notation; lowercase e stays unmapped.
+EVAL_TOKEN_MAP.E = 0x3B;
 // TI-OS negation token (distinct from subtraction)
 const TI_NEGATE_TOKEN = 0xB0;
+const EVAL_FUNCTION_TOKENS = [
+  ['sqrt', 0xBC],
+  ['e^', 0xBF],
+  ['sin', 0xC2],
+  ['cos', 0xC4],
+  ['tan', 0xC6],
+  ['log', 0xC0],
+  ['ln', 0xBE],
+  ['abs', 0xB2],
+];
 
 const EVAL_MEMINIT_ENTRY   = 0x09DEE0;
 const EVAL_PARSEINP_ENTRY  = 0x099914;
@@ -1614,6 +1633,30 @@ function tokenizeExpression(expr) {
   for (let i = 0; i < expr.length; i++) {
     const ch = expr[i];
     if (ch === ' ') continue;
+    const remaining = expr.slice(i);
+    const lowerRemaining = remaining.toLowerCase();
+
+    if (lowerRemaining.startsWith('ans')) {
+      tokens.push(0x72);
+      i += 2;
+      continue;
+    }
+
+    if (remaining.startsWith('\u221A')) {
+      tokens.push(0xBC);
+      continue;
+    }
+
+    let matchedFunction = false;
+    for (const [name, token] of EVAL_FUNCTION_TOKENS) {
+      if (lowerRemaining.startsWith(name)) {
+        tokens.push(token);
+        i += name.length - 1;
+        matchedFunction = true;
+        break;
+      }
+    }
+    if (matchedFunction) continue;
 
     // Handle negation: '-' is negation when it's at the start,
     // after '(', or after an operator
@@ -1624,7 +1667,16 @@ function tokenizeExpression(expr) {
         || prev === 0x71  // -
         || prev === 0x82  // *
         || prev === 0x83  // /
+        || prev === 0x2B  // ,
         || prev === 0x10  // (
+        || prev === 0x0F  // ^
+        || prev === 0xC2  // sin
+        || prev === 0xC4  // cos
+        || prev === 0xC6  // tan
+        || prev === 0xBE  // ln
+        || prev === 0xC0  // log
+        || prev === 0xBC  // sqrt
+        || prev === 0xB2  // abs
         || prev === TI_NEGATE_TOKEN;
       if (isNegation) {
         tokens.push(TI_NEGATE_TOKEN);
