@@ -1581,6 +1581,11 @@ let evalCachedPostCreateFps = 0;
 let evalCachedPostCreateFpsBase = 0;
 let evalCachedPostCreateOpBase = 0;
 
+// JS-side variable store: letter → 9-byte BCD Uint8Array
+const evalVarStore = new Map();
+// Last Ans BCD for re-creation during variable rebuild
+let evalLastAnsBcd = null;
+
 function evalWrite24(mem, addr, val) {
   mem[addr]     =  val        & 0xFF;
   mem[addr + 1] = (val >>> 8) & 0xFF;
@@ -1591,8 +1596,9 @@ function evalRead24(mem, addr) {
   return ((mem[addr] & 0xFF) | ((mem[addr + 1] & 0xFF) << 8) | ((mem[addr + 2] & 0xFF) << 16)) >>> 0;
 }
 
-function evalRunCreateReal(ex, c, mem) {
-  for (let i = 0; i < 9; i++) mem[EVAL_OP1_ADDR + i] = EVAL_ANS_OP1[i];
+function evalRunCreateReal(ex, c, mem, op1Bytes) {
+  const op1 = op1Bytes || EVAL_ANS_OP1;
+  for (let i = 0; i < 9; i++) mem[EVAL_OP1_ADDR + i] = op1[i];
 
   c.halted = false; c.iff1 = 0; c.iff2 = 0;
   c.madl = 1; c.mbase = 0xD0; c._iy = 0xD00080; c.f = 0x40; c._ix = 0xD1A860;
@@ -1805,21 +1811,144 @@ function formatResult(val) {
   return val.toPrecision(10).replace(/\.?0+$/, '');
 }
 
+// Build OP1 bytes for a single-letter Real variable (A-Z, or theta)
+function evalMakeVarOP1(varName) {
+  const op1 = new Uint8Array(9);
+  op1[0] = 0x00; // RealObj type
+  op1[1] = varName.charCodeAt(0); // ASCII code (0x41 for 'A', etc.)
+  return op1;
+}
+
+// Parse STO arrow syntax: "expr→VAR", "expr->VAR", "exprSTO VAR"
+// Returns { lhs, varName } or null if no STO detected
+function parseStoExpression(expr) {
+  // Try Unicode →
+  let idx = expr.indexOf('→');
+  if (idx !== -1) {
+    return { lhs: expr.slice(0, idx).trim(), varName: expr.slice(idx + 1).trim() };
+  }
+  // Try ASCII ->
+  idx = expr.indexOf('->');
+  if (idx !== -1) {
+    return { lhs: expr.slice(0, idx).trim(), varName: expr.slice(idx + 2).trim() };
+  }
+  // Try "sto" keyword (case-insensitive) — must be last token before varName
+  const stoMatch = expr.match(/^(.+?)\bsto\s+([A-Za-z])$/i);
+  if (stoMatch) {
+    return { lhs: stoMatch[1].trim(), varName: stoMatch[2].trim() };
+  }
+  return null;
+}
+
+// Re-create all stored variables + Ans in ROM memory via CreateReal.
+// Called before each ParseInp so that FindSym can locate them.
+// Returns updated pointer values, or null on failure.
+function evalRecreateAllVars(ex, c, mem, savedAnsBcd) {
+  // First: re-create Ans
+  const crAns = evalRunCreateReal(ex, c, mem, EVAL_ANS_OP1);
+  if (!crAns.returned) return null;
+  if (savedAnsBcd) {
+    for (let i = 0; i < 9; i++) mem[crAns.deAddr + i] = savedAnsBcd[i];
+  }
+
+  // Then: re-create each stored variable
+  for (const [name, bcd] of evalVarStore) {
+    const op1 = evalMakeVarOP1(name);
+    const crVar = evalRunCreateReal(ex, c, mem, op1);
+    if (!crVar.returned) return null;
+    for (let i = 0; i < 9; i++) mem[crVar.deAddr + i] = bcd[i];
+  }
+
+  // Update cached pointers from final state
+  const fps = evalRead24(mem, EVAL_FPS_ADDR);
+  const fpsBase = evalRead24(mem, EVAL_FPSBASE_ADDR);
+  const opBase = evalRead24(mem, EVAL_OPBASE_ADDR);
+  evalCachedPostCreateFps = fps;
+  evalCachedPostCreateFpsBase = fpsBase;
+  evalCachedPostCreateOpBase = opBase;
+
+  return { postCreateFps: fps, postCreateFpsBase: fpsBase, postCreateOpBase: opBase };
+}
+
 function runDirectEval(expr) {
   if (!PRELIFTED_BLOCKS) return { error: 'Boot the ROM first.' };
 
+  // Check for STO arrow syntax before tokenizing
+  const sto = parseStoExpression(expr);
+
+  if (sto) {
+    // Validate variable name: single letter A-Z
+    const varName = sto.varName.toUpperCase();
+    if (!/^[A-Z]$/.test(varName)) {
+      return { error: `Invalid variable name: "${sto.varName}" (must be A-Z)` };
+    }
+    if (!sto.lhs) {
+      return { error: 'No expression before → arrow.' };
+    }
+
+    // Evaluate the LHS expression via the normal pipeline
+    const lhsResult = runDirectEval(sto.lhs);
+    if (lhsResult.error) return lhsResult;
+
+    // Recover the 9-byte BCD from the op1Hex string returned by the LHS eval
+    const runtime = evalEnsureRuntime();
+    if (runtime.error) return { error: runtime.error };
+    const { mem, ex, c } = runtime;
+
+    const bcdBytes = new Uint8Array(lhsResult.op1Hex.split(' ').map(s => parseInt(s, 16)));
+
+    // Store in our JS-side map
+    evalVarStore.set(varName, bcdBytes);
+
+    // Also update evalLastAnsBcd so Ans = stored value (STO sets Ans too)
+    evalLastAnsBcd = bcdBytes;
+
+    // Re-create ALL variables + Ans in ROM memory so the VAT is consistent
+    evalWrite24(mem, EVAL_OPS_ADDR, evalCachedPostCreateOpBase);
+    evalWrite24(mem, EVAL_FPS_ADDR, evalCachedPostCreateFps);
+    evalWrite24(mem, EVAL_FPSBASE_ADDR, evalCachedPostCreateFpsBase);
+    evalRecreateAllVars(ex, c, mem, bcdBytes);
+
+    return {
+      value: lhsResult.value,
+      display: `${formatResult(lhsResult.value)} → ${varName}`,
+      steps: lhsResult.steps,
+      errNo: lhsResult.errNo,
+      op1Hex: lhsResult.op1Hex,
+      ansStored: true,
+      stored: true,
+      storedVar: varName,
+    };
+  }
+
+  // Non-STO path: normal expression evaluation
   const { tokens, error } = tokenizeExpression(expr);
   if (error) return { error };
 
   const runtime = evalEnsureRuntime();
   if (runtime.error) return { error: runtime.error };
 
-  const { mem, ex, c, postCreateFps, postCreateFpsBase, postCreateOpBase } = runtime;
+  const { mem, ex, c } = runtime;
 
   // Reset OPS/FPS to post-CreateReal values before ParseInp
+  let postCreateFps = evalCachedPostCreateFps;
+  let postCreateFpsBase = evalCachedPostCreateFpsBase;
+  let postCreateOpBase = evalCachedPostCreateOpBase;
+
   evalWrite24(mem, EVAL_OPS_ADDR, postCreateOpBase);
   evalWrite24(mem, EVAL_FPS_ADDR, postCreateFps);
   evalWrite24(mem, EVAL_FPSBASE_ADDR, postCreateFpsBase);
+
+  // Re-create all stored variables + Ans before ParseInp so FindSym
+  // can locate them (OPS overflow from previous ParseInp corrupts VAT)
+  if (evalVarStore.size > 0) {
+    const ptrs = evalRecreateAllVars(ex, c, mem, evalLastAnsBcd);
+    if (ptrs) {
+      postCreateFps = ptrs.postCreateFps;
+      postCreateFpsBase = ptrs.postCreateFpsBase;
+      postCreateOpBase = ptrs.postCreateOpBase;
+    }
+  }
 
   // Stage 4: write tokens to scratch buffer and set parse pointers
   mem.fill(0x00, EVAL_TOKEN_BUFFER_ADDR, EVAL_TOKEN_BUFFER_ADDR + 0x80);
@@ -1892,23 +2021,31 @@ function runDirectEval(expr) {
   const savedOp1 = new Uint8Array(9);
   for (let i = 0; i < 9; i++) savedOp1[i] = mem[EVAL_OP1_ADDR + i];
 
+  // Save as last Ans BCD for variable recreation in subsequent evals
+  evalLastAnsBcd = savedOp1;
+
   // Reset OPS to post-CreateReal OPBase (NOT MEM_INIT's 0xD3FFFF)
   evalWrite24(mem, EVAL_OPS_ADDR, postCreateOpBase);
   // Reset FPS/FPSbase to post-CreateReal values (past Ans data slot)
   evalWrite24(mem, EVAL_FPS_ADDR, postCreateFps);
   evalWrite24(mem, EVAL_FPSBASE_ADDR, postCreateFpsBase);
 
-  // Re-CreateReal(Ans) to rebuild VAT entry destroyed by OPS overflow
-  const cr2 = evalRunCreateReal(ex, c, mem);
+  // Re-create all variables + Ans to rebuild VAT entries destroyed by OPS overflow
   let ansStored = false;
-  if (cr2.returned) {
-    for (let i = 0; i < 9; i++) mem[cr2.deAddr + i] = savedOp1[i];
-    ansStored = true;
+  if (evalVarStore.size > 0) {
+    const ptrs = evalRecreateAllVars(ex, c, mem, savedOp1);
+    if (ptrs) ansStored = true;
+  } else {
+    // No stored variables — just re-create Ans (original behavior)
+    const cr2 = evalRunCreateReal(ex, c, mem, EVAL_ANS_OP1);
+    if (cr2.returned) {
+      for (let i = 0; i < 9; i++) mem[cr2.deAddr + i] = savedOp1[i];
+      ansStored = true;
 
-    // Update cached pointers — CreateReal may have shifted them
-    evalCachedPostCreateFps = evalRead24(mem, EVAL_FPS_ADDR);
-    evalCachedPostCreateFpsBase = evalRead24(mem, EVAL_FPSBASE_ADDR);
-    evalCachedPostCreateOpBase = evalRead24(mem, EVAL_OPBASE_ADDR);
+      evalCachedPostCreateFps = evalRead24(mem, EVAL_FPS_ADDR);
+      evalCachedPostCreateFpsBase = evalRead24(mem, EVAL_FPSBASE_ADDR);
+      evalCachedPostCreateOpBase = evalRead24(mem, EVAL_OPBASE_ADDR);
+    }
   }
 
   return {
@@ -1955,8 +2092,9 @@ $('btnEval').addEventListener('click', () => {
   }
 
   resultEl.style.color = '#7ddf7d';
-  const ansNote = result.ansStored ? '  (Ans stored)' : '';
-  resultEl.textContent = `= ${result.display}${ansNote}`;
+  const stoNote = result.stored ? '  (stored)' : '';
+  const ansNote = (!result.stored && result.ansStored) ? '  (Ans stored)' : '';
+  resultEl.textContent = `= ${result.display}${stoNote}${ansNote}`;
   log(`<span class="info">--- Direct Eval "${expr}" = ${result.display} (${result.steps} steps, ${dt} ms, OP1=[${result.op1Hex}], errNo=0x${hex(result.errNo, 2)}) ---</span>`);
 });
 
@@ -1967,6 +2105,8 @@ $('btnEvalClear').addEventListener('click', () => {
   evalCachedEx = null;
   evalCachedCpu = null;
   evalCachedPerph = null;
+  evalVarStore.clear();
+  evalLastAnsBcd = null;
 });
 
 // Allow pressing Enter in the eval input to trigger evaluation
