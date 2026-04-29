@@ -125,6 +125,12 @@ button.active { background: #2a5a2a; border-color: #4a8a4a; }
         <button id="btnEval">Eval</button>
         <button id="btnEvalClear">C</button>
       </div>
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+        <label style="color: #999; font-size: 12px; cursor: pointer; user-select: none;">
+          <input id="evalUseBuffer" type="checkbox" style="vertical-align: middle; margin-right: 3px;" />
+          Use Edit Buffer (BufInsert)
+        </label>
+      </div>
       <div id="evalResult" style="color: #7ddf7d; font-size: 13px; min-height: 1.4em;"></div>
       <div style="color: #666; font-size: 10px; margin-top: 4px;">Supports: 0-9 + - * / ( ) . negation(-)</div>
     </div>
@@ -1644,6 +1650,17 @@ const EVAL_USE_COMMON_TAIL = true;
 const EVAL_CREATEREAL_RET   = 0x7FFFF2;
 const EVAL_ANS_OP1 = [0x00, 0x72, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
 
+// ---- Buffer-mode (BufInsert) constants ----
+// Edit buffer gap-buffer pointers (24-bit each)
+const EVAL_EDIT_TOP    = 0xD02437;
+const EVAL_EDIT_CURSOR = 0xD0243A;
+const EVAL_EDIT_TAIL   = 0xD0243D;
+const EVAL_EDIT_BTM    = 0xD02440;
+// BufInsert entry point and buffer region
+const EVAL_BUFINSERT_ENTRY = 0x05E2A0;
+const EVAL_EDIT_BUF_START  = 0xD00A00;
+const EVAL_EDIT_BUF_END    = 0xD00B00;
+
 // Cached runtime state for multi-expression chaining (Ans persistence)
 let evalCachedMem = null;
 let evalCachedEx = null;
@@ -1982,7 +1999,69 @@ function evalRecreateAllVars(ex, c, mem, savedAnsBcd) {
   return { postCreateFps: fps, postCreateFpsBase: fpsBase, postCreateOpBase: opBase };
 }
 
-function runDirectEval(expr) {
+// Insert tokens into the edit buffer via BufInsert OS routine.
+// Initializes gap-buffer pointers, calls BufInsert for each token byte,
+// then sets begPC/curPC/endPC for ParseInp to read from the buffer.
+// Returns { ok, error } — on success, parse pointers are ready.
+function evalInsertViaBuffer(tokens, mem, ex, c) {
+  // Initialize gap-buffer pointers: cursor at start, tail at end
+  evalWrite24(mem, EVAL_EDIT_TOP, EVAL_EDIT_BUF_START);
+  evalWrite24(mem, EVAL_EDIT_CURSOR, EVAL_EDIT_BUF_START);
+  evalWrite24(mem, EVAL_EDIT_TAIL, EVAL_EDIT_BUF_END);
+  evalWrite24(mem, EVAL_EDIT_BTM, EVAL_EDIT_BUF_END);
+
+  // Clear the buffer region
+  mem.fill(0x00, EVAL_EDIT_BUF_START, EVAL_EDIT_BUF_END);
+
+  // Call BufInsert for each token byte
+  for (let i = 0; i < tokens.length; i++) {
+    const tok = tokens[i];
+
+    // Prepare CPU state for BufInsert call
+    c.halted = false; c.iff1 = 0; c.iff2 = 0;
+    c.madl = 1; c.mbase = 0xD0; c._iy = 0xD00080; c.f = 0x40; c._ix = 0xD1A860;
+    c.sp = SCREEN_STACK_TOP - 12;
+    mem.fill(0xFF, c.sp, c.sp + 12);
+    c.sp -= 3;
+    evalWrite24(mem, c.sp, EVAL_FAKE_RET);
+
+    // DE = token in E, D=0 for single-byte token
+    c._de = tok;
+
+    let returned = false;
+    try {
+      ex.runFrom(EVAL_BUFINSERT_ENTRY, 'adl', {
+        maxSteps: 10000,
+        maxLoopIterations: 8192,
+        onBlock(pc) {
+          if ((pc & 0xFFFFFF) === EVAL_FAKE_RET) throw new Error('__RET__');
+        },
+        onMissingBlock(pc) {
+          if ((pc & 0xFFFFFF) === EVAL_FAKE_RET) throw new Error('__RET__');
+        },
+      });
+    } catch (e) {
+      if (e?.message === '__RET__') returned = true;
+      else throw e;
+    }
+
+    if (!returned) {
+      return { ok: false, error: `BufInsert stalled on token 0x${tok.toString(16).toUpperCase()} (index ${i})` };
+    }
+  }
+
+  // Set parse pointers: begPC/curPC = buffer start, endPC = cursor position - 1
+  const cursorPos = evalRead24(mem, EVAL_EDIT_CURSOR);
+  const preGapLen = cursorPos - EVAL_EDIT_BUF_START;
+
+  evalWrite24(mem, EVAL_BEGPC_ADDR, EVAL_EDIT_BUF_START);
+  evalWrite24(mem, EVAL_CURPC_ADDR, EVAL_EDIT_BUF_START);
+  evalWrite24(mem, EVAL_ENDPC_ADDR, EVAL_EDIT_BUF_START + preGapLen - 1);
+
+  return { ok: true };
+}
+
+function runDirectEval(expr, useBuffer = false) {
   if (!PRELIFTED_BLOCKS) return { error: 'Boot the ROM first.' };
 
   // Check for STO arrow syntax before tokenizing
@@ -1999,7 +2078,7 @@ function runDirectEval(expr) {
     }
 
     // Evaluate the LHS expression via the normal pipeline
-    const lhsResult = runDirectEval(sto.lhs);
+    const lhsResult = runDirectEval(sto.lhs, useBuffer);
     if (lhsResult.error) return lhsResult;
 
     // Recover the 9-byte BCD from the op1Hex string returned by the LHS eval
@@ -2062,12 +2141,23 @@ function runDirectEval(expr) {
     }
   }
 
-  // Stage 4: write tokens to scratch buffer and set parse pointers
-  mem.fill(0x00, EVAL_TOKEN_BUFFER_ADDR, EVAL_TOKEN_BUFFER_ADDR + 0x80);
-  mem.set(tokens, EVAL_TOKEN_BUFFER_ADDR);
-  evalWrite24(mem, EVAL_BEGPC_ADDR, EVAL_TOKEN_BUFFER_ADDR);
-  evalWrite24(mem, EVAL_CURPC_ADDR, EVAL_TOKEN_BUFFER_ADDR);
-  evalWrite24(mem, EVAL_ENDPC_ADDR, EVAL_TOKEN_BUFFER_ADDR + tokens.length);
+  // Stage 4: place tokens in RAM and set parse pointers
+  if (useBuffer) {
+    // Buffer mode: use BufInsert to fill the edit buffer gap-buffer
+    const bufResult = evalInsertViaBuffer(tokens, mem, ex, c);
+    if (!bufResult.ok) return { error: bufResult.error };
+    // Re-seed allocator after BufInsert calls (they may modify pointers)
+    evalWrite24(mem, EVAL_OPS_ADDR, postCreateOpBase);
+    evalWrite24(mem, EVAL_FPS_ADDR, postCreateFps);
+    evalWrite24(mem, EVAL_FPSBASE_ADDR, postCreateFpsBase);
+  } else {
+    // Direct mode: write tokens straight to scratch buffer
+    mem.fill(0x00, EVAL_TOKEN_BUFFER_ADDR, EVAL_TOKEN_BUFFER_ADDR + 0x80);
+    mem.set(tokens, EVAL_TOKEN_BUFFER_ADDR);
+    evalWrite24(mem, EVAL_BEGPC_ADDR, EVAL_TOKEN_BUFFER_ADDR);
+    evalWrite24(mem, EVAL_CURPC_ADDR, EVAL_TOKEN_BUFFER_ADDR);
+    evalWrite24(mem, EVAL_ENDPC_ADDR, EVAL_TOKEN_BUFFER_ADDR + tokens.length);
+  }
 
   // Clear OP1
   mem.fill(0x00, EVAL_OP1_ADDR, EVAL_OP1_ADDR + 9);
@@ -2100,7 +2190,12 @@ function runDirectEval(expr) {
   const savedFpsState = evalRead24(mem, EVAL_FPS_ADDR);
   const savedFpsBaseState = evalRead24(mem, EVAL_FPSBASE_ADDR);
   const savedOp1Snapshot = mem.slice(EVAL_OP1_ADDR, EVAL_OP1_ADDR + 9);
-  const savedTokenSnapshot = mem.slice(EVAL_TOKEN_BUFFER_ADDR, EVAL_TOKEN_BUFFER_ADDR + 0x80);
+  const savedTokenSnapshot = useBuffer
+    ? mem.slice(EVAL_EDIT_BUF_START, EVAL_EDIT_BUF_END)
+    : mem.slice(EVAL_TOKEN_BUFFER_ADDR, EVAL_TOKEN_BUFFER_ADDR + 0x80);
+  const savedBegPC = evalRead24(mem, EVAL_BEGPC_ADDR);
+  const savedCurPC = evalRead24(mem, EVAL_CURPC_ADDR);
+  const savedEndPC = evalRead24(mem, EVAL_ENDPC_ADDR);
 
   function runParseInpFrom(entryPoint, stepBudget) {
     let hit = false;
@@ -2151,10 +2246,14 @@ function runDirectEval(expr) {
       evalWrite24(mem, EVAL_FPS_ADDR, savedFpsState);
       evalWrite24(mem, EVAL_FPSBASE_ADDR, savedFpsBaseState);
       mem.set(savedOp1Snapshot, EVAL_OP1_ADDR);
-      mem.set(savedTokenSnapshot, EVAL_TOKEN_BUFFER_ADDR);
-      evalWrite24(mem, EVAL_BEGPC_ADDR, EVAL_TOKEN_BUFFER_ADDR);
-      evalWrite24(mem, EVAL_CURPC_ADDR, EVAL_TOKEN_BUFFER_ADDR);
-      evalWrite24(mem, EVAL_ENDPC_ADDR, EVAL_TOKEN_BUFFER_ADDR + tokens.length);
+      if (useBuffer) {
+        mem.set(savedTokenSnapshot, EVAL_EDIT_BUF_START);
+      } else {
+        mem.set(savedTokenSnapshot, EVAL_TOKEN_BUFFER_ADDR);
+      }
+      evalWrite24(mem, EVAL_BEGPC_ADDR, savedBegPC);
+      evalWrite24(mem, EVAL_CURPC_ADDR, savedCurPC);
+      evalWrite24(mem, EVAL_ENDPC_ADDR, savedEndPC);
 
       // Re-prepare call state for fallback
       c.halted = false; c.iff1 = 0; c.iff2 = 0;
@@ -2236,12 +2335,14 @@ function runDirectEval(expr) {
     op1Hex,
     ansStored,
     commonTail: usedCommonTail,
+    bufferMode: useBuffer,
   };
 }
 
 $('btnEval').addEventListener('click', () => {
   const expr = $('evalInput').value.trim();
   const resultEl = $('evalResult');
+  const useBuffer = $('evalUseBuffer').checked;
 
   if (!expr) {
     resultEl.style.color = '#df7d7d';
@@ -2255,7 +2356,7 @@ $('btnEval').addEventListener('click', () => {
   const t0 = performance.now();
   let result;
   try {
-    result = runDirectEval(expr);
+    result = runDirectEval(expr, useBuffer);
   } catch (e) {
     resultEl.style.color = '#df7d7d';
     resultEl.textContent = `Exception: ${e?.message || e}`;
@@ -2276,8 +2377,9 @@ $('btnEval').addEventListener('click', () => {
   const stoNote = result.stored ? '  (stored)' : '';
   const ansNote = (!result.stored && result.ansStored) ? '  (Ans stored)' : '';
   resultEl.textContent = `= ${result.display}${stoNote}${ansNote}`;
+  const modeNote = result.bufferMode ? ' [buffer]' : '';
   const pathNote = result.commonTail ? ' [common-tail]' : result.commonTail === false ? ' [direct]' : '';
-  log(`<span class="info">--- Direct Eval "${expr}" = ${result.display} (${result.steps} steps, ${dt} ms, OP1=[${result.op1Hex}], errNo=0x${hex(result.errNo, 2)}${pathNote}) ---</span>`);
+  log(`<span class="info">--- Direct Eval "${expr}" = ${result.display} (${result.steps} steps, ${dt} ms, OP1=[${result.op1Hex}], errNo=0x${hex(result.errNo, 2)}${modeNote}${pathNote}) ---</span>`);
 });
 
 $('btnEvalClear').addEventListener('click', () => {
