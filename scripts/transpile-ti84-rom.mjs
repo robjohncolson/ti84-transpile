@@ -22120,6 +22120,10 @@ function walkBlocks() {
     { pc: 0x09986c, mode: 'adl' },  // GraphPars entry (verify reachable)
     { pc: 0x0998ca, mode: 'adl' },  // Missing block hit by GraphPars at step 84
     { pc: 0x0998d0, mode: 'adl' },  // Nearby fallthrough target
+    // Phase 134: FP dispatch missing blocks for gcd(12,8) (session 134).
+    { pc: 0x068581, mode: 'adl' },  // Inside FP handler table
+    { pc: 0x0011e6, mode: 'adl' },  // Missing block in FP path
+    { pc: 0x093fae, mode: 'adl' },  // Missing block in FP path
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
