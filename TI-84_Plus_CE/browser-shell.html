@@ -1525,6 +1525,11 @@ const EVAL_TOKEN_MAP = {
   '\u03C0': 0xAC,
   '!': 0x2D,   // tFact (postfix factorial)
   '\u00B2': 0x0D,  // x\u00B2 tSqr (postfix square, Unicode superscript 2)
+  '\u00B3': 0x0E,  // x\u00B3 tCube (postfix cube, Unicode superscript 3)
+  '[': 0x06,       // tLBrack
+  ']': 0x07,       // tRBrack
+  '{': 0x08,       // tLBrace
+  '}': 0x09,       // tRBrace
 };
 for (let code = 0x41; code <= 0x5A; code++) {
   const upper = String.fromCharCode(code);
@@ -1535,6 +1540,17 @@ for (let code = 0x41; code <= 0x5A; code++) {
 EVAL_TOKEN_MAP.E = 0x3B;
 // TI-OS negation token (distinct from subtraction)
 const TI_NEGATE_TOKEN = 0xB0;
+// Two-byte tokens (0xBB prefix): sorted longest-first for prefix safety
+const EVAL_TWO_BYTE_TOKENS = [
+  ['remainder', [0xBB, 0x3B]],  // tRemainder
+  ['randint',   [0xBB, 0x11]],  // tRandInt
+  ['median',    [0xBB, 0x0F]],  // tMedian
+  ['mean',      [0xBB, 0x0E]],  // tMean
+  ['min',       [0xBB, 0x0C]],  // tMin
+  ['max',       [0xBB, 0x0D]],  // tMax
+  ['lcm',       [0xBB, 0x06]],  // tLCM
+  ['gcd',       [0xBB, 0x07]],  // tGCD
+];
 const EVAL_FUNCTION_TOKENS = [
   // Inverse trig (must come before sin/cos/tan to match "sin⁻¹(" first)
   ['sin⁻¹(', 0xC3],  // tASin - also matched by "asin(" below
@@ -1586,8 +1602,6 @@ const EVAL_MATCH_TOKENS = [
   ['tan', 0xC6],
   ['log', 0xC0],
   ['int', 0xB1],
-  ['min', 0x1A],
-  ['max', 0x19],
   ['npr', 0x94],
   ['ncr', 0x95],
   ['ee', 0x3B],
@@ -1793,6 +1807,31 @@ function tokenizeExpression(expr) {
       continue;
     }
 
+    // Match ⁻¹ (Unicode superscript) or ^(-1) as tInv (0x0C)
+    if (remaining.startsWith('⁻¹')) {
+      tokens.push(0x0C);
+      i += 1; // 2 chars, loop increments +1
+      continue;
+    }
+    if (remaining.startsWith('^(-1)')) {
+      tokens.push(0x0C);
+      i += 4; // 5 chars, loop increments +1
+      continue;
+    }
+
+    // Two-byte tokens (0xBB prefix): longest match first
+    // These are function tokens with implicit open paren — match "name(" and emit [0xBB, id]
+    let matchedTwoByte = false;
+    for (const [name, bytes] of EVAL_TWO_BYTE_TOKENS) {
+      if (lowerRemaining.startsWith(name + '(')) {
+        tokens.push(bytes[0], bytes[1]);
+        i += name.length; // consume name + '(', loop increments +1
+        matchedTwoByte = true;
+        break;
+      }
+    }
+    if (matchedTwoByte) continue;
+
     let matchedFunction = false;
     for (const [name, token] of EVAL_MATCH_TOKENS) {
       if (lowerRemaining.startsWith(name)) {
@@ -1808,6 +1847,9 @@ function tokenizeExpression(expr) {
     // after '(', or after an operator
     if (ch === '-') {
       const prev = tokens.length > 0 ? tokens[tokens.length - 1] : null;
+      // For two-byte tokens, the last pushed byte is the second byte (after 0xBB)
+      // We check against known second bytes of two-byte function tokens
+      const isTwoByteFunc = tokens.length >= 2 && tokens[tokens.length - 2] === 0xBB;
       const isNegation = prev === null
         || prev === 0x70  // +
         || prev === 0x71  // -
@@ -1832,10 +1874,9 @@ function tokenizeExpression(expr) {
         || prev === 0xC1  // 10^
         || prev === 0x12  // round
         || prev === 0xB1  // int
-        || prev === 0x19  // max
-        || prev === 0x1A  // min
         || prev === 0x94  // nPr
         || prev === 0x95  // nCr
+        || isTwoByteFunc  // any two-byte function (min, max, gcd, lcm, etc.)
         || prev === TI_NEGATE_TOKEN;
       if (isNegation) {
         tokens.push(TI_NEGATE_TOKEN);
