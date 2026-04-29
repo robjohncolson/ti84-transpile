@@ -22124,6 +22124,17 @@ function walkBlocks() {
     { pc: 0x068581, mode: 'adl' },  // Inside FP handler table
     { pc: 0x0011e6, mode: 'adl' },  // Missing block in FP path
     { pc: 0x093fae, mode: 'adl' },  // Missing block in FP path
+    // Phase 138: FP eval engine category-writer blocks (session 138).
+    { pc: 0x07e111, mode: 'adl' },  // FP eval engine category writer
+    { pc: 0x07e14d, mode: 'adl' },  // FP eval engine category writer
+    { pc: 0x07e16d, mode: 'adl' },  // FP eval engine category writer
+    { pc: 0x07e199, mode: 'adl' },  // FP eval engine category writer
+    // Phase 138 P3: Stat pipeline seeds — OneVar/CreateRList/Sto_StatVar (session 138).
+    { pc: 0x0aa978, mode: 'adl' },  // OneVars0 — OneVar core accumulation loop
+    { pc: 0x082398, mode: 'adl' },  // CreateRList — create a real list variable
+    { pc: 0x09a3bd, mode: 'adl' },  // Sto_StatVar — store a stat variable
+    { pc: 0x094000, mode: 'adl' },  // Stat core range start — 64 Sto_StatVar calls
+    { pc: 0x0aaab8, mode: 'adl' },  // TwoVars0 — two-variable stat core
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
