@@ -22103,6 +22103,23 @@ function walkBlocks() {
     { pc: 0x061dd1, mode: 'adl' },  // PopErrorHandler / error-restore stub
     { pc: 0x061def, mode: 'adl' },  // PushErrorHandler
     { pc: 0x061e27, mode: 'adl' },  // Normal-return cleanup stub
+    // Phase 132: FP category byte writers (session 132).
+    { pc: 0x06859b, mode: 'adl' },  // FP handler table entry for category 0x28 (gcd)
+    { pc: 0x0689de, mode: 'adl' },  // FP handler dispatcher (SUB 0x20 + jump table)
+    { pc: 0x0689f9, mode: 'adl' },  // Jump table base address for handler dispatcher
+    { pc: 0x095722, mode: 'adl' },  // Wildcard category writer (A=0xFF)
+    { pc: 0x095765, mode: 'adl' },  // Wildcard category writer
+    { pc: 0x0957ff, mode: 'adl' },  // Wildcard category writer
+    { pc: 0x0989d0, mode: 'adl' },  // Specific category writer (A=0x1A)
+    { pc: 0x07cad2, mode: 'adl' },  // FP evaluation chain writer
+    { pc: 0x07e105, mode: 'adl' },  // FP evaluation chain writer
+    { pc: 0x07e2a2, mode: 'adl' },  // FP evaluation chain writer
+    { pc: 0x07ec0d, mode: 'adl' },  // FP evaluation chain writer
+    { pc: 0x07f5d3, mode: 'adl' },  // FP evaluation chain writer
+    // Phase 132: GraphPars missing block — stalled at 0x0998CA in session 131.
+    { pc: 0x09986c, mode: 'adl' },  // GraphPars entry (verify reachable)
+    { pc: 0x0998ca, mode: 'adl' },  // Missing block hit by GraphPars at step 84
+    { pc: 0x0998d0, mode: 'adl' },  // Nearby fallthrough target
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
