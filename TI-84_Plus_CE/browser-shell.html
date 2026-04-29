@@ -1523,6 +1523,8 @@ const EVAL_TOKEN_MAP = {
   '.': 0x3A, '(': 0x10, ')': 0x11,
   'E': 0x3B, '^': 0x0F, ',': 0x2B,
   '\u03C0': 0xAC,
+  '!': 0x2D,   // tFact (postfix factorial)
+  '\u00B2': 0x0D,  // x\u00B2 tSqr (postfix square, Unicode superscript 2)
 };
 for (let code = 0x41; code <= 0x5A; code++) {
   const upper = String.fromCharCode(code);
@@ -1534,6 +1536,16 @@ EVAL_TOKEN_MAP.E = 0x3B;
 // TI-OS negation token (distinct from subtraction)
 const TI_NEGATE_TOKEN = 0xB0;
 const EVAL_FUNCTION_TOKENS = [
+  // Inverse trig (must come before sin/cos/tan to match "sin⁻¹(" first)
+  ['sin⁻¹(', 0xC3],  // tASin - also matched by "asin(" below
+  ['cos⁻¹(', 0xC5],  // tACos
+  ['tan⁻¹(', 0xC7],  // tATan
+  ['asin(', 0xC3],    // tASin alias
+  ['acos(', 0xC5],    // tACos alias
+  ['atan(', 0xC7],    // tATan alias
+  // 10^( must come before single-char '1'
+  ['10^(', 0xC1],     // tALog
+  // Standard functions
   ['sqrt', 0xBC],
   ['e^', 0xBF],
   ['sin', 0xC2],
@@ -1542,7 +1554,46 @@ const EVAL_FUNCTION_TOKENS = [
   ['log', 0xC0],
   ['ln', 0xBE],
   ['abs', 0xB2],
+  ['round(', 0x12],   // tRound
+  ['int(', 0xB1],     // tInt
+  // Binary combinatoric operators
+  ['nPr', 0x94],      // tnPr
+  ['nCr', 0x95],      // tnCr
 ];
+// Authoritative direct-eval aliases: normalized to lowercase matching
+// and sorted longest-first so prefix overlaps (sinh/sin, asin/sin^-1, etc.)
+// resolve to the intended TI token.
+const EVAL_MATCH_TOKENS = [
+  ['sin\u207B\u00B9', 0xC3],
+  ['cos\u207B\u00B9', 0xC5],
+  ['tan\u207B\u00B9', 0xC7],
+  ['sin^-1', 0xC3],
+  ['cos^-1', 0xC5],
+  ['tan^-1', 0xC7],
+  ['round', 0x12],
+  ['sqrt', 0xBC],
+  ['sinh', 0xC8],
+  ['cosh', 0xCA],
+  ['tanh', 0xCC],
+  ['asin', 0xC3],
+  ['acos', 0xC5],
+  ['atan', 0xC7],
+  ['10^', 0xC1],
+  ['x^2', 0x0D],
+  ['e^', 0xBF],
+  ['sin', 0xC2],
+  ['cos', 0xC4],
+  ['tan', 0xC6],
+  ['log', 0xC0],
+  ['int', 0xB1],
+  ['min', 0x1A],
+  ['max', 0x19],
+  ['npr', 0x94],
+  ['ncr', 0x95],
+  ['ee', 0x3B],
+  ['ln', 0xBE],
+  ['abs', 0xB2],
+].sort((a, b) => b[0].length - a[0].length);
 
 const EVAL_MEMINIT_ENTRY   = 0x09DEE0;
 const EVAL_PARSEINP_ENTRY  = 0x099914;
@@ -1743,7 +1794,7 @@ function tokenizeExpression(expr) {
     }
 
     let matchedFunction = false;
-    for (const [name, token] of EVAL_FUNCTION_TOKENS) {
+    for (const [name, token] of EVAL_MATCH_TOKENS) {
       if (lowerRemaining.startsWith(name)) {
         tokens.push(token);
         i += name.length - 1;
@@ -1772,6 +1823,19 @@ function tokenizeExpression(expr) {
         || prev === 0xC0  // log
         || prev === 0xBC  // sqrt
         || prev === 0xB2  // abs
+        || prev === 0xC3  // asin
+        || prev === 0xC5  // acos
+        || prev === 0xC7  // atan
+        || prev === 0xC8  // sinh
+        || prev === 0xCA  // cosh
+        || prev === 0xCC  // tanh
+        || prev === 0xC1  // 10^
+        || prev === 0x12  // round
+        || prev === 0xB1  // int
+        || prev === 0x19  // max
+        || prev === 0x1A  // min
+        || prev === 0x94  // nPr
+        || prev === 0x95  // nCr
         || prev === TI_NEGATE_TOKEN;
       if (isNegation) {
         tokens.push(TI_NEGATE_TOKEN);
