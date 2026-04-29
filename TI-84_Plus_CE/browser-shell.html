@@ -134,6 +134,24 @@ button.active { background: #2a5a2a; border-color: #4a8a4a; }
       <div id="evalResult" style="color: #7ddf7d; font-size: 13px; min-height: 1.4em;"></div>
       <div style="color: #666; font-size: 10px; margin-top: 4px;">Supports: 0-9 + - * / ( ) . negation(-)</div>
     </div>
+    <div class="control-section-title">Graph Mode (GraphPars pipeline)</div>
+    <div style="background: #0d0d1a; border: 1px solid #333; padding: 10px; border-radius: 4px; margin-bottom: 12px;">
+      <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 8px;">
+        <span style="color: #999; font-size: 13px; white-space: nowrap;">Y1=</span>
+        <input id="graphInput" type="text" placeholder="e.g. X, X^2, sin(X)" style="flex:1; background:#141428; color:#e0e0e0; border:1px solid #555; padding:6px 10px; font-family:inherit; font-size:14px; border-radius:3px;" value="X" />
+        <button id="btnGraph">Graph</button>
+        <button id="btnGraphClear">C</button>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 6px; flex-wrap: wrap;">
+        <label style="color: #999; font-size: 11px;">Xmin <input id="graphXmin" type="number" value="-10" style="width:50px; background:#141428; color:#e0e0e0; border:1px solid #555; padding:3px 5px; font-family:inherit; font-size:11px; border-radius:3px;"></label>
+        <label style="color: #999; font-size: 11px;">Xmax <input id="graphXmax" type="number" value="10" style="width:50px; background:#141428; color:#e0e0e0; border:1px solid #555; padding:3px 5px; font-family:inherit; font-size:11px; border-radius:3px;"></label>
+        <label style="color: #999; font-size: 11px;">Ymin <input id="graphYmin" type="number" value="-10" style="width:50px; background:#141428; color:#e0e0e0; border:1px solid #555; padding:3px 5px; font-family:inherit; font-size:11px; border-radius:3px;"></label>
+        <label style="color: #999; font-size: 11px;">Ymax <input id="graphYmax" type="number" value="10" style="width:50px; background:#141428; color:#e0e0e0; border:1px solid #555; padding:3px 5px; font-family:inherit; font-size:11px; border-radius:3px;"></label>
+      </div>
+      <canvas id="graphCanvas" width="320" height="240" style="border: 1px solid #444; background: #fff; display: block; margin: 8px 0; image-rendering: pixelated;"></canvas>
+      <div id="graphResult" style="color: #7ddf7d; font-size: 12px; min-height: 1.4em;"></div>
+      <div style="color: #666; font-size: 10px; margin-top: 4px;">Tokenizes expression, runs GraphPars body with tX intercept for each X in window range.</div>
+    </div>
     <div class="controls">
       <button id="btnInEqMain" disabled>InEqGraph Main</button>
       <button id="btnTransGraph" disabled>TransGraph Main</button>
@@ -2404,6 +2422,569 @@ $('evalInput').addEventListener('keydown', (e) => {
 
 loadErrorBannerOptions();
 log(`<span class="info">Click Boot to load ROM (~15 MB compressed)</span>`);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Graph Mode — GraphPars pipeline (Y1=expression rendering)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const GRAPH_CREATEEQU_ENTRY = 0x082438;
+const GRAPH_GRAPHPARS_BODY  = 0x099874;
+const GRAPH_IPOINT_ENTRY    = 0x07B451;
+const GRAPH_TX_HANDLER_PC   = 0x07D1B4;
+const GRAPH_CREATEEQU_RET   = 0x7FFFF0;
+const GRAPH_GRAPHPARS_RET   = 0x7FFFEE;
+const GRAPH_IPOINT_RET      = 0x7FFFEC;
+const GRAPH_WIDTH_PX        = 265;
+const GRAPH_HEIGHT_PX       = 165;
+const GRAPH_FPS_START       = 0xD1A881 + 0x200;
+
+// Graph window BCD addresses
+const GRAPH_XMIN_ADDR = 0xD01E33;
+const GRAPH_XMAX_ADDR = 0xD01E3C;
+const GRAPH_XSCL_ADDR = 0xD01E45;
+const GRAPH_YMIN_ADDR = 0xD01E4E;
+const GRAPH_YMAX_ADDR = 0xD01E57;
+const GRAPH_YSCL_ADDR = 0xD01E60;
+const GRAPH_XRES_ADDR = 0xD01E69;
+const GRAPH_MODE_ADDR = 0xD01474;
+
+// Pixel dimension + draw state
+const GRAPH_PIX_WIDE_P   = 0xD014FE;
+const GRAPH_PIX_WIDE_M2  = 0xD01501;
+const GRAPH_DRAW_COLOR    = 0xD026AE;
+const GRAPH_DRAW_FG       = 0xD026AC;
+const GRAPH_DRAW_BG       = 0xD026AA;
+const GRAPH_HOOKFLAGS3    = 0xD000B5;
+const GRAPH_MODEBYTE      = 0xD02AD4;
+
+// TI tokens for equation
+const GRAPH_EQUOBJ_TYPE = 0x03;
+const GRAPH_TY1         = 0x10;
+const GRAPH_TX_TOKEN    = 0x58;
+
+// writeReal / readReal in the browser (inlined from fp-real.mjs)
+function graphEncodeReal(num) {
+  const bytes = new Uint8Array(9);
+  if (!isFinite(num)) throw new Error('Cannot encode ' + num);
+  if (num === 0) { bytes[0] = 0x00; bytes[1] = 0x80; return bytes; }
+  const negative = num < 0;
+  bytes[0] = negative ? 0x80 : 0x00;
+  let absVal = Math.abs(num);
+  const trueExp = Math.floor(Math.log10(absVal));
+  bytes[1] = (trueExp + 0x80) & 0xFF;
+  let scaled = parseFloat((absVal / Math.pow(10, trueExp)).toPrecision(14));
+  const digits = [];
+  for (let i = 0; i < 14; i++) {
+    const d = Math.floor(scaled);
+    digits.push(d & 0xF);
+    scaled = (scaled - d) * 10;
+  }
+  for (let i = 13; i > 0; i--) {
+    if (digits[i] >= 10) { digits[i] -= 10; digits[i - 1]++; }
+  }
+  if (digits[0] >= 10) {
+    digits[0] -= 10; digits.pop(); digits.unshift(1);
+    bytes[1] = ((trueExp + 1) + 0x80) & 0xFF;
+  }
+  for (let b = 0; b < 7; b++) {
+    bytes[2 + b] = ((digits[b * 2] & 0xF) << 4) | (digits[b * 2 + 1] & 0xF);
+  }
+  return bytes;
+}
+
+function graphWriteReal(mem, addr, num) {
+  const bytes = graphEncodeReal(num);
+  for (let i = 0; i < 9; i++) mem[addr + i] = bytes[i];
+}
+
+function graphReadReal(mem, addr) {
+  const negative = (mem[addr] & 0x80) !== 0;
+  const trueExp = (mem[addr + 1] & 0xFF) - 0x80;
+  let mantissa = 0;
+  for (let b = 0; b < 7; b++) {
+    const hi = (mem[addr + 2 + b] >> 4) & 0xF;
+    const lo = mem[addr + 2 + b] & 0xF;
+    mantissa = mantissa * 100 + hi * 10 + lo;
+  }
+  let val = mantissa * Math.pow(10, trueExp - 13);
+  return negative ? -val : val;
+}
+
+function graphSeedWindow(mem, Xmin, Xmax, Ymin, Ymax) {
+  graphWriteReal(mem, GRAPH_XMIN_ADDR, Xmin);
+  graphWriteReal(mem, GRAPH_XMAX_ADDR, Xmax);
+  graphWriteReal(mem, GRAPH_XSCL_ADDR, 1);
+  graphWriteReal(mem, GRAPH_YMIN_ADDR, Ymin);
+  graphWriteReal(mem, GRAPH_YMAX_ADDR, Ymax);
+  graphWriteReal(mem, GRAPH_YSCL_ADDR, 1);
+  graphWriteReal(mem, GRAPH_XRES_ADDR, 1);
+  mem[GRAPH_MODE_ADDR] = 0; // function mode
+}
+
+function graphSeedRAM(mem) {
+  // pixWideP / pixWide_m_2
+  mem[GRAPH_PIX_WIDE_P]     = 265 & 0xFF;
+  mem[GRAPH_PIX_WIDE_P + 1] = (265 >>> 8) & 0xFF;
+  mem[GRAPH_PIX_WIDE_M2]     = 165 & 0xFF;
+  mem[GRAPH_PIX_WIDE_M2 + 1] = (165 >>> 8) & 0xFF;
+  // draw colors
+  mem[GRAPH_DRAW_COLOR]     = 0x1F;
+  mem[GRAPH_DRAW_COLOR + 1] = 0x00;
+  mem[GRAPH_DRAW_FG]        = 0x1F;
+  mem[GRAPH_DRAW_FG + 1]    = 0x00;
+  mem[GRAPH_DRAW_BG]        = 0xFF;
+  mem[GRAPH_DRAW_BG + 1]    = 0xFF;
+  mem[GRAPH_HOOKFLAGS3] &= ~0x80;
+  mem[GRAPH_MODEBYTE] = 1;
+  mem[0xD00082] |= (1 << 4); // grfFuncM bit 4
+}
+
+function graphSeedAllocator(mem) {
+  const USERMEM = 0xD1A881;
+  const EMPTY_VAT = 0xD3FFFF;
+  evalWrite24(mem, 0xD02590, EMPTY_VAT); // OPBASE
+  evalWrite24(mem, 0xD02593, EMPTY_VAT); // OPS
+  mem.fill(0x00, 0xD02596, 0xD02596 + 4); // pTempCnt
+  evalWrite24(mem, 0xD0259A, EMPTY_VAT); // pTemp
+  evalWrite24(mem, 0xD0259D, EMPTY_VAT); // progPtr
+  evalWrite24(mem, 0xD0258A, GRAPH_FPS_START); // FPSbase
+  evalWrite24(mem, 0xD0258D, GRAPH_FPS_START); // FPS
+  evalWrite24(mem, 0xD025A0, USERMEM); // newDataPtr
+}
+
+function graphSeedErrorFrame(c, mem, recoveryAddr) {
+  const errFrameSP = c.sp - 18;
+  evalWrite24(mem, errFrameSP + 0,  0xD00080);   // IY
+  evalWrite24(mem, errFrameSP + 3,  0xD1A860);   // IX
+  evalWrite24(mem, errFrameSP + 6,  0x000000);   // BC
+  evalWrite24(mem, errFrameSP + 9,  0x000000);   // DE
+  evalWrite24(mem, errFrameSP + 12, recoveryAddr); // HL
+  evalWrite24(mem, errFrameSP + 15, 0x000040);   // AF
+  evalWrite24(mem, 0xD008E0, errFrameSP); // errSP
+  mem[0xD008DF] = 0x00; // errNo
+  return errFrameSP;
+}
+
+function graphPrepareCallState(c, mem) {
+  c.halted = false; c.iff1 = 0; c.iff2 = 0;
+  c.madl = 1; c.mbase = 0xD0; c._iy = 0xD00080;
+  c.f = 0x40; c._ix = 0xD1A860;
+  c.sp = SCREEN_STACK_TOP - 12;
+  mem.fill(0xFF, c.sp, c.sp + 12);
+}
+
+function graphCreateEquY1(tokens, ex, c, mem) {
+  // OP1 = EQU type + Y1
+  mem.fill(0x00, EVAL_OP1_ADDR, EVAL_OP1_ADDR + 9);
+  mem[EVAL_OP1_ADDR + 0] = GRAPH_EQUOBJ_TYPE;
+  mem[EVAL_OP1_ADDR + 1] = GRAPH_TY1;
+
+  graphPrepareCallState(c, mem);
+  c._hl = tokens.length; // byte count for equation data
+  c.sp -= 3;
+  evalWrite24(mem, c.sp, GRAPH_CREATEEQU_RET);
+  graphSeedErrorFrame(c, mem, GRAPH_CREATEEQU_RET);
+
+  // Re-set OP1 after seedErrorFrame
+  mem.fill(0x00, EVAL_OP1_ADDR, EVAL_OP1_ADDR + 9);
+  mem[EVAL_OP1_ADDR + 0] = GRAPH_EQUOBJ_TYPE;
+  mem[EVAL_OP1_ADDR + 1] = GRAPH_TY1;
+
+  let returnHit = false;
+  try {
+    ex.runFrom(GRAPH_CREATEEQU_ENTRY, 'adl', {
+      maxSteps: 50000,
+      maxLoopIterations: 8192,
+      onBlock(pc) {
+        const n = pc & 0xFFFFFF;
+        if (n === GRAPH_CREATEEQU_RET || n === EVAL_FAKE_RET) { returnHit = true; throw new Error('__RET__'); }
+      },
+      onMissingBlock(pc) {
+        const n = pc & 0xFFFFFF;
+        if (n === GRAPH_CREATEEQU_RET || n === EVAL_FAKE_RET) { returnHit = true; throw new Error('__RET__'); }
+      },
+    });
+  } catch (e) {
+    if (e?.message !== '__RET__') throw e;
+  }
+
+  const de = c._de & 0xFFFFFF;
+  const errNo = mem[0xD008DF];
+
+  if (returnHit && errNo === 0x00 && de >= 0xD00000 && de < 0xD40000) {
+    // Write equation tokens at DE
+    for (let i = 0; i < tokens.length; i++) mem[de + i] = tokens[i];
+    return { tokenAddr: de, success: true };
+  }
+  return { tokenAddr: 0, success: false };
+}
+
+function graphCallGraphPars(ex, c, mem, tokenAddr, xVal, savedFPS) {
+  // Reset FPS
+  evalWrite24(mem, 0xD0258D, savedFPS);
+
+  // OP1 = Y1 equation name
+  mem.fill(0x00, EVAL_OP1_ADDR, EVAL_OP1_ADDR + 9);
+  mem[EVAL_OP1_ADDR + 0] = GRAPH_EQUOBJ_TYPE;
+  mem[EVAL_OP1_ADDR + 1] = GRAPH_TY1;
+
+  // Parser pointers
+  evalWrite24(mem, EVAL_BEGPC_ADDR, tokenAddr);
+  evalWrite24(mem, EVAL_CURPC_ADDR, tokenAddr);
+  evalWrite24(mem, EVAL_ENDPC_ADDR, tokenAddr + 1); // at least 1 token
+
+  graphPrepareCallState(c, mem);
+  c.sp -= 3;
+  evalWrite24(mem, c.sp, GRAPH_GRAPHPARS_RET);
+  graphSeedErrorFrame(c, mem, GRAPH_GRAPHPARS_RET);
+
+  // Re-set OP1
+  mem.fill(0x00, EVAL_OP1_ADDR, EVAL_OP1_ADDR + 9);
+  mem[EVAL_OP1_ADDR + 0] = GRAPH_EQUOBJ_TYPE;
+  mem[EVAL_OP1_ADDR + 1] = GRAPH_TY1;
+
+  let returnHit = false;
+  let tXHit = false;
+  let steps = 0;
+
+  // Phase 1: run until tX handler
+  try {
+    ex.runFrom(GRAPH_GRAPHPARS_BODY, 'adl', {
+      maxSteps: 2000,
+      maxLoopIterations: 8192,
+      onBlock(pc) {
+        steps++;
+        const n = pc & 0xFFFFFF;
+        if (n === GRAPH_TX_HANDLER_PC && !tXHit) {
+          tXHit = true;
+          // Push X as BCD to FPS
+          const fps = evalRead24(mem, 0xD0258D);
+          graphWriteReal(mem, fps, xVal);
+          evalWrite24(mem, 0xD0258D, fps + 9);
+          graphWriteReal(mem, EVAL_OP1_ADDR, xVal);
+          // Skip handler: pop return, redirect
+          const retAddr = evalRead24(mem, c.sp);
+          c.sp += 3;
+          c.pc = retAddr;
+          throw new Error('__SKIP__');
+        }
+        if (n === GRAPH_GRAPHPARS_RET || n === EVAL_FAKE_RET) { returnHit = true; throw new Error('__RET__'); }
+      },
+      onMissingBlock(pc) {
+        steps++;
+        const n = pc & 0xFFFFFF;
+        if (n === GRAPH_TX_HANDLER_PC && !tXHit) {
+          tXHit = true;
+          const fps = evalRead24(mem, 0xD0258D);
+          graphWriteReal(mem, fps, xVal);
+          evalWrite24(mem, 0xD0258D, fps + 9);
+          graphWriteReal(mem, EVAL_OP1_ADDR, xVal);
+          const retAddr = evalRead24(mem, c.sp);
+          c.sp += 3;
+          c.pc = retAddr;
+          throw new Error('__SKIP__');
+        }
+        if (n === GRAPH_GRAPHPARS_RET || n === EVAL_FAKE_RET) { returnHit = true; throw new Error('__RET__'); }
+      },
+    });
+  } catch (e) {
+    if (e?.message === '__SKIP__') {
+      // Phase 2: continue after tX intercept
+      try {
+        ex.runFrom(c.pc, 'adl', {
+          maxSteps: 2000 - steps,
+          maxLoopIterations: 8192,
+          onBlock(pc) {
+            steps++;
+            const n = pc & 0xFFFFFF;
+            if (n === GRAPH_GRAPHPARS_RET || n === EVAL_FAKE_RET) { returnHit = true; throw new Error('__RET__'); }
+          },
+          onMissingBlock(pc) {
+            steps++;
+            const n = pc & 0xFFFFFF;
+            if (n === GRAPH_GRAPHPARS_RET || n === EVAL_FAKE_RET) { returnHit = true; throw new Error('__RET__'); }
+          },
+        });
+      } catch (e2) {
+        if (e2?.message !== '__RET__') throw e2;
+      }
+    } else if (e?.message !== '__RET__') {
+      throw e;
+    }
+  }
+
+  const errNo = mem[0xD008DF];
+  // Read Y from OP1 (strip evaluated flag bit 6, preserve sign bit 7)
+  const savedType = mem[EVAL_OP1_ADDR];
+  mem[EVAL_OP1_ADDR] = savedType & 0xBF;
+  let yVal = null;
+  try { yVal = graphReadReal(mem, EVAL_OP1_ADDR); } catch (e) { /* decode fail */ }
+  mem[EVAL_OP1_ADDR] = savedType;
+
+  return { returnHit, tXHit, errNo, yVal, steps };
+}
+
+function graphTokenizeForEquation(expr) {
+  // Tokenize the expression for the equation body.
+  // We reuse the existing tokenizeExpression but strip the trailing 0x3F end token.
+  const result = tokenizeExpression(expr);
+  if (result.error) return result;
+  // Remove trailing 0x3F (newline/end token used by ParseInp, not needed for equation body)
+  const tokens = result.tokens;
+  if (tokens.length > 0 && tokens[tokens.length - 1] === 0x3F) {
+    return { tokens: tokens.slice(0, tokens.length - 1) };
+  }
+  return { tokens };
+}
+
+function runGraphMode(expr) {
+  const Xmin = parseFloat($('graphXmin').value) || -10;
+  const Xmax = parseFloat($('graphXmax').value) || 10;
+  const Ymin = parseFloat($('graphYmin').value) || -10;
+  const Ymax = parseFloat($('graphYmax').value) || 10;
+
+  // Tokenize expression
+  const tokResult = graphTokenizeForEquation(expr);
+  if (tokResult.error) return { error: tokResult.error };
+  const equTokens = tokResult.tokens;
+
+  // We need PRELIFTED_BLOCKS loaded
+  if (!PRELIFTED_BLOCKS) return { error: 'Boot the ROM first (click Boot).' };
+
+  const romBytes = decodeEmbeddedRom();
+  const mem = new Uint8Array(0x1000000);
+  mem.set(romBytes);
+  const perph = createPeripheralBus({ pllDelay: 2, timerInterrupt: false });
+  const ex = createExecutor(PRELIFTED_BLOCKS, mem, { peripherals: perph });
+  const c = ex.cpu;
+
+  // Cold boot
+  ex.runFrom(0x000000, 'z80', { maxSteps: 20000, maxLoopIterations: 32 });
+  c.halted = false; c.iff1 = 0; c.iff2 = 0;
+  c.sp = SCREEN_STACK_TOP - 3;
+  mem.fill(0xFF, c.sp, c.sp + 3);
+  ex.runFrom(0x08C331, 'adl', { maxSteps: 100000, maxLoopIterations: 10000 });
+  c.mbase = 0xD0; c._iy = 0xD00080; c._hl = 0;
+  c.halted = false; c.iff1 = 0; c.iff2 = 0;
+  c.sp = SCREEN_STACK_TOP - 3;
+  mem.fill(0xFF, c.sp, c.sp + 3);
+  ex.runFrom(0x0802B2, 'adl', { maxSteps: 100, maxLoopIterations: 32 });
+
+  // MEM_INIT
+  graphPrepareCallState(c, mem);
+  c.sp = SCREEN_STACK_TOP;
+  c.sp -= 3;
+  evalWrite24(mem, c.sp, EVAL_MEMINIT_RET);
+  c._iy = 0xD00080; c.mbase = 0xD0;
+
+  let memInitDone = false;
+  try {
+    ex.runFrom(EVAL_MEMINIT_ENTRY, 'adl', {
+      maxSteps: 100000,
+      maxLoopIterations: 8192,
+      onBlock(pc) { if ((pc & 0xFFFFFF) === EVAL_MEMINIT_RET) throw new Error('__MI__'); },
+      onMissingBlock(pc) { if ((pc & 0xFFFFFF) === EVAL_MEMINIT_RET) throw new Error('__MI__'); },
+    });
+  } catch (e) {
+    if (e?.message === '__MI__') memInitDone = true;
+    else return { error: 'MEM_INIT failed: ' + (e?.message || e) };
+  }
+  if (!memInitDone) return { error: 'MEM_INIT did not return.' };
+
+  // Seed allocator, graph window, graph RAM
+  graphSeedAllocator(mem);
+  graphSeedWindow(mem, Xmin, Xmax, Ymin, Ymax);
+  graphSeedRAM(mem);
+  mem[0xD00083] |= 1; // graphDraw dirty
+
+  // Create equation: Y1 = expression
+  const equ = graphCreateEquY1(equTokens, ex, c, mem);
+  if (!equ.success) return { error: 'CreateEqu failed for Y1=' + expr };
+
+  // Save allocator state
+  const savedOPS = evalRead24(mem, 0xD02593);
+  const savedOPBase = evalRead24(mem, 0xD02590);
+  const savedProgPtr = evalRead24(mem, 0xD0259D);
+  const savedFPS = evalRead24(mem, 0xD0258D);
+
+  // Graph rendering loop: full X range
+  const xStep = (Xmax - Xmin) / GRAPH_WIDTH_PX;
+  const xStart = Xmin;
+  const xEnd = Xmax;
+
+  const points = []; // {x, y, px, py}
+  let successCount = 0;
+  let failCount = 0;
+
+  for (let x = xStart; x <= xEnd; x += xStep) {
+    // Restore allocator
+    evalWrite24(mem, 0xD02593, savedOPS);
+    evalWrite24(mem, 0xD02590, savedOPBase);
+    evalWrite24(mem, 0xD0259D, savedProgPtr);
+    evalWrite24(mem, 0xD0258A, GRAPH_FPS_START);
+
+    // Re-seed graph window + RAM (safety against corruption)
+    graphSeedWindow(mem, Xmin, Xmax, Ymin, Ymax);
+    graphSeedRAM(mem);
+
+    const gp = graphCallGraphPars(ex, c, mem, equ.tokenAddr, x, savedFPS);
+
+    if (gp.returnHit && gp.tXHit && gp.errNo === 0x00 && gp.yVal !== null && isFinite(gp.yVal)) {
+      successCount++;
+      const px = Math.round((x - Xmin) / (Xmax - Xmin) * GRAPH_WIDTH_PX);
+      const py = Math.round(GRAPH_HEIGHT_PX - (gp.yVal - Ymin) / (Ymax - Ymin) * GRAPH_HEIGHT_PX);
+      points.push({ x, y: gp.yVal, px, py });
+    } else {
+      failCount++;
+    }
+  }
+
+  return { points, successCount, failCount, Xmin, Xmax, Ymin, Ymax };
+}
+
+function renderGraph(result) {
+  const canvas = $('graphCanvas');
+  const ctx = canvas.getContext('2d');
+  const cw = canvas.width;
+  const ch = canvas.height;
+
+  // Clear to white
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, cw, ch);
+
+  const { points, Xmin, Xmax, Ymin, Ymax } = result;
+
+  // Scale factors: map graph coordinates to canvas pixels
+  const scaleX = cw / (Xmax - Xmin);
+  const scaleY = ch / (Ymax - Ymin);
+
+  // Draw grid lines
+  ctx.strokeStyle = '#ddd';
+  ctx.lineWidth = 0.5;
+  for (let gx = Math.ceil(Xmin); gx <= Math.floor(Xmax); gx++) {
+    const cx = (gx - Xmin) * scaleX;
+    ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, ch); ctx.stroke();
+  }
+  for (let gy = Math.ceil(Ymin); gy <= Math.floor(Ymax); gy++) {
+    const cy = ch - (gy - Ymin) * scaleY;
+    ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(cw, cy); ctx.stroke();
+  }
+
+  // Draw axes
+  ctx.strokeStyle = '#999';
+  ctx.lineWidth = 1;
+  // X axis (Y=0)
+  if (Ymin <= 0 && Ymax >= 0) {
+    const y0 = ch - (0 - Ymin) * scaleY;
+    ctx.beginPath(); ctx.moveTo(0, y0); ctx.lineTo(cw, y0); ctx.stroke();
+  }
+  // Y axis (X=0)
+  if (Xmin <= 0 && Xmax >= 0) {
+    const x0 = (0 - Xmin) * scaleX;
+    ctx.beginPath(); ctx.moveTo(x0, 0); ctx.lineTo(x0, ch); ctx.stroke();
+  }
+
+  // Draw the function curve
+  if (points.length === 0) return;
+
+  ctx.strokeStyle = '#0000ff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+
+  let started = false;
+  for (let i = 0; i < points.length; i++) {
+    const cx = (points[i].x - Xmin) * scaleX;
+    const cy = ch - (points[i].y - Ymin) * scaleY;
+
+    // Skip points way out of canvas range (discontinuities)
+    if (cy < -ch * 2 || cy > ch * 3) {
+      started = false;
+      continue;
+    }
+
+    if (!started) {
+      ctx.moveTo(cx, cy);
+      started = true;
+    } else {
+      // Check for large jumps (discontinuities) — break the line
+      const prevCx = (points[i - 1].x - Xmin) * scaleX;
+      const prevCy = ch - (points[i - 1].y - Ymin) * scaleY;
+      if (Math.abs(cy - prevCy) > ch * 0.8) {
+        ctx.moveTo(cx, cy);
+      } else {
+        ctx.lineTo(cx, cy);
+      }
+    }
+  }
+  ctx.stroke();
+
+  // Draw axis labels
+  ctx.fillStyle = '#666';
+  ctx.font = '10px monospace';
+  ctx.fillText(String(Xmin), 2, ch - 4);
+  ctx.fillText(String(Xmax), cw - 20, ch - 4);
+  ctx.fillText(String(Ymin), 2, ch - 2);
+  ctx.fillText(String(Ymax), 2, 10);
+}
+
+$('btnGraph').addEventListener('click', () => {
+  const expr = $('graphInput').value.trim();
+  const resultEl = $('graphResult');
+
+  if (!expr) {
+    resultEl.style.color = '#df7d7d';
+    resultEl.textContent = 'Enter an expression (e.g. X, X^2, sin(X))';
+    return;
+  }
+
+  resultEl.style.color = '#e0e060';
+  resultEl.textContent = 'Graphing Y1=' + expr + '...';
+
+  // Use setTimeout to let the UI update before heavy computation
+  setTimeout(() => {
+    const t0 = performance.now();
+    let result;
+    try {
+      result = runGraphMode(expr);
+    } catch (e) {
+      resultEl.style.color = '#df7d7d';
+      resultEl.textContent = 'Exception: ' + (e?.message || e);
+      console.error('Graph exception:', e);
+      return;
+    }
+    const dt = Math.round(performance.now() - t0);
+
+    if (result.error) {
+      resultEl.style.color = '#df7d7d';
+      resultEl.textContent = result.error;
+      log(`<span class="info">--- Graph Y1=${expr}: ERROR: ${result.error} ---</span>`);
+      return;
+    }
+
+    renderGraph(result);
+
+    resultEl.style.color = '#7ddf7d';
+    resultEl.textContent = `Y1=${expr}: ${result.successCount} points plotted, ${result.failCount} failed (${dt} ms)`;
+    log(`<span class="info">--- Graph Y1=${expr}: ${result.successCount} pts, ${result.failCount} fail, ${dt} ms ---</span>`);
+  }, 10);
+});
+
+$('btnGraphClear').addEventListener('click', () => {
+  $('graphInput').value = 'X';
+  $('graphResult').textContent = '';
+  const ctx = $('graphCanvas').getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, $('graphCanvas').width, $('graphCanvas').height);
+});
+
+$('graphInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    e.stopPropagation();
+    $('btnGraph').click();
+  }
+});
+
 </script>
 </body>
 </html>
