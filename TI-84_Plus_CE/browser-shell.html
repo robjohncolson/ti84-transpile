@@ -1611,6 +1611,7 @@ const EVAL_MATCH_TOKENS = [
 
 const EVAL_MEMINIT_ENTRY   = 0x09DEE0;
 const EVAL_PARSEINP_ENTRY  = 0x099914;
+const EVAL_COMMON_TAIL_ENTRY = 0x0586CE;  // OS common-tail: LCD calls → ParseInp → cleanup
 const EVAL_CREATEREAL_ENTRY = 0x08238A;
 const EVAL_RCLVARSYM_ENTRY  = 0x09AC77;
 const EVAL_OP1_ADDR        = 0xD005F8;
@@ -1634,6 +1635,12 @@ const EVAL_TOKEN_BUFFER_ADDR = 0xD00800;
 const EVAL_FAKE_RET        = 0x7FFFFE;
 const EVAL_ERR_CATCH       = 0x7FFFFA;
 const EVAL_MEMINIT_RET     = 0x7FFFF6;
+
+// When true, eval enters at the OS common-tail (0x0586CE) which runs
+// LCD-related calls, then ParseInp, then post-ParseInp cleanup.
+// The cleanup at 0x05822A hits a missing block and falls to FAKE_RET.
+// Falls back to direct ParseInp (0x099914) if the common-tail path fails.
+const EVAL_USE_COMMON_TAIL = true;
 const EVAL_CREATEREAL_RET   = 0x7FFFF2;
 const EVAL_ANS_OP1 = [0x00, 0x72, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
 
@@ -2080,32 +2087,100 @@ function runDirectEval(expr) {
   evalWrite24(mem, EVAL_ERRSP_ADDR, errBase);
   mem[EVAL_ERRNO_ADDR] = 0x00;
 
-  // Stage 5: run ParseInp
+  // Stage 5: run ParseInp (via common-tail or direct)
   let parseReturnHit = false;
   let parseErrCaught = false;
   let parseSteps = 0;
-  try {
-    const res = ex.runFrom(EVAL_PARSEINP_ENTRY, 'adl', {
-      maxSteps: 1500000,
-      maxLoopIterations: 8192,
-      onBlock(pc, _m, _meta, step) {
-        const norm = pc & 0xFFFFFF;
-        if (step !== undefined) parseSteps = Math.max(parseSteps, step + 1);
-        if (norm === EVAL_FAKE_RET) throw new Error('__RET__');
-        if (norm === EVAL_ERR_CATCH) throw new Error('__ERR__');
-      },
-      onMissingBlock(pc, _m, step) {
-        const norm = pc & 0xFFFFFF;
-        if (step !== undefined) parseSteps = Math.max(parseSteps, step + 1);
-        if (norm === EVAL_FAKE_RET) throw new Error('__RET__');
-        if (norm === EVAL_ERR_CATCH) throw new Error('__ERR__');
-      },
-    });
-    parseSteps = Math.max(parseSteps, res.steps ?? 0);
-  } catch (e) {
-    if (e?.message === '__RET__') parseReturnHit = true;
-    else if (e?.message === '__ERR__') parseErrCaught = true;
-    else return { error: `ParseInp crashed: ${e.message}` };
+  let usedCommonTail = false;
+
+  // Save state snapshot so we can restore for fallback if needed
+  const savedSp = c.sp;
+  const savedErrBase = errBase;
+  const savedOpsState = evalRead24(mem, EVAL_OPS_ADDR);
+  const savedFpsState = evalRead24(mem, EVAL_FPS_ADDR);
+  const savedFpsBaseState = evalRead24(mem, EVAL_FPSBASE_ADDR);
+  const savedOp1Snapshot = mem.slice(EVAL_OP1_ADDR, EVAL_OP1_ADDR + 9);
+  const savedTokenSnapshot = mem.slice(EVAL_TOKEN_BUFFER_ADDR, EVAL_TOKEN_BUFFER_ADDR + 0x80);
+
+  function runParseInpFrom(entryPoint, stepBudget) {
+    let hit = false;
+    let err = false;
+    let steps = 0;
+    try {
+      const res = ex.runFrom(entryPoint, 'adl', {
+        maxSteps: stepBudget,
+        maxLoopIterations: 8192,
+        onBlock(pc, _m, _meta, step) {
+          const norm = pc & 0xFFFFFF;
+          if (step !== undefined) steps = Math.max(steps, step + 1);
+          if (norm === EVAL_FAKE_RET) throw new Error('__RET__');
+          if (norm === EVAL_ERR_CATCH) throw new Error('__ERR__');
+        },
+        onMissingBlock(pc, _m, step) {
+          const norm = pc & 0xFFFFFF;
+          if (step !== undefined) steps = Math.max(steps, step + 1);
+          if (norm === EVAL_FAKE_RET) throw new Error('__RET__');
+          if (norm === EVAL_ERR_CATCH) throw new Error('__ERR__');
+        },
+      });
+      steps = Math.max(steps, res.steps ?? 0);
+    } catch (e) {
+      if (e?.message === '__RET__') hit = true;
+      else if (e?.message === '__ERR__') err = true;
+      else throw e;
+    }
+    return { hit, err, steps };
+  }
+
+  if (EVAL_USE_COMMON_TAIL) {
+    // Common-tail path: enters at 0x0586CE, runs LCD calls → ParseInp →
+    // post-ParseInp cleanup (0x05822A hits missing block → FAKE_RET).
+    // Budget is higher: ~136 extra steps before ParseInp + cleanup after.
+    const ctResult = runParseInpFrom(EVAL_COMMON_TAIL_ENTRY, 1700000);
+    parseReturnHit = ctResult.hit;
+    parseErrCaught = ctResult.err;
+    parseSteps = ctResult.steps;
+    usedCommonTail = true;
+
+    // Verify OP1 has a result (not all zeros). If common-tail failed to
+    // produce a result, fall back to direct ParseInp.
+    if (!parseReturnHit && !parseErrCaught) {
+      // Common-tail didn't terminate — restore state and fall back
+      c.sp = savedSp;
+      evalWrite24(mem, EVAL_OPS_ADDR, savedOpsState);
+      evalWrite24(mem, EVAL_FPS_ADDR, savedFpsState);
+      evalWrite24(mem, EVAL_FPSBASE_ADDR, savedFpsBaseState);
+      mem.set(savedOp1Snapshot, EVAL_OP1_ADDR);
+      mem.set(savedTokenSnapshot, EVAL_TOKEN_BUFFER_ADDR);
+      evalWrite24(mem, EVAL_BEGPC_ADDR, EVAL_TOKEN_BUFFER_ADDR);
+      evalWrite24(mem, EVAL_CURPC_ADDR, EVAL_TOKEN_BUFFER_ADDR);
+      evalWrite24(mem, EVAL_ENDPC_ADDR, EVAL_TOKEN_BUFFER_ADDR + tokens.length);
+
+      // Re-prepare call state for fallback
+      c.halted = false; c.iff1 = 0; c.iff2 = 0;
+      c.madl = 1; c.mbase = 0xD0; c._iy = 0xD00080; c.f = 0x40; c._ix = 0xD1A860;
+      c.sp = SCREEN_STACK_TOP - 12;
+      mem.fill(0xFF, c.sp, c.sp + 12);
+      c.sp -= 3;
+      evalWrite24(mem, c.sp, EVAL_FAKE_RET);
+      const fbErrBase = (c.sp - 6) & 0xFFFFFF;
+      evalWrite24(mem, fbErrBase, EVAL_ERR_CATCH);
+      evalWrite24(mem, fbErrBase + 3, 0);
+      evalWrite24(mem, EVAL_ERRSP_ADDR, fbErrBase);
+      mem[EVAL_ERRNO_ADDR] = 0x00;
+
+      const fbResult = runParseInpFrom(EVAL_PARSEINP_ENTRY, 1500000);
+      parseReturnHit = fbResult.hit;
+      parseErrCaught = fbResult.err;
+      parseSteps = fbResult.steps;
+      usedCommonTail = false;
+    }
+  } else {
+    // Direct ParseInp path (original behavior)
+    const directResult = runParseInpFrom(EVAL_PARSEINP_ENTRY, 1500000);
+    parseReturnHit = directResult.hit;
+    parseErrCaught = directResult.err;
+    parseSteps = directResult.steps;
   }
 
   const errNo = mem[EVAL_ERRNO_ADDR] & 0xFF;
@@ -2160,6 +2235,7 @@ function runDirectEval(expr) {
     errNo,
     op1Hex,
     ansStored,
+    commonTail: usedCommonTail,
   };
 }
 
@@ -2200,7 +2276,8 @@ $('btnEval').addEventListener('click', () => {
   const stoNote = result.stored ? '  (stored)' : '';
   const ansNote = (!result.stored && result.ansStored) ? '  (Ans stored)' : '';
   resultEl.textContent = `= ${result.display}${stoNote}${ansNote}`;
-  log(`<span class="info">--- Direct Eval "${expr}" = ${result.display} (${result.steps} steps, ${dt} ms, OP1=[${result.op1Hex}], errNo=0x${hex(result.errNo, 2)}) ---</span>`);
+  const pathNote = result.commonTail ? ' [common-tail]' : result.commonTail === false ? ' [direct]' : '';
+  log(`<span class="info">--- Direct Eval "${expr}" = ${result.display} (${result.steps} steps, ${dt} ms, OP1=[${result.op1Hex}], errNo=0x${hex(result.errNo, 2)}${pathNote}) ---</span>`);
 });
 
 $('btnEvalClear').addEventListener('click', () => {

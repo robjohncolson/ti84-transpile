@@ -1,0 +1,10 @@
+# Phase 128 BB: Seeds for 0xBB-prefix two-byte token dispatch path
+# Missing block found during ParseInp trace with min(3,7)
+0x0011DA  # Error handler cleanup block (reached via JError -> 0x061DBA)
+0x001200  # LCD output routine (contains 0x001221 busy-wait loop)
+0x001213  # Block within LCD output after jr z
+0x001221  # LCD busy-wait polling loop
+0x001228  # Block after busy-wait (data transfer loop)
+0x001239  # Cleanup after LCD transfer
+0x001242  # Second busy-wait section
+0x001249  # After second busy-wait

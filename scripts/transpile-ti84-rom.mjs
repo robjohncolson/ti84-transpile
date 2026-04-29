@@ -14,6 +14,8 @@ const phase152SeedsPath = path.join(repoRoot, 'TI-84_Plus_CE', 'phase152-seeds.t
 const phase179SeedsPath = path.join(repoRoot, 'TI-84_Plus_CE', 'phase179-seeds.txt');
 const cemuTraceSeedsPath = path.join(repoRoot, 'TI-84_Plus_CE', 'cemu-trace-seeds.txt');
 const phase200SeedsPath = path.join(repoRoot, 'TI-84_Plus_CE', 'phase200-seeds.txt');
+const phase128SeedsPath = path.join(repoRoot, 'TI-84_Plus_CE', 'phase128-seeds.txt');
+const phase128bbSeedsPath = path.join(repoRoot, 'TI-84_Plus_CE', 'phase128bb-seeds.txt');
 
 const romBytes = fs.readFileSync(romPath);
 const romBase64 = romBytes.toString('base64');
@@ -774,6 +776,8 @@ function walkBlocks() {
   const phase179Seeds = loadSeedFile(phase179SeedsPath);
   const cemuTraceSeeds = loadSeedFile(cemuTraceSeedsPath);
   const phase200Seeds = loadSeedFile(phase200SeedsPath);
+  const phase128Seeds = loadSeedFile(phase128SeedsPath);
+  const phase128bbSeeds = loadSeedFile(phase128bbSeedsPath);
   const knownEntryAnchors = [
     { pc: 0x000100, mode: 'adl' },
     { pc: 0x000658, mode: 'adl' },
@@ -22087,6 +22091,10 @@ function walkBlocks() {
     { pc: 0x0821a3, mode: 'adl' },
     // Phase 200: coverage-analyzer "suggested seeds" targeting top CODE? gaps.
     ...phase200Seeds,
+    // Phase 128: uncovered .SIS/.LIL prefix addresses from ROM scan.
+    ...phase128Seeds,
+    // Phase 128 BB: 0xBB-prefix two-byte token dispatch path seeds.
+    ...phase128bbSeeds,
     // Phase 25X: explicit MEM_INIT coverage anchors for ParseInp reprobe.
     { pc: 0x09dee0, mode: 'adl' },
     { pc: 0x08a98f, mode: 'adl' },
