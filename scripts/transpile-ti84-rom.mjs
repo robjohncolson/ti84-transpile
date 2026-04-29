@@ -22135,6 +22135,9 @@ function walkBlocks() {
     { pc: 0x09a3bd, mode: 'adl' },  // Sto_StatVar — store a stat variable
     { pc: 0x094000, mode: 'adl' },  // Stat core range start — 64 Sto_StatVar calls
     { pc: 0x0aaab8, mode: 'adl' },  // TwoVars0 — two-variable stat core
+    // Phase 141 P1: FpPop seed — unblocks gcd dispatch (session 140 root cause).
+    { pc: 0x082957, mode: 'adl' },  // FpPop — pops FP stack into OP register
+    { pc: 0x068D3D, mode: 'adl' },  // gcd handler — jump table target for gcd dispatch
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
