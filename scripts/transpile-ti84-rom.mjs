@@ -22138,6 +22138,10 @@ function walkBlocks() {
     // Phase 141 P1: FpPop seed — unblocks gcd dispatch (session 140 root cause).
     { pc: 0x082957, mode: 'adl' },  // FpPop — pops FP stack into OP register
     { pc: 0x068D3D, mode: 'adl' },  // gcd handler — jump table target for gcd dispatch
+    // Phase 148 P1: Real FP pop + swap seeds — unblocks gcd real pop path.
+    { pc: 0x0828FC, mode: 'adl' },  // Real FP pop — copies FPS top → OP2, decrements FPS by 9
+    { pc: 0x082912, mode: 'adl' },  // FPS-=9 helper — called by real pop at 0x0828FC
+    { pc: 0x082BCE, mode: 'adl' },  // FP swap — exchanges OP1 with FPS top entry
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
