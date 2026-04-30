@@ -2007,15 +2007,67 @@
       "timestamp": "2026-04-30T03:12:28Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "53da297d277d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 151 P1: FP gcd \u2014 post-loop sign-byte cleanup\n\n## Context\nThe TI-84 CE ROM transpiler ",
+      "status": "completed",
+      "duration_seconds": 404.388,
+      "timestamp": "2026-04-30T04:08:40Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase151-gcd-postloop-fix.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "6afacd530a46",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 151 P2: IPoint pen color investigation \u2014 why A=0x00 at pixel write\n\n## Context\nThe TI",
+      "status": "completed",
+      "duration_seconds": 823.054,
+      "timestamp": "2026-04-30T04:15:40Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase151-ipoint-pencolor.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "876685e89d64",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: FP gcd \u2014 verify FPSub independently + trace intermediate loop values\n\n## Context\nThis is a T",
+      "status": "completed",
+      "duration_seconds": 422.104,
+      "timestamp": "2026-04-30T05:10:18Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase152-gcd-fpsub-verify.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "0027cdf0e26b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: IPoint pen color \u2014 disassemble 0x07B5B6 + test drawFGColor seeding\n\n## Context\nThis is a TI-",
+      "status": "completed",
+      "duration_seconds": 553.83,
+      "timestamp": "2026-04-30T05:12:31Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase152-ipoint-color-fix.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 153,
-    "cc_to_codex": 153,
+    "total_calls": 157,
+    "cc_to_codex": 157,
     "codex_to_cc": 0,
-    "completed": 113,
+    "completed": 117,
     "failed": 34,
     "refused": 0,
-    "avg_duration_seconds": 535.103
+    "avg_duration_seconds": 535.504
   }
 }
