@@ -1929,15 +1929,57 @@
       "timestamp": "2026-04-29T03:17:29Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "19cc9d8c6d19",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 148 P1: FP gcd \u2014 add real pop seed (0x0828FC) + re-test gcd(12,8)\n\n## Context\nThis is a TI",
+      "status": "completed",
+      "duration_seconds": 412.576,
+      "timestamp": "2026-04-30T01:09:32Z",
+      "files_changed": [
+        "TI-84_Plus_CE/ROM.transpiled.js",
+        "TI-84_Plus_CE/ROM.transpiled.report.json",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase148-gcd-realpop.mjs",
+        "TI-84_Plus_CE/probe-phase148-ipoint-coords.mjs",
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "84246747c013",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 148 P2: Graph \u2014 Disassemble IPoint's actual coordinate input mechanism\n\n## Context\nThis is",
+      "status": "timeout",
+      "duration_seconds": 900.04,
+      "timestamp": "2026-04-30T01:17:41Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "89e72ecc9306",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: IPoint pixel write flags \u2014 find which IY flag combination enables actual VRAM writes\n\n## Con",
+      "status": "completed",
+      "duration_seconds": 280.27,
+      "timestamp": "2026-04-30T02:06:47Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase149-ipoint-flags.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 147,
-    "cc_to_codex": 147,
+    "total_calls": 150,
+    "cc_to_codex": 150,
     "codex_to_cc": 0,
-    "completed": 108,
-    "failed": 33,
+    "completed": 110,
+    "failed": 34,
     "refused": 0,
-    "avg_duration_seconds": 535.981
+    "avg_duration_seconds": 535.881
   }
 }
