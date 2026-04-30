@@ -1971,15 +1971,51 @@
         "TI-84_Plus_CE/probe-phase149-ipoint-flags.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "7345fbc96cbf",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: FP gcd sign corruption \u2014 step-by-step OP1/OP2 snapshot probe\n\n## Context\nThis is a TI-84 Plu",
+      "status": "completed",
+      "duration_seconds": 508.413,
+      "timestamp": "2026-04-30T02:10:34Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "079313622d86",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 150 P1: GCD Sign Corruption Fix \u2014 Quick Test + Disassembly\n\n## Context\nThis is a TI-8",
+      "status": "completed",
+      "duration_seconds": 379.622,
+      "timestamp": "2026-04-30T03:08:46Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase150-gcd-signfix.mjs",
+        "TI-84_Plus_CE/probe-phase150-ipoint-compare.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "3b10ce6a2ca1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 150 P2: IPoint VRAM Write Failure \u2014 Session 129 vs 149 Comparison\n\n## Context\nThis is",
+      "status": "completed",
+      "duration_seconds": 600.68,
+      "timestamp": "2026-04-30T03:12:28Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 150,
-    "cc_to_codex": 150,
+    "total_calls": 153,
+    "cc_to_codex": 153,
     "codex_to_cc": 0,
-    "completed": 110,
+    "completed": 113,
     "failed": 34,
     "refused": 0,
-    "avg_duration_seconds": 535.881
+    "avg_duration_seconds": 535.103
   }
 }
