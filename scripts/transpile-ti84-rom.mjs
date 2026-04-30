@@ -22142,6 +22142,8 @@ function walkBlocks() {
     { pc: 0x0828FC, mode: 'adl' },  // Real FP pop — copies FPS top → OP2, decrements FPS by 9
     { pc: 0x082912, mode: 'adl' },  // FPS-=9 helper — called by real pop at 0x0828FC
     { pc: 0x082BCE, mode: 'adl' },  // FP swap — exchanges OP1 with FPS top entry
+    // Phase 157 P4: FPDiv JT slot seed — session 156 found 0x0201F4 was missing (fell through to SqRoot at 0x0201F8).
+    { pc: 0x0201F4, mode: 'adl' },  // FPDiv JT slot — JP to FPDiv impl at 0x07CAB9
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {

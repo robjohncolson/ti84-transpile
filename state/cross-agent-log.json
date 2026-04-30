@@ -2116,15 +2116,48 @@
       "timestamp": "2026-04-30T08:17:55Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "fcca79b749a3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x07F8B6 and trace its chain into FPDiv at 0x07CA48\n\n## Context\nThis is a TI-84 ",
+      "status": "timeout",
+      "duration_seconds": 300.065,
+      "timestamp": "2026-04-30T09:07:52Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "dd9f7dde2cc6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Dense FPDiv comparison \u2014 FPDiv(12,8) vs FPDiv(1200,1200)\n\n## Context\nThis is a TI-84 Plus CE",
+      "status": "timeout",
+      "duration_seconds": 300.037,
+      "timestamp": "2026-04-30T09:07:53Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "dfbd8cd2353d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Track OP3 usage after OP1\u2192OP3 copy in gcd algorithm\n\n## Context\nThis is a TI-84 Plus CE ROM ",
+      "status": "timeout",
+      "duration_seconds": 300.04,
+      "timestamp": "2026-04-30T09:07:54Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 162,
-    "cc_to_codex": 162,
+    "total_calls": 165,
+    "cc_to_codex": 165,
     "codex_to_cc": 0,
     "completed": 121,
-    "failed": 35,
+    "failed": 38,
     "refused": 0,
-    "avg_duration_seconds": 539.804
+    "avg_duration_seconds": 535.445
   }
 }
