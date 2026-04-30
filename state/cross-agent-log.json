@@ -1,0 +1,1943 @@
+{
+  "version": 1,
+  "calls": [
+    {
+      "call_id": "6d5fd8e3a30f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "TASK: Phase 202c-c \u2014 Build a new probe that MANUALLY invokes the TI-84 Plus CE OS interrupt handler ",
+      "status": "timeout",
+      "duration_seconds": 600.06,
+      "timestamp": "2026-04-20T02:39:21Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8953d9cc8c31",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "TASK: Phase 202c-d \u2014 (a) Disassemble and document TI-84 Plus CE LCD register init helpers at ROM add",
+      "status": "timeout",
+      "duration_seconds": 600.061,
+      "timestamp": "2026-04-20T02:39:39Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a682c170d16d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Phase 202f-b: Dynamic probe \u2014 force PC to 0x005c2d post-OS-init\n\n## Context\nWe are transpiling the",
+      "status": "completed",
+      "duration_seconds": 306.608,
+      "timestamp": "2026-04-20T04:07:09Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "509f7565c943",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Phase 202f-a+c: Reverse-walk from 0x005c2d + decode HL loading\n\n## Context\nWe are transpiling the ",
+      "status": "completed",
+      "duration_seconds": 371.95,
+      "timestamp": "2026-04-20T04:08:12Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase202f-reverse-walk-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "9a4ccb2842b5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Phase 202f-d: Map the full LCD-reinit routine containing 0x005c2d\n\n## Context\nWe are transpiling t",
+      "status": "completed",
+      "duration_seconds": 679.454,
+      "timestamp": "2026-04-20T04:13:23Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase202f-lcd-reinit-map-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "982c6bcdeed4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "Phase 202g \u2014 LCD MMIO 0xF80000 mirror + instrumentation probe.\n\nCONTEXT: TI-84 Plus CE ROM transpile",
+      "status": "completed_with_limitations",
+      "duration_seconds": 572.106,
+      "timestamp": "2026-04-20T16:00:34Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f71ac4e09bc5",
+      "direction": "cc-to-codex",
+      "task_type": "investigate",
+      "prompt_summary": "Phase 196 \u2014 rowLimit (0xD02504) / colLimit (0xD02505) boot-path investigation.\n\nCONTEXT: TI-84 Plus ",
+      "status": "timeout",
+      "duration_seconds": 600.046,
+      "timestamp": "2026-04-20T16:01:05Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f0bacfd10454",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Phase 198 \u2014 Fix 42 suspicious mem.fill calls\n\n## Context\n\nThe `mem.fill()` API in this project use",
+      "status": "completed",
+      "duration_seconds": 187.385,
+      "timestamp": "2026-04-21T04:05:20Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase100e-buffer-write-hook.mjs",
+        "TI-84_Plus_CE/probe-phase100b-dynamic-trace.mjs",
+        "TI-84_Plus_CE/probe-phase101a-statusbar-hunt.mjs",
+        "TI-84_Plus_CE/probe-phase125-full-text-decode.mjs",
+        "TI-84_Plus_CE/probe-phase134-ram-dispatch-hunt.mjs",
+        "TI-84_Plus_CE/probe-phase101b-angle-mode-hunt.mjs",
+        "TI-84_Plus_CE/probe-phase154-trace.mjs",
+        "TI-84_Plus_CE/probe-phase155-font.mjs",
+        "TI-84_Plus_CE/probe-phase155b-font-path.mjs",
+        "TI-84_Plus_CE/probe-phase159-sp-trace.mjs",
+        "TI-84_Plus_CE/probe-phase161-sp-verify.mjs",
+        "TI-84_Plus_CE/probe-phase161b-ix-trace.mjs",
+        "TI-84_Plus_CE/probe-phase163-font-record.mjs",
+        "TI-84_Plus_CE/probe-phase165-crash-trace.mjs",
+        "TI-84_Plus_CE/probe-phase173-render-cluster.mjs",
+        "TI-84_Plus_CE/probe-phase176-ix-analysis.mjs",
+        "TI-84_Plus_CE/probe-phase179-restore-test.mjs",
+        "TI-84_Plus_CE/probe-phase181-missing-block.mjs",
+        "TI-84_Plus_CE/probe-phase181b-step-discrepancy.mjs",
+        "TI-84_Plus_CE/probe-phase182-status-dots.mjs",
+        "TI-84_Plus_CE/probe-phase183-ix-discovery.mjs",
+        "TI-84_Plus_CE/probe-phase185-status-color.mjs",
+        "TI-84_Plus_CE/probe-phase187-stage3-investigation.mjs",
+        "TI-84_Plus_CE/probe-phase87b-0a29ec-fixed.mjs",
+        "TI-84_Plus_CE/probe-phase90-caller-direct.mjs",
+        "TI-84_Plus_CE/probe-phase90b-parent-callers.mjs",
+        "TI-84_Plus_CE/probe-phase90c-combined-homescreen.mjs",
+        "TI-84_Plus_CE/probe-phase90d-combined-fixed.mjs",
+        "TI-84_Plus_CE/probe-phase90e-full-composite.mjs",
+        "TI-84_Plus_CE/probe-phase91a-mode-bytes.mjs",
+        "TI-84_Plus_CE/probe-phase91b-mem-trace.mjs",
+        "TI-84_Plus_CE/probe-phase91c-seed-mode-buffer.mjs",
+        "TI-84_Plus_CE/probe-phase92-find-populator.mjs",
+        "TI-84_Plus_CE/probe-phase93-jt-cluster.mjs",
+        "TI-84_Plus_CE/probe-phase97a-500k-boot.mjs",
+        "TI-84_Plus_CE/probe-phase97d-mode-var-readers.mjs",
+        "TI-84_Plus_CE/probe-phase98a-decode-verify.mjs",
+        "TI-84_Plus_CE/probe-phase98a-font-hunt.mjs",
+        "TI-84_Plus_CE/probe-phase99c-poll-port.mjs",
+        "TI-84_Plus_CE/probe-phase99e-deep-decode.mjs",
+        "TI-84_Plus_CE/probe-phase99e-per-cell.mjs",
+        "TI-84_Plus_CE/probe-phase99e-stride-sweep.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "2f27509fa805",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Phase 25G Batch 1 \u2014 Seed 0x00B608 + Retranspile + Event Loop Test\n\n## Context\n\nThe TI-84 Plus CE O",
+      "status": "completed_with_limitations",
+      "duration_seconds": 655.672,
+      "timestamp": "2026-04-21T04:13:10Z",
+      "files_changed": [
+        "scripts/transpile-ti84-rom.mjs",
+        "TI-84_Plus_CE/probe-phase25g-eventloop.mjs",
+        "TI-84_Plus_CE/probe-phase25g-scancode-table.mjs",
+        "TI-84_Plus_CE/phase25g-scancode-table-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "9debf5816c6b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "Phase 25G-b: Reach 0x00B608 via two-phase ISR cycle in the TI-84 CE transpiler probe.\n\nCONTEXT: Sess",
+      "status": "completed_with_limitations",
+      "duration_seconds": 409.372,
+      "timestamp": "2026-04-21T14:13:54Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25g-eventloop.mjs",
+        "TI-84_Plus_CE/phase25g-b-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "a0b6c311a850",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "Phase 25G-c: Decode the 228-byte TI-OS scan code translation table at ROM address 0x09F79B into huma",
+      "status": "timeout",
+      "duration_seconds": 600.047,
+      "timestamp": "2026-04-21T14:17:23Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "076d7f1d8aca",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "Phase 25G-c (retry, tighter scope): Decode the 228-byte TI-OS scan code translation table at ROM 0x0",
+      "status": "timeout",
+      "duration_seconds": 300.034,
+      "timestamp": "2026-04-21T14:23:12Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9c6808853730",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Phase 25G-d \u2014 Establish real index formula for 0x09F79B scan code translation table\n\n## Context\n\nT",
+      "status": "completed",
+      "duration_seconds": 587.626,
+      "timestamp": "2026-04-21T16:14:54Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "99c0488f3d8e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Phase 25G-e \u2014 Find the actual dispatcher to 0x00B608\n\n## Context\n\nPhase 25G-b proved that 0x00B608",
+      "status": "timeout",
+      "duration_seconds": 900.057,
+      "timestamp": "2026-04-21T16:20:09Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b713a97d23e4",
+      "direction": "cc-to-codex",
+      "task_type": "review",
+      "prompt_summary": "VERIFY Phase 25G-g implementation against plan. READ-ONLY review + optional minor correction if a cl",
+      "status": "failed",
+      "duration_seconds": 238.383,
+      "timestamp": "2026-04-21T19:02:52Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1aac8822aa66",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "Phase 25G-h: TI-OS token cross-reference for TI-84 Plus CE scancode translation table outputs.\n\nCONT",
+      "status": "timeout",
+      "duration_seconds": 600.048,
+      "timestamp": "2026-04-21T21:17:05Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3821847ce3a9",
+      "direction": "cc-to-codex",
+      "task_type": "review",
+      "prompt_summary": "Review the probe TI-84_Plus_CE/probe-phase25h-b-rcl-statvar.mjs and the report TI-84_Plus_CE/phase25",
+      "status": "failed",
+      "duration_seconds": 320.847,
+      "timestamp": "2026-04-22T00:21:25Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2035a2afcdae",
+      "direction": "cc-to-codex",
+      "task_type": "review",
+      "prompt_summary": "Review Phase 25I FP probe artifacts in C:/Users/rober/Downloads/Projects/school/ti84-transpile/TI-84",
+      "status": "completed",
+      "duration_seconds": 233.688,
+      "timestamp": "2026-04-22T01:19:05Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "19aca360fdf4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Harden fp-real.mjs \u2014 carry-overflow normalization + NaN/Inf handling\n\n## Context\n`TI-84_Plus",
+      "status": "completed",
+      "duration_seconds": 144.928,
+      "timestamp": "2026-04-22T02:05:12Z",
+      "files_changed": [
+        "TI-84_Plus_CE/fp-real.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "5a34e40fbe38",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Backfill phase-report labels with canonical JT names\n\n## Context\nPhase 25H-a built a jump-ta",
+      "status": "completed",
+      "duration_seconds": 203.08,
+      "timestamp": "2026-04-22T02:06:14Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2e126c4dc947",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Extended FP probes \u2014 Cos, Tan, LnX\n\n## Context\nSession 71 established three FP probes (FPAdd",
+      "status": "completed",
+      "duration_seconds": 216.817,
+      "timestamp": "2026-04-22T02:06:25Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e40765386ef1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Positive-path Rcl_StatVar probe \u2014 seed stat-var table + statsValid\n\n## Context\nSession 70 (P",
+      "status": "completed",
+      "duration_seconds": 493.45,
+      "timestamp": "2026-04-22T02:11:04Z",
+      "files_changed": [
+        "C:\\Users\\rober\\Downloads\\Projects\\school\\ti84-transpile\\TI-84_Plus_CE\\probe-phase25j-statvar-positive.mjs",
+        "C:\\Users\\rober\\Downloads\\Projects\\school\\ti84-transpile\\TI-84_Plus_CE\\phase25j-statvar-positive-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "84f523973379",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "You are writing a probe for the TI-84 Plus CE ROM transpilation project. Work in directory:\n  C:/Use",
+      "status": "completed",
+      "duration_seconds": 320.35,
+      "timestamp": "2026-04-22T03:21:58Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25m-sto-statvar.mjs",
+        "TI-84_Plus_CE/phase25m-sto-statvar-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "f1d33d879161",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "You are writing 3 probes for the TI-84 Plus CE ROM transpilation project. Work in directory:\n  C:/Us",
+      "status": "completed",
+      "duration_seconds": 342.883,
+      "timestamp": "2026-04-22T03:22:18Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "63c097c0f218",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "You are writing a probe for the TI-84 Plus CE ROM transpilation project. Work in directory:\n  C:/Use",
+      "status": "timeout",
+      "duration_seconds": 600.057,
+      "timestamp": "2026-04-22T03:26:34Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "eb38c67cae98",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "You are writing a probe for the TI-84 Plus CE ROM transpilation project. Work in directory:\n  C:/Use",
+      "status": "timeout",
+      "duration_seconds": 600.052,
+      "timestamp": "2026-04-22T03:26:39Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "355540215f22",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Additional FP primitives \u2014 probe FPMult, FPDiv, and TenX\n\n## Context\n\nWe are reverse-enginee",
+      "status": "completed",
+      "duration_seconds": 229.038,
+      "timestamp": "2026-04-22T04:08:15Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "72bf5c540a08",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Stat-var coverage expansion \u2014 test multiple stat tokens with Sto/Rcl round-trip\n\n## Context\n",
+      "status": "completed",
+      "duration_seconds": 310.31,
+      "timestamp": "2026-04-22T04:09:35Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25o-statvar-expansion.mjs",
+        "TI-84_Plus_CE/phase25o-statvar-expansion-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "85b87f57f34f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: ParseInp deep-dive \u2014 disassemble helper subroutines to find global-pointer contract\n\n## Cont",
+      "status": "completed",
+      "duration_seconds": 610.626,
+      "timestamp": "2026-04-22T04:14:33Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25o-parseinp-helpers.mjs",
+        "TI-84_Plus_CE/phase25o-parseinp-helpers-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "8277b6787d8b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Phase 25P \u2014 FP primitives (FPRecip, InvOP1Sc)\n\n## Context\nYou are working on a TI-84 Plus CE",
+      "status": "completed",
+      "duration_seconds": 220.041,
+      "timestamp": "2026-04-22T05:06:19Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "31d5b987c87a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Phase 25P \u2014 ParseInp retry with OPS seeded\n\n## Context\nYou are working on a TI-84 Plus CE RO",
+      "status": "completed",
+      "duration_seconds": 261.802,
+      "timestamp": "2026-04-22T05:06:55Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase25p-fprecip-report.md",
+        "TI-84_Plus_CE/phase25p-invop1sc-report.md",
+        "TI-84_Plus_CE/phase25p-parseinp-ops-report.md",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase25p-fprecip.mjs",
+        "TI-84_Plus_CE/probe-phase25p-invop1sc.mjs",
+        "TI-84_Plus_CE/probe-phase25p-parseinp-ops.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "76d4f4c4e643",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Phase 25P \u2014 Stat-var expansion (more tokens + edge cases)\n\n## Context\nYou are working on a T",
+      "status": "completed",
+      "duration_seconds": 313.185,
+      "timestamp": "2026-04-22T05:07:54Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25p-statvar-extended.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "3dcf1612cce5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Phase 25P \u2014 VAT CreateReal IX-offset disassembly\n\n## Context\nYou are working on a TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 669.546,
+      "timestamp": "2026-04-22T05:13:46Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25p-vat-disasm.mjs",
+        "TI-84_Plus_CE/phase25p-vat-disasm-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "2f97a009b3ce",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: InvOP1S FP primitive probe\n\n## Context\nSession 75 validated InvOP1Sc at 0x07CA02 (negates OP",
+      "status": "completed",
+      "duration_seconds": 225.122,
+      "timestamp": "2026-04-22T06:06:19Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25q-invop1s.mjs",
+        "TI-84_Plus_CE/phase25q-invop1s-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "a70cfa7a8cd0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x061DB2 \u2014 TI-OS error handler convergence point\n\n## Context\nEvery entry in the ",
+      "status": "timeout",
+      "duration_seconds": 900.036,
+      "timestamp": "2026-04-22T06:17:29Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2910ae9267e5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: CreateReal entry sequence \u2014 disassemble 0x082380-0x08239F\n\n## Context\nThe CreateReal JT slot",
+      "status": "timeout",
+      "duration_seconds": 900.049,
+      "timestamp": "2026-04-22T06:17:31Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "738bc8f54370",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: ParseInp with errSP seeded \u2014 dynamic probe\n\nYou are working in `C:/Users/rober/Downloads/Pro",
+      "status": "completed",
+      "duration_seconds": 273.671,
+      "timestamp": "2026-04-22T07:07:58Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "424f01f7cc84",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: CreateReal with errSP seeded \u2014 dynamic probe\n\nYou are working in `C:/Users/rober/Downloads/P",
+      "status": "completed",
+      "duration_seconds": 480.333,
+      "timestamp": "2026-04-22T07:11:23Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25r-createreal-errsp.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "15e9cca7af91",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Static disassembly of shared Create allocator at 0x0822D9\n\nYou are working in `C:/Users/robe",
+      "status": "completed",
+      "duration_seconds": 656.583,
+      "timestamp": "2026-04-22T07:14:18Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "0284041beb03",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Seed missing block 0x0821A3 + retranspile + re-probe CreateReal\n\n## Context\nSession 77 prove",
+      "status": "completed",
+      "duration_seconds": 414.786,
+      "timestamp": "2026-04-22T08:08:56Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase25s-seed-0x0821a3-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "9e25d40454de",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x080084 (type guard) and 0x0820CD (name-length helper)\n\n## Context\nSession 77's",
+      "status": "completed",
+      "duration_seconds": 559.764,
+      "timestamp": "2026-04-22T08:11:27Z",
+      "files_changed": [
+        "C:\\Users\\rober\\Downloads\\Projects\\school\\ti84-transpile\\TI-84_Plus_CE\\probe-phase25s-typeguard-disasm.mjs",
+        "C:\\Users\\rober\\Downloads\\Projects\\school\\ti84-transpile\\TI-84_Plus_CE\\phase25s-typeguard-disasm-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "4200ebe4365c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate errNo=0x88 in ParseInp loop\n\n## Context\nSession 77 discovered that during ParseI",
+      "status": "completed",
+      "duration_seconds": 742.971,
+      "timestamp": "2026-04-22T08:14:29Z",
+      "files_changed": [
+        ".auto-session-78-p1.md",
+        ".auto-session-78-p2.md",
+        ".auto-session-78-p3.md",
+        ".auto-session-78-p4.md",
+        "CONTINUATION_PROMPT_CODEX.md",
+        "TI-84_Plus_CE/ROM.transpiled.js",
+        "TI-84_Plus_CE/ROM.transpiled.report.json",
+        "TI-84_Plus_CE/phase25r-createreal-errsp-report.md",
+        "TI-84_Plus_CE/phase25s-errno88-report.md",
+        "TI-84_Plus_CE/phase25s-seed-0x0821a3-report.md",
+        "TI-84_Plus_CE/phase25s-subroutine-disasm-report.md",
+        "TI-84_Plus_CE/phase25s-typeguard-disasm-report.md",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase25s-errno88.mjs",
+        "TI-84_Plus_CE/probe-phase25s-subroutine-disasm.mjs",
+        "TI-84_Plus_CE/probe-phase25s-typeguard-disasm.mjs",
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "bfc09d3bb803",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x082BBE (pointer/slot helper) and 0x0821B9 (heap/VAT move)\n\n## Context\nSession ",
+      "status": "completed",
+      "duration_seconds": 750.214,
+      "timestamp": "2026-04-22T08:14:34Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "dc1dcb135cd1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble OPBase pointer adjuster at 0x04C990\n\n## Context\nThis is a TI-84 Plus CE ROM (eZ8",
+      "status": "completed",
+      "duration_seconds": 317.804,
+      "timestamp": "2026-04-22T09:07:45Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2d6becacbebd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Fix CreateReal probe sentinel detection + validate post-allocation state\n\n## Context\nThe TI-",
+      "status": "completed",
+      "duration_seconds": 538.285,
+      "timestamp": "2026-04-22T09:11:24Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25r-createreal-errsp.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "501edbd761a0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Research PushErrorHandler contract and build ParseInp probe with error handler frame\n\n## Con",
+      "status": "completed",
+      "duration_seconds": 686.545,
+      "timestamp": "2026-04-22T09:13:56Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25t-parseinp-errhandler.mjs",
+        "TI-84_Plus_CE/phase25t-parseinp-errhandler-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "56bcea325379",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble InsertMem pointer-update subs 0x082739, 0x0824D6, 0x0824FD\n\n## Context\nThis is a",
+      "status": "timeout",
+      "duration_seconds": 900.048,
+      "timestamp": "2026-04-22T09:17:31Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f25f7394448e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Cross-reference InsertMem pointer slots against ti84pceg.inc\n\n## Context\nYou are working on ",
+      "status": "completed",
+      "duration_seconds": 188.77,
+      "timestamp": "2026-04-22T10:08:28Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase25u-insertmem-slots-crossref.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "76a24c433c20",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: ParseInp with realistic heap/VAT setup\n\n## Context\nYou are working on a TI-84 Plus CE ROM tr",
+      "status": "completed_with_limitations",
+      "duration_seconds": 294.778,
+      "timestamp": "2026-04-22T10:10:17Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25u-parseinp-realistic.mjs",
+        "TI-84_Plus_CE/phase25u-parseinp-realistic-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "52da15874824",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Document the signExtTemp negate-then-store pattern\n\n## Context\nYou are working on a TI-84 Pl",
+      "status": "completed",
+      "duration_seconds": 543.704,
+      "timestamp": "2026-04-22T10:14:25Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25u-signexttemp.mjs",
+        "TI-84_Plus_CE/phase25u-signexttemp-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "89be43822c8a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Discover real post-boot VAT/heap pointer values and attempt CreateReal\n\n## Context\nYou are w",
+      "status": "completed",
+      "duration_seconds": 590.665,
+      "timestamp": "2026-04-22T10:15:08Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25u-postboot-vat-dump.mjs",
+        "TI-84_Plus_CE/phase25u-postboot-vat-dump-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "7fe28f02ee38",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Correct session 79's wrong editCursor/editTail/editBtm labels\n\n## Context\nYou are working on",
+      "status": "completed",
+      "duration_seconds": 111.796,
+      "timestamp": "2026-04-22T11:05:24Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ca6b6af8f3e8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: ParseInp with SEPARATED token buffer\n\n## Context\nYou are working on a TI-84 Plus CE ROM tran",
+      "status": "completed",
+      "duration_seconds": 179.528,
+      "timestamp": "2026-04-22T11:06:27Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase25t-ptr-adjuster-report.md",
+        "TI-84_Plus_CE/phase25v-pointer-slots-named-report.md",
+        "TI-84_Plus_CE/phase25v-vat-init-search-report.md",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase25t-ptr-adjuster.mjs",
+        "TI-84_Plus_CE/probe-phase25v-parseinp-separated.mjs",
+        "TI-84_Plus_CE/probe-phase25v-pointer-slots.mjs",
+        "TI-84_Plus_CE/probe-phase25v-vat-init-search.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "72498774915b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Find the REAL heap/VAT initializer in the OS\n\n## Context\nYou are working on a TI-84 Plus CE ",
+      "status": "completed",
+      "duration_seconds": 363.594,
+      "timestamp": "2026-04-22T11:09:33Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9e08563a4bc0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Name the 4 newly-discovered pointer slots\n\n## Context\nYou are working on a TI-84 Plus CE ROM",
+      "status": "completed",
+      "duration_seconds": 587.927,
+      "timestamp": "2026-04-22T11:13:19Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25v-pointer-slots.mjs",
+        "TI-84_Plus_CE/phase25v-pointer-slots-named-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "f4b917a0ab04",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Phase 25W \u2014 ParseInp with CORRECT initial pointer values\n\n## Context\nYou are working on a TI",
+      "status": "completed",
+      "duration_seconds": 253.599,
+      "timestamp": "2026-04-22T12:06:43Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25w-parseinp-correct-init.mjs",
+        "TI-84_Plus_CE/phase25w-parseinp-correct-init-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "b9fdcad22b73",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Phase 25W \u2014 Disassemble MEM_INIT routine at 0x09DExx\n\n## Context\nYou are working on a TI-84 ",
+      "status": "completed",
+      "duration_seconds": 592.552,
+      "timestamp": "2026-04-22T12:12:24Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "bb739619b63d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Phase 25W \u2014 Investigate unnamed pointer slots 0xD01FEA/0xD01FF0/0xD01FF6\n\n## Context\nYou are",
+      "status": "timeout",
+      "duration_seconds": 900.062,
+      "timestamp": "2026-04-22T12:17:33Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f32f2070c929",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add MEM_INIT seeds + build probe calling 0x09DEE0 before ParseInp\n\n## Context\nWe are reverse",
+      "status": "completed",
+      "duration_seconds": 317.692,
+      "timestamp": "2026-04-22T13:08:33Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8cda20284f20",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x08A98F helper called by MEM_INIT\n\n## Context\nWe are reverse-engineering the TI",
+      "status": "completed",
+      "duration_seconds": 339.318,
+      "timestamp": "2026-04-22T13:08:52Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase25x-08a98f-disasm-report.md",
+        "TI-84_Plus_CE/probe-phase25x-08a98f-disasm.mjs",
+        "TI-84_Plus_CE/probe-phase25x-meminit-then-parseinp.mjs",
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "ffb00eb28c9a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x082bb9 error site and 0x08226b..0x0822a2 failure path\n\n## Context\nWe are rever",
+      "status": "completed",
+      "duration_seconds": 533.338,
+      "timestamp": "2026-04-22T13:12:07Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25x-error-path-disasm.mjs",
+        "TI-84_Plus_CE/phase25x-error-path-disasm-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "bdb3572f96d5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: ParseInp with full PushErrorHandler frame + token terminator variants\n\n## Context\nWe are rev",
+      "status": "completed",
+      "duration_seconds": 368.458,
+      "timestamp": "2026-04-22T14:10:45Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase25y-006202-diagnosis-report.md",
+        "TI-84_Plus_CE/phase25y-parseinp-full-errframe-report.md",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase25y-006202-diagnosis.mjs",
+        "TI-84_Plus_CE/probe-phase25y-parseinp-entry-disasm.mjs",
+        "TI-84_Plus_CE/probe-phase25y-parseinp-full-errframe.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "c70dabc60fc4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Diagnose 0x006202 loop in the committed ParseInp probe\n\n## Context\nWe are reverse-engineerin",
+      "status": "completed",
+      "duration_seconds": 367.798,
+      "timestamp": "2026-04-22T14:10:47Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "176168f4562f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble ParseInp entry (0x099914..0x099940) to verify curPC usage\n\n## Context\nWe are rev",
+      "status": "completed",
+      "duration_seconds": 479.967,
+      "timestamp": "2026-04-22T14:12:38Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25y-parseinp-entry-disasm.mjs",
+        "TI-84_Plus_CE/phase25y-parseinp-entry-disasm-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "6bd6b6dd681f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add JError/PushErrorHandler blocks as transpiler seeds\n\n## Context\nThe TI-84 Plus CE ROM tra",
+      "status": "completed",
+      "duration_seconds": 143.212,
+      "timestamp": "2026-04-22T15:05:50Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "111e9fd4bd7e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: ParseInp with pre-created variable via CreateReal \u2014 full pipeline test\n\n## Context\nThe TI-84",
+      "status": "completed",
+      "duration_seconds": 488.206,
+      "timestamp": "2026-04-22T15:11:36Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25z-full-pipeline.mjs",
+        "TI-84_Plus_CE/phase25z-full-pipeline-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "5d90614263ed",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate ParseInp's internal PushErrorHandler mechanism\n\n## Context\nThe TI-84 Plus CE ROM",
+      "status": "completed",
+      "duration_seconds": 612.993,
+      "timestamp": "2026-04-22T15:13:41Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7234c1a6e974",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace ParseInp's Last 50 PCs Before FAKE_RET \u2014 Where Does 5.0 Go?\n\n## Context\nIn the 918-ste",
+      "status": "completed",
+      "duration_seconds": 293.835,
+      "timestamp": "2026-04-22T16:07:59Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a9745ac814c1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: ParseInp with Empty OP1 + Pre-Created Variable\n\n## Context\nSession 85 found that ParseInp be",
+      "status": "completed",
+      "duration_seconds": 440.079,
+      "timestamp": "2026-04-22T16:10:23Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25aa-empty-op1-with-var.mjs",
+        "TI-84_Plus_CE/phase25aa-empty-op1-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "3ca9d672788a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace ParseInp's ChkFindSym Decision Point \u2014 Two Code Paths\n\n## Context\nParseInp (0x099914) ",
+      "status": "timeout",
+      "duration_seconds": 900.048,
+      "timestamp": "2026-04-22T16:18:01Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "01d9a6af9dde",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Fix full error-frame probe's hlPayload to 0x099929\n\n## Context\n\nTI-84 Plus CE ROM transpilat",
+      "status": "completed",
+      "duration_seconds": 350.107,
+      "timestamp": "2026-04-22T17:09:03Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2ff0b7a62f5e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Create Ans variable before ParseInp \u2014 does errNo clear?\n\n## Context\n\nYou are working on a TI",
+      "status": "completed",
+      "duration_seconds": 376.058,
+      "timestamp": "2026-04-22T17:09:26Z",
+      "files_changed": [
+        "TI-84_Plus_CE/ROM.transpiled.js",
+        "TI-84_Plus_CE/ROM.transpiled.report.json",
+        "TI-84_Plus_CE/phase25ab-ans-variable-report.md",
+        "TI-84_Plus_CE/phase25ab-errframe-hlpayload-report.md",
+        "TI-84_Plus_CE/phase25ab-error-routine-disasm-report.md",
+        "TI-84_Plus_CE/phase25ab-parseinp-recall-report.md",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase25ab-ans-variable.mjs",
+        "TI-84_Plus_CE/probe-phase25ab-errframe-hlpayload.mjs",
+        "TI-84_Plus_CE/probe-phase25ab-error-routine-disasm.mjs",
+        "TI-84_Plus_CE/probe-phase25ab-parseinp-recall.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "8058f7be2478",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: ParseInp with OP1=variable name + stored value \u2014 does it recall?\n\n## Context\n\nTI-84 Plus CE ",
+      "status": "completed",
+      "duration_seconds": 395.882,
+      "timestamp": "2026-04-22T17:09:47Z",
+      "files_changed": [
+        "CONTINUATION_PROMPT_CODEX.md",
+        "TI-84_Plus_CE/ROM.transpiled.js",
+        "TI-84_Plus_CE/ROM.transpiled.report.json",
+        "TI-84_Plus_CE/phase25ab-ans-variable-report.md",
+        "TI-84_Plus_CE/phase25ab-errframe-hlpayload-report.md",
+        "TI-84_Plus_CE/phase25ab-error-routine-disasm-report.md",
+        "TI-84_Plus_CE/phase25ab-parseinp-recall-report.md",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase25ab-ans-variable.mjs",
+        "TI-84_Plus_CE/probe-phase25ab-errframe-hlpayload.mjs",
+        "TI-84_Plus_CE/probe-phase25ab-error-routine-disasm.mjs",
+        "TI-84_Plus_CE/probe-phase25ab-parseinp-recall.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "c3c1c3978c65",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x03E1B4 error-writing routine\n\n## Context\n\nTI-84 Plus CE ROM transpilation proj",
+      "status": "completed",
+      "duration_seconds": 483.1,
+      "timestamp": "2026-04-22T17:11:15Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "bf500bb25288",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: ParseInp with BOTH Ans variable AND real variable \"A\" + stored 42.0\n\n## Context\nTI-84 Plus C",
+      "status": "completed",
+      "duration_seconds": 768.078,
+      "timestamp": "2026-04-22T18:15:56Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25ac-both-vars.mjs",
+        "TI-84_Plus_CE/phase25ac-both-vars-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "8e5a6afd1c1c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: ParseInp variable-recall data offset investigation\n\n## Context\nThis is a TI-84 Plus CE ROM t",
+      "status": "completed",
+      "duration_seconds": 778.223,
+      "timestamp": "2026-04-22T18:16:05Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25ac-recall-offset.mjs",
+        "TI-84_Plus_CE/phase25ac-recall-offset-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "3aa9771e059e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: ParseInp expression-only path \u2014 detailed PC trace around StoAns with/without Ans pre-created",
+      "status": "timeout",
+      "duration_seconds": 900.046,
+      "timestamp": "2026-04-22T18:18:10Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ddf8362dda55",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 89 P1: RclVarSym probe \u2014 proper variable recall\n\n## Goal\nBuild a probe that validates the ",
+      "status": "completed",
+      "duration_seconds": 217.349,
+      "timestamp": "2026-04-22T19:09:52Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "04e09d1c3582",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 89 P3: Flash unlock purpose in error dispatch (0x03E187)\n\n## Goal\nInvestigate why JError (",
+      "status": "completed",
+      "duration_seconds": 709.347,
+      "timestamp": "2026-04-22T19:14:29Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25ad-flash-unlock-purpose.mjs",
+        "TI-84_Plus_CE/phase25ad-flash-unlock-purpose-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "b678cafb122d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 89 P1: RclVarSym probe \u2014 proper variable recall\n\n## Goal\nBuild a probe that validates the ",
+      "status": "completed",
+      "duration_seconds": 773.142,
+      "timestamp": "2026-04-22T19:15:29Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25ad-rclvarsym.mjs",
+        "TI-84_Plus_CE/phase25ad-rclvarsym-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "cda2b40ceea7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 89 P2: OS event loop trace \u2014 GetCSC \u2192 key dispatch \u2192 ParseInp pathway\n\n## Goal\nTrace the O",
+      "status": "timeout",
+      "duration_seconds": 600.04,
+      "timestamp": "2026-04-22T19:16:17Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2999dbc7b7c3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 89 P3: Flash unlock purpose in error dispatch (0x03E187)\n\n## Goal\nInvestigate why JError (",
+      "status": "timeout",
+      "duration_seconds": 600.026,
+      "timestamp": "2026-04-22T19:16:19Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c2f7b083fdc2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 89 P2: OS event loop trace \u2014 GetCSC \u2192 key dispatch \u2192 ParseInp pathway\n\n## Goal\nTrace the O",
+      "status": "timeout",
+      "duration_seconds": 900.037,
+      "timestamp": "2026-04-22T19:17:37Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3354f76ab9e5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto Session 90 \u2014 P1: CoorMon with cxCurApp seeded for home screen\n\n## Context\nYou are working on ",
+      "status": "completed",
+      "duration_seconds": 535.377,
+      "timestamp": "2026-04-22T20:11:38Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25ae-coormon-homeapp.mjs",
+        "TI-84_Plus_CE/phase25ae-coormon-homeapp-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "ebf16e5731dc",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto Session 90 \u2014 P3: Variable Store+Recall Round-Trip\n\n## Context\nYou are working on a TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 795.766,
+      "timestamp": "2026-04-22T20:16:00Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d086e297e75c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 91 P3: Store+Recall Round-Trip with Correct Token Encoding\n\n## Context\nWe're transpil",
+      "status": "completed",
+      "duration_seconds": 166.942,
+      "timestamp": "2026-04-22T21:05:57Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25af-store-recall-fixed.mjs",
+        "TI-84_Plus_CE/phase25af-store-recall-fixed-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "5014adbf808c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 91 P1: Trace WHEN cxCurApp gets zeroed during CoorMon\n\n## Context\nWe're transpiling a",
+      "status": "completed",
+      "duration_seconds": 385.696,
+      "timestamp": "2026-04-22T21:09:33Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ab87aac5ff4d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 91 P2: Find OS StartApp / App Context Initialization Path\n\n## Context\nWe're transpili",
+      "status": "completed",
+      "duration_seconds": 534.762,
+      "timestamp": "2026-04-22T21:12:03Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25af-newcontext-disasm.mjs",
+        "TI-84_Plus_CE/phase25af-newcontext-disasm-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "f54bdb1da71c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Phase 25AG \u2014 Store+Recall Round-Trip (RESTRUCTURED pipeline, no pre-created Ans)\n\n## Goal\nBu",
+      "status": "completed",
+      "duration_seconds": 551.07,
+      "timestamp": "2026-04-22T22:12:21Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25ag-store-recall-roundtrip.mjs",
+        "TI-84_Plus_CE/phase25ag-store-recall-roundtrip-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "dcbe4b6cb5b8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Phase 25AG \u2014 Seed cx context + NewContext(A=0x40) + CoorMon dispatch\n\n## Goal\nBuild a probe ",
+      "status": "completed",
+      "duration_seconds": 599.723,
+      "timestamp": "2026-04-22T22:13:08Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "4c9717f39ffc",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Phase 25AG \u2014 Disassemble CoorMon dispatch path (0x08C331 \u2192 ... \u2192 0x001881)\n\n## Goal\nStatical",
+      "status": "completed",
+      "duration_seconds": 833.736,
+      "timestamp": "2026-04-22T22:17:05Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25ag-coormon-dispatch-disasm.mjs",
+        "TI-84_Plus_CE/phase25ag-coormon-dispatch-disasm-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "1ac337df32d9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x04C990 \u2014 the NEW cxCurApp zeroing site\n\n## Context\nIn the TI-84 Plus CE ROM tr",
+      "status": "completed",
+      "duration_seconds": 513.981,
+      "timestamp": "2026-04-22T23:10:56Z",
+      "files_changed": [
+        "CONTINUATION_PROMPT_CODEX.md",
+        "TI-84_Plus_CE/browser-shell.html",
+        "TI-84_Plus_CE/phase25ag-coormon-dispatch-disasm-report.md",
+        "TI-84_Plus_CE/phase25ah-disasm-04C990-report.md",
+        "TI-84_Plus_CE/phase25ah-homehandler-trace-report.md",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase25ag-coormon-dispatch-disasm.mjs",
+        "TI-84_Plus_CE/probe-phase25ah-disasm-04C990.mjs",
+        "TI-84_Plus_CE/probe-phase25ah-homehandler-trace.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "34bb0e296d95",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Runtime trace 0x058241 (home-screen handler) to find ParseInp call chain\n\n## Context\nIn the ",
+      "status": "completed",
+      "duration_seconds": 895.793,
+      "timestamp": "2026-04-22T23:17:20Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25ah-homehandler-trace.mjs",
+        "TI-84_Plus_CE/phase25ah-homehandler-trace-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "47d52e90c82b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Browser-shell direct ParseInp bypass \u2014 keystroke \u2192 expression evaluation\n\n## Context\nIn the ",
+      "status": "completed",
+      "duration_seconds": 897.099,
+      "timestamp": "2026-04-22T23:17:23Z",
+      "files_changed": [
+        "CONTINUATION_PROMPT_CODEX.md",
+        "TI-84_Plus_CE/browser-shell.html",
+        "TI-84_Plus_CE/direct-eval.js",
+        "TI-84_Plus_CE/phase25ag-coormon-dispatch-disasm-report.md",
+        "TI-84_Plus_CE/phase25ah-disasm-04C990-report.md",
+        "TI-84_Plus_CE/phase25ah-homehandler-trace-report.md",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase25ag-coormon-dispatch-disasm.mjs",
+        "TI-84_Plus_CE/probe-phase25ah-disasm-04C990.mjs",
+        "TI-84_Plus_CE/probe-phase25ah-homehandler-trace.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "bf83f0f35f2e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Runtime trace \u2014 confirm 0x0ACC58 as CoorMon second-pass ParseInp entry\n\n## Context\nSession 9",
+      "status": "completed",
+      "duration_seconds": 542.821,
+      "timestamp": "2026-04-23T00:12:00Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25aj-coormon-parseinp-trace.mjs",
+        "TI-84_Plus_CE/phase25aj-coormon-parseinp-trace-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "bab221582656",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x05E820 \u2014 the function that calls the cx-zeroing LDDR\n\n## Context\nSession 94 fo",
+      "status": "timeout",
+      "duration_seconds": 900.037,
+      "timestamp": "2026-04-23T00:17:55Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d55f6da870ab",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Static disassembly of ParseInp callers near home-screen dispatch\n\n## Context\nSession 94 foun",
+      "status": "timeout",
+      "duration_seconds": 900.053,
+      "timestamp": "2026-04-23T00:17:59Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1ab5e57a1c72",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 96 P2: Chain1 (0x06CE73) divergence \u2014 why Chain2 (0x06C8B4) is never reached\n\n## Cont",
+      "status": "completed",
+      "duration_seconds": 605.609,
+      "timestamp": "2026-04-23T02:12:33Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25ak-chain1-disasm.mjs",
+        "TI-84_Plus_CE/phase25ak-chain1-disasm-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "119a299a4d19",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 96 P3: 0x0973C8 dual-ParseInp pattern \u2014 full function disassembly\n\n## Context\n\nSessio",
+      "status": "completed",
+      "duration_seconds": 665.115,
+      "timestamp": "2026-04-23T02:13:34Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "585eae56cd5e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 96 P1: CoorMon RAM CLEAR trace \u2014 steps 2579-3584\n\n## Context\n\nCoorMon (0x08C331) is t",
+      "status": "timeout",
+      "duration_seconds": 900.042,
+      "timestamp": "2026-04-23T02:17:26Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2f52331bd88d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 97 \u2014 Priority 2: Trace buffer compaction cx-zeroing trigger at 0x05E3A2\n\n## Context\n\n",
+      "status": "completed",
+      "duration_seconds": 700.433,
+      "timestamp": "2026-04-23T03:14:40Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6fd84ab4c575",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 97 \u2014 Priority 1: Seed 0xD0146D with kEnter and re-run CoorMon\n\n## Context\n\nThis is a ",
+      "status": "completed",
+      "duration_seconds": 714.742,
+      "timestamp": "2026-04-23T03:14:53Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9c8695158892",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 97 \u2014 Priority 3: Disassemble 0x0585E9 second-pass handler + context table\n\n## Context",
+      "status": "timeout",
+      "duration_seconds": 900.062,
+      "timestamp": "2026-04-23T03:18:02Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c706b2c567fd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 98 P1: Run 0x0585E9 with A=5 (kEnter) \u2014 Trace 0x099211\u2192ParseInp\n\n## Context\n\nYou are ",
+      "status": "ok",
+      "duration_seconds": 397.819,
+      "timestamp": "2026-04-24T04:09:17Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1754ab0200d4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 98 P2: Static Disassembly of 0x099211 \u2014 Expression Evaluation Entry\n\n## Context\n\nYou ",
+      "status": "completed",
+      "duration_seconds": 556.578,
+      "timestamp": "2026-04-24T04:11:57Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "0b4f3270980f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 98 P3: CoorMon cxCurApp Read Timing \u2014 Does CoorMon Read cxCurApp BEFORE JP (HL)?\n\n## ",
+      "status": "completed",
+      "duration_seconds": 659.938,
+      "timestamp": "2026-04-24T04:13:42Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "bf388f127b6b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 99 P3: Run ENTER dispatch with 500K steps + seed 0xD01D0B=0x00\n\n## Context\nThis is a ",
+      "status": "completed",
+      "duration_seconds": 492.054,
+      "timestamp": "2026-04-24T05:11:00Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "4c06e731f967",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 99 P1: Disassemble 0x0921CB \u2014 ENTER handler post-DisarmScroll path\n\n## Context\nThis i",
+      "status": "completed",
+      "duration_seconds": 613.271,
+      "timestamp": "2026-04-24T05:12:58Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase25an-disasm-0921CB-report.md",
+        "TI-84_Plus_CE/phase25an-enter-500k-report.md",
+        "TI-84_Plus_CE/phase25an-workspace-overlap-report.md",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase25an-disasm-0921CB.mjs",
+        "TI-84_Plus_CE/probe-phase25an-enter-500k.mjs",
+        "TI-84_Plus_CE/probe-phase25an-workspace-overlap.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "24e2e2a0452d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 99 P2: Investigate workspace pointer overlap causing cx-zeroing\n\n## Context\nThis is a",
+      "status": "timeout",
+      "duration_seconds": 900.048,
+      "timestamp": "2026-04-24T05:17:47Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9f52329ca3eb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 100 \u2014 P3: Disassemble 0x058C65 \u2014 the \"empty ENTER\" handler\n\n## Context\nIn the TI-84 P",
+      "status": "completed",
+      "duration_seconds": 455.745,
+      "timestamp": "2026-04-24T06:09:52Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase25ao-empty-enter-disasm-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "b04b50c4db5b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 100 \u2014 P1: Force Z flag at POP AF (0x05862F) to reach ParseInp\n\n## Context\nIn the TI-8",
+      "status": "ok",
+      "duration_seconds": 531.103,
+      "timestamp": "2026-04-24T06:11:04Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c751fbe89db3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 100 \u2014 P2: Call ParseInp via 0x099910 trampoline directly\n\n## Context\nIn the TI-84 Plu",
+      "status": "completed",
+      "duration_seconds": 690.554,
+      "timestamp": "2026-04-24T06:13:45Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1e181f5bcbac",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 101 \u2014 P1: Trace 0x0827xx allocator loop after empty-ENTER return\n\n## Context\n\nThis is",
+      "status": "completed",
+      "duration_seconds": 527.074,
+      "timestamp": "2026-04-24T07:13:59Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2e7d7d1fdf50",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 101 \u2014 P2: Check 0xFFF909 + seed numLastEntries=1 for history-recall path\n\n## Context\n",
+      "status": "timeout",
+      "duration_seconds": 900.082,
+      "timestamp": "2026-04-24T07:20:14Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e91c70ca4c4e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 101 \u2014 P3: Investigate 0x07FF81 trampoline pre-setup purpose\n\n## Context\n\nThis is a TI",
+      "status": "timeout",
+      "duration_seconds": 900.041,
+      "timestamp": "2026-04-24T07:20:15Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "16c9961f4574",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 102 \u2014 P3: Stat-Var Exhaustive Coverage \u2014 Validate Remaining Tokens\n\n## Context\nThis i",
+      "status": "completed",
+      "duration_seconds": 388.878,
+      "timestamp": "2026-04-24T08:09:34Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "98757b097eb9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 102 \u2014 P1: Disassemble VAT Walker Loop (0x082745-0x0827AA) and Find Termination Condit",
+      "status": "completed",
+      "duration_seconds": 443.028,
+      "timestamp": "2026-04-24T08:10:25Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2f56d49c578c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 102 \u2014 P2: Seed History Buffer and Test History-Recall Path to ParseInp\n\n## Context\nTh",
+      "status": "timeout",
+      "duration_seconds": 900.047,
+      "timestamp": "2026-04-24T08:18:04Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "fdeab7d4ac49",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Phase 25AR P1 \u2014 Seed OPBase + run ENTER handler (empty-ENTER path, numLastEntries=0)\n\n## Con",
+      "status": "completed",
+      "duration_seconds": 356.952,
+      "timestamp": "2026-04-24T09:10:08Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase25ar-opbase-enter-empty-report.md",
+        "TI-84_Plus_CE/phase25ar-opbase-history-recall-report.md",
+        "TI-84_Plus_CE/phase25ar-post-empty-enter-disasm-report.md",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase25ar-opbase-enter-empty.mjs",
+        "TI-84_Plus_CE/probe-phase25ar-opbase-history-recall.mjs",
+        "TI-84_Plus_CE/probe-phase25ar-post-empty-enter-disasm.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "43da6f46196b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Phase 25AR P2 \u2014 Seed OPBase + history buffer, test history-recall \u2192 ParseInp\n\n## Context\nYou",
+      "status": "completed",
+      "duration_seconds": 406.03,
+      "timestamp": "2026-04-24T09:10:59Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25ar-opbase-history-recall.mjs",
+        "TI-84_Plus_CE/phase25ar-opbase-history-recall-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "c1a743f8d63f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Phase 25AR P3 \u2014 Disassemble post-allocator flow after empty-ENTER returns\n\n## Context\nYou ar",
+      "status": "completed",
+      "duration_seconds": 632.328,
+      "timestamp": "2026-04-24T09:14:47Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25ar-post-empty-enter-disasm.mjs",
+        "TI-84_Plus_CE/phase25ar-post-empty-enter-disasm-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "a03308087e46",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 104, Priority 1: Pointer-Watchpoint Probe for ENTER Handler\n\n## Context\nWe are transp",
+      "status": "completed",
+      "duration_seconds": 747.208,
+      "timestamp": "2026-04-24T10:15:34Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "22df955e64f0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 104, Priority 2: Disassemble Common-Tail Pre-ParseInp Calls\n\n## Context\nWe are transp",
+      "status": "timeout",
+      "duration_seconds": 900.085,
+      "timestamp": "2026-04-24T10:18:08Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a037a92421be",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Re-seed allocator pointers AFTER compaction in the NZ path\n\n## Context\nThis is a TI-84 Plus ",
+      "status": "completed",
+      "duration_seconds": 539.525,
+      "timestamp": "2026-04-24T11:11:16Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8880c8c816b5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Bypass common-tail blockers \u2014 enter at 0x0586CE or 0x0586E3\n\n## Context\nThis is a TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 640.657,
+      "timestamp": "2026-04-24T11:12:56Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25at-bypass-common-tail.mjs",
+        "TI-84_Plus_CE/phase25at-bypass-common-tail-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "24610f4d9873",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Build SP-adjusted bypass probe for common-tail \u2192 ParseInp pipeline\n\n## Context\n\nYou are work",
+      "status": "completed",
+      "duration_seconds": 154.822,
+      "timestamp": "2026-04-24T12:04:53Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "599dd60caa28",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate WHY 3-byte SP shift triggers compaction in ParseInp\n\n## Context\n\nYou are working",
+      "status": "completed",
+      "duration_seconds": 454.796,
+      "timestamp": "2026-04-24T12:09:54Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25au-sp-threshold.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "068fe03cf705",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 107 \u2014 P2: Fix Error Frame Placement for Trampoline Entry\n\n## Goal\nBuild a probe that ",
+      "status": "completed",
+      "duration_seconds": 379.178,
+      "timestamp": "2026-04-24T13:09:09Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25av-errframe-fix.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "4c01747add59",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 107 \u2014 P1: Register State Divergence at ParseInp Entry\n\n## Goal\nBuild a probe that cap",
+      "status": "completed",
+      "duration_seconds": 619.94,
+      "timestamp": "2026-04-24T13:13:08Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25av-register-divergence.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "8359a7d97d7c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 108-P2: Trampoline + fixed error frame + PushErrorHandler pre-call\n\n## Context\n\nYou'r",
+      "status": "completed",
+      "duration_seconds": 356.686,
+      "timestamp": "2026-04-24T14:11:33Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25aw-trampoline-with-peh.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "2a4b85b0e8b3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 108-P1: Memory state divergence probe at 0x099B18\n\n## Context\n\nYou're working on a TI",
+      "status": "completed",
+      "duration_seconds": 443.684,
+      "timestamp": "2026-04-24T14:12:58Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25aw-memory-divergence.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "eb4c0266bd39",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Audit browser-shell.html direct-eval code against validated probe pattern\n\n## Context\nYou ar",
+      "status": "completed",
+      "duration_seconds": 259.54,
+      "timestamp": "2026-04-24T15:09:33Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase25ax-browser-shell-audit-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "08b9a121697b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Build comprehensive ENTER-handler simulation probe with StoAns\n\n## Context\nYou are working o",
+      "status": "completed",
+      "duration_seconds": 334.079,
+      "timestamp": "2026-04-24T15:10:45Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25ax-enter-handler-sim.mjs",
+        "TI-84_Plus_CE/phase25ax-enter-handler-sim-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "fab59ee7e868",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Multi-expression test through the direct-eval pipeline\n\n## Context\nYou are working on a TI-8",
+      "status": "completed",
+      "duration_seconds": 346.964,
+      "timestamp": "2026-04-24T15:10:59Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25ax-multi-expr.mjs",
+        "TI-84_Plus_CE/phase25ax-multi-expr-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "66e0cda50bbd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 110 P2: pTempCnt Audit + Descending-Boundary Invariant\n\n## Context\nResearch refinemen",
+      "status": "completed",
+      "duration_seconds": 533.836,
+      "timestamp": "2026-04-24T19:12:49Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25ay-ptcnt-invariant.mjs",
+        "TI-84_Plus_CE/phase25ay-ptcnt-invariant-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "0c80aa12b276",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 110 P3: Static Disassembly of 0x099211 \u2014 ParseInpGraph Wrapper Hypothesis\n\n## Context",
+      "status": "completed",
+      "duration_seconds": 543.971,
+      "timestamp": "2026-04-24T19:13:00Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25ay-disasm-099211.mjs",
+        "TI-84_Plus_CE/phase25ay-disasm-099211-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "4bbaf4b16e0d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 110 P1: RclVarSym-after-ParseInp VAT/DE Investigation\n\n## Context\nWe have a validated",
+      "status": "timeout",
+      "duration_seconds": 900.049,
+      "timestamp": "2026-04-24T19:18:53Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "942fe47537ac",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 111 P2: Enumerate Parser Flags Against PostInitState\n\n## Context\n\nThis is a TI-84 Plu",
+      "status": "completed",
+      "duration_seconds": 451.219,
+      "timestamp": "2026-04-24T22:09:47Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase25az-rclvar-ops-fix-report.md",
+        "TI-84_Plus_CE/probe-phase25az-parser-flags.mjs",
+        "TI-84_Plus_CE/probe-phase25az-rclvar-ops-fix.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "5b06ca186381",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 111 P1: Fix RclVarSym-after-ParseInp via OPS Reset\n\n## Context\n\nThis is a TI-84 Plus ",
+      "status": "completed",
+      "duration_seconds": 800.858,
+      "timestamp": "2026-04-24T22:15:35Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25az-rclvar-ops-fix.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "196c28999c01",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 112 P1: Integrate Approach A round-trip into browser-shell direct-eval\n\n## Goal\nUpdat",
+      "status": "completed",
+      "duration_seconds": 228.085,
+      "timestamp": "2026-04-25T01:07:18Z",
+      "files_changed": [
+        "TI-84_Plus_CE/browser-shell.html",
+        "TI-84_Plus_CE/phase99d-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "ee5263d79bf7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 112 P2: Investigate Approach B RclVarSym failure (higher OPBase)\n\n## Goal\nBuild a dia",
+      "status": "completed",
+      "duration_seconds": 514.565,
+      "timestamp": "2026-04-25T01:12:06Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase25ba-approach-b-debug.mjs",
+        "TI-84_Plus_CE/phase25ba-approach-b-debug-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "def1e03072f9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 112 P3: Investigate fmtFlags bit 4 and IY+0x47 bit 7\n\n## Goal\nBuild a diagnostic prob",
+      "status": "timeout",
+      "duration_seconds": 900.048,
+      "timestamp": "2026-04-25T01:18:33Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "68a0c3272541",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 113 \u2014 P1: Extend Direct-Eval Token Mapping\n\n## Task\nExtend the `EVAL_TOKEN_MAP` and `",
+      "status": "completed",
+      "duration_seconds": 202.733,
+      "timestamp": "2026-04-25T04:07:06Z",
+      "files_changed": [
+        "TI-84_Plus_CE/browser-shell.html"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "5c06166f1f4e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 113 \u2014 P2: Investigate RclVarSym Dereference Bug at Non-Default OPBase\n\n## Task\nBuild ",
+      "status": "timeout",
+      "duration_seconds": 900.038,
+      "timestamp": "2026-04-25T04:18:46Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "26784926b41f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 126 \u2014 Priority 1: ENTER Keypress Through Full OS Event Loop Probe\n\n## Task\nBuild a pr",
+      "status": "completed",
+      "duration_seconds": 321.735,
+      "timestamp": "2026-04-29T03:07:47Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5fec48c36b7f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 126 \u2014 Priority 3: Extend Direct-Eval Token Map\n\n## Task\nExtend the `EVAL_TOKEN_MAP` i",
+      "status": "completed",
+      "duration_seconds": 735.226,
+      "timestamp": "2026-04-29T03:14:43Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e7969bd999c2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 126 \u2014 Priority 4: Graph Subsystem Investigation\n\n## Task\nInvestigate the TI-84 CE OS ",
+      "status": "timeout",
+      "duration_seconds": 900.064,
+      "timestamp": "2026-04-29T03:17:29Z",
+      "files_changed": [],
+      "depth": 0
+    }
+  ],
+  "summary": {
+    "total_calls": 147,
+    "cc_to_codex": 147,
+    "codex_to_cc": 0,
+    "completed": 108,
+    "failed": 33,
+    "refused": 0,
+    "avg_duration_seconds": 535.981
+  }
+}
