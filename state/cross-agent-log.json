@@ -2059,15 +2059,72 @@
         "TI-84_Plus_CE/probe-phase152-ipoint-color-fix.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "d6b7d99f915f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 154 \u2014 P1: GCD Handler Disassembly + Manual OP2=8.0 Restore Test\n\n## Context\n\nThis is ",
+      "status": "completed",
+      "duration_seconds": 553.548,
+      "timestamp": "2026-04-30T07:11:30Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e8dcb56b6997",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 154 \u2014 P2: FPDiv JT Slot Investigation (0x07F7F2 \u2192 0x07FAC2)\n\n## Context\n\nThis is a TI",
+      "status": "completed",
+      "duration_seconds": 854.281,
+      "timestamp": "2026-04-30T07:16:32Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7ebded640f79",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 155, Priority 1: Dense OP1/OP2 Trace Through GCD Algorithm Body (Steps 21-80)\n\n## Con",
+      "status": "completed",
+      "duration_seconds": 511.184,
+      "timestamp": "2026-04-30T08:11:23Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase155-gcd-algo-trace.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "b33916642552",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 155, Priority 2: Investigate JmpThru at 0x080188\n\n## Context\n\nYou are working on a TI",
+      "status": "completed",
+      "duration_seconds": 555.036,
+      "timestamp": "2026-04-30T08:12:09Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "99099bf23bed",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 155, Priority 3: Investigate gcd_LoadType (0x068ECF) and HL=100 Loader (0x0AF8C4)\n\n##",
+      "status": "timeout",
+      "duration_seconds": 900.055,
+      "timestamp": "2026-04-30T08:17:55Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 157,
-    "cc_to_codex": 157,
+    "total_calls": 162,
+    "cc_to_codex": 162,
     "codex_to_cc": 0,
-    "completed": 117,
-    "failed": 34,
+    "completed": 121,
+    "failed": 35,
     "refused": 0,
-    "avg_duration_seconds": 535.504
+    "avg_duration_seconds": 539.804
   }
 }
