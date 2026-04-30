@@ -1,0 +1,541 @@
+#!/usr/bin/env node
+
+/**
+ * Phase 162 - Dense trace of gcd(12,8) steps 180-450 (algorithm body).
+ *
+ * Traces EVERY block executed between steps 180 and 450, covering the
+ * algorithm body after OP1 is restored to 1200.  Key questions:
+ *   1. Where exactly does FPDiv get called?
+ *   2. What are OP1 and OP2 at FPDiv entry?
+ *   3. After FPDiv returns, what is the result in OP1?
+ *   4. Is FPTrunc called? Where?
+ *   5. How does the Euclidean mod operation work?
+ */
+
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+import { createExecutor } from './cpu-runtime.js';
+import { createPeripheralBus } from './peripherals.js';
+import { decodeInstruction } from './ez80-decoder.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const ROM_BIN_PATH = path.join(__dirname, 'ROM.rom');
+const ROM_TRANSPILED_PATH = path.join(__dirname, 'ROM.transpiled.js');
+const ROM_TRANSPILED_GZ_PATH = path.join(__dirname, 'ROM.transpiled.js.gz');
+
+if (!fs.existsSync(ROM_BIN_PATH)) {
+  throw new Error(`ROM binary not found: ${ROM_BIN_PATH}`);
+}
+
+if (!fs.existsSync(ROM_TRANSPILED_PATH)) {
+  if (!fs.existsSync(ROM_TRANSPILED_GZ_PATH)) {
+    throw new Error('ROM.transpiled.js and ROM.transpiled.js.gz both missing. Run `node scripts/transpile-ti84-rom.mjs` first.');
+  }
+  console.log('ROM.transpiled.js not found — gunzipping from ROM.transpiled.js.gz ...');
+  const { execSync } = await import('node:child_process');
+  execSync(`gunzip -kf "${ROM_TRANSPILED_GZ_PATH}"`, { stdio: 'inherit' });
+  console.log('Gunzip done.');
+}
+
+const romBytes = fs.readFileSync(ROM_BIN_PATH);
+const romModule = await import(pathToFileURL(ROM_TRANSPILED_PATH).href);
+const BLOCKS = romModule.PRELIFTED_BLOCKS ?? romModule.blocks;
+
+if (!BLOCKS) {
+  throw new Error('Unable to locate PRELIFTED_BLOCKS in ROM.transpiled.js');
+}
+
+// --- Constants ---
+
+const MEM_SIZE = 0x1000000;
+const BOOT_ENTRY = 0x000000;
+const KERNEL_INIT_ENTRY = 0x08c331;
+const POST_INIT_ENTRY = 0x0802b2;
+const STACK_RESET_TOP = 0xd1a87e;
+
+const MEMINIT_ENTRY = 0x09dee0;
+const MEMINIT_RET = 0x7ffff6;
+
+const USERMEM_ADDR = 0xd1a881;
+const EMPTY_VAT_ADDR = 0xd3ffff;
+
+const OP1_ADDR = 0xd005f8;
+const OP2_ADDR = 0xd00603;
+const OP5_ADDR = 0xd00624;
+
+const GCD_ENTRY = 0x068d3d;
+const GCD_CATEGORY = 0x28;
+const FP_CATEGORY_ADDR = 0xd0060e;
+
+const ERR_NO_ADDR = 0xd008df;
+const ERR_SP_ADDR = 0xd008e0;
+
+const FPS_ADDR = 0xd0258d;
+const FPSBASE_ADDR = 0xd0258a;
+const OPS_ADDR = 0xd02593;
+const OPBASE_ADDR = 0xd02590;
+const PTEMPCNT_ADDR = 0xd02596;
+const PTEMP_ADDR = 0xd0259a;
+const PROGPTR_ADDR = 0xd0259d;
+const NEWDATA_PTR_ADDR = 0xd025a0;
+
+const FAKE_RET = 0x7ffffe;
+const ERR_CATCH_ADDR = 0x7ffffa;
+const FPS_CLEAN_AREA = 0xd1aa00;
+
+const MEMINIT_BUDGET = 100000;
+const MAX_LOOP_ITER = 8192;
+const MAX_STEPS = 2000;
+
+const BCD_12 = Uint8Array.from([0x00, 0x81, 0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+const BCD_8  = Uint8Array.from([0x00, 0x80, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+
+// --- Helpers ---
+
+const hex = (value, width = 6) =>
+  value === undefined || value === null
+    ? 'n/a'
+    : `0x${(Number(value) >>> 0).toString(16).toUpperCase().padStart(width, '0')}`;
+
+const hexByte = (value) =>
+  (value & 0xff).toString(16).toUpperCase().padStart(2, '0');
+
+function read24(mem, addr) {
+  return ((mem[addr] & 0xff) | ((mem[addr + 1] & 0xff) << 8) | ((mem[addr + 2] & 0xff) << 16)) >>> 0;
+}
+
+function write24(mem, addr, value) {
+  mem[addr] = value & 0xff;
+  mem[addr + 1] = (value >>> 8) & 0xff;
+  mem[addr + 2] = (value >>> 16) & 0xff;
+}
+
+function readBytes(mem, addr, len) {
+  return Array.from(mem.subarray(addr, addr + len), (b) => b & 0xff);
+}
+
+function formatBytes(bytes) {
+  return bytes.map((b) => hexByte(b)).join(' ');
+}
+
+function decodeBcdRealBytes(bytes) {
+  const type = bytes[0] & 0xff;
+  const exponentByte = bytes[1] & 0xff;
+  const digits = [];
+
+  for (let i = 2; i < 9; i++) {
+    const byte = bytes[i] & 0xff;
+    digits.push((byte >> 4) & 0x0f, byte & 0x0f);
+  }
+
+  if (digits.every((d) => d === 0)) return '0';
+  if (digits.some((d) => d > 9)) {
+    return `invalid-bcd(type=${hexByte(type)},exp=${hexByte(exponentByte)})`;
+  }
+
+  const exponent = exponentByte - 0x80;
+  const pointIndex = exponent + 1;
+  const rawDigits = digits.join('');
+  let rendered;
+
+  if (pointIndex <= 0) {
+    rendered = `0.${'0'.repeat(-pointIndex)}${rawDigits}`;
+  } else if (pointIndex >= rawDigits.length) {
+    rendered = rawDigits + '0'.repeat(pointIndex - rawDigits.length);
+  } else {
+    rendered = `${rawDigits.slice(0, pointIndex)}.${rawDigits.slice(pointIndex)}`;
+  }
+
+  rendered = rendered.replace(/^0+(?=\d)/, '');
+  rendered = rendered.replace(/(\.\d*?[1-9])0+$/, '$1');
+  rendered = rendered.replace(/\.0*$/, '');
+  if (rendered.startsWith('.')) rendered = `0${rendered}`;
+  if (rendered === '') rendered = '0';
+  if ((type & 0x80) !== 0 && rendered !== '0') rendered = `-${rendered}`;
+
+  return rendered;
+}
+
+function errName(code) {
+  if (code === 0x00) return 'none';
+  if (code === 0x80) return 'E_Edit';
+  if (code === 0x81) return 'E_Overflow';
+  if (code === 0x84) return 'E_Domain';
+  if (code === 0x88) return 'E_Syntax';
+  if (code === 0x8d) return 'E_Undefined';
+  return `unknown(${hex(code, 2)})`;
+}
+
+function noteStep(stepCount, step) {
+  if (typeof step === 'number') return Math.max(stepCount, step + 1);
+  return stepCount + 1;
+}
+
+// --- Address labels ---
+
+const ADDR_LABELS = new Map([
+  [0x07c747, 'OP1toOP2_entry'],
+  [0x07c74b, 'OP1toOP2+4(CALL_NORM)'],
+  [0x07c74f, 'OP1toOP2+8(after_CALL)'],
+  [0x07c755, 'OP1toOP2_no_norm'],
+  [0x07c771, 'FPSub'],
+  [0x07c77f, 'FPAdd'],
+  [0x07c783, 'FPAdd+4'],
+  [0x07ca06, 'InvOP1S'],
+  [0x07ca48, 'Normalize'],
+  [0x07ca9f, 'Normalize_RET'],
+  [0x07cab9, 'FPDiv_entry'],
+  [0x07cc36, 'FPAddSub_core'],
+  [0x07f8fa, 'Mov9_OP1toOP2'],
+  [0x07f95e, 'OP1toOP3'],
+  [0x07f8b6, 'OP4toOP2_or_OP1toOP5'],
+  [0x07fa86, 'ConstLoader_1.0'],
+  [0x07fb33, 'Shl14'],
+  [0x07fb50, 'Shl14_alt'],
+  [0x07fac2, 'BigShift'],
+  [0x07fd4a, 'ValidityCheck_OP1'],
+  [0x07fdf1, 'DecExp'],
+  [0x080188, 'JmpThru'],
+  [0x068d3d, 'gcd_entry'],
+  [0x068d61, 'gcd_call_OP1toOP2'],
+  [0x068d82, 'gcd_algo_body'],
+  [0x068d8d, 'gcd_OP1toOP3'],
+  [0x068d91, 'gcd_OP1toOP5'],
+  [0x068d95, 'gcd_after_OP1toOP5'],
+  [0x068da1, 'gcd_error_check'],
+  [0x068dea, 'gcd_JP_NC_ErrDomain'],
+]);
+
+function addrLabel(addr) {
+  const label = ADDR_LABELS.get(addr);
+  return label ? ` [${label}]` : '';
+}
+
+// --- Runtime setup ---
+
+function createRuntime() {
+  const mem = new Uint8Array(MEM_SIZE);
+  mem.set(romBytes.subarray(0, 0x400000));
+  const executor = createExecutor(BLOCKS, mem, {
+    peripherals: createPeripheralBus({ timerInterrupt: false }),
+  });
+  return { mem, executor, cpu: executor.cpu };
+}
+
+function coldBoot(executor, cpu, mem) {
+  executor.runFrom(BOOT_ENTRY, 'z80', { maxSteps: 20000, maxLoopIterations: 32 });
+  cpu.halted = false;
+  cpu.iff1 = 0;
+  cpu.iff2 = 0;
+  cpu.sp = STACK_RESET_TOP - 3;
+  mem.fill(0xff, cpu.sp, cpu.sp + 3);
+
+  executor.runFrom(KERNEL_INIT_ENTRY, 'adl', { maxSteps: 100000, maxLoopIterations: 10000 });
+
+  cpu.mbase = 0xd0;
+  cpu._iy = 0xd00080;
+  cpu._hl = 0;
+  cpu.halted = false;
+  cpu.iff1 = 0;
+  cpu.iff2 = 0;
+  cpu.sp = STACK_RESET_TOP - 3;
+  mem.fill(0xff, cpu.sp, cpu.sp + 3);
+
+  executor.runFrom(POST_INIT_ENTRY, 'adl', { maxSteps: 100, maxLoopIterations: 32 });
+}
+
+function prepareCallState(cpu, mem) {
+  cpu.halted = false;
+  cpu.iff1 = 0;
+  cpu.iff2 = 0;
+  cpu.madl = 1;
+  cpu.mbase = 0xd0;
+  cpu._iy = 0xd00080;
+  cpu.f = 0x40;
+  cpu._ix = 0xd1a860;
+  cpu.sp = STACK_RESET_TOP - 12;
+  mem.fill(0xff, cpu.sp, cpu.sp + 12);
+}
+
+function seedErrFrame(cpu, mem, ret, errRet = ERR_CATCH_ADDR, prev = 0) {
+  cpu.sp -= 3;
+  write24(mem, cpu.sp, ret);
+  const base = (cpu.sp - 6) & 0xffffff;
+  write24(mem, base, errRet);
+  write24(mem, base + 3, prev);
+  write24(mem, ERR_SP_ADDR, base);
+  mem[ERR_NO_ADDR] = 0x00;
+}
+
+function seedAllocator(mem) {
+  write24(mem, OPBASE_ADDR, EMPTY_VAT_ADDR);
+  write24(mem, OPS_ADDR, EMPTY_VAT_ADDR);
+  mem.fill(0x00, PTEMPCNT_ADDR, PTEMPCNT_ADDR + 4);
+  write24(mem, PTEMP_ADDR, EMPTY_VAT_ADDR);
+  write24(mem, PROGPTR_ADDR, EMPTY_VAT_ADDR);
+  write24(mem, FPSBASE_ADDR, USERMEM_ADDR);
+  write24(mem, FPS_ADDR, USERMEM_ADDR);
+  write24(mem, NEWDATA_PTR_ADDR, USERMEM_ADDR);
+}
+
+function seedRealRegister(mem, addr, bytes) {
+  mem.fill(0x00, addr, addr + 11);
+  mem.set(bytes, addr);
+}
+
+function seedGcdFpState(mem) {
+  seedAllocator(mem);
+  mem.fill(0x00, FPS_CLEAN_AREA, FPS_CLEAN_AREA + 0x40);
+  write24(mem, FPSBASE_ADDR, FPS_CLEAN_AREA);
+  write24(mem, FPS_ADDR, FPS_CLEAN_AREA);
+  seedRealRegister(mem, OP1_ADDR, BCD_12);
+  seedRealRegister(mem, OP2_ADDR, BCD_8);
+  mem[FP_CATEGORY_ADDR] = GCD_CATEGORY;
+}
+
+function runMemInit(executor, cpu, mem) {
+  prepareCallState(cpu, mem);
+  cpu.sp -= 3;
+  write24(mem, cpu.sp, MEMINIT_RET);
+
+  let ok = false;
+
+  try {
+    executor.runFrom(MEMINIT_ENTRY, 'adl', {
+      maxSteps: MEMINIT_BUDGET,
+      maxLoopIterations: MAX_LOOP_ITER,
+      onBlock(pc) {
+        if ((pc & 0xffffff) === MEMINIT_RET) throw new Error('__RET__');
+      },
+      onMissingBlock(pc) {
+        if ((pc & 0xffffff) === MEMINIT_RET) throw new Error('__RET__');
+      },
+    });
+  } catch (err) {
+    if (err?.message === '__RET__') ok = true;
+    else throw err;
+  }
+
+  return ok;
+}
+
+function createPreparedRuntime() {
+  const runtime = createRuntime();
+  coldBoot(runtime.executor, runtime.cpu, runtime.mem);
+  const memInitOk = runMemInit(runtime.executor, runtime.cpu, runtime.mem);
+  return { ...runtime, memInitOk };
+}
+
+// ==========================================================================
+// Dense trace: gcd(12,8) steps 180-450
+// ==========================================================================
+
+function denseTrace(runtime) {
+  const { mem, executor, cpu } = runtime;
+
+  console.log(`\n${'='.repeat(70)}`);
+  console.log('Dense trace: gcd(12,8) — every block at steps 180-450');
+  console.log(`${'='.repeat(70)}`);
+
+  prepareCallState(cpu, mem);
+  seedGcdFpState(mem);
+
+  // Push OP2 (8.0) to FPS before gcd entry (same as phase 157/160)
+  const fpsPtr = read24(mem, FPS_ADDR);
+  const op2Bytes = readBytes(mem, OP2_ADDR, 9);
+  for (let i = 0; i < 9; i++) {
+    mem[fpsPtr + i] = op2Bytes[i];
+  }
+  write24(mem, FPS_ADDR, fpsPtr + 9);
+
+  seedErrFrame(cpu, mem, FAKE_RET, ERR_CATCH_ADDR, 0);
+
+  console.log(`  Entry: gcd at ${hex(GCD_ENTRY)}`);
+  console.log(`  OP1: [${formatBytes(readBytes(mem, OP1_ADDR, 9))}] = ${decodeBcdRealBytes(readBytes(mem, OP1_ADDR, 9))}`);
+  console.log(`  OP2: [${formatBytes(readBytes(mem, OP2_ADDR, 9))}] = ${decodeBcdRealBytes(readBytes(mem, OP2_ADDR, 9))}`);
+  console.log(`  OP5: [${formatBytes(readBytes(mem, OP5_ADDR, 9))}] = ${decodeBcdRealBytes(readBytes(mem, OP5_ADDR, 9))}`);
+  console.log(`  FPS ptr: ${hex(read24(mem, FPS_ADDR))}`);
+  console.log(`  SP: ${hex(cpu.sp)}`);
+  console.log('');
+
+  let stepCount = 0;
+  let outcome = 'budget';
+
+  // Track unique PCs visited
+  const pcCounts = new Map();
+
+  // Track first FPDiv entry
+  let firstFPDivStep = null;
+  let firstFPDivOp1 = null;
+  let firstFPDivOp2 = null;
+
+  const TRACE_LO = 180;
+  const TRACE_HI = 450;
+
+  function logBlock(norm, isMissing) {
+    const op1 = readBytes(mem, OP1_ADDR, 9);
+    const op2 = readBytes(mem, OP2_ADDR, 9);
+    const op5 = readBytes(mem, OP5_ADDR, 9);
+    const op1Dec = decodeBcdRealBytes(op1);
+    const op2Dec = decodeBcdRealBytes(op2);
+    const op5Dec = decodeBcdRealBytes(op5);
+    const fpsVal = read24(mem, FPS_ADDR);
+    const aReg = cpu.a & 0xff;
+    const sp = cpu.sp;
+    const label = addrLabel(norm);
+    const missing = isMissing ? ' [MISSING]' : '';
+
+    console.log(
+      `  Step ${String(stepCount).padStart(4)}: PC=${hex(norm)}${label}${missing}` +
+      `  A=${hexByte(aReg)}  SP=${hex(sp)}  FPS=${hex(fpsVal)}`
+    );
+    console.log(
+      `    OP1=[${formatBytes(op1)}] = ${op1Dec}`
+    );
+    console.log(
+      `    OP2=[${formatBytes(op2)}] = ${op2Dec}`
+    );
+    console.log(
+      `    OP5=[${formatBytes(op5)}] = ${op5Dec}`
+    );
+
+    // Detect FPDiv entry
+    if (norm === 0x07cab9 && firstFPDivStep === null) {
+      firstFPDivStep = stepCount;
+      firstFPDivOp1 = `[${formatBytes(op1)}] = ${op1Dec}`;
+      firstFPDivOp2 = `[${formatBytes(op2)}] = ${op2Dec}`;
+      console.log(`    *** FIRST FPDiv ENTRY ***`);
+    }
+  }
+
+  try {
+    executor.runFrom(GCD_ENTRY, 'adl', {
+      maxSteps: MAX_STEPS,
+      maxLoopIterations: MAX_LOOP_ITER,
+
+      onBlock(pc, mode, meta, step) {
+        const norm = pc & 0xffffff;
+        stepCount = noteStep(stepCount, step);
+
+        // Count every PC
+        pcCounts.set(norm, (pcCounts.get(norm) || 0) + 1);
+
+        if (stepCount >= TRACE_LO && stepCount <= TRACE_HI) {
+          logBlock(norm, false);
+        } else if (norm === 0x07cab9 && firstFPDivStep === null) {
+          // Log FPDiv entry even outside trace window
+          const op1 = readBytes(mem, OP1_ADDR, 9);
+          const op2 = readBytes(mem, OP2_ADDR, 9);
+          firstFPDivStep = stepCount;
+          firstFPDivOp1 = `[${formatBytes(op1)}] = ${decodeBcdRealBytes(op1)}`;
+          firstFPDivOp2 = `[${formatBytes(op2)}] = ${decodeBcdRealBytes(op2)}`;
+          console.log(
+            `  Step ${String(stepCount).padStart(4)}: PC=${hex(norm)} [FPDiv_entry]` +
+            `  *** FIRST FPDiv (outside trace window) ***`
+          );
+          console.log(`    OP1=${firstFPDivOp1}`);
+          console.log(`    OP2=${firstFPDivOp2}`);
+        }
+
+        if (norm === FAKE_RET) throw new Error('__RET__');
+        if (norm === ERR_CATCH_ADDR) throw new Error('__ERR__');
+      },
+
+      onMissingBlock(pc, mode, step) {
+        const norm = pc & 0xffffff;
+        stepCount = noteStep(stepCount, step);
+
+        pcCounts.set(norm, (pcCounts.get(norm) || 0) + 1);
+
+        if (stepCount >= TRACE_LO && stepCount <= TRACE_HI) {
+          logBlock(norm, true);
+        }
+
+        if (norm === FAKE_RET) throw new Error('__RET__');
+        if (norm === ERR_CATCH_ADDR) throw new Error('__ERR__');
+      },
+    });
+  } catch (err) {
+    if (err?.message === '__RET__') outcome = 'return';
+    else if (err?.message === '__ERR__') outcome = 'error';
+    else {
+      outcome = 'threw';
+      console.log(`  Thrown: ${(err?.stack || String(err)).split('\n')[0]}`);
+    }
+  }
+
+  const finalOp1 = readBytes(mem, OP1_ADDR, 9);
+  const finalOp2 = readBytes(mem, OP2_ADDR, 9);
+  const finalOp5 = readBytes(mem, OP5_ADDR, 9);
+
+  console.log('');
+  console.log(`  ${'='.repeat(60)}`);
+  console.log('  SUMMARY');
+  console.log(`  ${'='.repeat(60)}`);
+  console.log(`  Outcome: ${outcome}`);
+  console.log(`  Total steps: ${stepCount}`);
+  console.log(`  Final OP1: [${formatBytes(finalOp1)}] = ${decodeBcdRealBytes(finalOp1)}`);
+  console.log(`  Final OP2: [${formatBytes(finalOp2)}] = ${decodeBcdRealBytes(finalOp2)}`);
+  console.log(`  Final OP5: [${formatBytes(finalOp5)}] = ${decodeBcdRealBytes(finalOp5)}`);
+  console.log(`  errNo: ${hexByte(mem[ERR_NO_ADDR] & 0xff)} (${errName(mem[ERR_NO_ADDR] & 0xff)})`);
+  console.log('');
+
+  // FPDiv summary
+  if (firstFPDivStep !== null) {
+    console.log(`  >>> FIRST FPDiv ENTRY <<<`);
+    console.log(`  Step: ${firstFPDivStep}`);
+    console.log(`  OP1: ${firstFPDivOp1}`);
+    console.log(`  OP2: ${firstFPDivOp2}`);
+  } else {
+    console.log(`  >>> FPDiv (0x07CAB9) was NEVER entered within ${MAX_STEPS} steps <<<`);
+  }
+  console.log('');
+
+  // Unique PCs visited
+  console.log('  --- All unique PCs visited (sorted by address) ---');
+  const sortedPCs = [...pcCounts.entries()].sort((a, b) => a[0] - b[0]);
+  for (const [addr, count] of sortedPCs) {
+    console.log(`    ${hex(addr)}${addrLabel(addr)}  x${count}`);
+  }
+  console.log('');
+
+  // Block sequence in gcd algo body range
+  console.log('  --- PCs in gcd algorithm body (0x068D82-0x068DEA) ---');
+  for (const [addr, count] of sortedPCs) {
+    if (addr >= 0x068d82 && addr <= 0x068dea) {
+      console.log(`    ${hex(addr)}${addrLabel(addr)}  x${count}`);
+    }
+  }
+}
+
+// --- Main ---
+
+function main() {
+  console.log('=== Phase 162: Dense gcd(12,8) trace — steps 180-450, algorithm body ===');
+  console.log('');
+
+  const runtime = createPreparedRuntime();
+
+  if (!runtime.memInitOk) {
+    console.log('MEM_INIT failed; aborting.');
+    process.exitCode = 1;
+    return;
+  }
+
+  console.log('Cold boot + MEM_INIT complete.');
+
+  denseTrace(runtime);
+
+  console.log('\nDone.');
+  process.exitCode = 0;
+}
+
+try {
+  main();
+} catch (err) {
+  console.error(err?.stack || String(err));
+  process.exitCode = 1;
+}
