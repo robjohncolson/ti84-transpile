@@ -405,7 +405,19 @@ function emitInstructionJs(instruction) {
   }
   if (tag === 'ld-sp-hl') return ['cpu.sp = cpu.hl;'];
   if (tag === 'ld-sp-pair') return [`cpu.sp = cpu.${instruction.pair};`];
-  if (tag === 'ld-special') return [`cpu.${instruction.dest} = cpu.${instruction.src};`];
+  if (tag === 'ld-special') {
+    // LD I,A and LD R,A (dest is i or r): simple copy, no flag update
+    if (instruction.dest !== 'a') return [`cpu.${instruction.dest} = cpu.${instruction.src};`];
+    // LD A,I and LD A,R (dest is a): copy + update S, Z, H, PV, N flags; C preserved
+    // FLAG_H=0x10, FLAG_PV=0x04, FLAG_N=0x02
+    return [
+      `cpu.a = cpu.${instruction.src};`,
+      `cpu._szFlags(cpu.a);`,
+      `cpu._setFlag(0x10, false);`,
+      `cpu._setFlag(0x04, cpu.iff2 !== 0);`,
+      `cpu._setFlag(0x02, false);`,
+    ];
+  }
 
   // --- LD pair ↔ indirect (eZ80: ld ix,(hl) etc.) ---
   if (tag === 'ld-pair-ind') return [`cpu.${instruction.pair} = cpu.readIndirect24('${instruction.src}');`];
