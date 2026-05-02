@@ -311,6 +311,14 @@ function decodeInstruction(pc, mode) {
     case 'halt': case 'slp':
       result.kind = 'halt';
       break;
+    case 'stmix':
+      result.kind = 'mode-switch';
+      result.nextMode = 'adl';
+      break;
+    case 'rsmix':
+      result.kind = 'mode-switch';
+      result.nextMode = 'z80';
+      break;
   }
 
   return result;
