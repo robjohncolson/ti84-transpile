@@ -218,6 +218,12 @@ class StandaloneCPU {
     this.mem[a + 1] = (val >>> 8) & 0xff;
     this.mem[a + 2] = (val >>> 16) & 0xff;
   }
+  write16(addr, val) {
+    const a = addr & 0xffffff;
+    if (a < 0x400000) return;
+    this.mem[a] = val & 0xff;
+    this.mem[a + 1] = (val >>> 8) & 0xff;
+  }
 
   // --- Flag helpers ---
   getF(flag) { return (this.f & flag) !== 0; }
@@ -428,6 +434,27 @@ class StandaloneCPU {
   pop24() {
     const val = this.read24(this.sp);
     this.sp = (this.sp + 3) & 0xffffff;
+    return val;
+  }
+
+  push(val) {
+    if (this.madl) {
+      this.sp = (this.sp - 3) & 0xffffff;
+      this.write24(this.sp, val);
+    } else {
+      this.sp = (this.sp - 2) & 0xffffff;
+      this.write16(this.sp, val & 0xffff);
+    }
+  }
+
+  pop() {
+    if (this.madl) {
+      const val = this.read24(this.sp);
+      this.sp = (this.sp + 3) & 0xffffff;
+      return val;
+    }
+    const val = this.read16(this.sp);
+    this.sp = (this.sp + 2) & 0xffffff;
     return val;
   }
 
@@ -761,11 +788,11 @@ function execStandalone(instr, cpu) {
     // --- Stack ---
 
     case 'push':
-      cpu.push24(cpu.getPair(instr.pair));
+      cpu.push(cpu.getPair(instr.pair));
       return 'ok';
 
     case 'pop':
-      cpu.setPair(instr.pair, cpu.pop24());
+      cpu.setPair(instr.pair, cpu.pop());
       return 'ok';
 
     // --- Exchange ---
@@ -1114,13 +1141,13 @@ function execStandalone(instr, cpu) {
     case 'ret':
     case 'retn':
     case 'reti': {
-      cpu.pc = cpu.pop24();
+      cpu.pc = cpu.pop();
       return 'branch';
     }
 
     case 'ret-conditional': {
       if (cpu.cond(instr.condition)) {
-        cpu.pc = cpu.pop24();
+        cpu.pc = cpu.pop();
       } else {
         cpu.pc = instr.fallthrough;
       }
@@ -1128,14 +1155,14 @@ function execStandalone(instr, cpu) {
     }
 
     case 'call': {
-      cpu.push24(instr.fallthrough);
+      cpu.push(instr.fallthrough);
       cpu.pc = instr.target;
       return 'branch';
     }
 
     case 'call-conditional': {
       if (cpu.cond(instr.condition)) {
-        cpu.push24(instr.fallthrough);
+        cpu.push(instr.fallthrough);
         cpu.pc = instr.target;
       } else {
         cpu.pc = instr.fallthrough;
@@ -1144,7 +1171,7 @@ function execStandalone(instr, cpu) {
     }
 
     case 'rst': {
-      cpu.push24(instr.fallthrough);
+      cpu.push(instr.fallthrough);
       cpu.pc = instr.target;
       return 'branch';
     }

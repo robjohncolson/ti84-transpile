@@ -817,6 +817,7 @@ function walkBlocks() {
     { pc: 0x000058, mode: 'adl' },
     { pc: 0x000060, mode: 'adl' },
     { pc: 0x000068, mode: 'adl' },
+    { pc: 0x00CA00, mode: 'z80' }, // Phase 173: error handler reset (reached via z80-mode RET from 0x03E1B3)
     // Known OS jump table entries
     { pc: 0x020008, mode: 'adl' },
     { pc: 0x020010, mode: 'adl' },

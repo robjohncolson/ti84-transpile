@@ -343,27 +343,33 @@ export class CPU {
   addWithCarryWord(a, b) {
     const carry = this._getFlag(FLAG_C) ? 1 : 0;
     const result = a + b + carry;
-    const r16 = result & 0xffff;
-    this._setFlag(FLAG_S, r16 & 0x8000);
-    this._setFlag(FLAG_Z, r16 === 0);
-    this._setFlag(FLAG_H, ((a ^ b ^ result) & 0x1000) !== 0);
-    this._setFlag(FLAG_PV, ((a ^ result) & (b ^ result) & 0x8000) !== 0);
+    const mask = this.addressMask;
+    const msb = this.madl ? 0x800000 : 0x8000;
+    const halfBit = this.madl ? 0x100000 : 0x1000;
+    const masked = result & mask;
+    this._setFlag(FLAG_S, masked & msb);
+    this._setFlag(FLAG_Z, masked === 0);
+    this._setFlag(FLAG_H, ((a ^ b ^ result) & halfBit) !== 0);
+    this._setFlag(FLAG_PV, ((a ^ result) & (b ^ result) & msb) !== 0);
     this._setFlag(FLAG_N, false);
-    this._setFlag(FLAG_C, result > 0xffff);
-    return result & this.addressMask;
+    this._setFlag(FLAG_C, result > mask);
+    return masked;
   }
 
   subtractWithBorrowWord(a, b) {
     const carry = this._getFlag(FLAG_C) ? 1 : 0;
     const result = a - b - carry;
-    const r16 = result & 0xffff;
-    this._setFlag(FLAG_S, r16 & 0x8000);
-    this._setFlag(FLAG_Z, r16 === 0);
-    this._setFlag(FLAG_H, ((a ^ b ^ result) & 0x1000) !== 0);
-    this._setFlag(FLAG_PV, ((a ^ b) & (a ^ result) & 0x8000) !== 0);
+    const mask = this.addressMask;
+    const msb = this.madl ? 0x800000 : 0x8000;
+    const halfBit = this.madl ? 0x100000 : 0x1000;
+    const masked = result & mask;
+    this._setFlag(FLAG_S, masked & msb);
+    this._setFlag(FLAG_Z, masked === 0);
+    this._setFlag(FLAG_H, ((a ^ b ^ result) & halfBit) !== 0);
+    this._setFlag(FLAG_PV, ((a ^ b) & (a ^ result) & msb) !== 0);
     this._setFlag(FLAG_N, true);
     this._setFlag(FLAG_C, result < 0);
-    return result & this.addressMask;
+    return masked;
   }
 
   multiplyBytes(pair) {
@@ -719,7 +725,7 @@ export class CPU {
       this.sp = (this.sp - 3) & 0xffffff;
       this.write24(this.sp, value);
     } else {
-      this.sp = (this.sp - 2) & 0xffff;
+      this.sp = (this.sp - 2) & 0xffffff;
       this.write16(this.sp, value);
     }
   }
@@ -731,7 +737,7 @@ export class CPU {
       return value;
     }
     const value = this.read16(this.sp);
-    this.sp = (this.sp + 2) & 0xffff;
+    this.sp = (this.sp + 2) & 0xffffff;
     return value;
   }
 
