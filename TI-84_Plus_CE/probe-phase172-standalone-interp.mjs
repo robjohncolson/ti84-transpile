@@ -636,6 +636,12 @@ class StandaloneCPU {
 function execStandalone(instr, cpu) {
   const { tag } = instr;
 
+  function applyModePrefix() {
+    if (instr.modePrefix) {
+      cpu.madl = instr.modePrefix[0] === 'l' ? 1 : 0;
+    }
+  }
+
   switch (tag) {
     case 'nop':
     case 'di':
@@ -1142,6 +1148,7 @@ function execStandalone(instr, cpu) {
     case 'retn':
     case 'reti': {
       cpu.pc = cpu.pop();
+      applyModePrefix();
       return 'branch';
     }
 
@@ -1151,12 +1158,14 @@ function execStandalone(instr, cpu) {
       } else {
         cpu.pc = instr.fallthrough;
       }
+      applyModePrefix();
       return 'branch';
     }
 
     case 'call': {
       cpu.push(instr.fallthrough);
       cpu.pc = instr.target;
+      applyModePrefix();
       return 'branch';
     }
 
@@ -1167,17 +1176,20 @@ function execStandalone(instr, cpu) {
       } else {
         cpu.pc = instr.fallthrough;
       }
+      applyModePrefix();
       return 'branch';
     }
 
     case 'rst': {
       cpu.push(instr.fallthrough);
       cpu.pc = instr.target;
+      applyModePrefix();
       return 'branch';
     }
 
     case 'jp': {
       cpu.pc = instr.target;
+      applyModePrefix();
       return 'branch';
     }
 
@@ -1187,16 +1199,19 @@ function execStandalone(instr, cpu) {
       } else {
         cpu.pc = instr.fallthrough;
       }
+      applyModePrefix();
       return 'branch';
     }
 
     case 'jp-indirect': {
       cpu.pc = cpu.getPair(instr.indirectRegister);
+      applyModePrefix();
       return 'branch';
     }
 
     case 'jr': {
       cpu.pc = instr.target;
+      applyModePrefix();
       return 'branch';
     }
 
@@ -1206,6 +1221,7 @@ function execStandalone(instr, cpu) {
       } else {
         cpu.pc = instr.fallthrough;
       }
+      applyModePrefix();
       return 'branch';
     }
 
@@ -1218,6 +1234,7 @@ function execStandalone(instr, cpu) {
       } else {
         cpu.pc = instr.fallthrough;
       }
+      applyModePrefix();
       return 'branch';
     }
 
