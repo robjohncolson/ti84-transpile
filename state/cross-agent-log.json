@@ -2222,15 +2222,63 @@
         "TI-84_Plus_CE/probe-phase176-getCSC-mmio-trace.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "a8eda5f09e29",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Set cpu.mbase default to 0xD0 in cpu-runtime.js\n\n## Context\nThe TI-84 Plus CE eZ80 CPU has a",
+      "status": "completed",
+      "duration_seconds": 139.673,
+      "timestamp": "2026-05-03T12:05:23Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ba6d028e1115",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: _GetCSC handler investigation \u2014 disassemble blocks and find missing CALL targets\n\n## Context",
+      "status": "completed",
+      "duration_seconds": 609.815,
+      "timestamp": "2026-05-03T12:13:14Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6c47f0be0a4a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 178 P2 \u2014 Trace 0x03CF7D (_GetCSC implementation) with full OS state\n\n## Context\n\nIn the TI",
+      "status": "completed",
+      "duration_seconds": 359.682,
+      "timestamp": "2026-05-03T16:07:58Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase178-getCSC-impl-trace.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "8052f19dc7ce",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 178 P1 \u2014 Find who writes to 0xD02AD7 (callback table setup)\n\n## Context\n\nIn the TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 431.889,
+      "timestamp": "2026-05-03T16:09:08Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase178-callback-table-setup.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 171,
-    "cc_to_codex": 171,
+    "total_calls": 175,
+    "cc_to_codex": 175,
     "codex_to_cc": 0,
-    "completed": 127,
+    "completed": 131,
     "failed": 38,
     "refused": 0,
-    "avg_duration_seconds": 524.091
+    "avg_duration_seconds": 520.918
   }
 }
