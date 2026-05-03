@@ -2174,15 +2174,63 @@
         "TI-84_Plus_CE/phase99d-report.md"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "e7c5656ba5ac",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Fix standalone interpreter .LIL/.SIS/.SIL/.LIS prefix mode-switch handling\n\n## Context\nFile:",
+      "status": "completed",
+      "duration_seconds": 190.973,
+      "timestamp": "2026-05-03T04:05:50Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "aa74d7910642",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Seed 0x00B608 + Retranspile + Verify Event Loop Unblocked\n\n## Context\nThe TI-84 Plus CE ROM ",
+      "status": "completed",
+      "duration_seconds": 125.572,
+      "timestamp": "2026-05-03T08:08:02Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8a7dddd49c28",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Build Event Loop Deep Trace Probe\n\n## Context\nThe TI-84 Plus CE OS event loop at 0x0019BE cu",
+      "status": "completed",
+      "duration_seconds": 378.69,
+      "timestamp": "2026-05-03T08:12:18Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase176-eventloop-deep-trace.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "d92811595348",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Build _GetCSC MMIO Trace Probe\n\n## Context\nThe TI-84 Plus CE _GetCSC function at 0x03CF7D re",
+      "status": "completed",
+      "duration_seconds": 392.167,
+      "timestamp": "2026-05-03T08:12:30Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase176-getCSC-mmio-trace.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 167,
-    "cc_to_codex": 167,
+    "total_calls": 171,
+    "cc_to_codex": 171,
     "codex_to_cc": 0,
-    "completed": 123,
+    "completed": 127,
     "failed": 38,
     "refused": 0,
-    "avg_duration_seconds": 530.133
+    "avg_duration_seconds": 524.091
   }
 }
