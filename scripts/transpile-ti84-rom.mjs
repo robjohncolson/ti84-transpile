@@ -351,8 +351,14 @@ function emitInstructionJs(instruction) {
   if (tag === 'slp') return ['return cpu.sleep();'];
 
   // --- Control flow ---
-  if (tag === 'jp' || tag === 'jr' || tag === 'rst') {
+  if (tag === 'jp' || tag === 'jr') {
     return [`return ${hex(instruction.target, 6)};`];
+  }
+  if (tag === 'rst') {
+    return [
+      `cpu.push(${hex(instruction.fallthrough, 6)});`,
+      `return ${hex(instruction.target, 6)};`,
+    ];
   }
   if (tag === 'jp-indirect') {
     return [`return cpu.${instruction.indirectRegister};`];
@@ -818,6 +824,7 @@ function walkBlocks() {
     { pc: 0x000060, mode: 'adl' },
     { pc: 0x000068, mode: 'adl' },
     { pc: 0x00CA00, mode: 'z80' }, // Phase 173: error handler reset (reached via z80-mode RET from 0x03E1B3)
+    { pc: 0x000008, mode: 'z80' }, // RST 08h vector, z80-mode entry from 0x00CA00
     // Known OS jump table entries
     { pc: 0x020008, mode: 'adl' },
     { pc: 0x020010, mode: 'adl' },

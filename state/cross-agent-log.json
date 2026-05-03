@@ -2149,15 +2149,40 @@
       "timestamp": "2026-04-30T09:07:54Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "ff8cb8790d10",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Fix z80-mode SP truncation in cpu-runtime.js\n\n## Context\nFile: `TI-84_Plus_CE/cpu-runtime.js",
+      "status": "completed",
+      "duration_seconds": 61.299,
+      "timestamp": "2026-05-02T12:02:47Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b353eeb59908",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Fix ADL-mode flag bugs in addWithCarryWord and subtractWithBorrowWord\n\n## Context\nFile: `TI-",
+      "status": "completed",
+      "duration_seconds": 122.458,
+      "timestamp": "2026-05-02T12:03:49Z",
+      "files_changed": [
+        "TI-84_Plus_CE/cpu-runtime.js",
+        "TI-84_Plus_CE/phase99d-report.md"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 165,
-    "cc_to_codex": 165,
+    "total_calls": 167,
+    "cc_to_codex": 167,
     "codex_to_cc": 0,
-    "completed": 121,
+    "completed": 123,
     "failed": 38,
     "refused": 0,
-    "avg_duration_seconds": 535.445
+    "avg_duration_seconds": 530.133
   }
 }
