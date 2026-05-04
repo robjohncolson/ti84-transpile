@@ -2270,15 +2270,90 @@
         "TI-84_Plus_CE/probe-phase178-callback-table-setup.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "33775d8c1e24",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 181 P2 \u2014 BufInsert Standalone Node Probe\n\n## Goal\nWrite a Node.js probe (`TI-84_Plus_",
+      "status": "completed",
+      "duration_seconds": 430.406,
+      "timestamp": "2026-05-04T04:14:10Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase181-bufinsert-standalone.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "13439863d208",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 181 P3 \u2014 Key Classification Subroutine Disassembly (0x058D49)\n\n## Goal\nWrite a Node.j",
+      "status": "completed",
+      "duration_seconds": 685.862,
+      "timestamp": "2026-05-04T04:18:27Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9fe2f9c7db63",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 181 P1 \u2014 Disassemble Foreground Keyboard Scan at 0x0159C0\n\n## Goal\nWrite a Node.js pr",
+      "status": "completed",
+      "duration_seconds": 773.73,
+      "timestamp": "2026-05-04T04:19:52Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase181-fgkbd-scan.mjs",
+        "TI-84_Plus_CE/phase181-fgkbd-scan-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "c4422ad10630",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 182 P3 \u2014 drawFGColor Fix: Visible Graph Color in Browser-Shell\n\n## Context\nSession 14",
+      "status": "completed",
+      "duration_seconds": 144.35,
+      "timestamp": "2026-05-04T08:04:54Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "92160b1ee879",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 182 P1 \u2014 ParseInp E_Undefined Root Cause: OS State Diff\n\n## Context\nSession 181 found",
+      "status": "completed",
+      "duration_seconds": 477.196,
+      "timestamp": "2026-05-04T08:10:23Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase182-parseinp-state-diff.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "456517b1e435",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 182 P2 \u2014 Home Handler Disassembly: Find Key\u2192BufInsert Routing\n\n## Context\nSession 181",
+      "status": "completed",
+      "duration_seconds": 791.051,
+      "timestamp": "2026-05-04T08:15:39Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase182-home-handler-disasm.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 175,
-    "cc_to_codex": 175,
+    "total_calls": 181,
+    "cc_to_codex": 181,
     "codex_to_cc": 0,
-    "completed": 131,
+    "completed": 137,
     "failed": 38,
     "refused": 0,
-    "avg_duration_seconds": 520.918
+    "avg_duration_seconds": 521.896
   }
 }

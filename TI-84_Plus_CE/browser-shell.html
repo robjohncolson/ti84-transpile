@@ -2826,6 +2826,9 @@ function runGraphMode(expr) {
     // Re-seed graph window + RAM (safety against corruption)
     graphSeedWindow(mem, Xmin, Xmax, Ymin, Ymax);
     graphSeedRAM(mem);
+    // Keep GraphPars foreground visible against dark or light backgrounds.
+    mem[GRAPH_DRAW_FG] = 0x1F;
+    mem[GRAPH_DRAW_FG + 1] = 0x00;
 
     const gp = graphCallGraphPars(ex, c, mem, equ.tokenAddr, x, savedFPS);
 
