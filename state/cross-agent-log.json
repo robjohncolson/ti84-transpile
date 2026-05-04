@@ -2378,15 +2378,64 @@
       "timestamp": "2026-05-04T12:17:57Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "b08bbadfbd94",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 184 P2: Trace Key Classifier 0x07F7BD with Digit Key\n\n## Context\n\nThis is a TI-84 Plu",
+      "status": "completed",
+      "duration_seconds": 506.754,
+      "timestamp": "2026-05-04T16:11:04Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase184-key-classifier.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "c98d091cc811",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 184 P1: Investigate MBASE and SPS Stack Page Contents\n\n## Context\n\nThis is a TI-84 Pl",
+      "status": "completed",
+      "duration_seconds": 593.729,
+      "timestamp": "2026-05-04T16:12:29Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase184-mbase-investigation.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "63d4fa3a78b4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 184 P3: Bypass Error Handler \u2014 Direct errSP Setup for ParseInp\n\n## Context\n\nThis is a",
+      "status": "completed",
+      "duration_seconds": 862.029,
+      "timestamp": "2026-05-04T16:17:00Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "68fd8a42f7e0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 185 P1: MADL PC-Based Runtime Intercept for z80-mode RET After RSMIX\n\n## Context\n\nThe TI-8",
+      "status": "completed",
+      "duration_seconds": 334.463,
+      "timestamp": "2026-05-04T20:09:37Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 184,
-    "cc_to_codex": 184,
+    "total_calls": 188,
+    "cc_to_codex": 188,
     "codex_to_cc": 0,
-    "completed": 138,
+    "completed": 142,
     "failed": 40,
     "refused": 0,
-    "avg_duration_seconds": 527.983
+    "avg_duration_seconds": 528.968
   }
 }
