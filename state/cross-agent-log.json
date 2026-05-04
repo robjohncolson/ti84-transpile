@@ -2345,15 +2345,48 @@
         "TI-84_Plus_CE/probe-phase182-home-handler-disasm.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "a123c98016a6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 183 P1 \u2014 Trace ParseInp Error Handler Dispatch Chain\n\n## Context\nThis is a TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 885.641,
+      "timestamp": "2026-05-04T12:17:40Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a303ad0350ac",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 183 P2 \u2014 ParseInp Inside Home Handler Context\n\n## Context\nThis is a TI-84 Plus CE ROM",
+      "status": "timeout",
+      "duration_seconds": 900.043,
+      "timestamp": "2026-05-04T12:17:56Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "108d1fa8a754",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 183 P3 \u2014 Key Classifier 0x07F7BD Trace with Digit Keys\n\n## Context\nThis is a TI-84 Pl",
+      "status": "timeout",
+      "duration_seconds": 900.05,
+      "timestamp": "2026-05-04T12:17:57Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 181,
-    "cc_to_codex": 181,
+    "total_calls": 184,
+    "cc_to_codex": 184,
     "codex_to_cc": 0,
-    "completed": 137,
-    "failed": 38,
+    "completed": 138,
+    "failed": 40,
     "refused": 0,
-    "avg_duration_seconds": 521.896
+    "avg_duration_seconds": 527.983
   }
 }

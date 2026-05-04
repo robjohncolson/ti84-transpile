@@ -725,8 +725,11 @@ export class CPU {
       this.sp = (this.sp - 3) & 0xffffff;
       this.write24(this.sp, value);
     } else {
-      this.sp = (this.sp - 2) & 0xffffff;
-      this.write16(this.sp, value);
+      // z80 mode: SPS decrements by 2, memory at {MBASE, SPS}
+      const sps = ((this.sp - 2) & 0xFFFF);
+      this.sp = (this.sp & 0xFF0000) | sps;
+      const addr = (this.mbase << 16) | sps;
+      this.write16(addr, value);
     }
   }
 
@@ -736,8 +739,10 @@ export class CPU {
       this.sp = (this.sp + 3) & 0xffffff;
       return value;
     }
-    const value = this.read16(this.sp);
-    this.sp = (this.sp + 2) & 0xffffff;
+    // z80 mode: read from {MBASE, SPS}, SPS increments by 2
+    const addr = (this.mbase << 16) | (this.sp & 0xFFFF);
+    const value = this.read16(addr);
+    this.sp = (this.sp & 0xFF0000) | ((this.sp + 2) & 0xFFFF);
     return value;
   }
 
