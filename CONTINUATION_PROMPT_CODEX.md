@@ -44,23 +44,36 @@ Only ~13 KB is plausibly executable code, scattered across ~3,400 tiny ranges (t
 
 > **Status update (2026-04-30, session 163)**: Session 163 completed 3 sub-priorities. **KEY FINDINGS**: (1) **LOOP TOP DOES NOT RESTORE OP2** — 0x068D5D-0x068D81 contains no OP register copies. CALL 0x068B78 is a type validator that sets OP2=1.0. Exponent bounds check (0x82-0x84). Falls into body. (2) **OUTER LOOP STRUCTURE DECODED** — Steps 333-734 are post-inner-loop processing. JR NZ at step 332 does NOT go to 0x068D5D — execution continues at 0x068DA3. Loop top re-entry only at step 735 for iteration 2. OP5→OP2 at step 570 is in the OUTER region. (3) **OP4 PRE-LOADING DISPROVEN** — OP4=8.0 and OP4=800 both still produce E_Domain. The OP4→OP2 copy is intentional (restores saved OP1 for InvSub), but the bug is that BOTH InvSub operands end up being OP1 because the compound OP1→OP2 call at 0x07C747 destroys the divisor.
 
-### 1. ★★★ COMPLETED (session 177) — MBASE initialization
-**DONE**: `this.mbase = 0xD0` in cpu-runtime.js constructor. Test 10 confirms ISR gate unlocked. Golden regression PASS.
+> **Status update (2026-05-03, human session)**: Sessions 179-180 reported BLOCKED because old priorities #1/#2 closed and #3/#4/#5 are either browser-bound or methodology-exhausted. **Refreshed priorities below build directly on what session 176-178 just unlocked**: MBASE gate is open, ISR fires correctly, `_GetCSC` is a pure interrupt dispatcher (not the keyboard scanner). The natural next push is connecting the foreground keyboard scanner (0x0159C0) to the OS event loop and CoorMon dispatch — i.e., ending the JS direct-eval bypass and routing real keypresses through the real OS path. Auto-sessions should pick up #1 first.
 
-### 2. ★★★ CLOSED (session 178) — ISR event loop → keyboard scan integration
-**RESOLVED**: _GetCSC (0x03CF7D) is an ISR interrupt status dispatcher, NOT a keyboard scanner. It reads ports 0x5016/0x5015/0x5014, dispatches to handlers, exits via RETI. Zero keyboard MMIO reads, zero calls to 0x0159C0, zero scan code buffer reads. The callback at 0xD02AD7 is a save/restore mechanism (pushed at ISR entry, popped at exit). ISR architecture: ISR fires → event loop acknowledges hardware interrupts → RETI. Keyboard scanning (0x0159C0) is exclusively a foreground operation. Browser-shell's direct call to 0x0159C0 is architecturally correct. Key probes: `probe-phase178-callback-table-setup.mjs`, `probe-phase178-getCSC-impl-trace.mjs`.
+### 1. ★★★ Wire foreground keyboard scan (0x0159C0) → OS keyboard buffer → CoorMon dispatch
+**Foundation in place** (sessions 176-178): MBASE=0xD0 by default, ISR works, `_GetCSC` confirmed as interrupt dispatcher only. **Gap**: scan codes from 0x0159C0 need to land in the OS keyboard buffer (the slot CoorMon reads). Identify the buffer location (search `ti84pceg.inc` for `kbdKey`, `kbdScanCode`, `key_call`, `keyExtend` — many are documented), then build a probe that: (a) injects an ENTER scan code into the buffer, (b) runs CoorMon at 0x08C331 for N steps, (c) verifies CoorMon dispatches to the home handler at 0x058241. If that works, follow through to ENTER → 0x058693 → 0x0586E3 → ParseInp. Concrete deliverable: a probe that drives "2+3<ENTER>" through the full real OS path and returns OP1=5.0. Decomposable into 3-4 parallel Codex sub-tasks (buffer location, injection probe, CoorMon dispatch trace, end-to-end verification).
 
-### 3. ★★ Graph browser-shell — human testing + drawFGColor integration
-Session 140 P1 added graph mode to browser-shell.html. Session 152 confirmed drawFGColor at 0xD026AC is the correct 16bpp color mechanism. **NEEDS HUMAN BROWSER SESSION** to: (a) verify graph mode renders, (b) update graph pipeline to seed drawFGColor with a visible BGR565 color (e.g., 0xFFFF white or 0x001F blue) instead of relying on default 0x0000 (black on black). Low priority for auto-continuation.
+### 2. ★★★ Tokenizer integration — replace direct-eval's hand-rolled token map with the real OS tokenizer
+direct-eval currently uses `EVAL_TOKEN_MAP` (hand-rolled, sessions 113-115). The OS has a real tokenizer (key-press → token bytes) that's used by the edit buffer when keys arrive via the dispatch table at 0x058693+. Find the tokenizer entry point (likely a JT slot in the 980-entry table; grep for `Tok` names in `ti84pceg.inc`), validate it against direct-eval's hand map for the digits/operators, then route browser-shell input through it. Removes the hand-map maintenance burden and makes new keys "free."
 
-### 4. ★★ Edit buffer browser-shell — test buffer mode in browser
-Session 133 added BufInsert toggle. Requires human/browser session.
+### 3. ★★ STAT menu dispatch + 1-Var Stats end-to-end
+Sessions 139-146 validated stat primitives (Rcl_StatVar, Sto_StatVar, OneVar 8/8 stats). **Gap**: the STAT menu UI walker that lists "1: Edit / 2: SortA / 3: SortD / 4: ClrList / 5: SetUpEditor" then routes to "CALC" submenu with "1: 1-Var Stats". Find STAT key dispatch in the home-handler key table, trace into the menu walker (probably a generic menu primitive — `DispMenu`?), then verify "1-Var Stats L1" runs end-to-end against a seeded L1. Decomposable into: (a) STAT key dispatch lookup, (b) menu walker trace, (c) 1-Var Stats execution probe.
 
-### 5. ★ FP gcd — CLOSED (715/715 standalone match, methodology exhausted)
-Sessions 171-175 verified every reachable block in gcd path. The gcd E_Domain error is genuine ROM behavior (normalization destroys mantissa for integer inputs), not a transpilation error.
+### 4. ★★ Y= editor → graph pipeline end-to-end
+Session 139 validated GraphPars renders 133/133 in isolation. Session 140 added graph mode to browser-shell. **Gap**: connect the Y= key → editor → VAT-slot store of Y1 equation → GRAPH key → render. Y= equation VAT format was discovered in session 133. Decomposable: (a) Y= key dispatch trace, (b) Y= editor probe (write equation to Y1 slot), (c) GRAPH key → render probe. Probably yields a real visible feature (Y=X line on screen) — first non-text demo.
 
-### 6. ★ Coverage cleanup (still low ROI)
+### 5. ★★ Graph browser-shell — drawFGColor seed (ALSO needs human browser test)
+Session 140 P1 added graph mode. Session 152 confirmed drawFGColor at 0xD026AC is the correct 16bpp color slot. **Auto-session work**: update browser-shell graph pipeline to write a visible BGR565 color (e.g., 0xFFFF white or 0x001F blue) into 0xD026AC before render, instead of relying on default 0x0000 (black on black). Then leave a note for human browser testing. Concrete one-shot task — small surface area, can be done without human in the loop, then validated visually later.
+
+### 6. ★★ Edit buffer browser-shell — exercise BufInsert path in a probe (no browser needed)
+Session 133 added the BufInsert toggle to browser-shell, but validation has been "needs browser". **Auto-session can do this without a browser**: write a Node probe that boots the ROM, calls BufInsert with "2+3" tokens, then ENTER-dispatches and verifies OP1=5.0. That validates the *logic* without the *UI*. Browser test then becomes "type characters → see them appear", which is a separate UI concern.
+
+### 7. ★ More direct-eval tokens (filler work for auto-sessions)
+Token map has digits/operators/A-Z/trig/log/sqrt/^/comma/π. Still missing: nDeriv, fnInt, sum, prod, abs nesting, fraction template, conversion templates, more constants (e). Each new token = one entry in `EVAL_TOKEN_MAP` + one verification probe. Sonnet/Codex parallel-friendly. Lower priority than #1-#6 but always available when other priorities stall.
+
+### 8. ★ Coverage cleanup (still low ROI)
 Next CODE? gaps yield <0.01 pp each. Skip unless every other priority is genuinely blocked.
+
+### Closed/Completed
+- Priority "MBASE initialization" — COMPLETED session 177 (`cpu.mbase = 0xD0` default in cpu-runtime.js).
+- Priority "ISR event loop → keyboard scan integration" — CLOSED session 178 (_GetCSC is interrupt dispatcher, not scanner; foreground 0x0159C0 is the right path).
+- Priority "FP gcd" — CLOSED session 175 (715/715 standalone match, gcd E_Domain is genuine ROM behavior, not a transpilation bug).
 
 ### Completed (session 180) — BLOCKED
 - **BLOCKED — NO CHANGE SINCE SESSION 179**: Second consecutive BLOCKED session. All 6 priorities remain completed/closed or require human browser sessions. No agents dispatched, no code changes. **Strongly recommend disabling auto-continuation** (`schtasks /change /tn "TI84-AutoContinuation" /disable`) until new priorities are added — continued sessions will only burn tokens writing BLOCKED entries.
