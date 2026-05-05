@@ -2427,15 +2427,67 @@
       "timestamp": "2026-05-04T20:09:37Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "faad1c55e0c1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 185 P2: Token Pipeline Probe \u2014 What Populates 0xD0230E Before Key Classifier\n\n## Context\n\n",
+      "status": "timeout",
+      "duration_seconds": 900.043,
+      "timestamp": "2026-05-04T20:19:04Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "cd47ccb2d61b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 185 P3: OS Tokenizer Discovery \u2014 ConvKeyToTok at 0x05C52C\n\n## Context\n\nThis is a TI-84 Plu",
+      "status": "timeout",
+      "duration_seconds": 900.045,
+      "timestamp": "2026-05-04T20:19:06Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b7917994846b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 186 \u2014 P4: BufInsert \"2+3\" end-to-end probe (edit buffer validation)\n\n## Context\nThe T",
+      "status": "completed",
+      "duration_seconds": 348.886,
+      "timestamp": "2026-05-05T00:08:36Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase186-keytok-tables.json",
+        "TI-84_Plus_CE/probe-phase186-bufinsert-eval.mjs",
+        "TI-84_Plus_CE/probe-phase186-call-target-trace.mjs",
+        "TI-84_Plus_CE/probe-phase186-jerror-sp-trace.mjs",
+        "TI-84_Plus_CE/probe-phase186-keytok-table-dump.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "f63608a894af",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 186 \u2014 P2: Trace 6 CALL targets in home handler to find TOKEN_STAGING populator\n\n## Co",
+      "status": "completed",
+      "duration_seconds": 552.23,
+      "timestamp": "2026-05-05T00:11:56Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase186-call-target-trace.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 188,
-    "cc_to_codex": 188,
+    "total_calls": 192,
+    "cc_to_codex": 192,
     "codex_to_cc": 0,
-    "completed": 142,
-    "failed": 40,
+    "completed": 144,
+    "failed": 42,
     "refused": 0,
-    "avg_duration_seconds": 528.968
+    "avg_duration_seconds": 532.016
   }
 }
