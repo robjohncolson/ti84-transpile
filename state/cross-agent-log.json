@@ -2597,15 +2597,152 @@
         "TI-84_Plus_CE/probe-phase189-stat-coormon-entry.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "35a30a54e1fd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace ParseInp error recovery handler at 0x099929\n\n## Context\n\nSession 188 proved that PushE",
+      "status": "completed",
+      "duration_seconds": 874.174,
+      "timestamp": "2026-05-05T14:18:07Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c2b7206dd6fc",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 190 P1: ParseInp Valid Expression Test (\"2+3\" \u2192 OP1=5.0?)\n\n## Context\nSession 189 pro",
+      "status": "completed",
+      "duration_seconds": 685.9,
+      "timestamp": "2026-05-05T16:14:14Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase190-parseinp-valid-expr.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "9f392ed71190",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 190 P3: Y= Key Dispatch Trace\n\n## Context\nPriority #4 in the continuation prompt: \"Y=",
+      "status": "completed",
+      "duration_seconds": 694.518,
+      "timestamp": "2026-05-05T16:14:25Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase190-yeq-key-dispatch.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "ef7a45a6e584",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 190 P2: STAT Context Entries 1-5 + 0x080xxx Key\u2192Context Translation Layer\n\n## Context",
+      "status": "completed",
+      "duration_seconds": 779.609,
+      "timestamp": "2026-05-05T16:15:49Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase190-stat-context-entries.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "da0e886790a4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 191 P1: ParseInp Extended Expression Tests\n\n## Context\nSession 190 proved ParseInp ev",
+      "status": "completed",
+      "duration_seconds": 116.552,
+      "timestamp": "2026-05-05T18:04:45Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "aae43f7067b2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 191 P2: Seed STAT Path Missing Blocks + Retranspile + Probe\n\n## Context\nSession 190 p",
+      "status": "completed",
+      "duration_seconds": 215.611,
+      "timestamp": "2026-05-05T18:06:26Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase200-seeds.txt",
+        "TI-84_Plus_CE/probe-phase191-stat-extended.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "2da728180216",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 191 P3: Y= Key Dispatch Bypass Probe\n\n## Context\nSession 190 traced Y= key dispatch t",
+      "status": "completed",
+      "duration_seconds": 473.307,
+      "timestamp": "2026-05-05T18:10:45Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1e3a5b1467c5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 192 P1: Test trig expressions via ParseInp (sin(0), cos(0))\n\n## Context\nThe probe `TI",
+      "status": "completed",
+      "duration_seconds": 221.367,
+      "timestamp": "2026-05-05T20:06:45Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "0bc62d77be15",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 192 P2: Disassemble ROM at 0x092263 LDDR successor for STAT path\n\n## Context\nSession ",
+      "status": "completed",
+      "duration_seconds": 384.693,
+      "timestamp": "2026-05-05T20:09:31Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase200-seeds.txt",
+        "TI-84_Plus_CE/probe-phase192-stat-lddr-successor.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "1048f40d6628",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 192 P3: TOKEN_STAGING format experiments for Y= key\n\n## Context\nSession 191 built `pr",
+      "status": "completed",
+      "duration_seconds": 636.525,
+      "timestamp": "2026-05-05T20:13:44Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase192-token-staging-format.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "4830e276dbc5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 193 P1: ParseInp Trig Stall \u2014 Increase Step Limit to 10000\n\n## Context\nIn session 192",
+      "status": "completed",
+      "duration_seconds": 452.285,
+      "timestamp": "2026-05-05T22:09:42Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase193-trig-extended.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 202,
-    "cc_to_codex": 202,
+    "total_calls": 213,
+    "cc_to_codex": 213,
     "codex_to_cc": 0,
-    "completed": 152,
+    "completed": 163,
     "failed": 44,
     "refused": 0,
-    "avg_duration_seconds": 536.623
+    "avg_duration_seconds": 534.893
   }
 }
