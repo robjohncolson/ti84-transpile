@@ -103,9 +103,13 @@ const OS_MAX_LOOP_ITERATIONS = 8192;
 const ANS_NAME_OP1 = Uint8Array.from([0x00, 0x72, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
 
 const TEST_EXPRESSIONS = [
-  { name: 'A', label: '2+3', tokens: [0x32, 0x70, 0x33] },
-  { name: 'B', label: '5',   tokens: [0x35] },
-  { name: 'C', label: '9-4', tokens: [0x39, 0x71, 0x34] },
+  { name: 'A', label: '2+3',     tokens: [0x32, 0x70, 0x33] },
+  { name: 'B', label: '5',       tokens: [0x35] },
+  { name: 'C', label: '9-4',     tokens: [0x39, 0x71, 0x34] },
+  { name: 'D', label: '3*4',     tokens: [0x33, 0x82, 0x34] },
+  { name: 'E', label: '8/2',     tokens: [0x38, 0x83, 0x32] },
+  { name: 'F', label: '2^3',     tokens: [0x32, 0xF0, 0x33] },
+  { name: 'G', label: '2*(3+4)', tokens: [0x32, 0x82, 0x10, 0x33, 0x70, 0x34, 0x11] },
 ];
 
 // ── Trace control strings ──────────────────────────────────────────────
