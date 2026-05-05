@@ -2536,15 +2536,76 @@
         "TI-84_Plus_CE/probe-phase187-stat-key-dispatch.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "a4c50ed1ef27",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 188 P3: Add Direct-Eval Tokens (nDeriv, fnInt, abs, e, Ans)\n\n## Goal\nAdd 5 new tokens",
+      "status": "completed",
+      "duration_seconds": 251.922,
+      "timestamp": "2026-05-05T12:07:47Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6f50833e7fb3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 188 P1: Lift PushErrorHandler (0x07C88B) + Probe ParseInp Error Recovery\n\n## Goal\nAdd",
+      "status": "completed",
+      "duration_seconds": 433.79,
+      "timestamp": "2026-05-05T12:10:46Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "cd3166da9741",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 188 P2: STAT Micro-Trace Extended (2000+ steps)\n\n## Goal\nExtend the STAT key dispatch",
+      "status": "completed",
+      "duration_seconds": 696.741,
+      "timestamp": "2026-05-05T12:15:10Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase188-stat-extended-trace.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "41ef96c45946",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add more direct-eval tokens to browser-shell.html\n\n## Context\n\nThe browser-shell's direct-ev",
+      "status": "completed",
+      "duration_seconds": 192.522,
+      "timestamp": "2026-05-05T14:06:48Z",
+      "files_changed": [
+        "TI-84_Plus_CE/browser-shell.html"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "dddc568609cf",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: STAT dispatch \u2014 investigate RAM state and CoorMon-level entry\n\n## Context\n\nSession 188 exten",
+      "status": "completed",
+      "duration_seconds": 640.214,
+      "timestamp": "2026-05-05T14:14:14Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase189-stat-coormon-entry.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 197,
-    "cc_to_codex": 197,
+    "total_calls": 202,
+    "cc_to_codex": 202,
     "codex_to_cc": 0,
-    "completed": 147,
+    "completed": 152,
     "failed": 44,
     "refused": 0,
-    "avg_duration_seconds": 538.998
+    "avg_duration_seconds": 536.623
   }
 }

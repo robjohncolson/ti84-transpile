@@ -1547,6 +1547,10 @@ const EVAL_TOKEN_MAP = {
   '.': 0x3A, '(': 0x10, ')': 0x11,
   'E': 0x3B, '^': 0x0F, ',': 0x2B,
   '\u03C0': 0xAC,
+  '\u2264': 0x6C,  // tLE
+  '\u2265': 0x6E,  // tGE
+  '\u2260': 0x6F,  // tNE
+  '\u2192': 0x04,  // tStore
   '!': 0x2D,   // tFact (postfix factorial)
   '\u00B2': 0x0D,  // x\u00B2 tSqr (postfix square, Unicode superscript 2)
   '\u00B3': 0x0E,  // x\u00B3 tCube (postfix cube, Unicode superscript 3)
@@ -1575,11 +1579,15 @@ const EVAL_TWO_BYTE_TOKENS = [
   ['nderiv',    [0x5E, 0x25]],  // nDeriv(
   ['median',    [0xBB, 0x0F]],  // tMedian
   ['fnint',     [0x5E, 0x24]],  // fnInt(
+  ['prod',      [0xBB, 0x2F]],  // tProd
   ['mean',      [0xBB, 0x0E]],  // tMean
+  ['sum',       [0xBB, 0x30]],  // tSum
+  ['dim',       [0xBB, 0x04]],  // tDim
   ['min',       [0xBB, 0x0C]],  // tMin
   ['max',       [0xBB, 0x0D]],  // tMax
   ['lcm',       [0xBB, 0x06]],  // tLCM
   ['gcd',       [0xBB, 0x07]],  // tGCD
+  ['\u03C3',    [0xBB, 0x30]],  // Σ( alias after lowercase normalization
 ];
 const EVAL_FUNCTION_TOKENS = [
   // Inverse trig (must come before sin/cos/tan to match "sin⁻¹(" first)
@@ -1602,6 +1610,8 @@ const EVAL_FUNCTION_TOKENS = [
   ['abs', 0xB2],
   ['nDeriv(', 0xB0],
   ['fnInt(', 0xB1],
+  ['iPart(', 0xB4],   // tIPart
+  ['fPart(', 0xB5],   // tFPart
   ['Ans', 0x72],
   ['e', 0xBA],
   ['round(', 0x12],   // tRound
@@ -1620,6 +1630,8 @@ const EVAL_MATCH_TOKENS = [
   ['sin^-1', 0xC3],
   ['cos^-1', 0xC5],
   ['tan^-1', 0xC7],
+  ['ipart', 0xB4],
+  ['fpart', 0xB5],
   ['round', 0x12],
   ['sqrt', 0xBC],
   ['sinh', 0xC8],
@@ -1640,6 +1652,11 @@ const EVAL_MATCH_TOKENS = [
   ['ncr', 0x95],
   ['nderiv', 0xB0],
   ['fnint', 0xB1],
+  ['<=', 0x6C],
+  ['>=', 0x6E],
+  ['!=', 0x6F],
+  ['<>', 0x6F],
+  ['->', 0x04],
   ['ans', 0x72],
   ['ee', 0x3B],
   ['ln', 0xBE],
