@@ -2479,15 +2479,72 @@
         "TI-84_Plus_CE/probe-phase186-call-target-trace.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "5072813938f1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 186 \u2014 P1: Trace JError CALL chain SP values for ParseInp fix\n\n## Context\nThe TI-84 Pl",
+      "status": "timeout",
+      "duration_seconds": 900.044,
+      "timestamp": "2026-05-05T00:17:42Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "49729b21fe83",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 186 \u2014 P3: Dump full ConvKeyToTok ROM table at 0x05BF84\n\n## Context\nThe TI-84 Plus CE ",
+      "status": "timeout",
+      "duration_seconds": 900.05,
+      "timestamp": "2026-05-05T00:17:46Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6f21b3aa28b9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 187 P2 \u2014 Static Disassembly of Inline Code Between Home Handler CALLs\n\n## Context\n\nTh",
+      "status": "completed",
+      "duration_seconds": 641.092,
+      "timestamp": "2026-05-05T02:13:29Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8b7294dabde8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 187 P1 \u2014 PC Intercept at 0x03E1B1 to Fix JError z80-mode RET\n\n## Context\n\nThe TI-84 P",
+      "status": "completed",
+      "duration_seconds": 760.669,
+      "timestamp": "2026-05-05T02:15:26Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2158b61593dd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 187 P3 \u2014 STAT Key Dispatch Lookup in Home Handler\n\n## Context\n\nThe TI-84 Plus CE home",
+      "status": "completed",
+      "duration_seconds": 833.57,
+      "timestamp": "2026-05-05T02:16:42Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase187-stat-key-dispatch.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 192,
-    "cc_to_codex": 192,
+    "total_calls": 197,
+    "cc_to_codex": 197,
     "codex_to_cc": 0,
-    "completed": 144,
-    "failed": 42,
+    "completed": 147,
+    "failed": 44,
     "refused": 0,
-    "avg_duration_seconds": 532.016
+    "avg_duration_seconds": 538.998
   }
 }
