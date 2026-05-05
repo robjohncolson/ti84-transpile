@@ -1560,15 +1560,21 @@ for (let code = 0x41; code <= 0x5A; code++) {
   EVAL_TOKEN_MAP[upper] = code;
   if (upper !== 'E') EVAL_TOKEN_MAP[upper.toLowerCase()] = code;
 }
-// Reserve uppercase E for scientific notation; lowercase e stays unmapped.
+// Reserve uppercase E for scientific notation; standalone lowercase e is
+// expanded in tokenizeExpression() as e^(1).
 EVAL_TOKEN_MAP.E = 0x3B;
 // TI-OS negation token (distinct from subtraction)
 const TI_NEGATE_TOKEN = 0xB0;
-// Two-byte tokens (0xBB prefix): sorted longest-first for prefix safety
+// Standalone lowercase e is encoded as e^(1) because the shell reserves
+// uppercase E for scientific notation.
+const EVAL_E_CONSTANT_TOKENS = [0xBF, 0x10, 0x31, 0x11];
+// Two-byte function tokens: sorted longest-first for prefix safety
 const EVAL_TWO_BYTE_TOKENS = [
   ['remainder', [0xBB, 0x3B]],  // tRemainder
   ['randint',   [0xBB, 0x11]],  // tRandInt
+  ['nderiv',    [0x5E, 0x25]],  // nDeriv(
   ['median',    [0xBB, 0x0F]],  // tMedian
+  ['fnint',     [0x5E, 0x24]],  // fnInt(
   ['mean',      [0xBB, 0x0E]],  // tMean
   ['min',       [0xBB, 0x0C]],  // tMin
   ['max',       [0xBB, 0x0D]],  // tMax
@@ -1594,6 +1600,10 @@ const EVAL_FUNCTION_TOKENS = [
   ['log', 0xC0],
   ['ln', 0xBE],
   ['abs', 0xB2],
+  ['nDeriv(', 0xB0],
+  ['fnInt(', 0xB1],
+  ['Ans', 0x72],
+  ['e', 0xBA],
   ['round(', 0x12],   // tRound
   ['int(', 0xB1],     // tInt
   // Binary combinatoric operators
@@ -1628,9 +1638,13 @@ const EVAL_MATCH_TOKENS = [
   ['int', 0xB1],
   ['npr', 0x94],
   ['ncr', 0x95],
+  ['nderiv', 0xB0],
+  ['fnint', 0xB1],
+  ['ans', 0x72],
   ['ee', 0x3B],
   ['ln', 0xBE],
   ['abs', 0xB2],
+  ['e', 0xBA],
 ].sort((a, b) => b[0].length - a[0].length);
 
 const EVAL_MEMINIT_ENTRY   = 0x09DEE0;
@@ -1692,6 +1706,7 @@ let evalCachedPostCreateOpBase = 0;
 const evalVarStore = new Map();
 // Last Ans BCD for re-creation during variable rebuild
 let evalLastAnsBcd = null;
+let Ans = 0;
 
 function evalWrite24(mem, addr, val) {
   mem[addr]     =  val        & 0xFF;
@@ -1861,8 +1876,8 @@ function tokenizeExpression(expr) {
       continue;
     }
 
-    // Two-byte tokens (0xBB prefix): longest match first
-    // These are function tokens with implicit open paren — match "name(" and emit [0xBB, id]
+    // Two-byte function tokens: longest match first.
+    // Match "name(" and emit the exact two-byte token pair.
     let matchedTwoByte = false;
     for (const [name, bytes] of EVAL_TWO_BYTE_TOKENS) {
       if (lowerRemaining.startsWith(name + '(')) {
@@ -1885,13 +1900,24 @@ function tokenizeExpression(expr) {
     }
     if (matchedFunction) continue;
 
+    if (ch === 'e') {
+      const prevCh = i > 0 ? expr[i - 1] : '';
+      const nextCh = i + 1 < expr.length ? expr[i + 1] : '';
+      const prevIsWord = /[A-Za-z0-9_]/.test(prevCh);
+      const nextIsWord = /[A-Za-z0-9_]/.test(nextCh);
+      if (!prevIsWord && !nextIsWord) {
+        tokens.push(...EVAL_E_CONSTANT_TOKENS);
+        continue;
+      }
+    }
+
     // Handle negation: '-' is negation when it's at the start,
     // after '(', or after an operator
     if (ch === '-') {
       const prev = tokens.length > 0 ? tokens[tokens.length - 1] : null;
-      // For two-byte tokens, the last pushed byte is the second byte (after 0xBB)
-      // We check against known second bytes of two-byte function tokens
-      const isTwoByteFunc = tokens.length >= 2 && tokens[tokens.length - 2] === 0xBB;
+      // For two-byte function tokens, the last pushed byte is the second byte.
+      const isTwoByteFunc = tokens.length >= 2
+        && (tokens[tokens.length - 2] === 0xBB || tokens[tokens.length - 2] === 0x5E);
       const isNegation = prev === null
         || prev === 0x70  // +
         || prev === 0x71  // -
@@ -2077,6 +2103,23 @@ function evalInsertViaBuffer(tokens, mem, ex, c) {
   evalWrite24(mem, EVAL_ENDPC_ADDR, EVAL_EDIT_BUF_START + preGapLen - 1);
 
   return { ok: true };
+}
+
+function nDeriv(expr, variable, value, h) {
+  if (h === undefined) h = 0.001;
+  const f = new Function(variable, 'return ' + expr);
+  return (f(value + h) - f(value - h)) / (2 * h);
+}
+
+function fnInt(expr, variable, a, b, n) {
+  if (n === undefined) n = 1000;
+  const f = new Function(variable, 'return ' + expr);
+  const dx = (b - a) / n;
+  let sum = 0;
+  for (let i = 0; i < n; i++) {
+    sum += f(a + (i + 0.5) * dx);
+  }
+  return sum * dx;
 }
 
 function runDirectEval(expr, useBuffer = false) {
@@ -2344,6 +2387,8 @@ function runDirectEval(expr, useBuffer = false) {
       evalCachedPostCreateOpBase = evalRead24(mem, EVAL_OPBASE_ADDR);
     }
   }
+
+  Ans = val;
 
   return {
     value: val,
