@@ -2830,15 +2830,126 @@
       "timestamp": "2026-05-06T02:17:37Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "1f20a44e90c4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 196 P1: Add 0x0584A3 as transpiler seed + test Copy9\u2192BufInsert path\n\n## Context\nSessi",
+      "status": "completed",
+      "duration_seconds": 503.474,
+      "timestamp": "2026-05-06T04:11:14Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase196-seed-0584a3.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "5fae8a664b85",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 196 P3: Y= editor row label investigation \u2014 what controls Y1=, Y2=, etc.\n\n## Context\n",
+      "status": "completed",
+      "duration_seconds": 779.781,
+      "timestamp": "2026-05-06T04:15:54Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase196-yeq-row-labels.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "f040f08ca819",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 196 P2: Inspect transpiled block 0x092263 \u2014 LDDR BC overwrite investigation\n\n## Conte",
+      "status": "completed",
+      "duration_seconds": 835.029,
+      "timestamp": "2026-05-06T04:16:48Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase196-lddr-block-inspect.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "a6f0b978245e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 197 P2: Trace upstream caller that pushes BC before LDDR subroutine at 0x09224B\n\n## C",
+      "status": "completed",
+      "duration_seconds": 389.319,
+      "timestamp": "2026-05-06T06:09:04Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase197-stat-caller-trace.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "a88f2ce37029",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 197 P1: Extend KeyClassifier dispatch trace to 1000 steps\n\n## Context\n\nIn session 196",
+      "status": "completed",
+      "duration_seconds": 405.514,
+      "timestamp": "2026-05-06T06:09:15Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "223c634b3879",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 197 P3: Trace 0x0A1799 renderer to decode Y= label selection\n\n## Context\n\nIn session ",
+      "status": "timeout",
+      "duration_seconds": 900.048,
+      "timestamp": "2026-05-06T06:17:36Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "bb118e9a5477",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Y= screen update loop 0x0A1B59 with varying counter values \u2014 row selection logic\n\n## Context",
+      "status": "completed",
+      "duration_seconds": 513.44,
+      "timestamp": "2026-05-06T08:11:08Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase198-yeq-loop-entry.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "b1a795b28623",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Read ROM at 0x0008E6 and decode the STAT LDDR byte count source\n\n## Context\nIn the TI-84 Plu",
+      "status": "completed",
+      "duration_seconds": 681.306,
+      "timestamp": "2026-05-06T08:13:55Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3940d4d6deae",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Find OS main loop caller of 0x0584A3 and test dispatch with proper stack\n\n## Context\nIn the ",
+      "status": "completed",
+      "duration_seconds": 849.409,
+      "timestamp": "2026-05-06T08:16:41Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase198-caller-dispatch.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 221,
-    "cc_to_codex": 221,
+    "total_calls": 230,
+    "cc_to_codex": 230,
     "codex_to_cc": 0,
-    "completed": 169,
-    "failed": 46,
+    "completed": 177,
+    "failed": 47,
     "refused": 0,
-    "avg_duration_seconds": 540.231
+    "avg_duration_seconds": 544.558
   }
 }
