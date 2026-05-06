@@ -3074,15 +3074,52 @@
         "TI-84_Plus_CE/probe-phase202-stat-bc-stack-trace.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "6b8721c42654",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 202 P1: Digit Token Dispatch Path \u2014 Which BufInsert Call Site Handles Digits?\n\n## Con",
+      "status": "timeout",
+      "duration_seconds": 900.045,
+      "timestamp": "2026-05-06T18:17:32Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e59ed386794e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 203 P1: Investigate 0x09927F Internal Structure\n\n## Context\nIn the TI-84 Plus CE ROM ",
+      "status": "completed",
+      "duration_seconds": 568.794,
+      "timestamp": "2026-05-06T20:11:36Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase203-09927f-internal.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "5448ddb955d0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 203 P2: STAT Probe with List Data at 0xD01600\n\n## Context\nIn the TI-84 Plus CE ROM tr",
+      "status": "completed",
+      "duration_seconds": 641.564,
+      "timestamp": "2026-05-06T20:12:51Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase203-stat-near-seed.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 241,
-    "cc_to_codex": 241,
+    "total_calls": 244,
+    "cc_to_codex": 244,
     "codex_to_cc": 0,
-    "completed": 188,
-    "failed": 47,
+    "completed": 190,
+    "failed": 48,
     "refused": 0,
-    "avg_duration_seconds": 545.146
+    "avg_duration_seconds": 547.092
   }
 }

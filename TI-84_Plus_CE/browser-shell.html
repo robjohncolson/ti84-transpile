@@ -1579,6 +1579,7 @@ const TI_NEGATE_TOKEN = 0xB0;
 const EVAL_E_CONSTANT_TOKENS = [0xBF, 0x10, 0x31, 0x11];
 // Two-byte function tokens: sorted longest-first for prefix safety
 const EVAL_TWO_BYTE_TOKENS = [
+  ['piecewise', [0xBB, 0x2E]],  // tPiecewise
   ['remainder', [0xBB, 0x3B]],  // tRemainder
   ['logbase',   [0xBB, 0x34]],  // tLogBase (2-arg log: logBASE(value,base))
   ['randint',   [0xBB, 0x11]],  // tRandInt
@@ -1586,6 +1587,7 @@ const EVAL_TWO_BYTE_TOKENS = [
   ['nderiv',    [0x5E, 0x25]],  // nDeriv(
   ['median',    [0xBB, 0x0F]],  // tMedian
   ['fnint',     [0x5E, 0x24]],  // fnInt(
+  ['solve',     [0xBB, 0x36]],  // tSolve
   ['prod',      [0xBB, 0x2F]],  // tProd
   ['mean',      [0xBB, 0x0E]],  // tMean
   ['seq',       [0xBB, 0x23]],  // tSeq
@@ -1595,7 +1597,7 @@ const EVAL_TWO_BYTE_TOKENS = [
   ['max',       [0xBB, 0x0D]],  // tMax
   ['lcm',       [0xBB, 0x06]],  // tLCM
   ['gcd',       [0xBB, 0x07]],  // tGCD
-  ['\u03C3',    [0xBB, 0x30]],  // Σ( alias after lowercase normalization
+  ['\u03C3',    [0xBB, 0x35]],  // Σ( alias after lowercase normalization
 ];
 const EVAL_FUNCTION_TOKENS = [
   // Inverse trig (must come before sin/cos/tan to match "sin⁻¹(" first)
@@ -2150,6 +2152,332 @@ function fnInt(expr, variable, a, b, n) {
   return sum * dx;
 }
 
+function summation(expr, variable, start, end) {
+  const f = new Function(variable, 'return ' + expr);
+  let total = 0;
+  for (let i = start; i <= end; i++) {
+    total += f(i);
+  }
+  return total;
+}
+
+function seqEval(expr, variable, start, end, step) {
+  if (step === undefined) step = 1;
+  const f = new Function(variable, 'return ' + expr);
+  const result = [];
+  for (let i = start; i <= end; i += step) {
+    result.push(f(i));
+  }
+  return '{' + result.join(',') + '}';
+}
+
+function solve(expr, variable, guess) {
+  const f = new Function(variable, 'return ' + expr);
+  let x = guess;
+  const h = 1e-8;
+  for (let iter = 0; iter < 200; iter++) {
+    const fx = f(x);
+    if (Math.abs(fx) < 1e-12) return x;
+    const dfx = (f(x + h) - f(x - h)) / (2 * h);
+    if (Math.abs(dfx) < 1e-15) return x;
+    x = x - fx / dfx;
+  }
+  return x;
+}
+
+function piecewise(...args) {
+  // piecewise(expr1, cond1, expr2, cond2, ..., default)
+  // Conditions and expressions are pre-evaluated numbers:
+  // cond != 0 means true.
+  for (let i = 0; i + 1 < args.length; i += 2) {
+    if (args[i + 1]) return args[i];
+  }
+  // Odd number of args: last is the default
+  if (args.length % 2 === 1) return args[args.length - 1];
+  return 0;
+}
+
+function evalFindMatchingParen(text, openIndex) {
+  let depth = 0;
+  for (let i = openIndex; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '(') depth++;
+    if (ch === ')') {
+      depth--;
+      if (depth === 0) return i;
+    }
+  }
+  return -1;
+}
+
+function evalSplitArgs(text) {
+  const args = [];
+  let start = 0;
+  let parenDepth = 0;
+  let bracketDepth = 0;
+  let braceDepth = 0;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '(') parenDepth++;
+    if (ch === ')') parenDepth--;
+    if (ch === '[') bracketDepth++;
+    if (ch === ']') bracketDepth--;
+    if (ch === '{') braceDepth++;
+    if (ch === '}') braceDepth--;
+    if (ch === ',' && parenDepth === 0 && bracketDepth === 0 && braceDepth === 0) {
+      args.push(text.slice(start, i).trim());
+      start = i + 1;
+    }
+  }
+
+  args.push(text.slice(start).trim());
+  return args;
+}
+
+function evalMatchWholeCall(expr, name) {
+  const trimmed = expr.trim();
+  if (!trimmed.toLowerCase().startsWith(name.toLowerCase() + '(')) return null;
+  const openIndex = name.length;
+  const closeIndex = evalFindMatchingParen(trimmed, openIndex);
+  if (closeIndex !== trimmed.length - 1) return null;
+  return trimmed.slice(openIndex + 1, closeIndex);
+}
+
+function evalIsWordChar(ch) {
+  return /[A-Za-z0-9_]/.test(ch || '');
+}
+
+function evalSubstituteVariable(expr, variable, value) {
+  const replacement = formatResult(value);
+  let out = '';
+  for (let i = 0; i < expr.length; ) {
+    const next = expr.slice(i, i + variable.length);
+    const prevCh = i > 0 ? expr[i - 1] : '';
+    const nextCh = i + variable.length < expr.length ? expr[i + variable.length] : '';
+    if (next.toUpperCase() === variable.toUpperCase()
+        && !evalIsWordChar(prevCh)
+        && !evalIsWordChar(nextCh)) {
+      out += replacement;
+      i += variable.length;
+      continue;
+    }
+    out += expr[i];
+    i++;
+  }
+  return out;
+}
+
+function evalReadNumeric(expr, useBuffer) {
+  const result = runDirectEval(expr, useBuffer);
+  if (result.error) return result;
+  if (typeof result.value !== 'number' || !Number.isFinite(result.value)) {
+    return { error: `Expected a numeric result for "${expr}".` };
+  }
+  return result;
+}
+
+function evalReadTemplateVariable(raw) {
+  const variable = raw.trim();
+  if (!/^[A-Za-z]$/.test(variable)) {
+    return { error: `Invalid template variable: "${raw}" (must be A-Z)` };
+  }
+  return { variable: variable.toUpperCase() };
+}
+
+function evalRunSigmaTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 4) {
+    return { error: 'Σ(expr,var,start,end) expects 4 arguments.' };
+  }
+
+  const variableInfo = evalReadTemplateVariable(args[1]);
+  if (variableInfo.error) return variableInfo;
+
+  const startResult = evalReadNumeric(args[2], useBuffer);
+  if (startResult.error) return startResult;
+
+  const endResult = evalReadNumeric(args[3], useBuffer);
+  if (endResult.error) return endResult;
+
+  const start = Math.trunc(startResult.value);
+  const end = Math.trunc(endResult.value);
+  const step = start <= end ? 1 : -1;
+  let total = 0;
+
+  for (let current = start; step > 0 ? current <= end : current >= end; current += step) {
+    const termExpr = evalSubstituteVariable(args[0], variableInfo.variable, current);
+    const termResult = evalReadNumeric(termExpr, useBuffer);
+    if (termResult.error) return termResult;
+    total += termResult.value;
+  }
+
+  return runDirectEval(formatResult(total), useBuffer);
+}
+
+function evalRunSeqTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 4 && args.length !== 5) {
+    return { error: 'seq(expr,var,start,end[,step]) expects 4 or 5 arguments.' };
+  }
+
+  const variableInfo = evalReadTemplateVariable(args[1]);
+  if (variableInfo.error) return variableInfo;
+
+  const startResult = evalReadNumeric(args[2], useBuffer);
+  if (startResult.error) return startResult;
+
+  const endResult = evalReadNumeric(args[3], useBuffer);
+  if (endResult.error) return endResult;
+
+  const stepResult = args.length === 5
+    ? evalReadNumeric(args[4], useBuffer)
+    : { value: startResult.value <= endResult.value ? 1 : -1 };
+  if (stepResult.error) return stepResult;
+  if (stepResult.value === 0) return { error: 'seq() step cannot be 0.' };
+
+  const values = [];
+  const displays = [];
+  let totalSteps = 0;
+  let iterations = 0;
+
+  for (let current = startResult.value;
+       stepResult.value > 0 ? current <= endResult.value : current >= endResult.value;
+       current += stepResult.value) {
+    const termExpr = evalSubstituteVariable(args[0], variableInfo.variable, current);
+    const termResult = runDirectEval(termExpr, useBuffer);
+    if (termResult.error) return termResult;
+    values.push(termResult.value);
+    displays.push(termResult.display ?? formatResult(termResult.value));
+    totalSteps += termResult.steps || 0;
+    iterations++;
+    if (iterations > 10000) return { error: 'seq() exceeded 10000 iterations.' };
+  }
+
+  return {
+    value: values,
+    display: `{${displays.join(', ')}}`,
+    steps: totalSteps,
+    errNo: 0,
+    op1Hex: '',
+    ansStored: false,
+  };
+}
+
+function evalSolveValue(expr, variable, value, useBuffer) {
+  const termExpr = evalSubstituteVariable(expr, variable, value);
+  const termResult = evalReadNumeric(termExpr, useBuffer);
+  if (termResult.error) return termResult;
+  return { value: termResult.value };
+}
+
+function evalRunSolveTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 3) {
+    return { error: 'solve(expr,var,guess) expects 3 arguments.' };
+  }
+
+  const variableInfo = evalReadTemplateVariable(args[1]);
+  if (variableInfo.error) return variableInfo;
+
+  const guessResult = evalReadNumeric(args[2], useBuffer);
+  if (guessResult.error) return guessResult;
+
+  let x = guessResult.value;
+  const tolerance = 1e-10;
+
+  for (let i = 0; i < 24; i++) {
+    const fx = evalSolveValue(args[0], variableInfo.variable, x, useBuffer);
+    if (fx.error) return fx;
+    if (Math.abs(fx.value) < tolerance) {
+      return runDirectEval(formatResult(x), useBuffer);
+    }
+
+    const h = Math.max(1e-6, Math.abs(x) * 1e-6);
+    const plus = evalSolveValue(args[0], variableInfo.variable, x + h, useBuffer);
+    if (plus.error) return plus;
+    const minus = evalSolveValue(args[0], variableInfo.variable, x - h, useBuffer);
+    if (minus.error) return minus;
+
+    const derivative = (plus.value - minus.value) / (2 * h);
+    if (!Number.isFinite(derivative) || Math.abs(derivative) < tolerance) break;
+
+    const next = x - (fx.value / derivative);
+    if (!Number.isFinite(next)) break;
+    if (Math.abs(next - x) < tolerance) {
+      return runDirectEval(formatResult(next), useBuffer);
+    }
+    x = next;
+  }
+
+  for (let width = 1; width <= 1024; width *= 2) {
+    const left = guessResult.value - width;
+    const right = guessResult.value + width;
+    const leftResult = evalSolveValue(args[0], variableInfo.variable, left, useBuffer);
+    if (leftResult.error) return leftResult;
+    const rightResult = evalSolveValue(args[0], variableInfo.variable, right, useBuffer);
+    if (rightResult.error) return rightResult;
+
+    if (leftResult.value === 0) return runDirectEval(formatResult(left), useBuffer);
+    if (rightResult.value === 0) return runDirectEval(formatResult(right), useBuffer);
+    if (leftResult.value * rightResult.value > 0) continue;
+
+    let lo = left;
+    let hi = right;
+    let loValue = leftResult.value;
+
+    for (let i = 0; i < 48; i++) {
+      const mid = (lo + hi) / 2;
+      const midResult = evalSolveValue(args[0], variableInfo.variable, mid, useBuffer);
+      if (midResult.error) return midResult;
+      if (Math.abs(midResult.value) < tolerance) {
+        return runDirectEval(formatResult(mid), useBuffer);
+      }
+      if (loValue * midResult.value <= 0) {
+        hi = mid;
+        continue;
+      }
+      lo = mid;
+      loValue = midResult.value;
+    }
+
+    return runDirectEval(formatResult((lo + hi) / 2), useBuffer);
+  }
+
+  return { error: 'solve() did not converge near the supplied guess.' };
+}
+
+function evalRunPiecewiseTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length < 3 || args.length % 2 === 0) {
+    return { error: 'piecewise(expr1,cond1,...,default) expects condition/value pairs plus a default.' };
+  }
+
+  for (let i = 0; i < args.length - 1; i += 2) {
+    const conditionResult = evalReadNumeric(args[i + 1], useBuffer);
+    if (conditionResult.error) return conditionResult;
+    if (conditionResult.value !== 0) return runDirectEval(args[i], useBuffer);
+  }
+
+  return runDirectEval(args[args.length - 1], useBuffer);
+}
+
+function runDirectEvalTemplate(expr, useBuffer) {
+  const sigmaArgs = evalMatchWholeCall(expr, '\u03A3');
+  if (sigmaArgs !== null) return evalRunSigmaTemplate(sigmaArgs, useBuffer);
+
+  const seqArgs = evalMatchWholeCall(expr, 'seq');
+  if (seqArgs !== null) return evalRunSeqTemplate(seqArgs, useBuffer);
+
+  const solveArgs = evalMatchWholeCall(expr, 'solve');
+  if (solveArgs !== null) return evalRunSolveTemplate(solveArgs, useBuffer);
+
+  const piecewiseArgs = evalMatchWholeCall(expr, 'piecewise');
+  if (piecewiseArgs !== null) return evalRunPiecewiseTemplate(piecewiseArgs, useBuffer);
+
+  return null;
+}
+
 // ── ROM Parser: PushErrorHandler + z80 RET intercept pattern ──────────
 // Uses the proven probe-phase190 approach: BufInsert tokens into the edit
 // buffer, PushErrorHandler with recovery at 0x099929, ParseInp with z80
@@ -2699,6 +3027,9 @@ function runDirectEval(expr, useBuffer = false) {
   }
 
   // Non-STO path: normal expression evaluation
+  const templateResult = runDirectEvalTemplate(expr, useBuffer);
+  if (templateResult) return templateResult;
+
   const { tokens, error } = tokenizeExpression(expr);
   if (error) return { error };
 
