@@ -1580,12 +1580,15 @@ const EVAL_E_CONSTANT_TOKENS = [0xBF, 0x10, 0x31, 0x11];
 // Two-byte function tokens: sorted longest-first for prefix safety
 const EVAL_TWO_BYTE_TOKENS = [
   ['remainder', [0xBB, 0x3B]],  // tRemainder
+  ['logbase',   [0xBB, 0x34]],  // tLogBase (2-arg log: logBASE(value,base))
   ['randint',   [0xBB, 0x11]],  // tRandInt
+  ['cumsum',    [0xBB, 0x29]],  // tCumSum
   ['nderiv',    [0x5E, 0x25]],  // nDeriv(
   ['median',    [0xBB, 0x0F]],  // tMedian
   ['fnint',     [0x5E, 0x24]],  // fnInt(
   ['prod',      [0xBB, 0x2F]],  // tProd
   ['mean',      [0xBB, 0x0E]],  // tMean
+  ['seq',       [0xBB, 0x23]],  // tSeq
   ['sum',       [0xBB, 0x30]],  // tSum
   ['dim',       [0xBB, 0x04]],  // tDim
   ['min',       [0xBB, 0x0C]],  // tMin
@@ -1620,6 +1623,7 @@ const EVAL_FUNCTION_TOKENS = [
   ['Ans', 0x72],
   ['e', 0xBA],
   ['round(', 0x12],   // tRound
+  ['augment(', 0x14], // tAug
   ['int(', 0xB1],     // tInt
   // Binary combinatoric operators
   ['nPr', 0x94],      // tnPr
@@ -1635,6 +1639,7 @@ const EVAL_MATCH_TOKENS = [
   ['sin^-1', 0xC3],
   ['cos^-1', 0xC5],
   ['tan^-1', 0xC7],
+  ['augment', 0x14],
   ['ipart', 0xB4],
   ['fpart', 0xB5],
   ['round', 0x12],
@@ -1963,6 +1968,7 @@ function tokenizeExpression(expr) {
         || prev === 0xCC  // tanh
         || prev === 0xC1  // 10^
         || prev === 0x12  // round
+        || prev === 0x14  // augment
         || prev === 0xB1  // int
         || prev === 0x94  // nPr
         || prev === 0x95  // nCr

@@ -3013,15 +3013,76 @@
       "timestamp": "2026-05-06T12:13:45Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "b8f70c92e381",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 201 P1: Extended bit-5-SET dispatch trace (500+ steps)\n\n## Context\nThis is a TI-84 Pl",
+      "status": "completed",
+      "duration_seconds": 320.272,
+      "timestamp": "2026-05-06T14:07:48Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase201-bit5-extended-trace.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "01be911fe11b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 201 P2: Find SET 5,(IY+68) site + test 0x08C2AD dispatch\n\n## Context\nThis is a TI-84 ",
+      "status": "completed",
+      "duration_seconds": 478.918,
+      "timestamp": "2026-05-06T14:10:28Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "aa0d2a1ed84b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 201 P3: Decode BC=5 at 0xD008F0 for STAT handler\n\n## Context\nThis is a TI-84 Plus CE ",
+      "status": "completed",
+      "duration_seconds": 527.648,
+      "timestamp": "2026-05-06T14:11:18Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase201-stat-d008f0-decode.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "31e58a5ffa4f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 202 P3: Direct-Eval Token Expansion \u2014 \u03a3(, cumSum, seq(, solve(, augment(\n\n## Context\n",
+      "status": "completed",
+      "duration_seconds": 494.958,
+      "timestamp": "2026-05-06T18:10:50Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e6b226ab0374",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 202 P2: STAT LDDR BC=0xEAF5 Stack Corruption \u2014 Trace the Push Chain\n\n## Context\nIn th",
+      "status": "completed",
+      "duration_seconds": 593.293,
+      "timestamp": "2026-05-06T18:12:28Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase202-stat-bc-stack-trace.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 236,
-    "cc_to_codex": 236,
+    "total_calls": 241,
+    "cc_to_codex": 241,
     "codex_to_cc": 0,
-    "completed": 183,
+    "completed": 188,
     "failed": 47,
     "refused": 0,
-    "avg_duration_seconds": 546.462
+    "avg_duration_seconds": 545.146
   }
 }
