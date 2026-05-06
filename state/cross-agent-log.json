@@ -2941,15 +2941,87 @@
         "TI-84_Plus_CE/probe-phase198-caller-dispatch.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "5fb14cc3b12d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 199, Priority 2: STAT Write-Watch on RAM 0xD008E6\n\n## Context\n\nSession 198 discovered",
+      "status": "completed",
+      "duration_seconds": 444.769,
+      "timestamp": "2026-05-06T10:09:37Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase199-stat-write-watch.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "c7d35ce366b0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 199, Priority 3: Y= Counter=0x19 Extra 11 Blocks Investigation\n\n## Context\n\nSession 1",
+      "status": "completed",
+      "duration_seconds": 553.686,
+      "timestamp": "2026-05-06T10:11:27Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase199-yeq-init-blocks.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "3a36eb0572d4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 199, Priority 1: Key Dispatch Extended Step Limit (2000-5000 steps)\n\n## Context\n\nSess",
+      "status": "completed",
+      "duration_seconds": 838.026,
+      "timestamp": "2026-05-06T10:16:08Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase199-dispatch-extended.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "71ad795b137e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 200 \u2014 P3: Integrate ParseInp arithmetic into browser-shell\n\n## Context\n\nWe're transpi",
+      "status": "completed",
+      "duration_seconds": 567.332,
+      "timestamp": "2026-05-06T12:11:57Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "23c4bb462bf0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 200 \u2014 P2: Disassemble block 0x09201E to understand the 0x0017 constant (STAT)\n\n## Con",
+      "status": "completed",
+      "duration_seconds": 634.314,
+      "timestamp": "2026-05-06T12:13:02Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "33963b2f5fa1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 200 \u2014 P1: Investigate BIT 5,IY+68 at 0x0584C1 (key dispatch alternate path)\n\n## Conte",
+      "status": "completed",
+      "duration_seconds": 678.585,
+      "timestamp": "2026-05-06T12:13:45Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 230,
-    "cc_to_codex": 230,
+    "total_calls": 236,
+    "cc_to_codex": 236,
     "codex_to_cc": 0,
-    "completed": 177,
+    "completed": 183,
     "failed": 47,
     "refused": 0,
-    "avg_duration_seconds": 544.558
+    "avg_duration_seconds": 546.462
   }
 }
