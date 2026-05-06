@@ -1580,13 +1580,24 @@ const EVAL_E_CONSTANT_TOKENS = [0xBF, 0x10, 0x31, 0x11];
 // Two-byte function tokens: sorted longest-first for prefix safety
 const EVAL_TWO_BYTE_TOKENS = [
   ['piecewise', [0xBB, 0x2E]],  // tPiecewise
+  ['normalcdf', [0xBB, 0x01]],  // tNormalCdf
+  ['normalpdf', [0xBB, 0x00]],  // tNormalPdf
+  ['geometpdf', [0xBB, 0x0C]],  // tGeometPdf
+  ['geometcdf', [0xBB, 0x0D]],  // tGeometCdf
   ['remainder', [0xBB, 0x3B]],  // tRemainder
+  ['binompdf', [0xBB, 0x0A]],  // tBinomPdf
+  ['binomcdf', [0xBB, 0x0B]],  // tBinomCdf
+  ['variance', [0xBB, 0x05]],  // tVariance
   ['logbase',   [0xBB, 0x34]],  // tLogBase (2-arg log: logBASE(value,base))
   ['randint',   [0xBB, 0x11]],  // tRandInt
+  ['invnorm',   [0xBB, 0x02]],  // tInvNorm
   ['cumsum',    [0xBB, 0x29]],  // tCumSum
+  ['stddev',    [0xBB, 0x04]],  // tStdDev
   ['nderiv',    [0x5E, 0x25]],  // nDeriv(
   ['median',    [0xBB, 0x0F]],  // tMedian
   ['fnint',     [0x5E, 0x24]],  // fnInt(
+  ['sorta',     [0xBB, 0xE3]],  // tSortA
+  ['sortd',     [0xBB, 0xE4]],  // tSortD
   ['solve',     [0xBB, 0x36]],  // tSolve
   ['prod',      [0xBB, 0x2F]],  // tProd
   ['mean',      [0xBB, 0x0E]],  // tMean
@@ -1618,6 +1629,7 @@ const EVAL_FUNCTION_TOKENS = [
   ['log', 0xC0],
   ['ln', 0xBE],
   ['abs', 0xB2],
+  ['not(', 0xB8],     // tNot
   ['nDeriv(', 0xB0],
   ['fnInt(', 0xB1],
   ['iPart(', 0xB4],   // tIPart
@@ -1669,6 +1681,8 @@ const EVAL_MATCH_TOKENS = [
   ['!=', 0x6F],
   ['<>', 0x6F],
   ['->', 0x04],
+  ['not', 0xB8],
+  ['xor', 0x3D],
   ['ans', 0x72],
   ['ee', 0x3B],
   ['ln', 0xBE],
@@ -1971,6 +1985,7 @@ function tokenizeExpression(expr) {
         || prev === 0xC1  // 10^
         || prev === 0x12  // round
         || prev === 0x14  // augment
+        || prev === 0xB8  // not
         || prev === 0xB1  // int
         || prev === 0x94  // nPr
         || prev === 0x95  // nCr
@@ -2196,6 +2211,178 @@ function piecewise(...args) {
   if (args.length % 2 === 1) return args[args.length - 1];
   return 0;
 }
+
+// ---- Statistical distribution helpers (AP Stats) ----
+
+// Error function approximation (Abramowitz & Stegun 7.1.26, max error ~1.5e-7)
+function _erf(x) {
+  const sign = x < 0 ? -1 : 1;
+  const t = 1 / (1 + 0.3275911 * Math.abs(x));
+  const poly = t * (0.254829592 + t * (-0.284496736 + t * (1.421413741
+    + t * (-1.453152027 + t * 1.061405429))));
+  return sign * (1 - poly * Math.exp(-x * x));
+}
+
+// Standard normal CDF: Phi(z)
+function _stdNormalCdf(z) {
+  return 0.5 * (1 + _erf(z / Math.SQRT2));
+}
+
+// normalcdf(lower, upper, mu, sigma) — area under normal curve
+function _normalcdf(lower, upper, mu, sigma) {
+  if (mu === undefined) mu = 0;
+  if (sigma === undefined) sigma = 1;
+  const zLow = (lower - mu) / sigma;
+  const zHigh = (upper - mu) / sigma;
+  return _stdNormalCdf(zHigh) - _stdNormalCdf(zLow);
+}
+
+// normalpdf(x, mu, sigma) — normal density
+function _normalpdf(x, mu, sigma) {
+  if (mu === undefined) mu = 0;
+  if (sigma === undefined) sigma = 1;
+  const z = (x - mu) / sigma;
+  return Math.exp(-0.5 * z * z) / (sigma * Math.sqrt(2 * Math.PI));
+}
+
+// invNorm(area, mu, sigma) — inverse normal via rational approximation + Newton refinement
+function _invNorm(area, mu, sigma) {
+  if (mu === undefined) mu = 0;
+  if (sigma === undefined) sigma = 1;
+  if (area <= 0 || area >= 1) return NaN;
+
+  // Rational approximation for standard normal quantile (Peter Acklam's algorithm)
+  const a = [-3.969683028665376e+01, 2.209460984245205e+02,
+    -2.759285104469687e+02, 1.383577518672690e+02,
+    -3.066479806614716e+01, 2.506628277459239e+00];
+  const b = [-5.447609879822406e+01, 1.615858368580409e+02,
+    -1.556989798598866e+02, 6.680131188771972e+01,
+    -1.328068155288572e+01];
+  const c = [-7.784894002430293e-03, -3.223964580411365e-01,
+    -2.400758277161838e+00, -2.549732539343734e+00,
+    4.374664141464968e+00, 2.938163982698783e+00];
+  const d = [7.784695709041462e-03, 3.224671290700398e-01,
+    2.445134137142996e+00, 3.754408661907416e+00];
+
+  const pLow = 0.02425;
+  const pHigh = 1 - pLow;
+  let z;
+
+  if (area < pLow) {
+    const q = Math.sqrt(-2 * Math.log(area));
+    z = (((((c[0]*q + c[1])*q + c[2])*q + c[3])*q + c[4])*q + c[5])
+      / ((((d[0]*q + d[1])*q + d[2])*q + d[3])*q + 1);
+  } else if (area <= pHigh) {
+    const q = area - 0.5;
+    const r = q * q;
+    z = (((((a[0]*r + a[1])*r + a[2])*r + a[3])*r + a[4])*r + a[5]) * q
+      / (((((b[0]*r + b[1])*r + b[2])*r + b[3])*r + b[4])*r + 1);
+  } else {
+    const q = Math.sqrt(-2 * Math.log(1 - area));
+    z = -(((((c[0]*q + c[1])*q + c[2])*q + c[3])*q + c[4])*q + c[5])
+      / ((((d[0]*q + d[1])*q + d[2])*q + d[3])*q + 1);
+  }
+
+  // Newton refinement (2 iterations for ~15-digit accuracy)
+  for (let i = 0; i < 2; i++) {
+    const phi = _stdNormalCdf(z);
+    const pdf = Math.exp(-0.5 * z * z) / Math.sqrt(2 * Math.PI);
+    z = z - (phi - area) / pdf;
+  }
+
+  return mu + sigma * z;
+}
+
+// Binomial coefficient C(n, k)
+function _binomCoeff(n, k) {
+  if (k < 0 || k > n) return 0;
+  if (k === 0 || k === n) return 1;
+  if (k > n - k) k = n - k;
+  let result = 1;
+  for (let i = 0; i < k; i++) {
+    result = result * (n - i) / (i + 1);
+  }
+  return result;
+}
+
+// binompdf(n, p, x) — if x omitted, return list for all x 0..n
+function _binompdf(n, p, x) {
+  n = Math.round(n);
+  if (x === undefined) {
+    const result = [];
+    for (let i = 0; i <= n; i++) {
+      result.push(_binomCoeff(n, i) * Math.pow(p, i) * Math.pow(1 - p, n - i));
+    }
+    return result;
+  }
+  x = Math.round(x);
+  return _binomCoeff(n, x) * Math.pow(p, x) * Math.pow(1 - p, n - x);
+}
+
+// binomcdf(n, p, x) — cumulative: sum of binompdf(n,p,0)..binompdf(n,p,x)
+function _binomcdf(n, p, x) {
+  n = Math.round(n);
+  x = Math.round(x);
+  let sum = 0;
+  for (let i = 0; i <= x; i++) {
+    sum += _binomCoeff(n, i) * Math.pow(p, i) * Math.pow(1 - p, n - i);
+  }
+  return sum;
+}
+
+// geometpdf(p, x) — P(X=x) for geometric distribution (first success on trial x)
+function _geometpdf(p, x) {
+  x = Math.round(x);
+  return Math.pow(1 - p, x - 1) * p;
+}
+
+// geometcdf(p, x) — P(X <= x) = 1 - (1-p)^x
+function _geometcdf(p, x) {
+  x = Math.round(x);
+  return 1 - Math.pow(1 - p, x);
+}
+
+// ---- List statistics helpers ----
+
+// Parse a list from a string like "{1,2,3}" or a JS array
+function _parseList(val) {
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'string') {
+    const trimmed = val.trim().replace(/^\{/, '').replace(/\}$/, '');
+    return trimmed.split(',').map(s => parseFloat(s.trim()));
+  }
+  return [val];
+}
+
+function _listMean(arr) {
+  let sum = 0;
+  for (let i = 0; i < arr.length; i++) sum += arr[i];
+  return sum / arr.length;
+}
+
+// stdDev(list) — population standard deviation
+function _stdDev(arr) {
+  const mu = _listMean(arr);
+  let sumSq = 0;
+  for (let i = 0; i < arr.length; i++) {
+    const d = arr[i] - mu;
+    sumSq += d * d;
+  }
+  return Math.sqrt(sumSq / arr.length);
+}
+
+// variance(list) — population variance
+function _variance(arr) {
+  const mu = _listMean(arr);
+  let sumSq = 0;
+  for (let i = 0; i < arr.length; i++) {
+    const d = arr[i] - mu;
+    sumSq += d * d;
+  }
+  return sumSq / arr.length;
+}
+
+// ---- End statistical distribution helpers ----
 
 function evalFindMatchingParen(text, openIndex) {
   let depth = 0;
@@ -2462,6 +2649,207 @@ function evalRunPiecewiseTemplate(argText, useBuffer) {
   return runDirectEval(args[args.length - 1], useBuffer);
 }
 
+// ---- Statistical distribution template handlers ----
+
+function evalRunNormalcdfTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length < 2 || args.length > 4) {
+    return { error: 'normalcdf(lower,upper[,\u03BC,\u03C3]) expects 2-4 arguments.' };
+  }
+  const vals = [];
+  for (const a of args) {
+    const r = evalReadNumeric(a, useBuffer);
+    if (r.error) return r;
+    vals.push(r.value);
+  }
+  const result = _normalcdf(vals[0], vals[1], vals[2], vals[3]);
+  return runDirectEval(formatResult(result), useBuffer);
+}
+
+function evalRunInvNormTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length < 1 || args.length > 3) {
+    return { error: 'invNorm(area[,\u03BC,\u03C3]) expects 1-3 arguments.' };
+  }
+  const vals = [];
+  for (const a of args) {
+    const r = evalReadNumeric(a, useBuffer);
+    if (r.error) return r;
+    vals.push(r.value);
+  }
+  const result = _invNorm(vals[0], vals[1], vals[2]);
+  if (!Number.isFinite(result)) return { error: 'invNorm: area must be between 0 and 1 (exclusive).' };
+  return runDirectEval(formatResult(result), useBuffer);
+}
+
+function evalRunNormalpdfTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length < 1 || args.length > 3) {
+    return { error: 'normalpdf(x[,\u03BC,\u03C3]) expects 1-3 arguments.' };
+  }
+  const vals = [];
+  for (const a of args) {
+    const r = evalReadNumeric(a, useBuffer);
+    if (r.error) return r;
+    vals.push(r.value);
+  }
+  const result = _normalpdf(vals[0], vals[1], vals[2]);
+  return runDirectEval(formatResult(result), useBuffer);
+}
+
+function evalRunBinompdfTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length < 2 || args.length > 3) {
+    return { error: 'binompdf(n,p[,x]) expects 2-3 arguments.' };
+  }
+  const vals = [];
+  for (const a of args) {
+    const r = evalReadNumeric(a, useBuffer);
+    if (r.error) return r;
+    vals.push(r.value);
+  }
+  if (args.length === 2) {
+    // Return list of all probabilities
+    const list = _binompdf(vals[0], vals[1]);
+    const displays = list.map(v => formatResult(v));
+    return {
+      value: list,
+      display: `{${displays.join(', ')}}`,
+      steps: 0,
+      errNo: 0,
+      op1Hex: '',
+      ansStored: false,
+    };
+  }
+  const result = _binompdf(vals[0], vals[1], vals[2]);
+  return runDirectEval(formatResult(result), useBuffer);
+}
+
+function evalRunBinomcdfTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 3) {
+    return { error: 'binomcdf(n,p,x) expects 3 arguments.' };
+  }
+  const vals = [];
+  for (const a of args) {
+    const r = evalReadNumeric(a, useBuffer);
+    if (r.error) return r;
+    vals.push(r.value);
+  }
+  const result = _binomcdf(vals[0], vals[1], vals[2]);
+  return runDirectEval(formatResult(result), useBuffer);
+}
+
+function evalRunGeometpdfTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 2) {
+    return { error: 'geometpdf(p,x) expects 2 arguments.' };
+  }
+  const vals = [];
+  for (const a of args) {
+    const r = evalReadNumeric(a, useBuffer);
+    if (r.error) return r;
+    vals.push(r.value);
+  }
+  const result = _geometpdf(vals[0], vals[1]);
+  return runDirectEval(formatResult(result), useBuffer);
+}
+
+function evalRunGeometcdfTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 2) {
+    return { error: 'geometcdf(p,x) expects 2 arguments.' };
+  }
+  const vals = [];
+  for (const a of args) {
+    const r = evalReadNumeric(a, useBuffer);
+    if (r.error) return r;
+    vals.push(r.value);
+  }
+  const result = _geometcdf(vals[0], vals[1]);
+  return runDirectEval(formatResult(result), useBuffer);
+}
+
+function evalRunListStatTemplate(argText, useBuffer, statFn) {
+  // Argument is a list: either {1,2,3} or a single expression that returns a list
+  const trimmed = argText.trim();
+  let values;
+
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    // Parse list literal: evaluate each element
+    const inner = trimmed.slice(1, -1);
+    const elems = evalSplitArgs(inner);
+    values = [];
+    for (const e of elems) {
+      const r = evalReadNumeric(e, useBuffer);
+      if (r.error) return r;
+      values.push(r.value);
+    }
+  } else {
+    // Try evaluating as an expression that returns a list
+    const r = runDirectEval(trimmed, useBuffer);
+    if (r.error) return r;
+    if (Array.isArray(r.value)) {
+      values = r.value;
+    } else {
+      return { error: 'Expected a list argument.' };
+    }
+  }
+
+  if (values.length === 0) return { error: 'List is empty.' };
+  const result = statFn(values);
+  return runDirectEval(formatResult(result), useBuffer);
+}
+
+function evalRunNotTemplate(argText, useBuffer) {
+  const r = evalReadNumeric(argText.trim(), useBuffer);
+  if (r.error) return r;
+  const result = r.value === 0 ? 1 : 0;
+  return runDirectEval(formatResult(result), useBuffer);
+}
+
+function evalRunSortTemplate(argText, useBuffer, ascending) {
+  const trimmed = argText.trim();
+  let values;
+
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    const inner = trimmed.slice(1, -1);
+    const elems = evalSplitArgs(inner);
+    values = [];
+    for (const e of elems) {
+      const r = evalReadNumeric(e, useBuffer);
+      if (r.error) return r;
+      values.push(r.value);
+    }
+  } else {
+    const r = runDirectEval(trimmed, useBuffer);
+    if (r.error) return r;
+    if (Array.isArray(r.value)) {
+      values = r.value.slice();
+    } else {
+      return { error: 'Expected a list argument.' };
+    }
+  }
+
+  if (ascending) {
+    values.sort((a, b) => a - b);
+  } else {
+    values.sort((a, b) => b - a);
+  }
+
+  const displays = values.map(v => formatResult(v));
+  return {
+    value: values,
+    display: `{${displays.join(', ')}}`,
+    steps: 0,
+    errNo: 0,
+    op1Hex: '',
+    ansStored: false,
+  };
+}
+
+// ---- End statistical distribution template handlers ----
+
 function runDirectEvalTemplate(expr, useBuffer) {
   const sigmaArgs = evalMatchWholeCall(expr, '\u03A3');
   if (sigmaArgs !== null) return evalRunSigmaTemplate(sigmaArgs, useBuffer);
@@ -2474,6 +2862,46 @@ function runDirectEvalTemplate(expr, useBuffer) {
 
   const piecewiseArgs = evalMatchWholeCall(expr, 'piecewise');
   if (piecewiseArgs !== null) return evalRunPiecewiseTemplate(piecewiseArgs, useBuffer);
+
+  // Statistical distribution functions (AP Stats)
+  const normalcdfArgs = evalMatchWholeCall(expr, 'normalcdf');
+  if (normalcdfArgs !== null) return evalRunNormalcdfTemplate(normalcdfArgs, useBuffer);
+
+  const invNormArgs = evalMatchWholeCall(expr, 'invNorm');
+  if (invNormArgs !== null) return evalRunInvNormTemplate(invNormArgs, useBuffer);
+
+  const normalpdfArgs = evalMatchWholeCall(expr, 'normalpdf');
+  if (normalpdfArgs !== null) return evalRunNormalpdfTemplate(normalpdfArgs, useBuffer);
+
+  const binompdfArgs = evalMatchWholeCall(expr, 'binompdf');
+  if (binompdfArgs !== null) return evalRunBinompdfTemplate(binompdfArgs, useBuffer);
+
+  const binomcdfArgs = evalMatchWholeCall(expr, 'binomcdf');
+  if (binomcdfArgs !== null) return evalRunBinomcdfTemplate(binomcdfArgs, useBuffer);
+
+  const geometpdfArgs = evalMatchWholeCall(expr, 'geometpdf');
+  if (geometpdfArgs !== null) return evalRunGeometpdfTemplate(geometpdfArgs, useBuffer);
+
+  const geometcdfArgs = evalMatchWholeCall(expr, 'geometcdf');
+  if (geometcdfArgs !== null) return evalRunGeometcdfTemplate(geometcdfArgs, useBuffer);
+
+  // List statistics
+  const stdDevArgs = evalMatchWholeCall(expr, 'stdDev');
+  if (stdDevArgs !== null) return evalRunListStatTemplate(stdDevArgs, useBuffer, _stdDev);
+
+  const varianceArgs = evalMatchWholeCall(expr, 'variance');
+  if (varianceArgs !== null) return evalRunListStatTemplate(varianceArgs, useBuffer, _variance);
+
+  // Logical NOT
+  const notArgs = evalMatchWholeCall(expr, 'not');
+  if (notArgs !== null) return evalRunNotTemplate(notArgs, useBuffer);
+
+  // List sorting
+  const sortAArgs = evalMatchWholeCall(expr, 'SortA');
+  if (sortAArgs !== null) return evalRunSortTemplate(sortAArgs, useBuffer, true);
+
+  const sortDArgs = evalMatchWholeCall(expr, 'SortD');
+  if (sortDArgs !== null) return evalRunSortTemplate(sortDArgs, useBuffer, false);
 
   return null;
 }

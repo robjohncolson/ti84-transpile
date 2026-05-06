@@ -3111,15 +3111,57 @@
         "TI-84_Plus_CE/probe-phase203-stat-near-seed.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "aa43bd22512a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 203 P3: More Direct-Eval Tokens (\u03a3, seq, solve, piecewise)\n\n## Context\nIn the TI-84 P",
+      "status": "completed",
+      "duration_seconds": 697.545,
+      "timestamp": "2026-05-06T20:13:48Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8ce19fea2eb9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 204 P3: Direct-Eval Token Expansion\n\n## Context\nThis is a TI-84 Plus CE ROM transpila",
+      "status": "completed",
+      "duration_seconds": 430.638,
+      "timestamp": "2026-05-06T22:09:38Z",
+      "files_changed": [
+        "TI-84_Plus_CE/ROM.transpiled.js",
+        "TI-84_Plus_CE/ROM.transpiled.report.json",
+        "TI-84_Plus_CE/browser-shell.html",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase204-coormon-digit-classify.mjs",
+        "TI-84_Plus_CE/probe-phase204-stat-lddr-exit.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "55283d9e4702",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 204 P2: STAT LDDR Successor Wiring Investigation\n\n## Context\nThis is a TI-84 Plus CE ",
+      "status": "completed",
+      "duration_seconds": 489.815,
+      "timestamp": "2026-05-06T22:10:36Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase204-stat-lddr-exit.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 244,
-    "cc_to_codex": 244,
+    "total_calls": 247,
+    "cc_to_codex": 247,
     "codex_to_cc": 0,
-    "completed": 190,
+    "completed": 193,
     "failed": 48,
     "refused": 0,
-    "avg_duration_seconds": 547.092
+    "avg_duration_seconds": 546.998
   }
 }
