@@ -27,3 +27,5 @@
 0x058C01
 0x058BA9
 0x092265
+# Phase 196: Copy9→KeyClassifier→BufInsert entry (home handler)
+0x0584A3

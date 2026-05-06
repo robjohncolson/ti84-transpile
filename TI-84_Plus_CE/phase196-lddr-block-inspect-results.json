@@ -1,0 +1,556 @@
+{
+  "experimentA": {
+    "startAddress": "0x092263",
+    "mode": "adl",
+    "instructionCount": 11,
+    "instructions": [
+      {
+        "address": "0x092263",
+        "bytes": "ED B8",
+        "length": 2,
+        "mnemonic": "lddr",
+        "tag": "lddr",
+        "bcEffect": "LDDR -- decrements BC (block transfer)"
+      },
+      {
+        "address": "0x092265",
+        "bytes": "11 0B 15 D0",
+        "length": 4,
+        "mnemonic": "ld de, 0xD0150B",
+        "tag": "ld-pair-imm"
+      },
+      {
+        "address": "0x092269",
+        "bytes": "C1",
+        "length": 1,
+        "mnemonic": "pop bc",
+        "tag": "pop",
+        "bcEffect": "POP BC -- loads BC from stack"
+      },
+      {
+        "address": "0x09226A",
+        "bytes": "2A 08 15 D0",
+        "length": 4,
+        "mnemonic": "ld hl, (0xD01508)",
+        "tag": "ld-pair-mem"
+      },
+      {
+        "address": "0x09226E",
+        "bytes": "09",
+        "length": 1,
+        "mnemonic": "add hl, bc",
+        "tag": "add-pair"
+      },
+      {
+        "address": "0x09226F",
+        "bytes": "22 08 15 D0",
+        "length": 4,
+        "mnemonic": "ld (0xD01508), hl",
+        "tag": "ld-pair-mem"
+      },
+      {
+        "address": "0x092273",
+        "bytes": "21 E6 08 D0",
+        "length": 4,
+        "mnemonic": "ld hl, 0xD008E6",
+        "tag": "ld-pair-imm"
+      },
+      {
+        "address": "0x092277",
+        "bytes": "ED B0",
+        "length": 2,
+        "mnemonic": "ldir",
+        "tag": "ldir",
+        "bcEffect": "LDIR -- decrements BC (block transfer)"
+      },
+      {
+        "address": "0x092279",
+        "bytes": "21 0B 1D D0",
+        "length": 4,
+        "mnemonic": "ld hl, 0xD01D0B",
+        "tag": "ld-pair-imm"
+      },
+      {
+        "address": "0x09227D",
+        "bytes": "34",
+        "length": 1,
+        "mnemonic": "inc (hl)",
+        "tag": "inc-reg"
+      },
+      {
+        "address": "0x09227E",
+        "bytes": "C9",
+        "length": 1,
+        "mnemonic": "ret",
+        "tag": "ret"
+      }
+    ],
+    "bcWritingInstructions": [
+      {
+        "address": "0x092263",
+        "bytes": "ED B8",
+        "length": 2,
+        "mnemonic": "lddr",
+        "tag": "lddr",
+        "bcEffect": "LDDR -- decrements BC (block transfer)"
+      },
+      {
+        "address": "0x092269",
+        "bytes": "C1",
+        "length": 1,
+        "mnemonic": "pop bc",
+        "tag": "pop",
+        "bcEffect": "POP BC -- loads BC from stack"
+      },
+      {
+        "address": "0x092277",
+        "bytes": "ED B0",
+        "length": 2,
+        "mnemonic": "ldir",
+        "tag": "ldir",
+        "bcEffect": "LDIR -- decrements BC (block transfer)"
+      }
+    ],
+    "summary": "Found 3 BC-affecting instruction(s) before/at LDDR"
+  },
+  "experimentC": {
+    "startAddress": "0x092259",
+    "mode": "adl",
+    "instructionCount": 20,
+    "instructions": [
+      {
+        "address": "0x092259",
+        "bytes": "E5",
+        "length": 1,
+        "mnemonic": "push hl",
+        "tag": "push"
+      },
+      {
+        "address": "0x09225A",
+        "bytes": "19",
+        "length": 1,
+        "mnemonic": "add hl, de",
+        "tag": "add-pair"
+      },
+      {
+        "address": "0x09225B",
+        "bytes": "2B",
+        "length": 1,
+        "mnemonic": "dec hl",
+        "tag": "dec-pair"
+      },
+      {
+        "address": "0x09225C",
+        "bytes": "E5",
+        "length": 1,
+        "mnemonic": "push hl",
+        "tag": "push"
+      },
+      {
+        "address": "0x09225D",
+        "bytes": "09",
+        "length": 1,
+        "mnemonic": "add hl, bc",
+        "tag": "add-pair"
+      },
+      {
+        "address": "0x09225E",
+        "bytes": "EB",
+        "length": 1,
+        "mnemonic": "ex de, hl",
+        "tag": "ex-de-hl"
+      },
+      {
+        "address": "0x09225F",
+        "bytes": "E1",
+        "length": 1,
+        "mnemonic": "pop hl",
+        "tag": "pop"
+      },
+      {
+        "address": "0x092260",
+        "bytes": "C1",
+        "length": 1,
+        "mnemonic": "pop bc",
+        "tag": "pop",
+        "bcEffect": "POP BC -- loads BC from stack"
+      },
+      {
+        "address": "0x092261",
+        "bytes": "28 02",
+        "length": 2,
+        "mnemonic": "jr z, 0x092265",
+        "tag": "jr-conditional"
+      },
+      {
+        "address": "0x092263",
+        "bytes": "ED B8",
+        "length": 2,
+        "mnemonic": "lddr",
+        "tag": "lddr",
+        "bcEffect": "LDDR -- decrements BC (block transfer)"
+      },
+      {
+        "address": "0x092265",
+        "bytes": "11 0B 15 D0",
+        "length": 4,
+        "mnemonic": "ld de, 0xD0150B",
+        "tag": "ld-pair-imm"
+      },
+      {
+        "address": "0x092269",
+        "bytes": "C1",
+        "length": 1,
+        "mnemonic": "pop bc",
+        "tag": "pop",
+        "bcEffect": "POP BC -- loads BC from stack"
+      },
+      {
+        "address": "0x09226A",
+        "bytes": "2A 08 15 D0",
+        "length": 4,
+        "mnemonic": "ld hl, (0xD01508)",
+        "tag": "ld-pair-mem"
+      },
+      {
+        "address": "0x09226E",
+        "bytes": "09",
+        "length": 1,
+        "mnemonic": "add hl, bc",
+        "tag": "add-pair"
+      },
+      {
+        "address": "0x09226F",
+        "bytes": "22 08 15 D0",
+        "length": 4,
+        "mnemonic": "ld (0xD01508), hl",
+        "tag": "ld-pair-mem"
+      },
+      {
+        "address": "0x092273",
+        "bytes": "21 E6 08 D0",
+        "length": 4,
+        "mnemonic": "ld hl, 0xD008E6",
+        "tag": "ld-pair-imm"
+      },
+      {
+        "address": "0x092277",
+        "bytes": "ED B0",
+        "length": 2,
+        "mnemonic": "ldir",
+        "tag": "ldir",
+        "bcEffect": "LDIR -- decrements BC (block transfer)"
+      },
+      {
+        "address": "0x092279",
+        "bytes": "21 0B 1D D0",
+        "length": 4,
+        "mnemonic": "ld hl, 0xD01D0B",
+        "tag": "ld-pair-imm"
+      },
+      {
+        "address": "0x09227D",
+        "bytes": "34",
+        "length": 1,
+        "mnemonic": "inc (hl)",
+        "tag": "inc-reg"
+      },
+      {
+        "address": "0x09227E",
+        "bytes": "C9",
+        "length": 1,
+        "mnemonic": "ret",
+        "tag": "ret"
+      }
+    ],
+    "bcWritingInstructions": [
+      {
+        "address": "0x092260",
+        "bytes": "C1",
+        "length": 1,
+        "mnemonic": "pop bc",
+        "tag": "pop",
+        "bcEffect": "POP BC -- loads BC from stack"
+      },
+      {
+        "address": "0x092263",
+        "bytes": "ED B8",
+        "length": 2,
+        "mnemonic": "lddr",
+        "tag": "lddr",
+        "bcEffect": "LDDR -- decrements BC (block transfer)"
+      },
+      {
+        "address": "0x092269",
+        "bytes": "C1",
+        "length": 1,
+        "mnemonic": "pop bc",
+        "tag": "pop",
+        "bcEffect": "POP BC -- loads BC from stack"
+      },
+      {
+        "address": "0x092277",
+        "bytes": "ED B0",
+        "length": 2,
+        "mnemonic": "ldir",
+        "tag": "ldir",
+        "bcEffect": "LDIR -- decrements BC (block transfer)"
+      }
+    ]
+  },
+  "experimentB": {
+    "block092263": {
+      "found": true,
+      "lineCount": 102,
+      "body": "  \"092263:adl\": {\n    \"id\": \"092263:adl\",\n    \"startPc\": 598627,\n    \"mode\": \"adl\",\n    \"instructionCount\": 11,\n    \"instructions\": [\n      {\n        \"pc\": 598627,\n        \"mode\": \"adl\",\n        \"bytes\": \"ed b8\",\n        \"dasm\": \"lddr\",\n        \"tag\": \"lddr\",\n        \"length\": 2\n      },\n      {\n        \"pc\": 598629,\n        \"mode\": \"adl\",\n        \"bytes\": \"11 0b 15 d0\",\n        \"dasm\": \"ld de, 0xd0150b\",\n        \"tag\": \"ld-pair-imm\",\n        \"length\": 4\n      },\n      {\n        \"pc\": 598633,\n        \"mode\": \"adl\",\n        \"bytes\": \"c1\",\n        \"dasm\": \"pop bc\",\n        \"tag\": \"pop\",\n        \"length\": 1\n      },\n      {\n        \"pc\": 598634,\n        \"mode\": \"adl\",\n        \"bytes\": \"2a 08 15 d0\",\n        \"dasm\": \"ld hl, (0xd01508)\",\n        \"tag\": \"ld-pair-mem\",\n        \"length\": 4\n      },\n      {\n        \"pc\": 598638,\n        \"mode\": \"adl\",\n        \"bytes\": \"09\",\n        \"dasm\": \"add hl, bc\",\n        \"tag\": \"add-pair\",\n        \"length\": 1\n      },\n      {\n        \"pc\": 598639,\n        \"mode\": \"adl\",\n        \"bytes\": \"22 08 15 d0\",\n        \"dasm\": \"ld (0xd01508), hl\",\n        \"tag\": \"ld-pair-mem\",\n        \"length\": 4\n      },\n      {\n        \"pc\": 598643,\n        \"mode\": \"adl\",\n        \"bytes\": \"21 e6 08 d0\",\n        \"dasm\": \"ld hl, 0xd008e6\",\n        \"tag\": \"ld-pair-imm\",\n        \"length\": 4\n      },\n      {\n        \"pc\": 598647,\n        \"mode\": \"adl\",\n        \"bytes\": \"ed b0\",\n        \"dasm\": \"ldir\",\n        \"tag\": \"ldir\",\n        \"length\": 2\n      },\n      {\n        \"pc\": 598649,\n        \"mode\": \"adl\",\n        \"bytes\": \"21 0b 1d d0\",\n        \"dasm\": \"ld hl, 0xd01d0b\",\n        \"tag\": \"ld-pair-imm\",\n        \"length\": 4\n      },\n      {\n        \"pc\": 598653,\n        \"mode\": \"adl\",\n        \"bytes\": \"34\",\n        \"dasm\": \"inc (hl)\",\n        \"tag\": \"inc-reg\",\n        \"length\": 1\n      },\n      {\n        \"pc\": 598654,\n        \"mode\": \"adl\",\n        \"bytes\": \"c9\",\n        \"dasm\": \"ret\",\n        \"tag\": \"ret\",\n        \"length\": 1\n      }\n    ],\n    \"exits\": [\n      {\n        \"type\": \"return\"\n      }\n    ],\n    \"source\": \"function block_092263_adl(cpu) {\\n  // 0x092263  ed b8            lddr\\n  cpu.lddr();\\n  // 0x092265  11 0b 15 d0      ld de, 0xd0150b\\n  cpu.de = 0xd0150b;\\n  // 0x092269  c1               pop bc\\n  cpu.bc = cpu.pop();\\n  // 0x09226a  2a 08 15 d0      ld hl, (0xd01508)\\n  cpu.hl = cpu.read24(0xd01508);\\n  // 0x09226e  09               add hl, bc\\n  cpu.hl = cpu.addWord(cpu.hl, cpu.bc);\\n  // 0x09226f  22 08 15 d0      ld (0xd01508), hl\\n  cpu.write24(0xd01508, cpu.hl);\\n  // 0x092273  21 e6 08 d0      ld hl, 0xd008e6\\n  cpu.hl = 0xd008e6;\\n  // 0x092277  ed b0            ldir\\n  cpu.ldir();\\n  // 0x092279  21 0b 1d d0      ld hl, 0xd01d0b\\n  cpu.hl = 0xd01d0b;\\n  // 0x09227d  34               inc (hl)\\n  cpu.writeIndirect8('hl', cpu.inc8(cpu.readIndirect8('hl')));\\n  // 0x09227e  c9               ret\\n  return cpu.popReturn();\\n}\"\n  },",
+      "bcRelatedLines": [
+        "\"dasm\": \"pop bc\",",
+        "\"dasm\": \"add hl, bc\",",
+        "\"source\": \"function block_092263_adl(cpu) {\\n  // 0x092263  ed b8            lddr\\n  cpu.lddr();\\n  // 0x092265  11 0b 15 d0      ld de, 0xd0150b\\n  cpu.de = 0xd0150b;\\n  // 0x092269  c1               pop bc\\n  cpu.bc = cpu.pop();\\n  // 0x09226a  2a 08 15 d0      ld hl, (0xd01508)\\n  cpu.hl = cpu.read24(0xd01508);\\n  // 0x09226e  09               add hl, bc\\n  cpu.hl = cpu.addWord(cpu.hl, cpu.bc);\\n  // 0x09226f  22 08 15 d0      ld (0xd01508), hl\\n  cpu.write24(0xd01508, cpu.hl);\\n  // 0x092273  21 e6 08 d0      ld hl, 0xd008e6\\n  cpu.hl = 0xd008e6;\\n  // 0x092277  ed b0            ldir\\n  cpu.ldir();\\n  // 0x092279  21 0b 1d d0      ld hl, 0xd01d0b\\n  cpu.hl = 0xd01d0b;\\n  // 0x09227d  34               inc (hl)\\n  cpu.writeIndirect8('hl', cpu.inc8(cpu.readIndirect8('hl')));\\n  // 0x09227e  c9               ret\\n  return cpu.popReturn();\\n}\""
+      ]
+    },
+    "block092259": {
+      "found": true,
+      "lineCount": 2,
+      "body": "    \"source\": \"function block_09224b_adl(cpu) {\\n  // 0x09224b  d5               push de\\n  cpu.push(cpu.de);\\n  // 0x09224c  11 0b 15 d0      ld de, 0xd0150b\\n  cpu.de = 0xd0150b;\\n  // 0x092250  c5               push bc\\n  cpu.push(cpu.bc);\\n  // 0x092251  e1               pop hl\\n  cpu.hl = cpu.pop();\\n  // 0x092252  c1               pop bc\\n  cpu.bc = cpu.pop();\\n  // 0x092253  c5               push bc\\n  cpu.push(cpu.bc);\\n  // 0x092254  b7               or a\\n  cpu.a |= cpu.a;\\n  cpu.updateOrXorFlags(cpu.a);\\n  // 0x092255  ed 52            sbc hl, de\\n  cpu.hl = cpu.subtractWithBorrowWord(cpu.hl, cpu.de);\\n  // 0x092257  28 0c            jr z, 0x092265\\n  if (cpu.checkCondition('z')) return 0x092265;\\n  return 0x092259;\\n}\"\n  },"
+    }
+  },
+  "experimentD": {
+    "entryAddress": "0x092259",
+    "targetAddress": "0x092263",
+    "initialBc": "0x000019",
+    "finalBc": "0x000600",
+    "totalSteps": 22,
+    "bcTrace": [
+      {
+        "step": 1,
+        "pc": "0x092259",
+        "mode": "adl",
+        "bc": "0x000019",
+        "bcRaw": 25,
+        "event": "block"
+      },
+      {
+        "step": 2,
+        "pc": "0x092265",
+        "mode": "adl",
+        "bc": "0x000000",
+        "bcRaw": 0,
+        "event": "block"
+      },
+      {
+        "step": 3,
+        "pc": "0x000000",
+        "mode": "adl",
+        "bc": "0x000000",
+        "bcRaw": 0,
+        "event": "block"
+      },
+      {
+        "step": 4,
+        "pc": "0x000003",
+        "mode": "z80",
+        "bc": "0x000000",
+        "bcRaw": 0,
+        "event": "block"
+      },
+      {
+        "step": 5,
+        "pc": "0x000658",
+        "mode": "adl",
+        "bc": "0x000000",
+        "bcRaw": 0,
+        "event": "block"
+      },
+      {
+        "step": 6,
+        "pc": "0x000673",
+        "mode": "adl",
+        "bc": "0x001005",
+        "bcRaw": 4101,
+        "event": "block"
+      },
+      {
+        "step": 7,
+        "pc": "0x000679",
+        "mode": "adl",
+        "bc": "0x001005",
+        "bcRaw": 4101,
+        "event": "block"
+      },
+      {
+        "step": 8,
+        "pc": "0x00067E",
+        "mode": "adl",
+        "bc": "0x001005",
+        "bcRaw": 4101,
+        "event": "block"
+      },
+      {
+        "step": 9,
+        "pc": "0x000688",
+        "mode": "adl",
+        "bc": "0x001005",
+        "bcRaw": 4101,
+        "event": "block"
+      },
+      {
+        "step": 10,
+        "pc": "0x000697",
+        "mode": "adl",
+        "bc": "0x001005",
+        "bcRaw": 4101,
+        "event": "block"
+      },
+      {
+        "step": 11,
+        "pc": "0x00069A",
+        "mode": "z80",
+        "bc": "0x001005",
+        "bcRaw": 4101,
+        "event": "block"
+      },
+      {
+        "step": 12,
+        "pc": "0x0006A9",
+        "mode": "z80",
+        "bc": "0x001005",
+        "bcRaw": 4101,
+        "event": "block"
+      },
+      {
+        "step": 13,
+        "pc": "0x000038",
+        "mode": "z80",
+        "bc": "0x00103E",
+        "bcRaw": 4158,
+        "event": "block"
+      },
+      {
+        "step": 14,
+        "pc": "0x000080",
+        "mode": "z80",
+        "bc": "0x000000",
+        "bcRaw": 0,
+        "event": "block"
+      },
+      {
+        "step": 15,
+        "pc": "0x001768",
+        "mode": "z80",
+        "bc": "0x000000",
+        "bcRaw": 0,
+        "event": "block"
+      },
+      {
+        "step": 16,
+        "pc": "0x000800",
+        "mode": "z80",
+        "bc": "0x000600",
+        "bcRaw": 1536,
+        "event": "missing_block"
+      },
+      {
+        "step": 17,
+        "pc": "0x000804",
+        "mode": "z80",
+        "bc": "0x000600",
+        "bcRaw": 1536,
+        "event": "block"
+      },
+      {
+        "step": 18,
+        "pc": "0x000066",
+        "mode": "z80",
+        "bc": "0x000600",
+        "bcRaw": 1536,
+        "event": "block"
+      },
+      {
+        "step": 19,
+        "pc": "0x000047",
+        "mode": "z80",
+        "bc": "0x000600",
+        "bcRaw": 1536,
+        "event": "block"
+      },
+      {
+        "step": 20,
+        "pc": "0x0008BB",
+        "mode": "z80",
+        "bc": "0x000600",
+        "bcRaw": 1536,
+        "event": "block"
+      },
+      {
+        "step": 21,
+        "pc": "0x00004C",
+        "mode": "z80",
+        "bc": "0x00A55A",
+        "bcRaw": 42330,
+        "event": "block"
+      },
+      {
+        "step": 22,
+        "pc": "0x0019B5",
+        "mode": "z80",
+        "bc": "0x000600",
+        "bcRaw": 1536,
+        "event": "block"
+      }
+    ],
+    "bcChanges": [
+      {
+        "atStep": 2,
+        "atPc": "0x092265",
+        "previousBc": "0x000019",
+        "newBc": "0x000000",
+        "previousBlock": "0x092259"
+      },
+      {
+        "atStep": 6,
+        "atPc": "0x000673",
+        "previousBc": "0x000000",
+        "newBc": "0x001005",
+        "previousBlock": "0x000658"
+      },
+      {
+        "atStep": 13,
+        "atPc": "0x000038",
+        "previousBc": "0x001005",
+        "newBc": "0x00103E",
+        "previousBlock": "0x0006A9"
+      },
+      {
+        "atStep": 14,
+        "atPc": "0x000080",
+        "previousBc": "0x00103E",
+        "newBc": "0x000000",
+        "previousBlock": "0x000038"
+      },
+      {
+        "atStep": 16,
+        "atPc": "0x000800",
+        "previousBc": "0x000000",
+        "newBc": "0x000600",
+        "previousBlock": "0x001768"
+      },
+      {
+        "atStep": 21,
+        "atPc": "0x00004C",
+        "previousBc": "0x000600",
+        "newBc": "0x00A55A",
+        "previousBlock": "0x0008BB"
+      },
+      {
+        "atStep": 22,
+        "atPc": "0x0019B5",
+        "previousBc": "0x00A55A",
+        "newBc": "0x000600",
+        "previousBlock": "0x00004C"
+      }
+    ],
+    "bcChangedFromInitial": true,
+    "summary": "BC changed 7 time(s) during transition"
+  }
+}
