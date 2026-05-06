@@ -2734,15 +2734,111 @@
         "TI-84_Plus_CE/probe-phase193-trig-extended.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "ef55dd205a78",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 193 P2: STAT LDDR Block Inspection \u2014 Why 0x092265 Is Never Reached\n\n## Context\nIn ses",
+      "status": "completed",
+      "duration_seconds": 898.474,
+      "timestamp": "2026-05-05T22:17:10Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6bb0c0ae06f9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 193 P3: Y= Editor Extended Trace + Direct Entry at 0x09CB14\n\n## Context\nIn session 19",
+      "status": "timeout",
+      "duration_seconds": 900.035,
+      "timestamp": "2026-05-05T22:17:12Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5b822f8469f6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 194 P1 \u2014 Y= Editor CALL Target Exploration\n\n## Task\nBuild a probe `TI-84_Plus_CE/probe-pha",
+      "status": "completed",
+      "duration_seconds": 377.086,
+      "timestamp": "2026-05-06T00:10:03Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase194-yeq-call-targets.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "4e06bcf9cc04",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 194 P2 \u2014 STAT with Seeded List Data in RAM\n\n## Task\nBuild a probe `TI-84_Plus_CE/probe-pha",
+      "status": "completed",
+      "duration_seconds": 509.814,
+      "timestamp": "2026-05-06T00:12:18Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f2b3cb8a66f9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 194 P3 \u2014 Trace ConvKeyToTok Register E \u2192 OP1 Path\n\n## Task\nBuild a probe `TI-84_Plus_CE/pr",
+      "status": "completed",
+      "duration_seconds": 775.771,
+      "timestamp": "2026-05-06T00:16:45Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase194-convkey-e-to-op1.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "e9d425d9062a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 195 P1: TOKEN_STAGING Pre-Seeding Experiment\n\n## Context\nIn the TI-84 Plus CE ROM tra",
+      "status": "completed",
+      "duration_seconds": 401.709,
+      "timestamp": "2026-05-06T02:09:15Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase195-token-staging-preseed.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "e5d981b937ad",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 195 P2: STAT BC Backward Trace + Extended Steps\n\n## Context\nIn the TI-84 Plus CE ROM ",
+      "status": "completed",
+      "duration_seconds": 695.777,
+      "timestamp": "2026-05-06T02:14:11Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase195-stat-bc-trace.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "665ab08b5f6f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 195 P3: Y= Editor 0xD00596 Exploration + Seeded 0x09CB14\n\n## Context\nIn the TI-84 Plu",
+      "status": "timeout",
+      "duration_seconds": 900.047,
+      "timestamp": "2026-05-06T02:17:37Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 213,
-    "cc_to_codex": 213,
+    "total_calls": 221,
+    "cc_to_codex": 221,
     "codex_to_cc": 0,
-    "completed": 163,
-    "failed": 44,
+    "completed": 169,
+    "failed": 46,
     "refused": 0,
-    "avg_duration_seconds": 534.893
+    "avg_duration_seconds": 540.231
   }
 }
