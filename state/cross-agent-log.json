@@ -3867,15 +3867,129 @@
         "TI-84_Plus_CE/probe-phase224-secondary-token-map.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "ca71d2d2d22b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x049E07 switch dispatcher (called by 0x02F68A key pipeline)\n\n## Context\nIn the TI-84 ",
+      "status": "completed",
+      "duration_seconds": 756.512,
+      "timestamp": "2026-05-07T16:15:17Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase224-049e07-switch-dispatch.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "2552b4b7b396",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x084E9C\u21920x084EA7 caller chain\n\n## Context\nIn the TI-84 Plus CE ROM transpilation proj",
+      "status": "timeout",
+      "duration_seconds": 900.043,
+      "timestamp": "2026-05-07T16:17:42Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "65600561f54a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace how the OS produces magic A values before calling ConvKeyToTok\n\n## Context\nIn the TI-8",
+      "status": "timeout",
+      "duration_seconds": 900.048,
+      "timestamp": "2026-05-07T16:17:45Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8571b858044c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: End-to-end 2-byte token insertion via D0059F=0xFC + ConvKeyToTok\n\n## Context\nThis is a TI-84",
+      "status": "completed",
+      "duration_seconds": 363.729,
+      "timestamp": "2026-05-07T16:49:09Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5a5af54d33bb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x02F68A key pipeline with extended step count (2000+ steps)\n\n## Context\nThis is a TI-",
+      "status": "completed",
+      "duration_seconds": 663.526,
+      "timestamp": "2026-05-07T16:54:08Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f5b575269fed",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x03FBFD key pipeline function\n\n## Context\nThis is a TI-84 Plus CE ROM transpilation p",
+      "status": "completed",
+      "duration_seconds": 823.203,
+      "timestamp": "2026-05-07T16:56:46Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "39cde863a599",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace D0059F writers in ROM \u2014 find what sets magic values 0xFA-0xFE\n\n## Context\nThis is a TI",
+      "status": "timeout",
+      "duration_seconds": 900.034,
+      "timestamp": "2026-05-07T16:58:01Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ad33c45b5e49",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 226 \u2014 P3: Trace 0x051CF3 Callers and HL Table Source\n\n## Context\nThis is a companion ",
+      "status": "completed",
+      "duration_seconds": 730.793,
+      "timestamp": "2026-05-07T17:34:54Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "770fc3f1d457",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 226 \u2014 P1: Disassemble 0x051CF3 (D0059F Writer Function)\n\n## Context\nIn the TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 738.076,
+      "timestamp": "2026-05-07T17:34:57Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase226-051cf3-d0059f-writer.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "4c37ce883b85",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 226 \u2014 P2: Investigate 0x03FC1C (D0058D Table Reader)\n\n## Context\nIn the TI-84 Plus CE",
+      "status": "timeout",
+      "duration_seconds": 900.042,
+      "timestamp": "2026-05-07T17:37:41Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 306,
-    "cc_to_codex": 306,
+    "total_calls": 316,
+    "cc_to_codex": 316,
     "codex_to_cc": 0,
-    "completed": 237,
-    "failed": 63,
+    "completed": 243,
+    "failed": 67,
     "refused": 0,
-    "avg_duration_seconds": 563.811
+    "avg_duration_seconds": 570.26
   }
 }
