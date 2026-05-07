@@ -4038,15 +4038,26 @@
       "timestamp": "2026-05-07T18:52:37Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "6d49850c336e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace the jump table dispatcher at 0x0213C0 \u2014 find callers and HL values\n\n## Context\nSession",
+      "status": "timeout",
+      "duration_seconds": 900.045,
+      "timestamp": "2026-05-07T18:57:18Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 321,
-    "cc_to_codex": 321,
+    "total_calls": 322,
+    "cc_to_codex": 322,
     "codex_to_cc": 0,
     "completed": 247,
-    "failed": 68,
+    "failed": 69,
     "refused": 0,
-    "avg_duration_seconds": 571.473
+    "avg_duration_seconds": 572.494
   }
 }
