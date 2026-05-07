@@ -1606,12 +1606,21 @@ const EVAL_TWO_BYTE_TOKENS = [
   ['tcdf',      [0xBB, 0x08]],  // tTcdf
   ['tpdf',      [0xBB, 0x0E]],  // tTpdf
   ['invt',      [0xBB, 0x03]],  // tInvT
+  ['ztest',       [0xBB, 0x53]],  // tZTest
+  ['1-sampzint',  [0xBB, 0x54]],  // t1SampZInt
   ['1-propztest', [0xBB, 0x55]],  // t1PropZTest
   ['1-propzint',  [0xBB, 0x56]],  // t1PropZInt
   ['2-sampztest', [0xBB, 0x57]],  // t2SampZTest
-  ['2-sampttest', [0xBB, 0x5C]],  // t2SampTTest
-  ['ztest',       [0xBB, 0x53]],  // tZTest
+  ['2-propztest', [0xBB, 0x58]],  // t2PropZTest
+  ['2-propzint',  [0xBB, 0x59]],  // t2PropZInt
   ['ttest',       [0xBB, 0x5A]],  // tTTest
+  ['1-samptint',  [0xBB, 0x5B]],  // t1SampTInt
+  ['2-sampttest', [0xBB, 0x5C]],  // t2SampTTest
+  ['chi2-test',   [0xBB, 0x5D]],  // tChi2Test (ASCII alias)
+  ['\u03C7\u00B2-test', [0xBB, 0x5D]],  // tChi2Test
+  ['linregttest', [0xBB, 0x5E]],  // tLinRegTTest
+  ['anova',       [0xBB, 0x5F]],  // tANOVA
+  ['2-samptint',  [0xBB, 0x60]],  // t2SampTInt
   ['invnorm',   [0xBB, 0x02]],  // tInvNorm
   ['invf',      [0xBB, 0x3E]],  // tInvF
   ['clrlist',   [0xBB, 0xFA]],  // tClrList
@@ -3414,6 +3423,36 @@ function evalRunZTestTemplate(argText, useBuffer) {
 }
 
 // TTest(μ0, x̄, s, n, direction) → p-value
+// 1-SampZInt(sigma, xbar, n, C-level) -> {lower, upper}
+function evalRun1SampZIntTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 4) {
+    return { error: '1-SampZInt(sigma,xbar,n,C-level) expects 4 arguments.' };
+  }
+  const vals = [];
+  for (const a of args) {
+    const r = evalReadNumeric(a, useBuffer);
+    if (r.error) return r;
+    vals.push(r.value);
+  }
+  const sigma = vals[0], xbar = vals[1], n = vals[2], cLevel = vals[3];
+  const zStar = _invNorm((1 + cLevel) / 2, 0, 1);
+  const me = zStar * sigma / Math.sqrt(n);
+  const result = [xbar - me, xbar + me];
+  if (!Number.isFinite(result[0]) || !Number.isFinite(result[1])) {
+    return { error: '1-SampZInt could not be evaluated.' };
+  }
+  const displays = result.map(v => formatResult(v));
+  return {
+    value: result,
+    display: `{${displays.join(', ')}}`,
+    steps: 0,
+    errNo: 0,
+    op1Hex: '',
+    ansStored: false,
+  };
+}
+
 function evalRunTTestTemplate(argText, useBuffer) {
   const args = evalSplitArgs(argText);
   if (args.length < 4 || args.length > 5) {
@@ -3435,6 +3474,36 @@ function evalRunTTestTemplate(argText, useBuffer) {
 }
 
 // 1-PropZTest(p0, x, n, direction) → p-value
+// 1-SampTInt(xbar, Sx, n, C-level) -> {lower, upper}
+function evalRun1SampTIntTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 4) {
+    return { error: '1-SampTInt(xbar,Sx,n,C-level) expects 4 arguments.' };
+  }
+  const vals = [];
+  for (const a of args) {
+    const r = evalReadNumeric(a, useBuffer);
+    if (r.error) return r;
+    vals.push(r.value);
+  }
+  const xbar = vals[0], sx = vals[1], n = vals[2], cLevel = vals[3];
+  const tStar = _invT((1 + cLevel) / 2, n - 1);
+  const me = tStar * sx / Math.sqrt(n);
+  const result = [xbar - me, xbar + me];
+  if (!Number.isFinite(result[0]) || !Number.isFinite(result[1])) {
+    return { error: '1-SampTInt could not be evaluated.' };
+  }
+  const displays = result.map(v => formatResult(v));
+  return {
+    value: result,
+    display: `{${displays.join(', ')}}`,
+    steps: 0,
+    errNo: 0,
+    op1Hex: '',
+    ansStored: false,
+  };
+}
+
 function evalRun1PropZTestTemplate(argText, useBuffer) {
   const args = evalSplitArgs(argText);
   if (args.length < 3 || args.length > 4) {
@@ -3508,6 +3577,64 @@ function evalRun2SampZTestTemplate(argText, useBuffer) {
 }
 
 // 2-SampTTest(x̄1, s1, n1, x̄2, s2, n2, direction) → p-value (Welch's)
+// 2-PropZTest(x1, n1, x2, n2, direction) -> p-value
+function evalRun2PropZTestTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length < 4 || args.length > 5) {
+    return { error: '2-PropZTest(x1,n1,x2,n2[,direction]) expects 4-5 arguments.' };
+  }
+  const vals = [];
+  for (const a of args) {
+    const r = evalReadNumeric(a, useBuffer);
+    if (r.error) return r;
+    vals.push(r.value);
+  }
+  const x1 = vals[0], n1 = vals[1], x2 = vals[2], n2 = vals[3];
+  const direction = vals.length > 4 ? vals[4] : 0;
+  const pHat1 = x1 / n1;
+  const pHat2 = x2 / n2;
+  const pooled = (x1 + x2) / (n1 + n2);
+  const z = (pHat1 - pHat2) / Math.sqrt(pooled * (1 - pooled) * (1 / n1 + 1 / n2));
+  const result = _zPValue(z, direction);
+  if (!Number.isFinite(result)) return { error: '2-PropZTest could not be evaluated.' };
+  return runDirectEval(formatResult(result), useBuffer);
+}
+
+// 2-PropZInt(x1, n1, x2, n2, C-level) -> {lower, upper}
+function evalRun2PropZIntTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 5) {
+    return { error: '2-PropZInt(x1,n1,x2,n2,C-level) expects 5 arguments.' };
+  }
+  const vals = [];
+  for (const a of args) {
+    const r = evalReadNumeric(a, useBuffer);
+    if (r.error) return r;
+    vals.push(r.value);
+  }
+  const x1 = vals[0], n1 = vals[1], x2 = vals[2], n2 = vals[3], cLevel = vals[4];
+  const pHat1 = x1 / n1;
+  const pHat2 = x2 / n2;
+  const zStar = _invNorm((1 + cLevel) / 2, 0, 1);
+  const me = zStar * Math.sqrt(
+    (pHat1 * (1 - pHat1)) / n1 + (pHat2 * (1 - pHat2)) / n2
+  );
+  const diff = pHat1 - pHat2;
+  const result = [diff - me, diff + me];
+  if (!Number.isFinite(result[0]) || !Number.isFinite(result[1])) {
+    return { error: '2-PropZInt could not be evaluated.' };
+  }
+  const displays = result.map(v => formatResult(v));
+  return {
+    value: result,
+    display: `{${displays.join(', ')}}`,
+    steps: 0,
+    errNo: 0,
+    op1Hex: '',
+    ansStored: false,
+  };
+}
+
 function evalRun2SampTTestTemplate(argText, useBuffer) {
   const args = evalSplitArgs(argText);
   if (args.length < 6 || args.length > 7) {
@@ -3528,6 +3655,148 @@ function evalRun2SampTTestTemplate(argText, useBuffer) {
   const df = ((v1 + v2) * (v1 + v2)) / ((v1 * v1) / (n1 - 1) + (v2 * v2) / (n2 - 1));
   const result = _tPValue(t, df, direction);
   if (!Number.isFinite(result)) return { error: '2-SampTTest could not be evaluated.' };
+  return runDirectEval(formatResult(result), useBuffer);
+}
+
+// 2-SampTInt(xbar1, s1, n1, xbar2, s2, n2, C-level) -> {lower, upper}
+function evalRun2SampTIntTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 7) {
+    return { error: '2-SampTInt(xbar1,s1,n1,xbar2,s2,n2,C-level) expects 7 arguments.' };
+  }
+  const vals = [];
+  for (const a of args) {
+    const r = evalReadNumeric(a, useBuffer);
+    if (r.error) return r;
+    vals.push(r.value);
+  }
+  const xbar1 = vals[0], s1 = vals[1], n1 = vals[2];
+  const xbar2 = vals[3], s2 = vals[4], n2 = vals[5], cLevel = vals[6];
+  const v1 = (s1 * s1) / n1, v2 = (s2 * s2) / n2;
+  const df = ((v1 + v2) * (v1 + v2)) / ((v1 * v1) / (n1 - 1) + (v2 * v2) / (n2 - 1));
+  const tStar = _invT((1 + cLevel) / 2, df);
+  const me = tStar * Math.sqrt(v1 + v2);
+  const diff = xbar1 - xbar2;
+  const result = [diff - me, diff + me];
+  if (!Number.isFinite(result[0]) || !Number.isFinite(result[1])) {
+    return { error: '2-SampTInt could not be evaluated.' };
+  }
+  const displays = result.map(v => formatResult(v));
+  return {
+    value: result,
+    display: `{${displays.join(', ')}}`,
+    steps: 0,
+    errNo: 0,
+    op1Hex: '',
+    ansStored: false,
+  };
+}
+
+// chi2-Test(observedList, expectedList) -> p-value
+function evalRunChiSquareTestTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 2) {
+    return { error: 'chi2-Test(observedList,expectedList) expects 2 list arguments.' };
+  }
+  const observed = evalReadListArgument(args[0], useBuffer);
+  if (observed.error) return observed;
+  const expected = evalReadListArgument(args[1], useBuffer);
+  if (expected.error) return expected;
+  if (observed.values.length !== expected.values.length) {
+    return { error: 'chi2-Test requires observed and expected lists of the same length.' };
+  }
+  if (observed.values.length < 2) {
+    return { error: 'chi2-Test requires at least 2 categories.' };
+  }
+  let chiSquare = 0;
+  for (let i = 0; i < observed.values.length; i++) {
+    const expectedValue = expected.values[i];
+    if (expectedValue <= 0) return { error: 'chi2-Test requires expected counts > 0.' };
+    const diff = observed.values[i] - expectedValue;
+    chiSquare += (diff * diff) / expectedValue;
+  }
+  const df = observed.values.length - 1;
+  const result = 1 - _chiSquareCdf(chiSquare, df);
+  if (!Number.isFinite(result)) return { error: 'chi2-Test could not be evaluated.' };
+  return runDirectEval(formatResult(result), useBuffer);
+}
+
+// LinRegTTest(Xlist, Ylist, direction) -> p-value
+function evalRunLinRegTTestTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length < 2 || args.length > 3) {
+    return { error: 'LinRegTTest(Xlist,Ylist[,direction]) expects 2-3 arguments.' };
+  }
+  const xList = evalReadListArgument(args[0], useBuffer);
+  if (xList.error) return xList;
+  const yList = evalReadListArgument(args[1], useBuffer);
+  if (yList.error) return yList;
+  if (xList.values.length !== yList.values.length) {
+    return { error: 'LinRegTTest requires lists of the same length.' };
+  }
+  if (xList.values.length < 3) {
+    return { error: 'LinRegTTest requires at least 3 data points.' };
+  }
+  const directionResult = args.length > 2 ? evalReadNumeric(args[2], useBuffer) : { value: 0 };
+  if (directionResult.error) return directionResult;
+
+  const regression = _linearRegression(xList.values, yList.values);
+  if (regression.error) return { error: regression.error.replace('LinReg(ax+b)', 'LinRegTTest') };
+
+  const n = xList.values.length;
+  const meanX = _listMean(xList.values);
+  let sxx = 0;
+  let sse = 0;
+  for (let i = 0; i < n; i++) {
+    const x = xList.values[i];
+    const y = yList.values[i];
+    const yHat = regression.a * x + regression.b;
+    const dx = x - meanX;
+    sxx += dx * dx;
+    sse += (y - yHat) * (y - yHat);
+  }
+  const seSlope = Math.sqrt(sse / ((n - 2) * sxx));
+  const t = regression.a / seSlope;
+  const result = _tPValue(t, n - 2, directionResult.value);
+  if (!Number.isFinite(result)) return { error: 'LinRegTTest could not be evaluated.' };
+  return runDirectEval(formatResult(result), useBuffer);
+}
+
+// ANOVA(list1, list2, ...lists) -> p-value
+function evalRunAnovaTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length < 2) {
+    return { error: 'ANOVA(list1,list2,...) expects at least 2 list arguments.' };
+  }
+  const groups = [];
+  let totalCount = 0;
+  let grandTotal = 0;
+  for (const arg of args) {
+    const listResult = evalReadListArgument(arg, useBuffer);
+    if (listResult.error) return listResult;
+    if (listResult.values.length === 0) return { error: 'ANOVA requires non-empty lists.' };
+    groups.push(listResult.values);
+    totalCount += listResult.values.length;
+    for (const value of listResult.values) grandTotal += value;
+  }
+  const groupCount = groups.length;
+  const dfBetween = groupCount - 1;
+  const dfWithin = totalCount - groupCount;
+  if (dfWithin <= 0) return { error: 'ANOVA requires at least one within-group degree of freedom.' };
+
+  const grandMean = grandTotal / totalCount;
+  let ssBetween = 0;
+  let ssWithin = 0;
+  for (const group of groups) {
+    const mean = _listMean(group);
+    ssBetween += group.length * (mean - grandMean) * (mean - grandMean);
+    for (const value of group) {
+      ssWithin += (value - mean) * (value - mean);
+    }
+  }
+  const f = (ssBetween / dfBetween) / (ssWithin / dfWithin);
+  const result = 1 - _fCdf(f, dfBetween, dfWithin);
+  if (!Number.isFinite(result)) return { error: 'ANOVA could not be evaluated.' };
   return runDirectEval(formatResult(result), useBuffer);
 }
 
@@ -3970,8 +4239,14 @@ function runDirectEvalTemplate(expr, useBuffer) {
   const zTestArgs = evalMatchWholeCall(expr, 'ZTest');
   if (zTestArgs !== null) return evalRunZTestTemplate(zTestArgs, useBuffer);
 
+  const oneSampZIntArgs = evalMatchWholeCall(expr, '1-SampZInt');
+  if (oneSampZIntArgs !== null) return evalRun1SampZIntTemplate(oneSampZIntArgs, useBuffer);
+
   const tTestArgs = evalMatchWholeCall(expr, 'TTest');
   if (tTestArgs !== null) return evalRunTTestTemplate(tTestArgs, useBuffer);
+
+  const oneSampTIntArgs = evalMatchWholeCall(expr, '1-SampTInt');
+  if (oneSampTIntArgs !== null) return evalRun1SampTIntTemplate(oneSampTIntArgs, useBuffer);
 
   const propZTestArgs = evalMatchWholeCall(expr, '1-PropZTest');
   if (propZTestArgs !== null) return evalRun1PropZTestTemplate(propZTestArgs, useBuffer);
@@ -3982,8 +4257,29 @@ function runDirectEvalTemplate(expr, useBuffer) {
   const sampZTestArgs = evalMatchWholeCall(expr, '2-SampZTest');
   if (sampZTestArgs !== null) return evalRun2SampZTestTemplate(sampZTestArgs, useBuffer);
 
+  const twoPropZTestArgs = evalMatchWholeCall(expr, '2-PropZTest');
+  if (twoPropZTestArgs !== null) return evalRun2PropZTestTemplate(twoPropZTestArgs, useBuffer);
+
+  const twoPropZIntArgs = evalMatchWholeCall(expr, '2-PropZInt');
+  if (twoPropZIntArgs !== null) return evalRun2PropZIntTemplate(twoPropZIntArgs, useBuffer);
+
   const sampTTestArgs = evalMatchWholeCall(expr, '2-SampTTest');
   if (sampTTestArgs !== null) return evalRun2SampTTestTemplate(sampTTestArgs, useBuffer);
+
+  const chiSquareTestArgs = evalMatchWholeCall(expr, '\u03C7\u00B2-Test');
+  if (chiSquareTestArgs !== null) return evalRunChiSquareTestTemplate(chiSquareTestArgs, useBuffer);
+
+  const chiSquareTestAsciiArgs = evalMatchWholeCall(expr, 'chi2-Test');
+  if (chiSquareTestAsciiArgs !== null) return evalRunChiSquareTestTemplate(chiSquareTestAsciiArgs, useBuffer);
+
+  const linRegTTestArgs = evalMatchWholeCall(expr, 'LinRegTTest');
+  if (linRegTTestArgs !== null) return evalRunLinRegTTestTemplate(linRegTTestArgs, useBuffer);
+
+  const anovaArgs = evalMatchWholeCall(expr, 'ANOVA');
+  if (anovaArgs !== null) return evalRunAnovaTemplate(anovaArgs, useBuffer);
+
+  const twoSampTIntArgs = evalMatchWholeCall(expr, '2-SampTInt');
+  if (twoSampTIntArgs !== null) return evalRun2SampTIntTemplate(twoSampTIntArgs, useBuffer);
 
   // List statistics
   const stdDevArgs = evalMatchWholeCall(expr, 'stdDev');
