@@ -3274,15 +3274,113 @@
       "timestamp": "2026-05-07T04:17:35Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "e97df1a3079f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 208 P1: Find ALL BufInsert (0x05E2A0) call sites in ROM\n\n## Context\nWe're investigati",
+      "status": "completed",
+      "duration_seconds": 450.398,
+      "timestamp": "2026-05-07T04:49:40Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase208-bufinsert-callsites.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "c95aa73c6c42",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 208 P3: Add \u03c7\u00b2pdf, tpdf, Fpdf, inv\u03c7\u00b2, invF to browser-shell\n\n## Context\nSession 207 a",
+      "status": "completed",
+      "duration_seconds": 500.649,
+      "timestamp": "2026-05-07T04:50:33Z",
+      "files_changed": [
+        "CONTINUATION_PROMPT_CODEX.md",
+        "TI-84_Plus_CE/browser-shell.html",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase208-bufinsert-callsites.mjs",
+        "TI-84_Plus_CE/probe-phase208-stat-full-boot.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "c2a0bcd7c007",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 208 P2: STAT entry from FULL BOOT + CoorMon path\n\n## Context\nSessions 204-207 establi",
+      "status": "completed",
+      "duration_seconds": 561.641,
+      "timestamp": "2026-05-07T04:51:33Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "43915d9aa10b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 209 P1: Trace 0x0568BA BufInsert Path (Editor Region)\n\n## Context\nIn the TI-84 Plus C",
+      "status": "completed",
+      "duration_seconds": 474.83,
+      "timestamp": "2026-05-07T05:29:48Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3d325a0d63bb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 209 P2: Trace 0x080D09 BufInsert Path (FP/Validation Loop)\n\n## Context\nIn the TI-84 P",
+      "status": "completed",
+      "duration_seconds": 554.056,
+      "timestamp": "2026-05-07T05:31:09Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase209-080d09-bufinsert-loop.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "6f2a11d2e028",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 209 P3: Investigate Triple BufInsert at 0x08DCE6/0x08DCEB/0x08DCF3\n\n## Context\nIn the",
+      "status": "completed",
+      "duration_seconds": 739.882,
+      "timestamp": "2026-05-07T05:34:16Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "4197f75d3f7d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 210 \u2014 P2: Why cxMain digit path returns without BufInsert\n\n## Context\n\nIn the TI-84 P",
+      "status": "completed",
+      "duration_seconds": 432.442,
+      "timestamp": "2026-05-07T06:09:49Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1c4a4694645a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 210 \u2014 P1: ConvKeyToTok 0x05E620 reachability for digit tokens\n\n## Context\n\nIn the TI-",
+      "status": "completed",
+      "duration_seconds": 656.559,
+      "timestamp": "2026-05-07T06:13:31Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 257,
-    "cc_to_codex": 257,
+    "total_calls": 265,
+    "cc_to_codex": 265,
     "codex_to_cc": 0,
-    "completed": 199,
+    "completed": 207,
     "failed": 52,
     "refused": 0,
-    "avg_duration_seconds": 553.713
+    "avg_duration_seconds": 553.49
   }
 }
