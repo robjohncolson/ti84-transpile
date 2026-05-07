@@ -3204,15 +3204,85 @@
       "timestamp": "2026-05-07T00:17:12Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "e5fadcc2bf49",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 206, Priority 3: Test JP (HL) at 0x0585D3 with different context table entries\n\n## Co",
+      "status": "completed",
+      "duration_seconds": 553.087,
+      "timestamp": "2026-05-07T02:11:47Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase206-context-table-explore.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "5b3560331541",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 206, Priority 1: cxMain digit path \u2014 why does it return without BufInsert?\n\n## Contex",
+      "status": "completed",
+      "duration_seconds": 848.904,
+      "timestamp": "2026-05-07T02:16:40Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase206-cxmain-bufinsert-why.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "e81d8378d0f7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 206, Priority 2: Debug STAT error condition \u2014 why does the OS hit an error?\n\n## Conte",
+      "status": "timeout",
+      "duration_seconds": 900.035,
+      "timestamp": "2026-05-07T02:17:33Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "18816bed5605",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 207 P1: Trace 0x058D54 return values for all token classes\n\n## Context\nIn the TI-84 P",
+      "status": "completed",
+      "duration_seconds": 447.634,
+      "timestamp": "2026-05-07T04:09:59Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3ef4089e21cd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 207 P2: PushErrorHandler before STAT entry\n\n## Context\nIn the TI-84 Plus CE ROM trans",
+      "status": "timeout",
+      "duration_seconds": 900.043,
+      "timestamp": "2026-05-07T04:17:34Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "4c17c2f722f0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 207 P3: Add remaining AP Stats distribution tokens to browser-shell\n\n## Context\nThe T",
+      "status": "timeout",
+      "duration_seconds": 900.047,
+      "timestamp": "2026-05-07T04:17:35Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 251,
-    "cc_to_codex": 251,
+    "total_calls": 257,
+    "cc_to_codex": 257,
     "codex_to_cc": 0,
-    "completed": 196,
-    "failed": 49,
+    "completed": 199,
+    "failed": 52,
     "refused": 0,
-    "avg_duration_seconds": 548.823
+    "avg_duration_seconds": 553.713
   }
 }

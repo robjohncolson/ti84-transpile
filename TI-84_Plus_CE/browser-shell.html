@@ -1580,6 +1580,8 @@ const EVAL_E_CONSTANT_TOKENS = [0xBF, 0x10, 0x31, 0x11];
 // Two-byte function tokens: sorted longest-first for prefix safety
 const EVAL_TWO_BYTE_TOKENS = [
   ['piecewise', [0xBB, 0x2E]],  // tPiecewise
+  ['chi2cdf',   [0xBB, 0x06]],  // tChi2cdf (ASCII alias)
+  ['\u03C7\u00B2cdf', [0xBB, 0x06]],  // tChi2cdf
   ['normalcdf', [0xBB, 0x01]],  // tNormalCdf
   ['normalpdf', [0xBB, 0x00]],  // tNormalPdf
   ['geometpdf', [0xBB, 0x0C]],  // tGeometPdf
@@ -1587,10 +1589,15 @@ const EVAL_TWO_BYTE_TOKENS = [
   ['remainder', [0xBB, 0x3B]],  // tRemainder
   ['binompdf', [0xBB, 0x0A]],  // tBinomPdf
   ['binomcdf', [0xBB, 0x0B]],  // tBinomCdf
+  ['linreg(ax+b)', [0xBB, 0xF4]],  // tLinReg(ax+b)
   ['variance', [0xBB, 0x05]],  // tVariance
   ['logbase',   [0xBB, 0x34]],  // tLogBase (2-arg log: logBASE(value,base))
   ['randint',   [0xBB, 0x11]],  // tRandInt
+  ['fcdf',      [0xBB, 0x09]],  // tFcdf
+  ['tcdf',      [0xBB, 0x08]],  // tTcdf
+  ['invt',      [0xBB, 0x03]],  // tInvT
   ['invnorm',   [0xBB, 0x02]],  // tInvNorm
+  ['clrlist',   [0xBB, 0xFA]],  // tClrList
   ['cumsum',    [0xBB, 0x29]],  // tCumSum
   ['stddev',    [0xBB, 0x04]],  // tStdDev
   ['nderiv',    [0x5E, 0x25]],  // nDeriv(
@@ -1747,6 +1754,7 @@ let evalCachedPostCreateOpBase = 0;
 
 // JS-side variable store: letter → 9-byte BCD Uint8Array
 const evalVarStore = new Map();
+const evalListStore = new Map();
 // Last Ans BCD for re-creation during variable rebuild
 let evalLastAnsBcd = null;
 let Ans = 0;
@@ -2228,6 +2236,140 @@ function _stdNormalCdf(z) {
   return 0.5 * (1 + _erf(z / Math.SQRT2));
 }
 
+function _clampUnitInterval(value) {
+  if (!Number.isFinite(value)) return value;
+  if (value <= 0) return 0;
+  if (value >= 1) return 1;
+  return value;
+}
+
+// Natural log of Gamma(x) via Lanczos approximation.
+function _lnGamma(x) {
+  const coeffs = [
+    0.99999999999980993,
+    676.5203681218851,
+    -1259.1392167224028,
+    771.32342877765313,
+    -176.61502916214059,
+    12.507343278686905,
+    -0.13857109526572012,
+    9.9843695780195716e-6,
+    1.5056327351493116e-7,
+  ];
+  if (x < 0.5) {
+    return Math.log(Math.PI) - Math.log(Math.sin(Math.PI * x)) - _lnGamma(1 - x);
+  }
+  let sum = coeffs[0];
+  const z = x - 1;
+  for (let i = 1; i < coeffs.length; i++) {
+    sum += coeffs[i] / (z + i);
+  }
+  const t = z + 7.5;
+  return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(t) - t + Math.log(sum);
+}
+
+// Regularized lower incomplete gamma P(a, x).
+function _regularizedGammaP(a, x) {
+  if (!Number.isFinite(a) || !Number.isFinite(x) || a <= 0 || x < 0) return NaN;
+  if (x === 0) return 0;
+  if (x === Infinity) return 1;
+
+  const gln = _lnGamma(a);
+  const EPS = 1e-12;
+  const FPMIN = 1e-300;
+  const ITMAX = 200;
+
+  if (x < a + 1) {
+    let sum = 1 / a;
+    let del = sum;
+    let ap = a;
+    for (let n = 1; n <= ITMAX; n++) {
+      ap += 1;
+      del *= x / ap;
+      sum += del;
+      if (Math.abs(del) < Math.abs(sum) * EPS) break;
+    }
+    return _clampUnitInterval(sum * Math.exp(-x + a * Math.log(x) - gln));
+  }
+
+  let b = x + 1 - a;
+  let c = 1 / FPMIN;
+  let d = 1 / b;
+  let h = d;
+  for (let i = 1; i <= ITMAX; i++) {
+    const an = -i * (i - a);
+    b += 2;
+    d = an * d + b;
+    if (Math.abs(d) < FPMIN) d = FPMIN;
+    c = b + an / c;
+    if (Math.abs(c) < FPMIN) c = FPMIN;
+    d = 1 / d;
+    const del = d * c;
+    h *= del;
+    if (Math.abs(del - 1) < EPS) break;
+  }
+
+  const q = Math.exp(-x + a * Math.log(x) - gln) * h;
+  return _clampUnitInterval(1 - q);
+}
+
+function _regularizedBetaFraction(x, a, b) {
+  const EPS = 1e-12;
+  const FPMIN = 1e-300;
+  const ITMAX = 200;
+  let qab = a + b;
+  let qap = a + 1;
+  let qam = a - 1;
+  let c = 1;
+  let d = 1 - (qab * x) / qap;
+  if (Math.abs(d) < FPMIN) d = FPMIN;
+  d = 1 / d;
+  let h = d;
+
+  for (let m = 1; m <= ITMAX; m++) {
+    const m2 = m * 2;
+    let aa = (m * (b - m) * x) / ((qam + m2) * (a + m2));
+    d = 1 + aa * d;
+    if (Math.abs(d) < FPMIN) d = FPMIN;
+    c = 1 + aa / c;
+    if (Math.abs(c) < FPMIN) c = FPMIN;
+    d = 1 / d;
+    h *= d * c;
+
+    aa = (-(a + m) * (qab + m) * x) / ((a + m2) * (qap + m2));
+    d = 1 + aa * d;
+    if (Math.abs(d) < FPMIN) d = FPMIN;
+    c = 1 + aa / c;
+    if (Math.abs(c) < FPMIN) c = FPMIN;
+    d = 1 / d;
+    const del = d * c;
+    h *= del;
+    if (Math.abs(del - 1) < EPS) break;
+  }
+
+  return h;
+}
+
+// Regularized incomplete beta I_x(a, b).
+function _regularizedBetaI(x, a, b) {
+  if (!Number.isFinite(x) || !Number.isFinite(a) || !Number.isFinite(b) || a <= 0 || b <= 0) {
+    return NaN;
+  }
+  if (x <= 0) return 0;
+  if (x >= 1) return 1;
+
+  const front = Math.exp(
+    _lnGamma(a + b) - _lnGamma(a) - _lnGamma(b)
+    + a * Math.log(x)
+    + b * Math.log1p(-x)
+  );
+
+  if (x < (a + 1) / (a + b + 2)) {
+    return _clampUnitInterval((front * _regularizedBetaFraction(x, a, b)) / a);
+  }
+  return _clampUnitInterval(1 - (front * _regularizedBetaFraction(1 - x, b, a)) / b);
+}
+
 // normalcdf(lower, upper, mu, sigma) — area under normal curve
 function _normalcdf(lower, upper, mu, sigma) {
   if (mu === undefined) mu = 0;
@@ -2246,6 +2388,99 @@ function _normalpdf(x, mu, sigma) {
 }
 
 // invNorm(area, mu, sigma) — inverse normal via rational approximation + Newton refinement
+// chi-square, t, and F helpers for AP Stats distributions
+function _chiSquareCdf(x, df) {
+  if (!Number.isFinite(df) || df <= 0) return NaN;
+  if (x <= 0) return 0;
+  if (x === Infinity) return 1;
+  return _regularizedGammaP(df / 2, x / 2);
+}
+
+function _tPdf(x, df) {
+  if (!Number.isFinite(df) || df <= 0) return NaN;
+  const logNumerator = _lnGamma((df + 1) / 2) - _lnGamma(df / 2);
+  const logDenominator = 0.5 * Math.log(df * Math.PI);
+  const logPower = -((df + 1) / 2) * Math.log1p((x * x) / df);
+  return Math.exp(logNumerator - logDenominator + logPower);
+}
+
+function _tCdf(x, df) {
+  if (!Number.isFinite(df) || df <= 0) return NaN;
+  if (x === -Infinity) return 0;
+  if (x === Infinity) return 1;
+  if (x === 0) return 0.5;
+
+  const betaX = df / (df + x * x);
+  const tail = 0.5 * _regularizedBetaI(betaX, df / 2, 0.5);
+  return x < 0 ? tail : 1 - tail;
+}
+
+function _fCdf(x, dfNumerator, dfDenominator) {
+  if (!Number.isFinite(dfNumerator) || !Number.isFinite(dfDenominator)
+      || dfNumerator <= 0 || dfDenominator <= 0) {
+    return NaN;
+  }
+  if (x <= 0) return 0;
+  if (x === Infinity) return 1;
+  const betaX = (dfNumerator * x) / (dfNumerator * x + dfDenominator);
+  return _regularizedBetaI(betaX, dfNumerator / 2, dfDenominator / 2);
+}
+
+// invT(area, df) — inverse t CDF via Cornish-Fisher seed + safeguarded Newton.
+function _invT(area, df) {
+  if (!Number.isFinite(area) || !Number.isFinite(df) || area <= 0 || area >= 1 || df <= 0) {
+    return NaN;
+  }
+  if (area === 0.5) return 0;
+
+  const z = _invNorm(area, 0, 1);
+  const invDf = 1 / df;
+  const z2 = z * z;
+  const z3 = z2 * z;
+  const z5 = z3 * z2;
+  const z7 = z5 * z2;
+  let guess = z
+    + ((z3 + z) * invDf) / 4
+    + ((5 * z5 + 16 * z3 + 3 * z) * invDf * invDf) / 96
+    + ((3 * z7 + 19 * z5 + 17 * z3 - 15 * z) * invDf * invDf * invDf) / 384;
+  if (!Number.isFinite(guess)) guess = area < 0.5 ? -1 : 1;
+
+  let low = Math.min(guess, 0);
+  let high = Math.max(guess, 0);
+  if (low === high) {
+    low = -1;
+    high = 1;
+  }
+  while (_tCdf(low, df) > area) low *= 2;
+  while (_tCdf(high, df) < area) high *= 2;
+
+  let current = Math.min(Math.max(guess, low), high);
+  for (let i = 0; i < 24; i++) {
+    const cdf = _tCdf(current, df);
+    const pdf = _tPdf(current, df);
+    if (!Number.isFinite(cdf) || !Number.isFinite(pdf) || pdf <= 0) {
+      current = (low + high) / 2;
+      continue;
+    }
+
+    if (cdf < area) low = current;
+    else high = current;
+
+    const step = (cdf - area) / pdf;
+    let next = current - step;
+    if (!Number.isFinite(next) || next <= low || next >= high) {
+      next = (low + high) / 2;
+    }
+    if (Math.abs(next - current) < 1e-12 * Math.max(1, Math.abs(next))) {
+      return next;
+    }
+    current = next;
+  }
+
+  return current;
+}
+
+// invNorm(area, mu, sigma) â€” inverse normal via rational approximation + Newton refinement
 function _invNorm(area, mu, sigma) {
   if (mu === undefined) mu = 0;
   if (sigma === undefined) sigma = 1;
@@ -2354,6 +2589,18 @@ function _parseList(val) {
   return [val];
 }
 
+function _normalizeListName(raw) {
+  const trimmed = String(raw || '').trim();
+  const match = trimmed.match(/^(?:L|list)\s*([1-6])$/i);
+  if (!match) return null;
+  return `L${match[1]}`;
+}
+
+function _getStoredList(listName) {
+  const stored = evalListStore.get(listName);
+  return Array.isArray(stored) ? stored.slice() : [];
+}
+
 function _listMean(arr) {
   let sum = 0;
   for (let i = 0; i < arr.length; i++) sum += arr[i];
@@ -2380,6 +2627,54 @@ function _variance(arr) {
     sumSq += d * d;
   }
   return sumSq / arr.length;
+}
+
+function _linearRegression(xValues, yValues) {
+  if (xValues.length !== yValues.length) {
+    return { error: 'LinReg(ax+b) requires lists of the same length.' };
+  }
+  if (xValues.length < 2) {
+    return { error: 'LinReg(ax+b) requires at least 2 data points.' };
+  }
+
+  const n = xValues.length;
+  let sumX = 0;
+  let sumY = 0;
+  let sumXY = 0;
+  let sumX2 = 0;
+  let sumY2 = 0;
+
+  for (let i = 0; i < n; i++) {
+    const x = xValues[i];
+    const y = yValues[i];
+    sumX += x;
+    sumY += y;
+    sumXY += x * y;
+    sumX2 += x * x;
+    sumY2 += y * y;
+  }
+
+  const slopeDenominator = n * sumX2 - sumX * sumX;
+  if (slopeDenominator === 0) {
+    return { error: 'LinReg(ax+b) is undefined when all x-values are equal.' };
+  }
+
+  const slope = (n * sumXY - sumX * sumY) / slopeDenominator;
+  const intercept = (sumY - slope * sumX) / n;
+  const correlationDenominator = Math.sqrt(
+    (n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY)
+  );
+  if (correlationDenominator === 0) {
+    return { error: 'LinReg(ax+b) is undefined when the data has zero variance.' };
+  }
+
+  const r = (n * sumXY - sumX * sumY) / correlationDenominator;
+  return {
+    a: slope,
+    b: intercept,
+    r,
+    r2: r * r,
+  };
 }
 
 // ---- End statistical distribution helpers ----
@@ -2431,6 +2726,15 @@ function evalMatchWholeCall(expr, name) {
   return trimmed.slice(openIndex + 1, closeIndex);
 }
 
+function evalMatchWholeCommand(expr, name) {
+  const trimmed = expr.trim();
+  if (!trimmed.toLowerCase().startsWith(name.toLowerCase())) return null;
+  const remainder = trimmed.slice(name.length);
+  if (remainder.length === 0) return '';
+  if (!/\s/.test(remainder[0])) return null;
+  return remainder.trim();
+}
+
 function evalIsWordChar(ch) {
   return /[A-Za-z0-9_]/.test(ch || '');
 }
@@ -2462,6 +2766,34 @@ function evalReadNumeric(expr, useBuffer) {
     return { error: `Expected a numeric result for "${expr}".` };
   }
   return result;
+}
+
+function evalReadListArgument(expr, useBuffer) {
+  const trimmed = expr.trim();
+  const listName = _normalizeListName(trimmed);
+  if (listName) {
+    return { values: _getStoredList(listName), listName };
+  }
+
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    const inner = trimmed.slice(1, -1).trim();
+    if (!inner) return { values: [], listName: null };
+    const elems = evalSplitArgs(inner);
+    const values = [];
+    for (const elem of elems) {
+      const result = evalReadNumeric(elem, useBuffer);
+      if (result.error) return result;
+      values.push(result.value);
+    }
+    return { values, listName: null };
+  }
+
+  const result = runDirectEval(trimmed, useBuffer);
+  if (result.error) return result;
+  if (!Array.isArray(result.value)) {
+    return { error: 'Expected a list argument.' };
+  }
+  return { values: result.value.slice(), listName: null };
 }
 
 function evalReadTemplateVariable(raw) {
@@ -2771,33 +3103,10 @@ function evalRunGeometcdfTemplate(argText, useBuffer) {
 }
 
 function evalRunListStatTemplate(argText, useBuffer, statFn) {
-  // Argument is a list: either {1,2,3} or a single expression that returns a list
-  const trimmed = argText.trim();
-  let values;
-
-  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-    // Parse list literal: evaluate each element
-    const inner = trimmed.slice(1, -1);
-    const elems = evalSplitArgs(inner);
-    values = [];
-    for (const e of elems) {
-      const r = evalReadNumeric(e, useBuffer);
-      if (r.error) return r;
-      values.push(r.value);
-    }
-  } else {
-    // Try evaluating as an expression that returns a list
-    const r = runDirectEval(trimmed, useBuffer);
-    if (r.error) return r;
-    if (Array.isArray(r.value)) {
-      values = r.value;
-    } else {
-      return { error: 'Expected a list argument.' };
-    }
-  }
-
-  if (values.length === 0) return { error: 'List is empty.' };
-  const result = statFn(values);
+  const listResult = evalReadListArgument(argText, useBuffer);
+  if (listResult.error) return listResult;
+  if (listResult.values.length === 0) return { error: 'List is empty.' };
+  const result = statFn(listResult.values);
   return runDirectEval(formatResult(result), useBuffer);
 }
 
@@ -2809,27 +3118,9 @@ function evalRunNotTemplate(argText, useBuffer) {
 }
 
 function evalRunSortTemplate(argText, useBuffer, ascending) {
-  const trimmed = argText.trim();
-  let values;
-
-  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-    const inner = trimmed.slice(1, -1);
-    const elems = evalSplitArgs(inner);
-    values = [];
-    for (const e of elems) {
-      const r = evalReadNumeric(e, useBuffer);
-      if (r.error) return r;
-      values.push(r.value);
-    }
-  } else {
-    const r = runDirectEval(trimmed, useBuffer);
-    if (r.error) return r;
-    if (Array.isArray(r.value)) {
-      values = r.value.slice();
-    } else {
-      return { error: 'Expected a list argument.' };
-    }
-  }
+  const listResult = evalReadListArgument(argText, useBuffer);
+  if (listResult.error) return listResult;
+  const values = listResult.values.slice();
 
   if (ascending) {
     values.sort((a, b) => a - b);
@@ -2837,10 +3128,132 @@ function evalRunSortTemplate(argText, useBuffer, ascending) {
     values.sort((a, b) => b - a);
   }
 
+  if (listResult.listName) {
+    evalListStore.set(listResult.listName, values.slice());
+  }
+
   const displays = values.map(v => formatResult(v));
   return {
     value: values,
     display: `{${displays.join(', ')}}`,
+    steps: 0,
+    errNo: 0,
+    op1Hex: '',
+    ansStored: false,
+  };
+}
+
+function evalRunChiSquareCdfTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 3) {
+    return { error: '\u03C7\u00B2cdf(lower,upper,df) expects 3 arguments.' };
+  }
+  const vals = [];
+  for (const arg of args) {
+    const result = evalReadNumeric(arg, useBuffer);
+    if (result.error) return result;
+    vals.push(result.value);
+  }
+  if (vals[2] <= 0) return { error: '\u03C7\u00B2cdf requires df > 0.' };
+  const result = _chiSquareCdf(vals[1], vals[2]) - _chiSquareCdf(vals[0], vals[2]);
+  if (!Number.isFinite(result)) return { error: '\u03C7\u00B2cdf could not be evaluated.' };
+  return runDirectEval(formatResult(result), useBuffer);
+}
+
+function evalRunTcdfTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 3) {
+    return { error: 'tcdf(lower,upper,df) expects 3 arguments.' };
+  }
+  const vals = [];
+  for (const arg of args) {
+    const result = evalReadNumeric(arg, useBuffer);
+    if (result.error) return result;
+    vals.push(result.value);
+  }
+  if (vals[2] <= 0) return { error: 'tcdf requires df > 0.' };
+  const result = _tCdf(vals[1], vals[2]) - _tCdf(vals[0], vals[2]);
+  if (!Number.isFinite(result)) return { error: 'tcdf could not be evaluated.' };
+  return runDirectEval(formatResult(result), useBuffer);
+}
+
+function evalRunFcdfTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 4) {
+    return { error: 'Fcdf(lower,upper,dfNumerator,dfDenominator) expects 4 arguments.' };
+  }
+  const vals = [];
+  for (const arg of args) {
+    const result = evalReadNumeric(arg, useBuffer);
+    if (result.error) return result;
+    vals.push(result.value);
+  }
+  if (vals[2] <= 0 || vals[3] <= 0) return { error: 'Fcdf requires both degrees of freedom to be > 0.' };
+  const result = _fCdf(vals[1], vals[2], vals[3]) - _fCdf(vals[0], vals[2], vals[3]);
+  if (!Number.isFinite(result)) return { error: 'Fcdf could not be evaluated.' };
+  return runDirectEval(formatResult(result), useBuffer);
+}
+
+function evalRunInvTTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 2) {
+    return { error: 'invT(area,df) expects 2 arguments.' };
+  }
+  const vals = [];
+  for (const arg of args) {
+    const result = evalReadNumeric(arg, useBuffer);
+    if (result.error) return result;
+    vals.push(result.value);
+  }
+  const result = _invT(vals[0], vals[1]);
+  if (!Number.isFinite(result)) {
+    return { error: 'invT requires 0 < area < 1 and df > 0.' };
+  }
+  return runDirectEval(formatResult(result), useBuffer);
+}
+
+function evalRunLinRegTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 2) {
+    return { error: 'LinReg(ax+b) requires 2 list arguments.' };
+  }
+
+  const xList = evalReadListArgument(args[0], useBuffer);
+  if (xList.error) return xList;
+  const yList = evalReadListArgument(args[1], useBuffer);
+  if (yList.error) return yList;
+
+  const regression = _linearRegression(xList.values, yList.values);
+  if (regression.error) return regression;
+
+  return {
+    value: regression,
+    display: `a=${formatResult(regression.a)}, b=${formatResult(regression.b)}, r\u00B2=${formatResult(regression.r2)}, r=${formatResult(regression.r)}`,
+    steps: 0,
+    errNo: 0,
+    op1Hex: '',
+    ansStored: false,
+  };
+}
+
+function evalRunClrListTemplate(argText) {
+  const trimmed = argText.trim();
+  if (!trimmed) return { error: 'ClrList requires at least one list name.' };
+
+  const args = evalSplitArgs(trimmed);
+  const cleared = [];
+  for (const arg of args) {
+    const listName = _normalizeListName(arg);
+    if (!listName) {
+      return { error: `ClrList expects list names like L1-L6, not "${arg.trim()}".` };
+    }
+    evalListStore.set(listName, []);
+    cleared.push(listName);
+  }
+
+  return {
+    value: cleared,
+    display: `Cleared ${cleared.join(', ')}`,
     steps: 0,
     errNo: 0,
     op1Hex: '',
@@ -2864,6 +3277,12 @@ function runDirectEvalTemplate(expr, useBuffer) {
   if (piecewiseArgs !== null) return evalRunPiecewiseTemplate(piecewiseArgs, useBuffer);
 
   // Statistical distribution functions (AP Stats)
+  const chiSquareArgs = evalMatchWholeCall(expr, '\u03C7\u00B2cdf');
+  if (chiSquareArgs !== null) return evalRunChiSquareCdfTemplate(chiSquareArgs, useBuffer);
+
+  const chiSquareAsciiArgs = evalMatchWholeCall(expr, 'chi2cdf');
+  if (chiSquareAsciiArgs !== null) return evalRunChiSquareCdfTemplate(chiSquareAsciiArgs, useBuffer);
+
   const normalcdfArgs = evalMatchWholeCall(expr, 'normalcdf');
   if (normalcdfArgs !== null) return evalRunNormalcdfTemplate(normalcdfArgs, useBuffer);
 
@@ -2885,6 +3304,19 @@ function runDirectEvalTemplate(expr, useBuffer) {
   const geometcdfArgs = evalMatchWholeCall(expr, 'geometcdf');
   if (geometcdfArgs !== null) return evalRunGeometcdfTemplate(geometcdfArgs, useBuffer);
 
+  const tcdfArgs = evalMatchWholeCall(expr, 'tcdf');
+  if (tcdfArgs !== null) return evalRunTcdfTemplate(tcdfArgs, useBuffer);
+
+  const fcdfArgs = evalMatchWholeCall(expr, 'Fcdf');
+  if (fcdfArgs !== null) return evalRunFcdfTemplate(fcdfArgs, useBuffer);
+
+  const invTArgs = evalMatchWholeCall(expr, 'invT');
+  if (invTArgs !== null) return evalRunInvTTemplate(invTArgs, useBuffer);
+
+  let linRegArgs = evalMatchWholeCommand(expr, 'LinReg(ax+b)');
+  if (linRegArgs === null) linRegArgs = evalMatchWholeCall(expr, 'LinReg(ax+b)');
+  if (linRegArgs !== null) return evalRunLinRegTemplate(linRegArgs, useBuffer);
+
   // List statistics
   const stdDevArgs = evalMatchWholeCall(expr, 'stdDev');
   if (stdDevArgs !== null) return evalRunListStatTemplate(stdDevArgs, useBuffer, _stdDev);
@@ -2902,6 +3334,10 @@ function runDirectEvalTemplate(expr, useBuffer) {
 
   const sortDArgs = evalMatchWholeCall(expr, 'SortD');
   if (sortDArgs !== null) return evalRunSortTemplate(sortDArgs, useBuffer, false);
+
+  let clrListArgs = evalMatchWholeCommand(expr, 'ClrList');
+  if (clrListArgs === null) clrListArgs = evalMatchWholeCall(expr, 'ClrList');
+  if (clrListArgs !== null) return evalRunClrListTemplate(clrListArgs);
 
   return null;
 }
@@ -3775,6 +4211,7 @@ $('btnEvalClear').addEventListener('click', () => {
   evalCachedCpu = null;
   evalCachedPerph = null;
   evalVarStore.clear();
+  evalListStore.clear();
   evalLastAnsBcd = null;
   // Also clear ROM Parser cache
   rompCachedMem = null;
