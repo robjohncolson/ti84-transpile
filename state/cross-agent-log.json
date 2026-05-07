@@ -3819,15 +3819,63 @@
       "timestamp": "2026-05-07T15:29:55Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "d4e9ab9dd27b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate 0x084EA7 as key code entry point from ISR to home-screen dispatch\n\n## Context\nYo",
+      "status": "completed",
+      "duration_seconds": 762.792,
+      "timestamp": "2026-05-07T15:35:38Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase223-084ea7-key-entry.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "9850018026a8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Find what OS code produces magic A values (0xFA-0xFE) for key classifier\n\n## Context\nYou are",
+      "status": "completed",
+      "duration_seconds": 804.077,
+      "timestamp": "2026-05-07T15:36:17Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a88ea98debba",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x02F68A as a function in the _GetKey chain\n\n## Context\nYou are working on a TI-84 Plu",
+      "status": "timeout",
+      "duration_seconds": 900.066,
+      "timestamp": "2026-05-07T15:37:54Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a19a670cf52e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Comprehensive secondary token map \u2014 test ConvKeyToTok with magic A values across all common ",
+      "status": "completed",
+      "duration_seconds": 507.688,
+      "timestamp": "2026-05-07T16:11:11Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase224-secondary-token-map.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 302,
-    "cc_to_codex": 302,
+    "total_calls": 306,
+    "cc_to_codex": 306,
     "codex_to_cc": 0,
-    "completed": 234,
-    "failed": 62,
+    "completed": 237,
+    "failed": 63,
     "refused": 0,
-    "avg_duration_seconds": 561.429
+    "avg_duration_seconds": 563.811
   }
 }
