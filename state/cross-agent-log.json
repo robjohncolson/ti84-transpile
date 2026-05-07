@@ -3153,15 +3153,66 @@
         "TI-84_Plus_CE/probe-phase204-stat-lddr-exit.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "9f8a3545c646",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 204 P1: CoorMon Digit Key Classification\n\n## Context\nThis is a TI-84 Plus CE ROM tran",
+      "status": "completed",
+      "duration_seconds": 801.709,
+      "timestamp": "2026-05-06T22:15:46Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a9166d8a84a7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 205 \u2014 P1: Trace cxMain digit path (class=0) to BufInsert\n\n## Context\n\nIn the TI-84 Pl",
+      "status": "completed",
+      "duration_seconds": 376.491,
+      "timestamp": "2026-05-07T00:08:25Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "03ed59683a7c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 205 \u2014 P2: Determine what sets BIT 7,(IY+12) \u2014 Level 1 vs Level 2 gate\n\n## Context\n\nIn",
+      "status": "completed",
+      "duration_seconds": 567.808,
+      "timestamp": "2026-05-07T00:11:38Z",
+      "files_changed": [
+        "CONTINUATION_PROMPT_CODEX.md",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase204-coormon-digit-classify.mjs",
+        "TI-84_Plus_CE/probe-phase205-bit7-iy12-setter.mjs",
+        "TI-84_Plus_CE/probe-phase205-cxmain-digit-trace.mjs",
+        "TI-84_Plus_CE/probe-phase205-stat-extended-30k.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "087aee99a180",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 205 \u2014 P3: Extend STAT pipeline trace past 15000 steps\n\n## Context\n\nIn the TI-84 Plus ",
+      "status": "timeout",
+      "duration_seconds": 900.061,
+      "timestamp": "2026-05-07T00:17:12Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 247,
-    "cc_to_codex": 247,
+    "total_calls": 251,
+    "cc_to_codex": 251,
     "codex_to_cc": 0,
-    "completed": 193,
-    "failed": 48,
+    "completed": 196,
+    "failed": 49,
     "refused": 0,
-    "avg_duration_seconds": 546.998
+    "avg_duration_seconds": 548.823
   }
 }
