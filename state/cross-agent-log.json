@@ -4143,15 +4143,129 @@
         "TI-84_Plus_CE/probe-phase231-table-crossref.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "2a867abb0bdc",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 231 \u2014 P2: Verify 0x030100 Transpiled Key Lookup Path\n\n## Context\nSession 230 added a ",
+      "status": "timeout",
+      "duration_seconds": 900.038,
+      "timestamp": "2026-05-07T20:57:07Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3178d7c93e4b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 232 \u2014 P3: Add more direct-eval tokens (AP Stats inference)\n\n## Task\nAdd AP Statistics",
+      "status": "completed",
+      "duration_seconds": 415.01,
+      "timestamp": "2026-05-07T21:29:33Z",
+      "files_changed": [
+        "TI-84_Plus_CE/browser-shell.html"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "663b023e7c92",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 232 \u2014 P1: Investigate 10 BIT 0,(IY+29) test sites\n\n## Task\nBuild a probe that investi",
+      "status": "completed",
+      "duration_seconds": 487.319,
+      "timestamp": "2026-05-07T21:30:41Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b8f21e9716f6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 232 \u2014 P2: Trace 0x02FE9D SET 0,(IY+29) function boundary and trigger\n\n## Task\nBuild a",
+      "status": "timeout",
+      "duration_seconds": 900.038,
+      "timestamp": "2026-05-07T21:37:36Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b035306e7cf0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add remaining AP Stats inference tokens to browser-shell.html\n\n## Context\nThe TI-84 Plus CE ",
+      "status": "ok",
+      "duration_seconds": 611.665,
+      "timestamp": "2026-05-07T22:12:31Z",
+      "files_changed": [
+        "TI-84_Plus_CE/browser-shell.html"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "d746fd49148e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate CP 0x36/0x30 key code classification at 0x02FEDF/0x02FEF3 (fff)\n\n## Context\nIn t",
+      "status": "completed",
+      "duration_seconds": 636.073,
+      "timestamp": "2026-05-07T22:12:55Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "91837e3264ad",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x02FDE7/0x02FDFE caller context (eee)\n\n## Context\nIn the TI-84 Plus CE ROM transpilat",
+      "status": "timeout",
+      "duration_seconds": 900.044,
+      "timestamp": "2026-05-07T22:17:17Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ca650376ab73",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x0236F9 descriptor handler (hhh)\n\n## Context\nYou are working on the TI-84 Plus CE ROM",
+      "status": "timeout",
+      "duration_seconds": 900.432,
+      "timestamp": "2026-05-07T22:57:17Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f8b255e36783",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x02FFF6 and 0x0300CB pre-cascade exit paths (iii-2)\n\n## Context\nYou are working on th",
+      "status": "timeout",
+      "duration_seconds": 900.039,
+      "timestamp": "2026-05-07T22:57:19Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5ed87c8e9682",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x0302EB called at 0x02FF1B after 09F79B table lookup (jjj)\n\n## Context\nYou are workin",
+      "status": "timeout",
+      "duration_seconds": 900.053,
+      "timestamp": "2026-05-07T22:57:20Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 330,
-    "cc_to_codex": 330,
+    "total_calls": 340,
+    "cc_to_codex": 340,
     "codex_to_cc": 0,
-    "completed": 253,
-    "failed": 71,
+    "completed": 256,
+    "failed": 77,
     "refused": 0,
-    "avg_duration_seconds": 575.715
+    "avg_duration_seconds": 580.99
   }
 }
