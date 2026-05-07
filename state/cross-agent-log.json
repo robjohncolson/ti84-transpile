@@ -3773,15 +3773,61 @@
       "timestamp": "2026-05-07T13:37:48Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "179b949a0656",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 222 \u2014 P1: Trace 0x05C52C Internal Branching (Key Classifier / Secondary Table Selecti",
+      "status": "completed",
+      "duration_seconds": 760.357,
+      "timestamp": "2026-05-07T14:55:38Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase222-05c52c-internal-branching.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "3aff59432bdc",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 222 \u2014 P2: Trace 0x0856C8 Caller Chain + 0xD00826 Population\n\n## Context\n\nYou are work",
+      "status": "timeout",
+      "duration_seconds": 900.04,
+      "timestamp": "2026-05-07T14:58:00Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "dabe914092e5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 222 \u2014 P3: Trace ISR Key Code Delivery Chain (0x000038 \u2192 0x02F68A)\n\n## Context\n\nYou ar",
+      "status": "timeout",
+      "duration_seconds": 900.049,
+      "timestamp": "2026-05-07T14:58:01Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d1a55c9f1d32",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Test 0x05C52C key classifier with magic A values for secondary table lookup\n\n## Context\nYou ",
+      "status": "completed",
+      "duration_seconds": 424.875,
+      "timestamp": "2026-05-07T15:29:55Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 298,
-    "cc_to_codex": 298,
+    "total_calls": 302,
+    "cc_to_codex": 302,
     "codex_to_cc": 0,
-    "completed": 232,
-    "failed": 60,
+    "completed": 234,
+    "failed": 62,
     "refused": 0,
-    "avg_duration_seconds": 558.947
+    "avg_duration_seconds": 561.429
   }
 }
