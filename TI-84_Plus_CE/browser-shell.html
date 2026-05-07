@@ -1582,6 +1582,10 @@ const EVAL_TWO_BYTE_TOKENS = [
   ['piecewise', [0xBB, 0x2E]],  // tPiecewise
   ['chi2cdf',   [0xBB, 0x06]],  // tChi2cdf (ASCII alias)
   ['\u03C7\u00B2cdf', [0xBB, 0x06]],  // tChi2cdf
+  ['chi2pdf',   [0xBB, 0x07]],  // tChi2pdf (ASCII alias)
+  ['\u03C7\u00B2pdf', [0xBB, 0x07]],  // tChi2pdf
+  ['invchi2',   [0xBB, 0x3D]],  // tInvChi2 (ASCII alias)
+  ['inv\u03C7\u00B2', [0xBB, 0x3D]],  // tInvChi2
   ['normalcdf', [0xBB, 0x01]],  // tNormalCdf
   ['normalpdf', [0xBB, 0x00]],  // tNormalPdf
   ['geometpdf', [0xBB, 0x0C]],  // tGeometPdf
@@ -1594,9 +1598,12 @@ const EVAL_TWO_BYTE_TOKENS = [
   ['logbase',   [0xBB, 0x34]],  // tLogBase (2-arg log: logBASE(value,base))
   ['randint',   [0xBB, 0x11]],  // tRandInt
   ['fcdf',      [0xBB, 0x09]],  // tFcdf
+  ['fpdf',      [0xBB, 0x0F]],  // tFpdf
   ['tcdf',      [0xBB, 0x08]],  // tTcdf
+  ['tpdf',      [0xBB, 0x0E]],  // tTpdf
   ['invt',      [0xBB, 0x03]],  // tInvT
   ['invnorm',   [0xBB, 0x02]],  // tInvNorm
+  ['invf',      [0xBB, 0x3E]],  // tInvF
   ['clrlist',   [0xBB, 0xFA]],  // tClrList
   ['cumsum',    [0xBB, 0x29]],  // tCumSum
   ['stddev',    [0xBB, 0x04]],  // tStdDev
@@ -2480,6 +2487,130 @@ function _invT(area, df) {
   return current;
 }
 
+// chi-square PDF: (1/(2^(df/2)*Gamma(df/2))) * x^(df/2-1) * e^(-x/2)
+function _chiSquarePdf(x, df) {
+  if (!Number.isFinite(df) || df <= 0) return NaN;
+  if (x < 0) return 0;
+  if (x === Infinity) return 0;
+  if (x === 0) {
+    if (df < 2) return Infinity;
+    if (Math.abs(df - 2) < 1e-12) return 0.5;
+    return 0;
+  }
+  const halfDf = df / 2;
+  const logPdf = (halfDf - 1) * Math.log(x) - x / 2 - halfDf * Math.LN2 - _lnGamma(halfDf);
+  return Math.exp(logPdf);
+}
+
+// F PDF: Beta-function form using _lnGamma
+function _fPdf(x, df1, df2) {
+  if (!Number.isFinite(df1) || !Number.isFinite(df2) || df1 <= 0 || df2 <= 0) return NaN;
+  if (x < 0) return 0;
+  if (x === Infinity) return 0;
+  if (x === 0) {
+    if (df1 < 2) return Infinity;
+    if (Math.abs(df1 - 2) < 1e-12) return 1;
+    return 0;
+  }
+  const halfD1 = df1 / 2;
+  const halfD2 = df2 / 2;
+  const logPdf = halfD1 * Math.log(df1) + halfD2 * Math.log(df2)
+    + (halfD1 - 1) * Math.log(x)
+    - (halfD1 + halfD2) * Math.log(df1 * x + df2)
+    + _lnGamma(halfD1 + halfD2) - _lnGamma(halfD1) - _lnGamma(halfD2);
+  return Math.exp(logPdf);
+}
+
+// invChi2(area, df) — inverse chi-square CDF via Wilson-Hilferty seed + Newton.
+function _invChiSquare(area, df) {
+  if (!Number.isFinite(area) || !Number.isFinite(df) || area <= 0 || area >= 1 || df <= 0) {
+    return NaN;
+  }
+
+  // Wilson-Hilferty approximation for initial guess
+  const z = _invNorm(area, 0, 1);
+  const twoOverNineDf = 2 / (9 * df);
+  let guess = df * Math.pow(1 - twoOverNineDf + z * Math.sqrt(twoOverNineDf), 3);
+  if (!Number.isFinite(guess) || guess <= 0) guess = df * 0.5;
+
+  let low = 1e-10;
+  let high = Math.max(guess * 4, df * 4);
+  while (_chiSquareCdf(low, df) > area) low /= 10;
+  while (_chiSquareCdf(high, df) < area) high *= 2;
+
+  let current = Math.min(Math.max(guess, low), high);
+  for (let i = 0; i < 48; i++) {
+    const cdf = _chiSquareCdf(current, df);
+    const pdf = _chiSquarePdf(current, df);
+    if (!Number.isFinite(cdf) || !Number.isFinite(pdf) || pdf <= 0) {
+      current = (low + high) / 2;
+      continue;
+    }
+
+    if (cdf < area) low = current;
+    else high = current;
+
+    const step = (cdf - area) / pdf;
+    let next = current - step;
+    if (!Number.isFinite(next) || next <= low || next >= high) {
+      next = (low + high) / 2;
+    }
+    if (Math.abs(next - current) < 1e-12 * Math.max(1, Math.abs(next))) {
+      return next;
+    }
+    current = next;
+  }
+
+  return current;
+}
+
+// invF(area, df1, df2) — inverse F CDF via Newton's method.
+function _invF(area, df1, df2) {
+  if (!Number.isFinite(area) || !Number.isFinite(df1) || !Number.isFinite(df2)
+      || area <= 0 || area >= 1 || df1 <= 0 || df2 <= 0) {
+    return NaN;
+  }
+
+  // Initial guess: use chi-square approximation F ≈ (chi2(df1)/df1) / (chi2(df2)/df2)
+  const numeratorGuess = _invChiSquare(area, df1);
+  const denominatorGuess = _invChiSquare(1 - area, df2);
+  let guess = (numeratorGuess / df1) / (denominatorGuess / df2);
+  if (!Number.isFinite(guess) || guess <= 0) {
+    guess = (df2 * area) / (df1 * (1 - area));
+  }
+  if (!Number.isFinite(guess) || guess <= 0) guess = 1;
+
+  let low = 1e-10;
+  let high = Math.max(guess * 10, 100);
+  while (_fCdf(low, df1, df2) > area) low /= 10;
+  while (_fCdf(high, df1, df2) < area) high *= 2;
+
+  let current = Math.min(Math.max(guess, low), high);
+  for (let i = 0; i < 48; i++) {
+    const cdf = _fCdf(current, df1, df2);
+    const pdf = _fPdf(current, df1, df2);
+    if (!Number.isFinite(cdf) || !Number.isFinite(pdf) || pdf <= 0) {
+      current = (low + high) / 2;
+      continue;
+    }
+
+    if (cdf < area) low = current;
+    else high = current;
+
+    const step = (cdf - area) / pdf;
+    let next = current - step;
+    if (!Number.isFinite(next) || next <= low || next >= high) {
+      next = (low + high) / 2;
+    }
+    if (Math.abs(next - current) < 1e-12 * Math.max(1, Math.abs(next))) {
+      return next;
+    }
+    current = next;
+  }
+
+  return current;
+}
+
 // invNorm(area, mu, sigma) â€” inverse normal via rational approximation + Newton refinement
 function _invNorm(area, mu, sigma) {
   if (mu === undefined) mu = 0;
@@ -2766,6 +2897,18 @@ function evalReadNumeric(expr, useBuffer) {
     return { error: `Expected a numeric result for "${expr}".` };
   }
   return result;
+}
+
+function evalReturnTemplateNumber(value, useBuffer) {
+  if (Number.isFinite(value)) return runDirectEval(formatResult(value), useBuffer);
+  return {
+    value,
+    display: formatResult(value),
+    steps: 0,
+    errNo: 0,
+    op1Hex: '',
+    ansStored: false,
+  };
 }
 
 function evalReadListArgument(expr, useBuffer) {
@@ -3261,6 +3404,93 @@ function evalRunClrListTemplate(argText) {
   };
 }
 
+function evalRunChiSquarePdfTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 2) {
+    return { error: 'χ²pdf(x,df) expects 2 arguments.' };
+  }
+  const vals = [];
+  for (const arg of args) {
+    const result = evalReadNumeric(arg, useBuffer);
+    if (result.error) return result;
+    vals.push(result.value);
+  }
+  if (vals[1] <= 0) return { error: 'χ²pdf requires df > 0.' };
+  const result = _chiSquarePdf(vals[0], vals[1]);
+  if (Number.isNaN(result)) return { error: 'χ²pdf could not be evaluated.' };
+  return evalReturnTemplateNumber(result, useBuffer);
+}
+
+function evalRunTpdfTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 2) {
+    return { error: 'tpdf(x,df) expects 2 arguments.' };
+  }
+  const vals = [];
+  for (const arg of args) {
+    const result = evalReadNumeric(arg, useBuffer);
+    if (result.error) return result;
+    vals.push(result.value);
+  }
+  if (vals[1] <= 0) return { error: 'tpdf requires df > 0.' };
+  const result = _tPdf(vals[0], vals[1]);
+  if (!Number.isFinite(result)) return { error: 'tpdf could not be evaluated.' };
+  return runDirectEval(formatResult(result), useBuffer);
+}
+
+function evalRunFpdfTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 3) {
+    return { error: 'Fpdf(x,dfNumerator,dfDenominator) expects 3 arguments.' };
+  }
+  const vals = [];
+  for (const arg of args) {
+    const result = evalReadNumeric(arg, useBuffer);
+    if (result.error) return result;
+    vals.push(result.value);
+  }
+  if (vals[1] <= 0 || vals[2] <= 0) return { error: 'Fpdf requires both degrees of freedom to be > 0.' };
+  const result = _fPdf(vals[0], vals[1], vals[2]);
+  if (Number.isNaN(result)) return { error: 'Fpdf could not be evaluated.' };
+  return evalReturnTemplateNumber(result, useBuffer);
+}
+
+function evalRunInvChiSquareTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 2) {
+    return { error: 'invχ²(area,df) expects 2 arguments.' };
+  }
+  const vals = [];
+  for (const arg of args) {
+    const result = evalReadNumeric(arg, useBuffer);
+    if (result.error) return result;
+    vals.push(result.value);
+  }
+  const result = _invChiSquare(vals[0], vals[1]);
+  if (!Number.isFinite(result)) {
+    return { error: 'invχ² requires 0 < area < 1 and df > 0.' };
+  }
+  return runDirectEval(formatResult(result), useBuffer);
+}
+
+function evalRunInvFTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 3) {
+    return { error: 'invF(area,dfNumerator,dfDenominator) expects 3 arguments.' };
+  }
+  const vals = [];
+  for (const arg of args) {
+    const result = evalReadNumeric(arg, useBuffer);
+    if (result.error) return result;
+    vals.push(result.value);
+  }
+  const result = _invF(vals[0], vals[1], vals[2]);
+  if (!Number.isFinite(result)) {
+    return { error: 'invF requires 0 < area < 1 and both df > 0.' };
+  }
+  return runDirectEval(formatResult(result), useBuffer);
+}
+
 // ---- End statistical distribution template handlers ----
 
 function runDirectEvalTemplate(expr, useBuffer) {
@@ -3312,6 +3542,27 @@ function runDirectEvalTemplate(expr, useBuffer) {
 
   const invTArgs = evalMatchWholeCall(expr, 'invT');
   if (invTArgs !== null) return evalRunInvTTemplate(invTArgs, useBuffer);
+
+  const chiSquarePdfArgs = evalMatchWholeCall(expr, 'χ²pdf');
+  if (chiSquarePdfArgs !== null) return evalRunChiSquarePdfTemplate(chiSquarePdfArgs, useBuffer);
+
+  const chiSquarePdfAsciiArgs = evalMatchWholeCall(expr, 'chi2pdf');
+  if (chiSquarePdfAsciiArgs !== null) return evalRunChiSquarePdfTemplate(chiSquarePdfAsciiArgs, useBuffer);
+
+  const tpdfArgs = evalMatchWholeCall(expr, 'tpdf');
+  if (tpdfArgs !== null) return evalRunTpdfTemplate(tpdfArgs, useBuffer);
+
+  const fpdfArgs = evalMatchWholeCall(expr, 'Fpdf');
+  if (fpdfArgs !== null) return evalRunFpdfTemplate(fpdfArgs, useBuffer);
+
+  const invChiSquareArgs = evalMatchWholeCall(expr, 'invχ²');
+  if (invChiSquareArgs !== null) return evalRunInvChiSquareTemplate(invChiSquareArgs, useBuffer);
+
+  const invChiSquareAsciiArgs = evalMatchWholeCall(expr, 'invchi2');
+  if (invChiSquareAsciiArgs !== null) return evalRunInvChiSquareTemplate(invChiSquareAsciiArgs, useBuffer);
+
+  const invFArgs = evalMatchWholeCall(expr, 'invF');
+  if (invFArgs !== null) return evalRunInvFTemplate(invFArgs, useBuffer);
 
   let linRegArgs = evalMatchWholeCommand(expr, 'LinReg(ax+b)');
   if (linRegArgs === null) linRegArgs = evalMatchWholeCall(expr, 'LinReg(ax+b)');
