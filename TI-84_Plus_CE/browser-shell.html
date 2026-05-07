@@ -1594,6 +1594,10 @@ const EVAL_TWO_BYTE_TOKENS = [
   ['binompdf', [0xBB, 0x0A]],  // tBinomPdf
   ['binomcdf', [0xBB, 0x0B]],  // tBinomCdf
   ['linreg(ax+b)', [0xBB, 0xF4]],  // tLinReg(ax+b)
+  ['quadreg',      [0xBB, 0xF5]],  // tQuadReg
+  ['expreg',       [0xBB, 0xF6]],  // tExpReg
+  ['pwrreg',       [0xBB, 0xF7]],  // tPwrReg
+  ['lnreg',        [0xBB, 0xF8]],  // tLnReg
   ['variance', [0xBB, 0x05]],  // tVariance
   ['logbase',   [0xBB, 0x34]],  // tLogBase (2-arg log: logBASE(value,base))
   ['randint',   [0xBB, 0x11]],  // tRandInt
@@ -2808,6 +2812,128 @@ function _linearRegression(xValues, yValues) {
   };
 }
 
+function _quadraticRegression(xValues, yValues) {
+  if (xValues.length !== yValues.length) {
+    return { error: 'QuadReg requires lists of the same length.' };
+  }
+  if (xValues.length < 3) {
+    return { error: 'QuadReg requires at least 3 data points.' };
+  }
+
+  const n = xValues.length;
+  let sx = 0, sx2 = 0, sx3 = 0, sx4 = 0;
+  let sy = 0, sxy = 0, sx2y = 0, sy2 = 0;
+  for (let i = 0; i < n; i++) {
+    const x = xValues[i];
+    const y = yValues[i];
+    const x2 = x * x;
+    sx += x;
+    sx2 += x2;
+    sx3 += x2 * x;
+    sx4 += x2 * x2;
+    sy += y;
+    sxy += x * y;
+    sx2y += x2 * y;
+    sy2 += y * y;
+  }
+
+  // Normal equations: [n, sx, sx2; sx, sx2, sx3; sx2, sx3, sx4] * [c, b, a]^T = [sy, sxy, sx2y]
+  // Solve via Cramer's rule
+  const D = n * (sx2 * sx4 - sx3 * sx3) - sx * (sx * sx4 - sx3 * sx2) + sx2 * (sx * sx3 - sx2 * sx2);
+  if (D === 0) {
+    return { error: 'QuadReg is undefined for this data (singular matrix).' };
+  }
+
+  const Da = sy * (sx2 * sx4 - sx3 * sx3) - sx * (sxy * sx4 - sx2y * sx3) + sx2 * (sxy * sx3 - sx2y * sx2);
+  const Db = n * (sxy * sx4 - sx2y * sx3) - sy * (sx * sx4 - sx3 * sx2) + sx2 * (sx * sx2y - sxy * sx2);
+  const Dc = n * (sx2 * sx2y - sx3 * sxy) - sx * (sx * sx2y - sxy * sx2) + sy * (sx * sx3 - sx2 * sx2);
+
+  const c = Da / D;  // constant
+  const b = Db / D;  // linear coefficient
+  const a = Dc / D;  // quadratic coefficient
+
+  // R² = 1 - SSres / SStot
+  const meanY = sy / n;
+  let ssRes = 0, ssTot = 0;
+  for (let i = 0; i < n; i++) {
+    const yPred = a * xValues[i] * xValues[i] + b * xValues[i] + c;
+    ssRes += (yValues[i] - yPred) * (yValues[i] - yPred);
+    ssTot += (yValues[i] - meanY) * (yValues[i] - meanY);
+  }
+  const r2 = ssTot === 0 ? 1 : 1 - ssRes / ssTot;
+
+  return { a, b, c, r2 };
+}
+
+function _expRegression(xValues, yValues) {
+  if (xValues.length !== yValues.length) {
+    return { error: 'ExpReg requires lists of the same length.' };
+  }
+  if (xValues.length < 2) {
+    return { error: 'ExpReg requires at least 2 data points.' };
+  }
+  // All y values must be positive for ln transform
+  for (let i = 0; i < yValues.length; i++) {
+    if (yValues[i] <= 0) {
+      return { error: 'ExpReg requires all y-values to be positive.' };
+    }
+  }
+
+  const lnY = yValues.map(y => Math.log(y));
+  const linResult = _linearRegression(xValues, lnY);
+  if (linResult.error) return { error: linResult.error.replace('LinReg(ax+b)', 'ExpReg') };
+
+  const a = Math.exp(linResult.b);  // intercept of ln(y) = ln(a)
+  const b = Math.exp(linResult.a);  // slope of ln(y) = ln(b)
+  return { a, b, r: linResult.r, r2: linResult.r2 };
+}
+
+function _pwrRegression(xValues, yValues) {
+  if (xValues.length !== yValues.length) {
+    return { error: 'PwrReg requires lists of the same length.' };
+  }
+  if (xValues.length < 2) {
+    return { error: 'PwrReg requires at least 2 data points.' };
+  }
+  for (let i = 0; i < xValues.length; i++) {
+    if (xValues[i] <= 0) {
+      return { error: 'PwrReg requires all x-values to be positive.' };
+    }
+    if (yValues[i] <= 0) {
+      return { error: 'PwrReg requires all y-values to be positive.' };
+    }
+  }
+
+  const lnX = xValues.map(x => Math.log(x));
+  const lnY = yValues.map(y => Math.log(y));
+  const linResult = _linearRegression(lnX, lnY);
+  if (linResult.error) return { error: linResult.error.replace('LinReg(ax+b)', 'PwrReg') };
+
+  const a = Math.exp(linResult.b);  // intercept of ln(y) = ln(a)
+  const b = linResult.a;            // slope = exponent
+  return { a, b, r: linResult.r, r2: linResult.r2 };
+}
+
+function _lnRegression(xValues, yValues) {
+  if (xValues.length !== yValues.length) {
+    return { error: 'LnReg requires lists of the same length.' };
+  }
+  if (xValues.length < 2) {
+    return { error: 'LnReg requires at least 2 data points.' };
+  }
+  for (let i = 0; i < xValues.length; i++) {
+    if (xValues[i] <= 0) {
+      return { error: 'LnReg requires all x-values to be positive.' };
+    }
+  }
+
+  const lnX = xValues.map(x => Math.log(x));
+  const linResult = _linearRegression(lnX, yValues);
+  if (linResult.error) return { error: linResult.error.replace('LinReg(ax+b)', 'LnReg') };
+
+  return { a: linResult.b, b: linResult.a, r: linResult.r, r2: linResult.r2 };
+}
+
 // ---- End statistical distribution helpers ----
 
 function evalFindMatchingParen(text, openIndex) {
@@ -3379,6 +3505,102 @@ function evalRunLinRegTemplate(argText, useBuffer) {
   };
 }
 
+function evalRunQuadRegTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 2) {
+    return { error: 'QuadReg requires 2 list arguments.' };
+  }
+
+  const xList = evalReadListArgument(args[0], useBuffer);
+  if (xList.error) return xList;
+  const yList = evalReadListArgument(args[1], useBuffer);
+  if (yList.error) return yList;
+
+  const regression = _quadraticRegression(xList.values, yList.values);
+  if (regression.error) return regression;
+
+  return {
+    value: regression,
+    display: `a=${formatResult(regression.a)}, b=${formatResult(regression.b)}, c=${formatResult(regression.c)}, r²=${formatResult(regression.r2)}`,
+    steps: 0,
+    errNo: 0,
+    op1Hex: '',
+    ansStored: false,
+  };
+}
+
+function evalRunExpRegTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 2) {
+    return { error: 'ExpReg requires 2 list arguments.' };
+  }
+
+  const xList = evalReadListArgument(args[0], useBuffer);
+  if (xList.error) return xList;
+  const yList = evalReadListArgument(args[1], useBuffer);
+  if (yList.error) return yList;
+
+  const regression = _expRegression(xList.values, yList.values);
+  if (regression.error) return regression;
+
+  return {
+    value: regression,
+    display: `a=${formatResult(regression.a)}, b=${formatResult(regression.b)}, r²=${formatResult(regression.r2)}, r=${formatResult(regression.r)}`,
+    steps: 0,
+    errNo: 0,
+    op1Hex: '',
+    ansStored: false,
+  };
+}
+
+function evalRunPwrRegTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 2) {
+    return { error: 'PwrReg requires 2 list arguments.' };
+  }
+
+  const xList = evalReadListArgument(args[0], useBuffer);
+  if (xList.error) return xList;
+  const yList = evalReadListArgument(args[1], useBuffer);
+  if (yList.error) return yList;
+
+  const regression = _pwrRegression(xList.values, yList.values);
+  if (regression.error) return regression;
+
+  return {
+    value: regression,
+    display: `a=${formatResult(regression.a)}, b=${formatResult(regression.b)}, r²=${formatResult(regression.r2)}, r=${formatResult(regression.r)}`,
+    steps: 0,
+    errNo: 0,
+    op1Hex: '',
+    ansStored: false,
+  };
+}
+
+function evalRunLnRegTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 2) {
+    return { error: 'LnReg requires 2 list arguments.' };
+  }
+
+  const xList = evalReadListArgument(args[0], useBuffer);
+  if (xList.error) return xList;
+  const yList = evalReadListArgument(args[1], useBuffer);
+  if (yList.error) return yList;
+
+  const regression = _lnRegression(xList.values, yList.values);
+  if (regression.error) return regression;
+
+  return {
+    value: regression,
+    display: `a=${formatResult(regression.a)}, b=${formatResult(regression.b)}, r²=${formatResult(regression.r2)}, r=${formatResult(regression.r)}`,
+    steps: 0,
+    errNo: 0,
+    op1Hex: '',
+    ansStored: false,
+  };
+}
+
 function evalRunClrListTemplate(argText) {
   const trimmed = argText.trim();
   if (!trimmed) return { error: 'ClrList requires at least one list name.' };
@@ -3567,6 +3789,22 @@ function runDirectEvalTemplate(expr, useBuffer) {
   let linRegArgs = evalMatchWholeCommand(expr, 'LinReg(ax+b)');
   if (linRegArgs === null) linRegArgs = evalMatchWholeCall(expr, 'LinReg(ax+b)');
   if (linRegArgs !== null) return evalRunLinRegTemplate(linRegArgs, useBuffer);
+
+  let quadRegArgs = evalMatchWholeCommand(expr, 'QuadReg');
+  if (quadRegArgs === null) quadRegArgs = evalMatchWholeCall(expr, 'QuadReg');
+  if (quadRegArgs !== null) return evalRunQuadRegTemplate(quadRegArgs, useBuffer);
+
+  let expRegArgs = evalMatchWholeCommand(expr, 'ExpReg');
+  if (expRegArgs === null) expRegArgs = evalMatchWholeCall(expr, 'ExpReg');
+  if (expRegArgs !== null) return evalRunExpRegTemplate(expRegArgs, useBuffer);
+
+  let pwrRegArgs = evalMatchWholeCommand(expr, 'PwrReg');
+  if (pwrRegArgs === null) pwrRegArgs = evalMatchWholeCall(expr, 'PwrReg');
+  if (pwrRegArgs !== null) return evalRunPwrRegTemplate(pwrRegArgs, useBuffer);
+
+  let lnRegArgs = evalMatchWholeCommand(expr, 'LnReg');
+  if (lnRegArgs === null) lnRegArgs = evalMatchWholeCall(expr, 'LnReg');
+  if (lnRegArgs !== null) return evalRunLnRegTemplate(lnRegArgs, useBuffer);
 
   // List statistics
   const stdDevArgs = evalMatchWholeCall(expr, 'stdDev');

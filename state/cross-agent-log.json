@@ -3600,15 +3600,50 @@
         "TI-84_Plus_CE/probe-phase216-bufinsert-cursor-tracking.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "692fa76c10be",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 216 \u2014 P1: Trace 0x079A1E caller chain (BIT 7,(IY+0x18) initial arming)\n\n## Context\n\nW",
+      "status": "timeout",
+      "duration_seconds": 900.035,
+      "timestamp": "2026-05-07T10:17:20Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "89bb15c10bad",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 217 P1: Which A value reaches SET 4,(IY+5) at 0x0612B0?\n\n## Context\nThe edit-mode dis",
+      "status": "completed",
+      "duration_seconds": 419.166,
+      "timestamp": "2026-05-07T10:49:25Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase217-dispatcher-a-values.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "ebda0c35c0c5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 217 P3: Direct-eval token expansion \u2014 regression commands\n\n## Context\nThe TI-84 brows",
+      "status": "failed",
+      "duration_seconds": 440.028,
+      "timestamp": "2026-05-07T10:49:50Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 283,
-    "cc_to_codex": 283,
+    "total_calls": 286,
+    "cc_to_codex": 286,
     "codex_to_cc": 0,
-    "completed": 224,
-    "failed": 53,
+    "completed": 225,
+    "failed": 55,
     "refused": 0,
-    "avg_duration_seconds": 551.806
+    "avg_duration_seconds": 552.169
   }
 }
