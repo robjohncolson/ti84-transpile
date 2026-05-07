@@ -3372,15 +3372,50 @@
       "timestamp": "2026-05-07T06:13:31Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "b53c2d1e4897",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 210 \u2014 P3: STAT error check reverse-engineering at 0x058BA9\n\n## Context\n\nIn the TI-84 ",
+      "status": "timeout",
+      "duration_seconds": 900.045,
+      "timestamp": "2026-05-07T06:17:38Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "cac7c00cf0cf",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 211 \u2014 P1: Add 0x05E619 as transpiler seed + retranspile + verify\n\n## Context\nThe TI-8",
+      "status": "completed",
+      "duration_seconds": 141.335,
+      "timestamp": "2026-05-07T06:45:00Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "008d004d9585",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 211 \u2014 P3: Full STAT probe with late-seed 0xD01508 fix, trace 5000+ steps\n\n## Context\n",
+      "status": "completed",
+      "duration_seconds": 410.527,
+      "timestamp": "2026-05-07T06:49:33Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase211-stat-late-seed.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 265,
-    "cc_to_codex": 265,
+    "total_calls": 268,
+    "cc_to_codex": 268,
     "codex_to_cc": 0,
-    "completed": 207,
-    "failed": 52,
+    "completed": 209,
+    "failed": 53,
     "refused": 0,
-    "avg_duration_seconds": 553.49
+    "avg_duration_seconds": 552.712
   }
 }
