@@ -3446,15 +3446,52 @@
         "TI-84_Plus_CE/probe-phase212-bit4-iy5-setters.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "cc9a995d98b8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 212 \u2014 P3: 0xD01508 write watchpoint during STAT pipeline\n\n## Context\n\nSession 211's S",
+      "status": "completed",
+      "duration_seconds": 483.856,
+      "timestamp": "2026-05-07T07:31:01Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase212-d01508-watchpoint.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "aded712dcab4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 213 P2: Test 0x080D09 \"Display Result\" Loop\n\n## Context\nSession 209 confirmed that bl",
+      "status": "completed",
+      "duration_seconds": 244.414,
+      "timestamp": "2026-05-07T08:07:20Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase213-display-result-loop.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "1372ff55c18a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 213 P3: STAT 50000-Step Trace + FP Block OP1/OP2 Dump\n\n## Context\nSession 211 ran a 1",
+      "status": "completed",
+      "duration_seconds": 514.924,
+      "timestamp": "2026-05-07T08:11:52Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 271,
-    "cc_to_codex": 271,
+    "total_calls": 274,
+    "cc_to_codex": 274,
     "codex_to_cc": 0,
-    "completed": 212,
+    "completed": 215,
     "failed": 53,
     "refused": 0,
-    "avg_duration_seconds": 550.884
+    "avg_duration_seconds": 549.39
   }
 }
