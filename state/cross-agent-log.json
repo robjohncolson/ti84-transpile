@@ -3483,15 +3483,132 @@
       "timestamp": "2026-05-07T08:11:52Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "f6e4fcfb3a9a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 213 P1: Trace 0x0612B0 / 0x0612E4 Edit-Mode Entry Points\n\n## Context\nSession 212 foun",
+      "status": "completed",
+      "duration_seconds": 823.787,
+      "timestamp": "2026-05-07T08:16:57Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase213-edit-mode-entry.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "2c5864ef5814",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 214 P1 \u2014 Find callers of dispatcher 0x061290\n\n## Context\n\nIn the TI-84 Plus CE ROM tr",
+      "status": "completed",
+      "duration_seconds": 522.422,
+      "timestamp": "2026-05-07T08:53:59Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase214-dispatcher-callers.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "8086b28e7105",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 214 P2 \u2014 0x080D08 display-result loop: determine correct entry conditions\n\n## Context",
+      "status": "completed",
+      "duration_seconds": 550.368,
+      "timestamp": "2026-05-07T08:54:29Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase214-display-result-loop.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "5f98ab799030",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 214 P3 \u2014 Test JP (HL) dispatch at 0x0585D3 with different table entries\n\n## Context\n\n",
+      "status": "completed",
+      "duration_seconds": 754.121,
+      "timestamp": "2026-05-07T08:57:55Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase214-jp-hl-table-entries.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "da46b1565e1f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 215 P2: BIT 7,(IY+0x18) setter map \u2014 what arms the 0x06004C gate?\n\n## Context\nWe're r",
+      "status": "completed",
+      "duration_seconds": 390.102,
+      "timestamp": "2026-05-07T09:28:57Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase215-bit7-iy18-setters.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "4db535a840ab",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 215 P3: Display-result loop BufInsert Z-flag investigation\n\n## Context\nWe're reverse-",
+      "status": "completed",
+      "duration_seconds": 564.54,
+      "timestamp": "2026-05-07T09:31:53Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase215-bufinsert-z-flag.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "7f0f1a803d4d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 215 P1: Disassemble 0x06004C parent function + extended trace\n\n## Context\nWe're rever",
+      "status": "completed",
+      "duration_seconds": 638.937,
+      "timestamp": "2026-05-07T09:33:04Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase215-06004c-parent.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "89fe66ce5839",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 216 \u2014 P2: Dispatcher trace with editCursor seeded\n\n## Context\n\nWe're reverse-engineer",
+      "status": "completed",
+      "duration_seconds": 614.414,
+      "timestamp": "2026-05-07T10:12:36Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase216-dispatcher-cursor-seeded.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "76479a2b1e6d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 216 \u2014 P3: Display-result loop token destinations (BufInsert cursor tracking)\n\n## Cont",
+      "status": "completed",
+      "duration_seconds": 769.542,
+      "timestamp": "2026-05-07T10:15:12Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase216-bufinsert-cursor-tracking.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 274,
-    "cc_to_codex": 274,
+    "total_calls": 283,
+    "cc_to_codex": 283,
     "codex_to_cc": 0,
-    "completed": 215,
+    "completed": 224,
     "failed": 53,
     "refused": 0,
-    "avg_duration_seconds": 549.39
+    "avg_duration_seconds": 551.806
   }
 }
