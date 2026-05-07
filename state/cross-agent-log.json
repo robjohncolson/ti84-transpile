@@ -3635,15 +3635,153 @@
       "timestamp": "2026-05-07T10:49:50Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "db89338ee2cf",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 217 P2: Trace 0x04EC34 (OS core SET 4,(IY+5) site)\n\n## Context\nSession 212 identified",
+      "status": "completed",
+      "duration_seconds": 870.335,
+      "timestamp": "2026-05-07T10:56:59Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase217-04ec34-trace.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "8cf5a93761d0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 218 P2: Test 0x04EC1C as BIT 4 arming before ConvKeyToTok digit entry\n\n## Context\nTwo",
+      "status": "completed",
+      "duration_seconds": 507.118,
+      "timestamp": "2026-05-07T11:31:07Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase218-04ec1c-arm-then-digit.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "620f1fad96b8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 218 P1: Trace parent function at ~0x04EB6x \u2014 enter-edit-mode conditions\n\n## Context\nS",
+      "status": "timeout",
+      "duration_seconds": 900.044,
+      "timestamp": "2026-05-07T11:37:38Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "59044a7dfe8e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 218 P3: Investigate what sets 0xD02575 during normal OS operation\n\n## Context\nSession",
+      "status": "timeout",
+      "duration_seconds": 900.034,
+      "timestamp": "2026-05-07T11:37:42Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "33c276c747c0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 219 P2: Trace the 0x05E307 alternate insertion path (BIT 4 CLEAR)\n\n## Context\n\nIn the TI-8",
+      "status": "completed",
+      "duration_seconds": 429.153,
+      "timestamp": "2026-05-07T12:10:10Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "266cdc984175",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 219 P1: Investigate 0xD003E0 BIT 3 gate \u2014 what sets it during normal OS operation\n\n## Cont",
+      "status": "completed",
+      "duration_seconds": 550.218,
+      "timestamp": "2026-05-07T12:12:10Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase219-d003e0-bit3-setters.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "ead39c998da8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 220 \u2014 P3: _GetCSC Scan Code \u2192 Key Name Complete Mapping\n\n## Context\n\nThe TI-84 Plus C",
+      "status": "completed",
+      "duration_seconds": 754.802,
+      "timestamp": "2026-05-07T12:55:36Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "4e43b92c3881",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 220 \u2014 P1: Trace 0x04EE1B Function (BIT 3 Gate Armer)\n\n## Context\n\nThe TI-84 Plus CE R",
+      "status": "timeout",
+      "duration_seconds": 900.039,
+      "timestamp": "2026-05-07T12:57:59Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d29ee7a6d038",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 220 \u2014 P2: 2-Byte Token Testing via Alternate Insertion Path\n\n## Context\n\nSession 219 ",
+      "status": "timeout",
+      "duration_seconds": 900.033,
+      "timestamp": "2026-05-07T12:58:00Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6ea61bbcc72b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 221 P1: Trace callers of function containing 0x04E9FD\n\n## Context\n\nWe are reverse-eng",
+      "status": "completed",
+      "duration_seconds": 391.078,
+      "timestamp": "2026-05-07T13:29:16Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "4b413073dff9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 221 P2: Find GetKey scan-to-keycode conversion table in ROM\n\n## Context\n\nWe are rever",
+      "status": "completed",
+      "duration_seconds": 642.905,
+      "timestamp": "2026-05-07T13:33:29Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "609e3ec72ab3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 221 P3: Test 2-byte token insertion with 2nd-mode and ALPHA flags armed\n\n## Context\n\n",
+      "status": "timeout",
+      "duration_seconds": 900.049,
+      "timestamp": "2026-05-07T13:37:48Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 286,
-    "cc_to_codex": 286,
+    "total_calls": 298,
+    "cc_to_codex": 298,
     "codex_to_cc": 0,
-    "completed": 225,
-    "failed": 55,
+    "completed": 232,
+    "failed": 60,
     "refused": 0,
-    "avg_duration_seconds": 552.169
+    "avg_duration_seconds": 558.947
   }
 }
