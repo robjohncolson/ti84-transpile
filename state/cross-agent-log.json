@@ -4082,15 +4082,76 @@
       "timestamp": "2026-05-07T19:37:17Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "368fca1a1c05",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add transpiler seed at 0x030100 and retranspile\n\n## Context\nThe key lookup function at 0x030",
+      "status": "completed",
+      "duration_seconds": 499.077,
+      "timestamp": "2026-05-07T20:10:55Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase230-030100-seed.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "74beae439907",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x02FE84 \u2014 the special path for key codes \u22650xE2 and <0xFC\n\n## Context\nSession 229 deco",
+      "status": "completed",
+      "duration_seconds": 558.245,
+      "timestamp": "2026-05-07T20:11:56Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase230-02fe84-special-path.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "669181493f5d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map the 4-section 09F79B table completely (224 entries)\n\n## Context\nSession 229 decoded the ",
+      "status": "completed",
+      "duration_seconds": 718.593,
+      "timestamp": "2026-05-07T20:14:37Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "36b2ca921fd8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 231 \u2014 P1: Trace 0x030300 IY+29 Bit 0 Gate\n\n## Context\nROM address 0x030300 is a key r",
+      "status": "completed",
+      "duration_seconds": 595.071,
+      "timestamp": "2026-05-07T20:52:00Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7fd0002c57ff",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 231 \u2014 P3: Cross-Reference 09F79B Table with ConvKeyToTok Tables\n\n## Context\nTwo key c",
+      "status": "completed",
+      "duration_seconds": 774.979,
+      "timestamp": "2026-05-07T20:55:03Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase231-table-crossref.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 325,
-    "cc_to_codex": 325,
+    "total_calls": 330,
+    "cc_to_codex": 330,
     "codex_to_cc": 0,
-    "completed": 248,
+    "completed": 253,
     "failed": 71,
     "refused": 0,
-    "avg_duration_seconds": 574.892
+    "avg_duration_seconds": 575.715
   }
 }
