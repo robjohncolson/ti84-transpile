@@ -4049,15 +4049,48 @@
       "timestamp": "2026-05-07T18:57:18Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "18a8044462d9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate 0x0AF8C4 BCD Formatter \u2014 D00604 Key Code Output\n\n## Context\nIn the TI-84 Plus CE",
+      "status": "completed",
+      "duration_seconds": 696.888,
+      "timestamp": "2026-05-07T19:33:55Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5f23375bd26d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x03011C \u2014 09F79B Key Code Lookup Function\n\n## Context\nIn the TI-84 Plus CE ROM transp",
+      "status": "timeout",
+      "duration_seconds": 900.066,
+      "timestamp": "2026-05-07T19:37:15Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2f3936a93e8a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace Computed Dispatch for Jump Table 0x0213C0\n\n## Context\nIn the TI-84 Plus CE ROM transpi",
+      "status": "timeout",
+      "duration_seconds": 900.048,
+      "timestamp": "2026-05-07T19:37:17Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 322,
-    "cc_to_codex": 322,
+    "total_calls": 325,
+    "cc_to_codex": 325,
     "codex_to_cc": 0,
-    "completed": 247,
-    "failed": 69,
+    "completed": 248,
+    "failed": 71,
     "refused": 0,
-    "avg_duration_seconds": 572.494
+    "avg_duration_seconds": 574.892
   }
 }

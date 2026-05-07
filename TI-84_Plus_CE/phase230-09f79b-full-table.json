@@ -1,0 +1,1171 @@
+{
+  "tableBase": "0x09F79B",
+  "sections": {
+    "noMod": [
+      {
+        "index": 0,
+        "keyCode": "0xC9",
+        "name": "0xC9"
+      },
+      {
+        "index": 1,
+        "keyCode": "0x04",
+        "name": "kDown"
+      },
+      {
+        "index": 2,
+        "keyCode": "0x02",
+        "name": "kLeft"
+      },
+      {
+        "index": 3,
+        "keyCode": "0x01",
+        "name": "kRight"
+      },
+      {
+        "index": 4,
+        "keyCode": "0x03",
+        "name": "kUp"
+      },
+      {
+        "index": 5,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 6,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 7,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 8,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 9,
+        "keyCode": "0x05",
+        "name": "kEnter"
+      },
+      {
+        "index": 10,
+        "keyCode": "0x80",
+        "name": "+"
+      },
+      {
+        "index": 11,
+        "keyCode": "0x81",
+        "name": "-"
+      },
+      {
+        "index": 12,
+        "keyCode": "0x82",
+        "name": "*"
+      },
+      {
+        "index": 13,
+        "keyCode": "0x83",
+        "name": "/"
+      },
+      {
+        "index": 14,
+        "keyCode": "0x84",
+        "name": "^"
+      },
+      {
+        "index": 15,
+        "keyCode": "0x09",
+        "name": "kClear"
+      },
+      {
+        "index": 16,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 17,
+        "keyCode": "0x8C",
+        "name": "0x8C"
+      },
+      {
+        "index": 18,
+        "keyCode": "0x91",
+        "name": "3"
+      },
+      {
+        "index": 19,
+        "keyCode": "0x94",
+        "name": "6"
+      },
+      {
+        "index": 20,
+        "keyCode": "0x97",
+        "name": "9"
+      },
+      {
+        "index": 21,
+        "keyCode": "0x86",
+        "name": ")"
+      },
+      {
+        "index": 22,
+        "keyCode": "0xBB",
+        "name": "0xBB"
+      },
+      {
+        "index": 23,
+        "keyCode": "0x35",
+        "name": "kACos"
+      },
+      {
+        "index": 24,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 25,
+        "keyCode": "0x8D",
+        "name": "0x8D"
+      },
+      {
+        "index": 26,
+        "keyCode": "0x90",
+        "name": "2"
+      },
+      {
+        "index": 27,
+        "keyCode": "0x93",
+        "name": "5"
+      },
+      {
+        "index": 28,
+        "keyCode": "0x96",
+        "name": "8"
+      },
+      {
+        "index": 29,
+        "keyCode": "0x85",
+        "name": "("
+      },
+      {
+        "index": 30,
+        "keyCode": "0xB9",
+        "name": "0xB9"
+      },
+      {
+        "index": 31,
+        "keyCode": "0x2D",
+        "name": "0x2D"
+      },
+      {
+        "index": 32,
+        "keyCode": "0x31",
+        "name": "kInv"
+      },
+      {
+        "index": 33,
+        "keyCode": "0x8E",
+        "name": "0"
+      },
+      {
+        "index": 34,
+        "keyCode": "0x8F",
+        "name": "1"
+      },
+      {
+        "index": 35,
+        "keyCode": "0x92",
+        "name": "4"
+      },
+      {
+        "index": 36,
+        "keyCode": "0x95",
+        "name": "7"
+      },
+      {
+        "index": 37,
+        "keyCode": "0x8B",
+        "name": "kABel"
+      },
+      {
+        "index": 38,
+        "keyCode": "0xB7",
+        "name": "0xB7"
+      },
+      {
+        "index": 39,
+        "keyCode": "0x2C",
+        "name": "0x2C"
+      },
+      {
+        "index": 40,
+        "keyCode": "0xB4",
+        "name": "0xB4"
+      },
+      {
+        "index": 41,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 42,
+        "keyCode": "0x8A",
+        "name": "kChs"
+      },
+      {
+        "index": 43,
+        "keyCode": "0xBF",
+        "name": "0xBF"
+      },
+      {
+        "index": 44,
+        "keyCode": "0xC1",
+        "name": "0xC1"
+      },
+      {
+        "index": 45,
+        "keyCode": "0xBD",
+        "name": "0xBD"
+      },
+      {
+        "index": 46,
+        "keyCode": "0xB6",
+        "name": "0xB6"
+      },
+      {
+        "index": 47,
+        "keyCode": "0x32",
+        "name": "kSin"
+      },
+      {
+        "index": 48,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 49,
+        "keyCode": "0x44",
+        "name": "kClrHome"
+      },
+      {
+        "index": 50,
+        "keyCode": "0x5A",
+        "name": "kMode"
+      },
+      {
+        "index": 51,
+        "keyCode": "0x2E",
+        "name": "0x2E"
+      },
+      {
+        "index": 52,
+        "keyCode": "0x48",
+        "name": "kClrAll"
+      },
+      {
+        "index": 53,
+        "keyCode": "0x49",
+        "name": "0x49"
+      },
+      {
+        "index": 54,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 55,
+        "keyCode": "0x45",
+        "name": "kClrTable"
+      }
+    ],
+    "second": [
+      {
+        "index": 0,
+        "keyCode": "0x0A",
+        "name": "kDel"
+      },
+      {
+        "index": 1,
+        "keyCode": "0x04",
+        "name": "kDown"
+      },
+      {
+        "index": 2,
+        "keyCode": "0x0E",
+        "name": "kBOL"
+      },
+      {
+        "index": 3,
+        "keyCode": "0x0F",
+        "name": "kEOL"
+      },
+      {
+        "index": 4,
+        "keyCode": "0x03",
+        "name": "kUp"
+      },
+      {
+        "index": 5,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 6,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 7,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 8,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 9,
+        "keyCode": "0x0D",
+        "name": "kLastEnt"
+      },
+      {
+        "index": 10,
+        "keyCode": "0x36",
+        "name": "kTan"
+      },
+      {
+        "index": 11,
+        "keyCode": "0x88",
+        "name": "(-)"
+      },
+      {
+        "index": 12,
+        "keyCode": "0x87",
+        "name": "."
+      },
+      {
+        "index": 13,
+        "keyCode": "0xEF",
+        "name": "0xEF"
+      },
+      {
+        "index": 14,
+        "keyCode": "0xB5",
+        "name": "0xB5"
+      },
+      {
+        "index": 15,
+        "keyCode": "0x09",
+        "name": "kClear"
+      },
+      {
+        "index": 16,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 17,
+        "keyCode": "0xC5",
+        "name": "0xC5"
+      },
+      {
+        "index": 18,
+        "keyCode": "0xF5",
+        "name": "0xF5"
+      },
+      {
+        "index": 19,
+        "keyCode": "0xF8",
+        "name": "0xF8"
+      },
+      {
+        "index": 20,
+        "keyCode": "0xFB",
+        "name": "0xFB"
+      },
+      {
+        "index": 21,
+        "keyCode": "0xED",
+        "name": "0xED"
+      },
+      {
+        "index": 22,
+        "keyCode": "0xBC",
+        "name": "0xBC"
+      },
+      {
+        "index": 23,
+        "keyCode": "0x38",
+        "name": "kSquare"
+      },
+      {
+        "index": 24,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 25,
+        "keyCode": "0xEE",
+        "name": "0xEE"
+      },
+      {
+        "index": 26,
+        "keyCode": "0xF4",
+        "name": "0xF4"
+      },
+      {
+        "index": 27,
+        "keyCode": "0xF7",
+        "name": "0xF7"
+      },
+      {
+        "index": 28,
+        "keyCode": "0xFA",
+        "name": "0xFA"
+      },
+      {
+        "index": 29,
+        "keyCode": "0xEC",
+        "name": "0xEC"
+      },
+      {
+        "index": 30,
+        "keyCode": "0xBA",
+        "name": "0xBA"
+      },
+      {
+        "index": 31,
+        "keyCode": "0x2F",
+        "name": "0x2F"
+      },
+      {
+        "index": 32,
+        "keyCode": "0x3A",
+        "name": "kLn"
+      },
+      {
+        "index": 33,
+        "keyCode": "0x3E",
+        "name": "0x3E"
+      },
+      {
+        "index": 34,
+        "keyCode": "0xF3",
+        "name": "0xF3"
+      },
+      {
+        "index": 35,
+        "keyCode": "0xF6",
+        "name": "0xF6"
+      },
+      {
+        "index": 36,
+        "keyCode": "0xF9",
+        "name": "0xF9"
+      },
+      {
+        "index": 37,
+        "keyCode": "0x98",
+        "name": "0x98"
+      },
+      {
+        "index": 38,
+        "keyCode": "0xB8",
+        "name": "0xB8"
+      },
+      {
+        "index": 39,
+        "keyCode": "0x39",
+        "name": "kSqrt"
+      },
+      {
+        "index": 40,
+        "keyCode": "0x41",
+        "name": "kMatrix"
+      },
+      {
+        "index": 41,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 42,
+        "keyCode": "0x0C",
+        "name": "kRecall"
+      },
+      {
+        "index": 43,
+        "keyCode": "0xC0",
+        "name": "0xC0"
+      },
+      {
+        "index": 44,
+        "keyCode": "0xC2",
+        "name": "0xC2"
+      },
+      {
+        "index": 45,
+        "keyCode": "0xBE",
+        "name": "0xBE"
+      },
+      {
+        "index": 46,
+        "keyCode": "0x37",
+        "name": "kATan"
+      },
+      {
+        "index": 47,
+        "keyCode": "0x33",
+        "name": "kASin"
+      },
+      {
+        "index": 48,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 49,
+        "keyCode": "0x4A",
+        "name": "0x4A"
+      },
+      {
+        "index": 50,
+        "keyCode": "0x3B",
+        "name": "kExp"
+      },
+      {
+        "index": 51,
+        "keyCode": "0x57",
+        "name": "kWindow"
+      },
+      {
+        "index": 52,
+        "keyCode": "0x4B",
+        "name": "0x4B"
+      },
+      {
+        "index": 53,
+        "keyCode": "0x30",
+        "name": "kPi"
+      },
+      {
+        "index": 54,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 55,
+        "keyCode": "0x40",
+        "name": "kMath"
+      }
+    ],
+    "alpha": [
+      {
+        "index": 0,
+        "keyCode": "0x0B",
+        "name": "kIns"
+      },
+      {
+        "index": 1,
+        "keyCode": "0x08",
+        "name": "kAlphaDown"
+      },
+      {
+        "index": 2,
+        "keyCode": "0x02",
+        "name": "kLeft"
+      },
+      {
+        "index": 3,
+        "keyCode": "0x01",
+        "name": "kRight"
+      },
+      {
+        "index": 4,
+        "keyCode": "0x07",
+        "name": "kAlphaUp"
+      },
+      {
+        "index": 5,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 6,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 7,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 8,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 9,
+        "keyCode": "0x06",
+        "name": "kAlphaEnter"
+      },
+      {
+        "index": 10,
+        "keyCode": "0xCB",
+        "name": "0xCB"
+      },
+      {
+        "index": 11,
+        "keyCode": "0xB0",
+        "name": "W"
+      },
+      {
+        "index": 12,
+        "keyCode": "0xAB",
+        "name": "R"
+      },
+      {
+        "index": 13,
+        "keyCode": "0xA6",
+        "name": "M"
+      },
+      {
+        "index": 14,
+        "keyCode": "0xA1",
+        "name": "H"
+      },
+      {
+        "index": 15,
+        "keyCode": "0x09",
+        "name": "kClear"
+      },
+      {
+        "index": 16,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 17,
+        "keyCode": "0xCA",
+        "name": "0xCA"
+      },
+      {
+        "index": 18,
+        "keyCode": "0xCC",
+        "name": "0xCC"
+      },
+      {
+        "index": 19,
+        "keyCode": "0xAF",
+        "name": "V"
+      },
+      {
+        "index": 20,
+        "keyCode": "0xAA",
+        "name": "Q"
+      },
+      {
+        "index": 21,
+        "keyCode": "0xA5",
+        "name": "L"
+      },
+      {
+        "index": 22,
+        "keyCode": "0xA0",
+        "name": "G"
+      },
+      {
+        "index": 23,
+        "keyCode": "0x35",
+        "name": "kACos"
+      },
+      {
+        "index": 24,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 25,
+        "keyCode": "0xC6",
+        "name": "0xC6"
+      },
+      {
+        "index": 26,
+        "keyCode": "0xB3",
+        "name": "Z"
+      },
+      {
+        "index": 27,
+        "keyCode": "0xAE",
+        "name": "U"
+      },
+      {
+        "index": 28,
+        "keyCode": "0xA9",
+        "name": "P"
+      },
+      {
+        "index": 29,
+        "keyCode": "0xA4",
+        "name": "K"
+      },
+      {
+        "index": 30,
+        "keyCode": "0x9F",
+        "name": "F"
+      },
+      {
+        "index": 31,
+        "keyCode": "0x9C",
+        "name": "C"
+      },
+      {
+        "index": 32,
+        "keyCode": "0x31",
+        "name": "kInv"
+      },
+      {
+        "index": 33,
+        "keyCode": "0x99",
+        "name": "0x99"
+      },
+      {
+        "index": 34,
+        "keyCode": "0xB2",
+        "name": "Y"
+      },
+      {
+        "index": 35,
+        "keyCode": "0xAD",
+        "name": "T"
+      },
+      {
+        "index": 36,
+        "keyCode": "0xA8",
+        "name": "O"
+      },
+      {
+        "index": 37,
+        "keyCode": "0xA3",
+        "name": "J"
+      },
+      {
+        "index": 38,
+        "keyCode": "0x9E",
+        "name": "E"
+      },
+      {
+        "index": 39,
+        "keyCode": "0x9B",
+        "name": "B"
+      },
+      {
+        "index": 40,
+        "keyCode": "0x13",
+        "name": "kBackup"
+      },
+      {
+        "index": 41,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 42,
+        "keyCode": "0xB1",
+        "name": "X"
+      },
+      {
+        "index": 43,
+        "keyCode": "0xAC",
+        "name": "S"
+      },
+      {
+        "index": 44,
+        "keyCode": "0xA7",
+        "name": "N"
+      },
+      {
+        "index": 45,
+        "keyCode": "0xA2",
+        "name": "I"
+      },
+      {
+        "index": 46,
+        "keyCode": "0x9D",
+        "name": "D"
+      },
+      {
+        "index": 47,
+        "keyCode": "0x9A",
+        "name": "A"
+      },
+      {
+        "index": 48,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 49,
+        "keyCode": "0x44",
+        "name": "kClrHome"
+      },
+      {
+        "index": 50,
+        "keyCode": "0x5A",
+        "name": "kMode"
+      },
+      {
+        "index": 51,
+        "keyCode": "0x2E",
+        "name": "0x2E"
+      },
+      {
+        "index": 52,
+        "keyCode": "0x48",
+        "name": "kClrAll"
+      },
+      {
+        "index": 53,
+        "keyCode": "0x49",
+        "name": "0x49"
+      },
+      {
+        "index": 54,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 55,
+        "keyCode": "0x45",
+        "name": "kClrTable"
+      }
+    ],
+    "alphaSecond": [
+      {
+        "index": 0,
+        "keyCode": "0x0A",
+        "name": "kDel"
+      },
+      {
+        "index": 1,
+        "keyCode": "0x08",
+        "name": "kAlphaDown"
+      },
+      {
+        "index": 2,
+        "keyCode": "0x02",
+        "name": "kLeft"
+      },
+      {
+        "index": 3,
+        "keyCode": "0x01",
+        "name": "kRight"
+      },
+      {
+        "index": 4,
+        "keyCode": "0x07",
+        "name": "kAlphaUp"
+      },
+      {
+        "index": 5,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 6,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 7,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 8,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 9,
+        "keyCode": "0x06",
+        "name": "kAlphaEnter"
+      },
+      {
+        "index": 10,
+        "keyCode": "0xCB",
+        "name": "0xCB"
+      },
+      {
+        "index": 11,
+        "keyCode": "0xF8",
+        "name": "0xF8"
+      },
+      {
+        "index": 12,
+        "keyCode": "0xF3",
+        "name": "0xF3"
+      },
+      {
+        "index": 13,
+        "keyCode": "0xEE",
+        "name": "0xEE"
+      },
+      {
+        "index": 14,
+        "keyCode": "0xE9",
+        "name": "0xE9"
+      },
+      {
+        "index": 15,
+        "keyCode": "0x09",
+        "name": "kClear"
+      },
+      {
+        "index": 16,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 17,
+        "keyCode": "0xCA",
+        "name": "0xCA"
+      },
+      {
+        "index": 18,
+        "keyCode": "0xCC",
+        "name": "0xCC"
+      },
+      {
+        "index": 19,
+        "keyCode": "0xF7",
+        "name": "0xF7"
+      },
+      {
+        "index": 20,
+        "keyCode": "0xF2",
+        "name": "0xF2"
+      },
+      {
+        "index": 21,
+        "keyCode": "0xED",
+        "name": "0xED"
+      },
+      {
+        "index": 22,
+        "keyCode": "0xE8",
+        "name": "0xE8"
+      },
+      {
+        "index": 23,
+        "keyCode": "0x35",
+        "name": "kACos"
+      },
+      {
+        "index": 24,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 25,
+        "keyCode": "0xC6",
+        "name": "0xC6"
+      },
+      {
+        "index": 26,
+        "keyCode": "0xFB",
+        "name": "0xFB"
+      },
+      {
+        "index": 27,
+        "keyCode": "0xF6",
+        "name": "0xF6"
+      },
+      {
+        "index": 28,
+        "keyCode": "0xF1",
+        "name": "0xF1"
+      },
+      {
+        "index": 29,
+        "keyCode": "0xEC",
+        "name": "0xEC"
+      },
+      {
+        "index": 30,
+        "keyCode": "0xE7",
+        "name": "0xE7"
+      },
+      {
+        "index": 31,
+        "keyCode": "0xE4",
+        "name": "kLinkIO"
+      },
+      {
+        "index": 32,
+        "keyCode": "0x31",
+        "name": "kInv"
+      },
+      {
+        "index": 33,
+        "keyCode": "0x99",
+        "name": "0x99"
+      },
+      {
+        "index": 34,
+        "keyCode": "0xFA",
+        "name": "0xFA"
+      },
+      {
+        "index": 35,
+        "keyCode": "0xF5",
+        "name": "0xF5"
+      },
+      {
+        "index": 36,
+        "keyCode": "0xF0",
+        "name": "0xF0"
+      },
+      {
+        "index": 37,
+        "keyCode": "0xEB",
+        "name": "0xEB"
+      },
+      {
+        "index": 38,
+        "keyCode": "0xE6",
+        "name": "kStatEd"
+      },
+      {
+        "index": 39,
+        "keyCode": "0xE3",
+        "name": "kQuit"
+      },
+      {
+        "index": 40,
+        "keyCode": "0xB4",
+        "name": "0xB4"
+      },
+      {
+        "index": 41,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 42,
+        "keyCode": "0xF9",
+        "name": "0xF9"
+      },
+      {
+        "index": 43,
+        "keyCode": "0xF4",
+        "name": "0xF4"
+      },
+      {
+        "index": 44,
+        "keyCode": "0xEF",
+        "name": "0xEF"
+      },
+      {
+        "index": 45,
+        "keyCode": "0xEA",
+        "name": "0xEA"
+      },
+      {
+        "index": 46,
+        "keyCode": "0xE5",
+        "name": "kMemMgmt"
+      },
+      {
+        "index": 47,
+        "keyCode": "0xE2",
+        "name": "kInputDone"
+      },
+      {
+        "index": 48,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 49,
+        "keyCode": "0x44",
+        "name": "kClrHome"
+      },
+      {
+        "index": 50,
+        "keyCode": "0x5A",
+        "name": "kMode"
+      },
+      {
+        "index": 51,
+        "keyCode": "0x2E",
+        "name": "0x2E"
+      },
+      {
+        "index": 52,
+        "keyCode": "0x48",
+        "name": "kClrAll"
+      },
+      {
+        "index": 53,
+        "keyCode": "0x49",
+        "name": "0x49"
+      },
+      {
+        "index": 54,
+        "keyCode": "0x00",
+        "name": "none"
+      },
+      {
+        "index": 55,
+        "keyCode": "0x45",
+        "name": "kClrTable"
+      }
+    ]
+  },
+  "stats": {
+    "nonZeroPerSection": [
+      47,
+      47,
+      47,
+      47
+    ],
+    "totalNonZero": 188,
+    "specialPathCodes": [
+      "0xE2",
+      "0xE3",
+      "0xE4",
+      "0xE5",
+      "0xE6",
+      "0xE7",
+      "0xE8",
+      "0xE9",
+      "0xEA",
+      "0xEB",
+      "0xEC",
+      "0xED",
+      "0xEE",
+      "0xEF",
+      "0xF0",
+      "0xF1",
+      "0xF2",
+      "0xF3",
+      "0xF4",
+      "0xF5",
+      "0xF6",
+      "0xF7",
+      "0xF8",
+      "0xF9",
+      "0xFA",
+      "0xFB"
+    ],
+    "verySpecialCodes": []
+  }
+}

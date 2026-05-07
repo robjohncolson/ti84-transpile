@@ -29,3 +29,5 @@
 0x092265
 # Phase 196: Copy9→KeyClassifier→BufInsert entry (home handler)
 0x0584A3
+# Phase 229: Key lookup function at 0x0300F1-0x030172
+0x030100
