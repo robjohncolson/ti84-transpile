@@ -3407,15 +3407,54 @@
         "TI-84_Plus_CE/probe-phase211-stat-late-seed.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "6bd351315771",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 211 \u2014 P2: Investigate ConvKeyToTok 0x05E6A4 reachability for digit tokens\n\n## Context",
+      "status": "completed",
+      "duration_seconds": 512.383,
+      "timestamp": "2026-05-07T06:51:13Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase211-convkeytotok-digit-entry.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "526215d56eaf",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 212 \u2014 P1: Multi-digit entry test (all 10 digits through ConvKeyToTok)\n\n## Context\n\nSe",
+      "status": "completed",
+      "duration_seconds": 298.938,
+      "timestamp": "2026-05-07T07:27:53Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase212-multi-digit-entry.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "57f16845fedb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 212 \u2014 P2: What sets BIT 4,(IY+5) in the ROM?\n\n## Context\n\nSession 211 confirmed that ",
+      "status": "completed",
+      "duration_seconds": 351.662,
+      "timestamp": "2026-05-07T07:28:47Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase212-bit4-iy5-setters.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 268,
-    "cc_to_codex": 268,
+    "total_calls": 271,
+    "cc_to_codex": 271,
     "codex_to_cc": 0,
-    "completed": 209,
+    "completed": 212,
     "failed": 53,
     "refused": 0,
-    "avg_duration_seconds": 552.712
+    "avg_duration_seconds": 550.884
   }
 }
