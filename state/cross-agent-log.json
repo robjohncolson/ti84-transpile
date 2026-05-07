@@ -3981,15 +3981,72 @@
       "timestamp": "2026-05-07T17:37:41Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "37370498fb23",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Test 0x03FC1C with D0058D values \u2014 verify scan-code-to-key-code end-to-end\n\n## Context\nThis ",
+      "status": "completed",
+      "duration_seconds": 505.044,
+      "timestamp": "2026-05-07T18:10:43Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase227-03fc1c-e2e-test.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "078ff7844da9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map the 12 D0058D write sites \u2014 complete ISR scan-code-to-key-code pipeline\n\n## Context\nThis",
+      "status": "completed",
+      "duration_seconds": 691.968,
+      "timestamp": "2026-05-07T18:13:48Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "bb4b724fba0e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x023B6B SET 1,(IY+53) site \u2014 find what HL contains\n\n## Context\nThis is a TI-84 Plus C",
+      "status": "timeout",
+      "duration_seconds": 900.045,
+      "timestamp": "2026-05-07T18:17:15Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "11155582155e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace why 0x03FA09 clobbers HL in the 0x03FC1C key code converter\n\n## Context\nThe function a",
+      "status": "completed",
+      "duration_seconds": 525.838,
+      "timestamp": "2026-05-07T18:51:02Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "757a0686705a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate the 09F79B none-mod scan table as alternate key code source\n\n## Context\nThe func",
+      "status": "completed",
+      "duration_seconds": 617.968,
+      "timestamp": "2026-05-07T18:52:37Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 316,
-    "cc_to_codex": 316,
+    "total_calls": 321,
+    "cc_to_codex": 321,
     "codex_to_cc": 0,
-    "completed": 243,
-    "failed": 67,
+    "completed": 247,
+    "failed": 68,
     "refused": 0,
-    "avg_duration_seconds": 570.26
+    "avg_duration_seconds": 571.473
   }
 }
