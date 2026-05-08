@@ -5431,15 +5431,98 @@
         "TI-84_Plus_CE/browser-shell.html"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "b9dbebe3be3f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 264 P1: D007D0 Boot Write-Site Tracing\n\n## Context\nD007D0 is a critical mode/context ",
+      "status": "completed",
+      "duration_seconds": 496.391,
+      "timestamp": "2026-05-08T18:52:22Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7b4328f1a6bb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 264 P2: Static Decode of 0x0A22B1\n\n## Context\nSession 263 disassembled 0x0A223A (119 ",
+      "status": "completed",
+      "duration_seconds": 517.713,
+      "timestamp": "2026-05-08T18:52:45Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase264-0a22b1-static-decode.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "23035db508ed",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "-",
+      "status": "blocked",
+      "duration_seconds": 140.156,
+      "timestamp": "2026-05-08T19:25:19Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "67602ad9f316",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "-",
+      "status": "blocked",
+      "duration_seconds": 142.421,
+      "timestamp": "2026-05-08T19:25:19Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "30fb5b9fce58",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "-",
+      "status": "completed",
+      "duration_seconds": 381.011,
+      "timestamp": "2026-05-08T19:29:15Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase265-d007e0-write-sites.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "42ca5ecc4375",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "-",
+      "status": "completed",
+      "duration_seconds": 595.194,
+      "timestamp": "2026-05-08T19:32:51Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase265-d007e0-write-sites.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "d5ddf9af85de",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 266 P2: Seed missing D007E0 write-site blocks into transpiler\n\n## Context\nSession 265",
+      "status": "completed",
+      "duration_seconds": 192.963,
+      "timestamp": "2026-05-08T20:06:54Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 439,
-    "cc_to_codex": 439,
+    "total_calls": 446,
+    "cc_to_codex": 446,
     "codex_to_cc": 0,
-    "completed": 328,
+    "completed": 333,
     "failed": 103,
     "refused": 0,
-    "avg_duration_seconds": 583.312
+    "avg_duration_seconds": 579.685
   }
 }

@@ -1617,6 +1617,7 @@ const EVAL_TWO_BYTE_TOKENS = [
   ['expreg',       [0xBB, 0xF9]],  // tExpReg
   ['lnreg',        [0xBB, 0xFA]],  // tLnReg
   ['pwrreg',       [0xBB, 0xFB]],  // tPwrReg
+  ['logistic',     [0xBB, 0xFC]],  // tLogistic
   ['variance', [0xBB, 0x05]],  // tVariance
   ['tostring',  [0xEF, 0x97]],  // tToString
   ['logbase',   [0xBB, 0x34]],  // tLogBase (2-arg log: logBASE(value,base))
@@ -3172,6 +3173,125 @@ function _lnRegression(xValues, yValues) {
   if (linResult.error) return { error: linResult.error.replace('LinReg(ax+b)', 'LnReg') };
 
   return { a: linResult.b, b: linResult.a, r: linResult.r, r2: linResult.r2 };
+}
+
+// Logistic regression: y = c / (1 + a * e^(-bx))
+// Uses Levenberg-Marquardt iteration for 3-parameter fit.
+function _logisticRegression(xValues, yValues) {
+  if (xValues.length !== yValues.length) {
+    return { error: 'Logistic requires lists of the same length.' };
+  }
+  if (xValues.length < 3) {
+    return { error: 'Logistic requires at least 3 data points.' };
+  }
+
+  const n = xValues.length;
+  const maxY = Math.max(...yValues);
+  const minY = Math.min(...yValues);
+
+  // Initial guesses
+  let c = maxY * 1.1;
+  let a = (minY > 0) ? (c / minY - 1) : 10;
+  let b = 0.1;
+  if (a <= 0) a = 1;
+
+  let lambda = 0.001;
+  const maxIter = 200;
+  const tol = 1e-12;
+
+  // Compute sum of squared residuals
+  function ssr(aa, bb, cc) {
+    let s = 0;
+    for (let i = 0; i < n; i++) {
+      const pred = cc / (1 + aa * Math.exp(-bb * xValues[i]));
+      const r = yValues[i] - pred;
+      s += r * r;
+    }
+    return s;
+  }
+
+  for (let iter = 0; iter < maxIter; iter++) {
+    // Jacobian J and residual vector r
+    // Model: f(x) = c / (1 + a * exp(-b*x))
+    // df/da = -c * exp(-b*x) / (1 + a*exp(-b*x))^2
+    // df/db = c * a * x * exp(-b*x) / (1 + a*exp(-b*x))^2
+    // df/dc = 1 / (1 + a*exp(-b*x))
+    const JtJ = [[0,0,0],[0,0,0],[0,0,0]]; // 3x3
+    const JtR = [0, 0, 0]; // 3x1
+
+    for (let i = 0; i < n; i++) {
+      const ebx = Math.exp(-b * xValues[i]);
+      const denom = 1 + a * ebx;
+      const denom2 = denom * denom;
+      const pred = c / denom;
+      const ri = yValues[i] - pred;
+
+      const da = -c * ebx / denom2;
+      const db = c * a * xValues[i] * ebx / denom2;
+      const dc = 1 / denom;
+
+      const J = [da, db, dc];
+      for (let p = 0; p < 3; p++) {
+        JtR[p] += J[p] * ri;
+        for (let q = 0; q < 3; q++) {
+          JtJ[p][q] += J[p] * J[q];
+        }
+      }
+    }
+
+    // Add damping: (JtJ + lambda * diag(JtJ)) * delta = JtR
+    const A = JtJ.map(row => [...row]);
+    for (let p = 0; p < 3; p++) {
+      A[p][p] += lambda * (A[p][p] > 0 ? A[p][p] : 1);
+    }
+
+    // Solve 3x3 system via Cramer's rule
+    function det3(m) {
+      return m[0][0]*(m[1][1]*m[2][2]-m[1][2]*m[2][1])
+           - m[0][1]*(m[1][0]*m[2][2]-m[1][2]*m[2][0])
+           + m[0][2]*(m[1][0]*m[2][1]-m[1][1]*m[2][0]);
+    }
+    const D = det3(A);
+    if (Math.abs(D) < 1e-30) break;
+
+    function replaceCol(m, col, v) {
+      return m.map((row, i) => row.map((val, j) => j === col ? v[i] : val));
+    }
+    const da = det3(replaceCol(A, 0, JtR)) / D;
+    const db = det3(replaceCol(A, 1, JtR)) / D;
+    const dc = det3(replaceCol(A, 2, JtR)) / D;
+
+    const newA = a + da;
+    const newB = b + db;
+    const newC = c + dc;
+
+    const oldSSR = ssr(a, b, c);
+    const newSSR = ssr(newA, newB, newC);
+
+    if (newSSR < oldSSR) {
+      a = newA;
+      b = newB;
+      c = newC;
+      lambda *= 0.1;
+      if (Math.abs(oldSSR - newSSR) < tol * oldSSR) break;
+    } else {
+      lambda *= 10;
+    }
+  }
+
+  // Compute R^2
+  let meanY = 0;
+  for (let i = 0; i < n; i++) meanY += yValues[i];
+  meanY /= n;
+  let ssRes = 0, ssTot = 0;
+  for (let i = 0; i < n; i++) {
+    const pred = c / (1 + a * Math.exp(-b * xValues[i]));
+    ssRes += (yValues[i] - pred) * (yValues[i] - pred);
+    ssTot += (yValues[i] - meanY) * (yValues[i] - meanY);
+  }
+  const r2 = ssTot === 0 ? 1 : 1 - ssRes / ssTot;
+
+  return { a, b, c, r2 };
 }
 
 function _quadraticRegression(xValues, yValues) {
@@ -5456,6 +5576,30 @@ function evalRunLnRegTemplate(argText, useBuffer) {
   };
 }
 
+function evalRunLogisticRegTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 2) {
+    return { error: 'Logistic requires 2 list arguments.' };
+  }
+
+  const xList = evalReadListArgument(args[0], useBuffer);
+  if (xList.error) return xList;
+  const yList = evalReadListArgument(args[1], useBuffer);
+  if (yList.error) return yList;
+
+  const regression = _logisticRegression(xList.values, yList.values);
+  if (regression.error) return regression;
+
+  return {
+    value: regression,
+    display: `a=${formatResult(regression.a)}, b=${formatResult(regression.b)}, c=${formatResult(regression.c)}, R²=${formatResult(regression.r2)}`,
+    steps: 0,
+    errNo: 0,
+    op1Hex: '',
+    ansStored: false,
+  };
+}
+
 function evalRunCubicRegTemplate(argText, useBuffer) {
   const args = evalSplitArgs(argText);
   if (args.length !== 2) {
@@ -5805,6 +5949,10 @@ function runDirectEvalTemplate(expr, useBuffer) {
   if (medMedArgs === null) medMedArgs = evalMatchWholeCall(expr, 'Med-Med');
   if (medMedArgs === null) medMedArgs = evalMatchWholeCall(expr, 'MedMed');
   if (medMedArgs !== null) return evalRunMedMedTemplate(medMedArgs, useBuffer);
+
+  let logisticArgs = evalMatchWholeCommand(expr, 'Logistic');
+  if (logisticArgs === null) logisticArgs = evalMatchWholeCall(expr, 'Logistic');
+  if (logisticArgs !== null) return evalRunLogisticRegTemplate(logisticArgs, useBuffer);
 
   // AP Stats inference tests
   const zTestArgs = evalMatchWholeCall(expr, 'ZTest');
