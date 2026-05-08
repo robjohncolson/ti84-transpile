@@ -5284,15 +5284,68 @@
         "TI-84_Plus_CE/probe-phase260-062055-disasm.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "fabbbf561d7e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Dynamic probe \u2014 call 0x062055 after full boot, trace to cxMain\n\n## Context\nThis is a TI-84 P",
+      "status": "completed",
+      "duration_seconds": 605.878,
+      "timestamp": "2026-05-08T16:14:40Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase260-062055-dynamic.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "c53322378b99",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add more direct-eval token handlers to browser-shell.html\n\n## Context\nThis is a TI-84 Plus C",
+      "status": "timeout",
+      "duration_seconds": 900.048,
+      "timestamp": "2026-05-08T16:19:36Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "65ca069f86ef",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Implement 0x006202 delay stub in transpiler\n\n## Context\nThe function at 0x006202 is a pure h",
+      "status": "completed",
+      "duration_seconds": 176.29,
+      "timestamp": "2026-05-08T16:46:09Z",
+      "files_changed": [
+        "TI-84_Plus_CE/ROM.transpiled.js",
+        "TI-84_Plus_CE/ROM.transpiled.report.json",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "d9ca7c12da31",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Sweep B values 0x00-0xFF to find which makes 0x080151 return Z\n\n## Context\nFunction 0x062055",
+      "status": "completed",
+      "duration_seconds": 344.97,
+      "timestamp": "2026-05-08T16:48:56Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase261-080151-b-sweep.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 427,
-    "cc_to_codex": 427,
+    "total_calls": 431,
+    "cc_to_codex": 431,
     "codex_to_cc": 0,
-    "completed": 319,
-    "failed": 100,
+    "completed": 322,
+    "failed": 101,
     "refused": 0,
-    "avg_duration_seconds": 585.319
+    "avg_duration_seconds": 584.59
   }
 }
