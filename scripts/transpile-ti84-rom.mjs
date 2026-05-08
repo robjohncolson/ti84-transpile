@@ -111,6 +111,50 @@ const BLOCK_OVERRIDES = new Map([
       '}',
     ],
   })],
+  ['006202:adl', (startPc, mode) => buildManualBlock(startPc, mode, {
+    instructions: [{
+      pc: startPc,
+      mode,
+      bytes: '<manual override>',
+      dasm: 'manual delay loop stub',
+      tag: 'manual-override',
+      length: 0x0b,
+    }],
+    exits: [{ type: 'return' }],
+    sourceLines: [
+      `function block_${formatKey(startPc, mode).replace(':', '_')}(cpu) {`,
+      '  // Delay loop stub - pure delay with no side effects, safe to skip (session 248).',
+      '  // POP HL',
+      '  cpu.hl = cpu.pop();',
+      '  // POP DE',
+      '  cpu.de = cpu.pop();',
+      '  // RET',
+      '  return cpu.popReturn();',
+      '}',
+    ],
+  })],
+  ['006202:z80', (startPc, mode) => buildManualBlock(startPc, mode, {
+    instructions: [{
+      pc: startPc,
+      mode,
+      bytes: '<manual override>',
+      dasm: 'manual delay loop stub',
+      tag: 'manual-override',
+      length: 0x0b,
+    }],
+    exits: [{ type: 'return' }],
+    sourceLines: [
+      `function block_${formatKey(startPc, mode).replace(':', '_')}(cpu) {`,
+      '  // Delay loop stub - pure delay with no side effects, safe to skip (session 248).',
+      '  // POP HL',
+      '  cpu.hl = cpu.pop();',
+      '  // POP DE',
+      '  cpu.de = cpu.pop();',
+      '  // RET',
+      '  return cpu.popReturn();',
+      '}',
+    ],
+  })],
 ]);
 
 function getWordByteWidth(instruction) {
