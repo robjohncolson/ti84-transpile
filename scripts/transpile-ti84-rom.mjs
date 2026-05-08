@@ -22239,6 +22239,8 @@ function walkBlocks() {
     // Phase 157 P4: FPDiv JT slot seed — session 156 found 0x0201F4 was missing (fell through to SqRoot at 0x0201F8).
     { pc: 0x0201F4, mode: 'adl' },  // FPDiv JT slot — JP to FPDiv impl at 0x07CAB9
     { pc: 0x05e619, mode: 'adl' },  // ConvKeyToTok BufInsert loop seed (session 211)
+    // Phase 248: pure delay-loop routine stubbed via BLOCK_OVERRIDES to return immediately.
+    { pc: 0x006202, mode: 'adl' },  // Delay loop entry - skip port-0x03 speed wait with POP HL / POP DE / RET
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
