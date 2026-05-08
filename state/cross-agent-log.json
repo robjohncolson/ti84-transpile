@@ -4979,15 +4979,85 @@
         "TI-84_Plus_CE/probe-phase251-022264-lcd-enable.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "0f7e53aa9a80",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Implement 0x006202 delay loop stub in transpiler\n\n## Context\nIn the TI-84 Plus CE ROM transp",
+      "status": "completed",
+      "duration_seconds": 116.882,
+      "timestamp": "2026-05-08T10:44:32Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "73f234a86a09",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace callers of 0x0620C4 (the single bridge to cxMain)\n\n## Context\nIn the TI-84 Plus CE ROM",
+      "status": "completed",
+      "duration_seconds": 392.89,
+      "timestamp": "2026-05-08T10:49:05Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "57309b6b9f65",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x08C8CF \u2014 handler pointer store for 0x058241\n\n## Context\nIn the TI-84 Plus CE ROM tra",
+      "status": "completed",
+      "duration_seconds": 651.694,
+      "timestamp": "2026-05-08T10:53:26Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6c0b2fa30314",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 253 \u2014 P2: Trace 0x08C808 context dispatcher entry mechanism\n\n## Context\nWe're reverse",
+      "status": "completed",
+      "duration_seconds": 387.783,
+      "timestamp": "2026-05-08T11:28:52Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c2dc2d2899f2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 253 \u2014 P3: Add more direct-eval tokens to browser-shell.html\n\n## Context\nThe TI-84 Plu",
+      "status": "completed",
+      "duration_seconds": 421.505,
+      "timestamp": "2026-05-08T11:29:27Z",
+      "files_changed": [
+        "TI-84_Plus_CE/browser-shell.html",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase253-08c808-entry-trace.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "6c25103ad729",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 253 \u2014 P1: Find RAM pointer that dispatches to 0x062055\n\n## Context\nWe're reverse-engi",
+      "status": "completed",
+      "duration_seconds": 804.577,
+      "timestamp": "2026-05-08T11:35:47Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 402,
-    "cc_to_codex": 402,
+    "total_calls": 408,
+    "cc_to_codex": 408,
     "codex_to_cc": 0,
-    "completed": 294,
+    "completed": 300,
     "failed": 100,
     "refused": 0,
-    "avg_duration_seconds": 594.519
+    "avg_duration_seconds": 592.578
   }
 }

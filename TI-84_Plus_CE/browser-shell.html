@@ -1593,6 +1593,8 @@ const EVAL_TWO_BYTE_TOKENS = [
   ['randnorm',  [0xBB, 0x1F]],  // tRandNorm
   ['geometpdf', [0xBB, 0x0C]],  // tGeometPdf
   ['geometcdf', [0xBB, 0x0D]],  // tGeometCdf
+  ['poissonpdf', [0xBB, 0x0E]],  // tPoissonPdf
+  ['poissoncdf', [0xBB, 0x0F]],  // tPoissonCdf
   ['remainder', [0xBB, 0x3B]],  // tRemainder
   ['binompdf', [0xBB, 0x0A]],  // tBinomPdf
   ['binomcdf', [0xBB, 0x0B]],  // tBinomCdf
@@ -2757,6 +2759,24 @@ function _geometcdf(p, x) {
   return 1 - Math.pow(1 - p, x);
 }
 
+// poissonpdf(mu, x) — P(X=x) for Poisson distribution
+function _poissonpdf(mu, x) {
+  x = Math.round(x);
+  if (!Number.isFinite(mu) || !Number.isFinite(x) || mu < 0) return NaN;
+  if (x < 0) return 0;
+  if (mu === 0) return x === 0 ? 1 : 0;
+  return Math.exp(x * Math.log(mu) - mu - _lnGamma(x + 1));
+}
+
+// poissoncdf(mu, x) — P(X <= x)
+function _poissoncdf(mu, x) {
+  x = Math.round(x);
+  if (!Number.isFinite(mu) || !Number.isFinite(x) || mu < 0) return NaN;
+  if (x < 0) return 0;
+  if (mu === 0) return 1;
+  return _clampUnitInterval(1 - _regularizedGammaP(x + 1, mu));
+}
+
 // ---- List statistics helpers ----
 
 // Parse a list from a string like "{1,2,3}" or a JS array
@@ -3767,6 +3787,45 @@ function evalRunLengthTemplate(argText, useBuffer) {
   return { error: 'length requires a string or list argument.' };
 }
 
+function evalRunDimTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 1) {
+    return { error: 'dim(list) expects 1 list argument.' };
+  }
+
+  const listResult = evalReadListArgument(args[0], useBuffer);
+  if (listResult.error) return listResult;
+  return evalReturnTemplateNumber(listResult.values.length, useBuffer);
+}
+
+function evalRunSumTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 1) {
+    return { error: 'sum(list) expects 1 list argument.' };
+  }
+
+  const listResult = evalReadListArgument(args[0], useBuffer);
+  if (listResult.error) return listResult;
+
+  let total = 0;
+  for (let i = 0; i < listResult.values.length; i++) total += listResult.values[i];
+  return evalReturnTemplateNumber(total, useBuffer);
+}
+
+function evalRunProdTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 1) {
+    return { error: 'prod(list) expects 1 list argument.' };
+  }
+
+  const listResult = evalReadListArgument(args[0], useBuffer);
+  if (listResult.error) return listResult;
+
+  let total = 1;
+  for (let i = 0; i < listResult.values.length; i++) total *= listResult.values[i];
+  return evalReturnTemplateNumber(total, useBuffer);
+}
+
 function evalRunInStringTemplate(argText, useBuffer) {
   const args = evalSplitArgs(argText);
   if (args.length !== 2 && args.length !== 3) {
@@ -4147,6 +4206,38 @@ function evalRunGeometcdfTemplate(argText, useBuffer) {
     vals.push(r.value);
   }
   const result = _geometcdf(vals[0], vals[1]);
+  return runDirectEval(formatResult(result), useBuffer);
+}
+
+function evalRunPoissonpdfTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 2) {
+    return { error: 'poissonpdf(mu,x) expects 2 arguments.' };
+  }
+  const vals = [];
+  for (const a of args) {
+    const r = evalReadNumeric(a, useBuffer);
+    if (r.error) return r;
+    vals.push(r.value);
+  }
+  const result = _poissonpdf(vals[0], vals[1]);
+  if (!Number.isFinite(result)) return { error: 'poissonpdf requires mu >= 0.' };
+  return runDirectEval(formatResult(result), useBuffer);
+}
+
+function evalRunPoissoncdfTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 2) {
+    return { error: 'poissoncdf(mu,x) expects 2 arguments.' };
+  }
+  const vals = [];
+  for (const a of args) {
+    const r = evalReadNumeric(a, useBuffer);
+    if (r.error) return r;
+    vals.push(r.value);
+  }
+  const result = _poissoncdf(vals[0], vals[1]);
+  if (!Number.isFinite(result)) return { error: 'poissoncdf requires mu >= 0.' };
   return runDirectEval(formatResult(result), useBuffer);
 }
 
@@ -4986,6 +5077,9 @@ function runDirectEvalTemplate(expr, useBuffer) {
   const lengthArgs = evalMatchWholeCall(expr, 'length');
   if (lengthArgs !== null) return evalRunLengthTemplate(lengthArgs, useBuffer);
 
+  const dimArgs = evalMatchWholeCall(expr, 'dim');
+  if (dimArgs !== null) return evalRunDimTemplate(dimArgs, useBuffer);
+
   const inStringArgs = evalMatchWholeCall(expr, 'inString');
   if (inStringArgs !== null) return evalRunInStringTemplate(inStringArgs, useBuffer);
 
@@ -5031,6 +5125,12 @@ function runDirectEvalTemplate(expr, useBuffer) {
 
   const geometcdfArgs = evalMatchWholeCall(expr, 'geometcdf');
   if (geometcdfArgs !== null) return evalRunGeometcdfTemplate(geometcdfArgs, useBuffer);
+
+  const poissonpdfArgs = evalMatchWholeCall(expr, 'poissonpdf');
+  if (poissonpdfArgs !== null) return evalRunPoissonpdfTemplate(poissonpdfArgs, useBuffer);
+
+  const poissoncdfArgs = evalMatchWholeCall(expr, 'poissoncdf');
+  if (poissoncdfArgs !== null) return evalRunPoissoncdfTemplate(poissoncdfArgs, useBuffer);
 
   const tcdfArgs = evalMatchWholeCall(expr, 'tcdf');
   if (tcdfArgs !== null) return evalRunTcdfTemplate(tcdfArgs, useBuffer);
@@ -5146,6 +5246,12 @@ function runDirectEvalTemplate(expr, useBuffer) {
 
   const varianceArgs = evalMatchWholeCall(expr, 'variance');
   if (varianceArgs !== null) return evalRunListStatTemplate(varianceArgs, useBuffer, _variance);
+
+  const sumArgs = evalMatchWholeCall(expr, 'sum');
+  if (sumArgs !== null) return evalRunSumTemplate(sumArgs, useBuffer);
+
+  const prodArgs = evalMatchWholeCall(expr, 'prod');
+  if (prodArgs !== null) return evalRunProdTemplate(prodArgs, useBuffer);
 
   // Logical NOT
   const notArgs = evalMatchWholeCall(expr, 'not');
