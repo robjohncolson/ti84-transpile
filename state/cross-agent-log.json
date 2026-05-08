@@ -5123,15 +5123,63 @@
       "timestamp": "2026-05-08T12:54:14Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "ececdeb8e8d6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 256 P2: Find RAM address storing function pointer to 0x062055\n\n## Context\nIn the TI-8",
+      "status": "completed",
+      "duration_seconds": 267.319,
+      "timestamp": "2026-05-08T13:27:09Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "647be3872a98",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 256 P1: Trace 0x022264 call chain (LCD write-enable path)\n\n## Context\nIn the TI-84 Pl",
+      "status": "completed",
+      "duration_seconds": 401.538,
+      "timestamp": "2026-05-08T13:29:22Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase256-022264-call-chain.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "782c4ae8112c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 256 P3: Cross-reference D00824 mode constants with handler table entries\n\n## Context\n",
+      "status": "completed",
+      "duration_seconds": 688.991,
+      "timestamp": "2026-05-08T13:34:12Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase256-d00824-handler-xref.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "800c04552126",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 257 P2: Find who indexes into 0x022264 vector table\n\n## Context\nThis is a TI-84 Plus ",
+      "status": "completed",
+      "duration_seconds": 297.105,
+      "timestamp": "2026-05-08T14:08:22Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 414,
-    "cc_to_codex": 414,
+    "total_calls": 418,
+    "cc_to_codex": 418,
     "codex_to_cc": 0,
-    "completed": 306,
+    "completed": 310,
     "failed": 100,
     "refused": 0,
-    "avg_duration_seconds": 590.203
+    "avg_duration_seconds": 588.515
   }
 }
