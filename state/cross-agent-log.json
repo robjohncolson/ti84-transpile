@@ -4506,15 +4506,152 @@
       "timestamp": "2026-05-08T02:57:51Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "77e754e5a46c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Re-run 0x09EFDE VRAM fill with 150K+ steps using warm state (iiii)\n\n## Context\nSession 240 a",
+      "status": "completed",
+      "duration_seconds": 378.477,
+      "timestamp": "2026-05-08T03:29:41Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6b4d6d638f07",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate 0x04EDDD BIT 0 with 100K+ steps (kkkk)\n\n## Context\nSession 240 found that 0x04ED",
+      "status": "completed",
+      "duration_seconds": 388.98,
+      "timestamp": "2026-05-08T03:30:07Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9a22e2fda77e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x0A22B1 display setup function (jjjj)\n\n## Context\nSession 240 traced 0x04E404 and fou",
+      "status": "completed",
+      "duration_seconds": 683.819,
+      "timestamp": "2026-05-08T03:34:50Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6cbac5ff8a6f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x051B84 BIT 4,(HL) test on D003E0 (llll)\n\n## Context\nSession 239 identified 0x051B84 ",
+      "status": "timeout",
+      "duration_seconds": 900.038,
+      "timestamp": "2026-05-08T03:38:42Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a3184657c9ec",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x07A627 \u2014 called from 0x051B7C when D003DD matches 0x4A/0x48/0x49\n\n## Context\nIn the ",
+      "status": "completed",
+      "duration_seconds": 609.372,
+      "timestamp": "2026-05-08T04:12:55Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9229b8b0e462",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x04EE00 return path \u2014 D003E0 writer tail\n\n## Context\nIn the TI-84 Plus CE ROM transpi",
+      "status": "blocked",
+      "duration_seconds": 697.339,
+      "timestamp": "2026-05-08T04:14:20Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "99cf9bb59135",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate D010F8 \u2014 map write sites and boot value\n\n## Context\nIn the TI-84 Plus CE ROM tra",
+      "status": "completed",
+      "duration_seconds": 867.059,
+      "timestamp": "2026-05-08T04:17:11Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase242-d010f8-investigation.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "088226a59ba1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace post-fill display setup chain 0x0A32F9\u21920x0A3408\u21920x0A3404 loop\n\n## Context\nIn the TI-84",
+      "status": "timeout",
+      "duration_seconds": 900.045,
+      "timestamp": "2026-05-08T04:17:40Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2fc1354b9177",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add transpiler seed at 0x07A633 and retranspile\n\n## Context\nThe function at 0x07A627 (IY fla",
+      "status": "completed",
+      "duration_seconds": 257.399,
+      "timestamp": "2026-05-08T04:47:20Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase200-seeds.txt",
+        "TI-84_Plus_CE/probe-phase243-07a633-seed-verify.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "bdcccdcc7f8b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x0A33DA \u2014 last block in display chain before exit\n\n## Context\nSession 242 traced the ",
+      "status": "completed",
+      "duration_seconds": 404.389,
+      "timestamp": "2026-05-08T04:49:49Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "201a86c51474",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x09196F \u2014 sole D010F8 writer in STAT region\n\n## Context\nSession 242 mapped D010F8: 9 ",
+      "status": "completed",
+      "duration_seconds": 775.894,
+      "timestamp": "2026-05-08T04:56:04Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d1b4c3d10bb4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x051ADC in post-computation path\n\n## Context\nSession 242 showed the post-0x04EE06 pat",
+      "status": "timeout",
+      "duration_seconds": 900.058,
+      "timestamp": "2026-05-08T04:58:07Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 362,
-    "cc_to_codex": 362,
+    "total_calls": 374,
+    "cc_to_codex": 374,
     "codex_to_cc": 0,
-    "completed": 269,
-    "failed": 86,
+    "completed": 277,
+    "failed": 89,
     "refused": 0,
-    "avg_duration_seconds": 586.171
+    "avg_duration_seconds": 588.12
   }
 }

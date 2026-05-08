@@ -31,3 +31,4 @@
 0x0584A3
 # Phase 229: Key lookup function at 0x0300F1-0x030172
 0x030100
+0x07A633
