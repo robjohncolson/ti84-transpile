@@ -4347,15 +4347,174 @@
       "timestamp": "2026-05-08T00:09:17Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "ddd751cd5652",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task (uuu): Investigate 0x02FE73\u21920x02FD99 housekeeping loop blocks\n\n## Context\nThis is a TI-84 Plu",
+      "status": "completed",
+      "duration_seconds": 816.778,
+      "timestamp": "2026-05-08T00:55:42Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d614225c4ec7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task (ttt): Trace 0x04EDD0 \u2014 key code action handler\n\n## Context\nThis is a TI-84 Plus CE ROM trans",
+      "status": "completed",
+      "duration_seconds": 819.199,
+      "timestamp": "2026-05-08T00:55:42Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "306f15b1824b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task (vvv): Trace the no-key HALT path\n\n## Context\nThis is a TI-84 Plus CE ROM transpilation proje",
+      "status": "timeout",
+      "duration_seconds": 900.061,
+      "timestamp": "2026-05-08T00:57:06Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "619d0b15f53e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x09EFDE computation loop (xxx)\n\n## Context\nYou are working on the TI-84 Plus CE ROM t",
+      "status": "completed",
+      "duration_seconds": 513.462,
+      "timestamp": "2026-05-08T01:30:32Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "294bb7529ac1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x0850D1 and 0x04E447 branches (yyy)\n\n## Context\nYou are working on the TI-84 Plus CE ",
+      "status": "completed",
+      "duration_seconds": 801.865,
+      "timestamp": "2026-05-08T01:35:23Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a88d6b54d101",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate APD timer thresholds and subroutines (zzz)\n\n## Context\nYou are working on the TI",
+      "status": "completed",
+      "duration_seconds": 885.513,
+      "timestamp": "2026-05-08T01:36:48Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d6eae93a7093",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Run 0x09EFDE VRAM fill with 60K+ steps to completion\n\n## Context\nYou are working on a TI-84 ",
+      "status": "completed",
+      "duration_seconds": 463.339,
+      "timestamp": "2026-05-08T02:10:47Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "159afb7c62fc",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate 0x04E447 computation loop at 0x0A1A3B-0x0A1A4E\n\n## Context\nYou are working on a ",
+      "status": "completed",
+      "duration_seconds": 489.432,
+      "timestamp": "2026-05-08T02:11:15Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase239-04e447-deep-trace.mjs",
+        "TI-84_Plus_CE/probe-phase239-09efde-vram-fill-complete.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "78e76f78aa13",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace APD RAM-based counter that 0x03030E reads\n\n## Context\nYou are working on a TI-84 Plus ",
+      "status": "completed",
+      "duration_seconds": 874.494,
+      "timestamp": "2026-05-08T02:17:43Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ce82288aba7d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Find all D003E0 write sites in ROM\n\n## Context\nYou are working on a TI-84 Plus CE ROM transp",
+      "status": "timeout",
+      "duration_seconds": 900.043,
+      "timestamp": "2026-05-08T02:18:08Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d120caac904f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x04EDD9 BIT 0,(HL) test \u2014 D003E0 bit 0 behavior\n\n## Context\nYou are working on a TI-8",
+      "status": "completed",
+      "duration_seconds": 501.8,
+      "timestamp": "2026-05-08T02:51:14Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase240-04edd9-bit0-test.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "f2d137087779",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Run 0x09EFDE VRAM fill with 150K+ steps to find completion point\n\n## Context\nYou are working",
+      "status": "completed",
+      "duration_seconds": 564.126,
+      "timestamp": "2026-05-08T02:52:11Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3806506c0987",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x04E404 \u2014 the return point from 0x04E447's computation loop\n\n## Context\nYou are worki",
+      "status": "timeout",
+      "duration_seconds": 900.065,
+      "timestamp": "2026-05-08T02:57:49Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9b9de12be5fa",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x051D89 SET 2,(HL) caller chain \u2014 D003E0 bit 2 writer\n\n## Context\nYou are working on ",
+      "status": "timeout",
+      "duration_seconds": 900.045,
+      "timestamp": "2026-05-08T02:57:51Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 348,
-    "cc_to_codex": 348,
+    "total_calls": 362,
+    "cc_to_codex": 362,
     "codex_to_cc": 0,
-    "completed": 259,
-    "failed": 82,
+    "completed": 269,
+    "failed": 86,
     "refused": 0,
-    "avg_duration_seconds": 580.068
+    "avg_duration_seconds": 586.171
   }
 }
