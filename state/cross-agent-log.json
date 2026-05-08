@@ -4691,15 +4691,163 @@
         "TI-84_Plus_CE/probe-phase244-08bfcd-display-exit.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "052b3b844aba",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x027111 and 0x027123 \u2014 post-display event-loop re-entry points\n\n## Context\nYou are wo",
+      "status": "completed",
+      "duration_seconds": 603.232,
+      "timestamp": "2026-05-08T06:12:41Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase245-027111-027123-reentry.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "960948ee863c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate D02661 writers \u2014 who calls 0x0AF1DC (SET bit 7) and 0x0AF76E (RES bit 7)?\n\n## Co",
+      "status": "completed",
+      "duration_seconds": 731.237,
+      "timestamp": "2026-05-08T06:14:52Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase245-d02661-writers.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "851777d714ec",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x08BFEC sub-function in detail\n\n## Context\nYou are working on the TI-84 Plus CE ROM t",
+      "status": "timeout",
+      "duration_seconds": 900.065,
+      "timestamp": "2026-05-08T06:17:40Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "0b37f0f6c347",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate D02A86 \u2014 pending-display-update counter\n\n## Context\nYou are working on the TI-84",
+      "status": "timeout",
+      "duration_seconds": 900.038,
+      "timestamp": "2026-05-08T06:17:42Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "0811cef8d2bc",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 246 \u2014 P4: Full event loop cycle with key injection\n\n## Context\nSessions 236-245 have ",
+      "status": "completed",
+      "duration_seconds": 504.446,
+      "timestamp": "2026-05-08T06:55:36Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase246-0270f3-port-io.mjs",
+        "TI-84_Plus_CE/probe-phase246-0271cd-caller-trace.mjs",
+        "TI-84_Plus_CE/probe-phase246-08c102-post-display.mjs",
+        "TI-84_Plus_CE/probe-phase246-full-event-cycle.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "a6fc755b12e9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 246 \u2014 P1: Trace 0x0271CD (D02A86 counter setter)\n\n## Context\nSession 245 mapped the D",
+      "status": "timeout",
+      "duration_seconds": 900.031,
+      "timestamp": "2026-05-08T07:02:07Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ad09a74b2c46",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 246 \u2014 P2: Trace 0x08C102 post-display common path\n\n## Context\nSession 245 decoded 0x0",
+      "status": "timeout",
+      "duration_seconds": 900.032,
+      "timestamp": "2026-05-08T07:02:09Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "4067d801448e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 246 \u2014 P3: Trace 0x0270F3 port I/O function\n\n## Context\nSession 245 traced 0x027111 (p",
+      "status": "timeout",
+      "duration_seconds": 900.052,
+      "timestamp": "2026-05-08T07:02:11Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "14f0a944b132",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 247 \u2014 P1: Trace 0x0003B0 (called by 0x027111, stalls at 0x006202)\n\n## Context\nThis is",
+      "status": "completed",
+      "duration_seconds": 537.062,
+      "timestamp": "2026-05-08T07:31:32Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase247-0003b0-trace.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "0c9aaf7fd44f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 247 \u2014 P2: Trace 0x02672F (LCD drawing function)\n\n## Context\nThis is a TI-84 Plus CE R",
+      "status": "completed",
+      "duration_seconds": 570.649,
+      "timestamp": "2026-05-08T07:32:08Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase247-02672f-lcd-drawing.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "2abcedba0091",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 247 \u2014 P3: Trace 0x0885EA (D02661 latch armer caller)\n\n## Context\nThis is a TI-84 Plus",
+      "status": "timeout",
+      "duration_seconds": 900.05,
+      "timestamp": "2026-05-08T07:37:38Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ab377e9155fe",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Find parent function callers of 0x0885EA area (function entry near 0x088586)\n\n## Context\nYou",
+      "status": "completed",
+      "duration_seconds": 487.573,
+      "timestamp": "2026-05-08T08:11:00Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase248-088586-callers.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 378,
-    "cc_to_codex": 378,
+    "total_calls": 390,
+    "cc_to_codex": 390,
     "codex_to_cc": 0,
-    "completed": 281,
-    "failed": 89,
+    "completed": 287,
+    "failed": 95,
     "refused": 0,
-    "avg_duration_seconds": 589.848
+    "avg_duration_seconds": 594.352
   }
 }
