@@ -1616,6 +1616,7 @@ const EVAL_TWO_BYTE_TOKENS = [
   ['invt',      [0xBB, 0x03]],  // tInvT
   ['ztest',       [0xBB, 0x53]],  // tZTest
   ['1-sampzint',  [0xBB, 0x54]],  // t1SampZInt
+  ['zinterval',   [0xBB, 0x54]],  // ASCII alias for t1SampZInt
   ['1-propztest', [0xBB, 0x55]],  // t1PropZTest
   ['1-propzint',  [0xBB, 0x56]],  // t1PropZInt
   ['2-sampztest', [0xBB, 0x57]],  // t2SampZTest
@@ -1623,6 +1624,7 @@ const EVAL_TWO_BYTE_TOKENS = [
   ['2-propzint',  [0xBB, 0x59]],  // t2PropZInt
   ['ttest',       [0xBB, 0x5A]],  // tTTest
   ['1-samptint',  [0xBB, 0x5B]],  // t1SampTInt
+  ['tinterval',   [0xBB, 0x5B]],  // ASCII alias for t1SampTInt
   ['2-sampttest', [0xBB, 0x5C]],  // t2SampTTest
   ['chi2-test',   [0xBB, 0x5D]],  // tChi2Test (ASCII alias)
   ['\u03C7\u00B2-test', [0xBB, 0x5D]],  // tChi2Test
@@ -3358,6 +3360,12 @@ function evalReturnTemplateNumber(value, useBuffer) {
   };
 }
 
+function evalReturnTemplateDisplay(value, display, useBuffer) {
+  const result = evalReturnTemplateNumber(value, useBuffer);
+  if (!result.error) result.display = display;
+  return result;
+}
+
 function evalReturnTemplateList(values) {
   const displays = values.map(v => formatResult(v));
   return {
@@ -4161,7 +4169,11 @@ function evalRunZTestTemplate(argText, useBuffer) {
   const z = (xbar - mu0) / (sigma / Math.sqrt(n));
   const result = _zPValue(z, direction);
   if (!Number.isFinite(result)) return { error: 'ZTest could not be evaluated.' };
-  return runDirectEval(formatResult(result), useBuffer);
+  return evalReturnTemplateDisplay(
+    result,
+    `z=${formatResult(z)}, p=${formatResult(result)}`,
+    useBuffer
+  );
 }
 
 // TTest(μ0, x̄, s, n, direction) → p-value
@@ -4212,7 +4224,11 @@ function evalRunTTestTemplate(argText, useBuffer) {
   const df = n - 1;
   const result = _tPValue(t, df, direction);
   if (!Number.isFinite(result)) return { error: 'TTest could not be evaluated.' };
-  return runDirectEval(formatResult(result), useBuffer);
+  return evalReturnTemplateDisplay(
+    result,
+    `t=${formatResult(t)}, p=${formatResult(result)}, df=${formatResult(df)}`,
+    useBuffer
+  );
 }
 
 // 1-PropZTest(p0, x, n, direction) → p-value
@@ -4263,7 +4279,11 @@ function evalRun1PropZTestTemplate(argText, useBuffer) {
   const z = (pHat - p0) / Math.sqrt(p0 * (1 - p0) / n);
   const result = _zPValue(z, direction);
   if (!Number.isFinite(result)) return { error: '1-PropZTest could not be evaluated.' };
-  return runDirectEval(formatResult(result), useBuffer);
+  return evalReturnTemplateDisplay(
+    result,
+    `z=${formatResult(z)}, p=${formatResult(result)}`,
+    useBuffer
+  );
 }
 
 // 1-PropZInt(x, n, C-level) → {lower, upper}
@@ -4339,7 +4359,11 @@ function evalRun2PropZTestTemplate(argText, useBuffer) {
   const z = (pHat1 - pHat2) / Math.sqrt(pooled * (1 - pooled) * (1 / n1 + 1 / n2));
   const result = _zPValue(z, direction);
   if (!Number.isFinite(result)) return { error: '2-PropZTest could not be evaluated.' };
-  return runDirectEval(formatResult(result), useBuffer);
+  return evalReturnTemplateDisplay(
+    result,
+    `z=${formatResult(z)}, p=${formatResult(result)}`,
+    useBuffer
+  );
 }
 
 // 2-PropZInt(x1, n1, x2, n2, C-level) -> {lower, upper}
@@ -5072,13 +5096,15 @@ function runDirectEvalTemplate(expr, useBuffer) {
   const zTestArgs = evalMatchWholeCall(expr, 'ZTest');
   if (zTestArgs !== null) return evalRunZTestTemplate(zTestArgs, useBuffer);
 
-  const oneSampZIntArgs = evalMatchWholeCall(expr, '1-SampZInt');
+  let oneSampZIntArgs = evalMatchWholeCall(expr, '1-SampZInt');
+  if (oneSampZIntArgs === null) oneSampZIntArgs = evalMatchWholeCall(expr, 'ZInterval');
   if (oneSampZIntArgs !== null) return evalRun1SampZIntTemplate(oneSampZIntArgs, useBuffer);
 
   const tTestArgs = evalMatchWholeCall(expr, 'TTest');
   if (tTestArgs !== null) return evalRunTTestTemplate(tTestArgs, useBuffer);
 
-  const oneSampTIntArgs = evalMatchWholeCall(expr, '1-SampTInt');
+  let oneSampTIntArgs = evalMatchWholeCall(expr, '1-SampTInt');
+  if (oneSampTIntArgs === null) oneSampTIntArgs = evalMatchWholeCall(expr, 'TInterval');
   if (oneSampTIntArgs !== null) return evalRun1SampTIntTemplate(oneSampTIntArgs, useBuffer);
 
   const propZTestArgs = evalMatchWholeCall(expr, '1-PropZTest');

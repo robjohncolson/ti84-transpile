@@ -4839,15 +4839,155 @@
         "TI-84_Plus_CE/probe-phase248-088586-callers.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "60a607becb24",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Stub the 0x006202 delay loop in transpiled runtime\n\n## Context\nYou are working on a TI-84 Pl",
+      "status": "completed",
+      "duration_seconds": 658.798,
+      "timestamp": "2026-05-08T08:13:53Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "78d3937985c2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map all writers of D000C6 bit 2 (LCD write-enable flag)\n\n## Context\nYou are working on a TI-",
+      "status": "timeout",
+      "duration_seconds": 900.031,
+      "timestamp": "2026-05-08T08:17:50Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2ae20ffae2b8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x0AF175 display chain\n\n## Context\nYou are working on a TI-84 Plus CE ROM transpilatio",
+      "status": "timeout",
+      "duration_seconds": 900.04,
+      "timestamp": "2026-05-08T08:17:51Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b50a21cfcec8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 249 P1: Implement Delay Loop Stub for 0x0061E3 in Transpiler\n\n## Context\nSession 248 ",
+      "status": "completed",
+      "duration_seconds": 265.089,
+      "timestamp": "2026-05-08T08:49:09Z",
+      "files_changed": [
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "12bc8a985359",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 249 P2: Trace OS Event Loop Digit Processing (Real Path)\n\n## Context\nSession 246 P4 a",
+      "status": "completed",
+      "duration_seconds": 594.895,
+      "timestamp": "2026-05-08T08:54:46Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase249-event-loop-digit-trace.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "141da4d09b55",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 249 P3: Add Missing Direct-Eval Tokens to browser-shell\n\n## Context\nPriority 7 in CON",
+      "status": "completed",
+      "duration_seconds": 854.735,
+      "timestamp": "2026-05-08T08:59:11Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "749c0eab4da6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 250 P3: Investigate D007E0 mode flags \u2014 what values enable cxMain key routing\n\n## Context\n",
+      "status": "completed",
+      "duration_seconds": 445.952,
+      "timestamp": "2026-05-08T09:31:52Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "fe3fe75faaec",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 250 P1: Trace 0x02FFAE dispatch path \u2014 why converted key never reaches cxMain\n\n## Context\n",
+      "status": "timeout",
+      "duration_seconds": 900.039,
+      "timestamp": "2026-05-08T09:39:23Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "715ba7cca787",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 250 P2: Add regression model tokens to browser-shell direct-eval\n\n## Context\nThis is a TI-",
+      "status": "timeout",
+      "duration_seconds": 900.031,
+      "timestamp": "2026-05-08T09:39:25Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e07c94ee525f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 251 P1: Find what calls cxMain (0x0585D3 JP (HL) dispatch table)\n\n## Context\n\nWe're t",
+      "status": "failed",
+      "duration_seconds": 168.914,
+      "timestamp": "2026-05-08T10:05:57Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ff616fec0312",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 251 P3: Add more direct-eval tokens to browser-shell.html\n\n## Context\n\nThe browser-sh",
+      "status": "completed",
+      "duration_seconds": 258.212,
+      "timestamp": "2026-05-08T10:07:30Z",
+      "files_changed": [
+        "TI-84_Plus_CE/browser-shell.html"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "743abafc17c3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 251 P2: Trace 0x022264 call chain (LCD write-enable path)\n\n## Context\n\nIn session 248",
+      "status": "completed",
+      "duration_seconds": 352.814,
+      "timestamp": "2026-05-08T10:09:02Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase251-022264-lcd-enable.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 390,
-    "cc_to_codex": 390,
+    "total_calls": 402,
+    "cc_to_codex": 402,
     "codex_to_cc": 0,
-    "completed": 287,
-    "failed": 95,
+    "completed": 294,
+    "failed": 100,
     "refused": 0,
-    "avg_duration_seconds": 594.352
+    "avg_duration_seconds": 594.519
   }
 }
