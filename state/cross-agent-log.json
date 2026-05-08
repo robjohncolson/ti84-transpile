@@ -5337,15 +5337,63 @@
         "TI-84_Plus_CE/probe-phase261-080151-b-sweep.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "07f86392c0b2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x080151 \u2014 the entry gate for 0x062055\n\n## Context\nThe function at 0x062055 is t",
+      "status": "completed",
+      "duration_seconds": 781.264,
+      "timestamp": "2026-05-08T16:56:10Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase261-080151-disasm.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "6132470d7a20",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 262 P3 \u2014 Add more direct-eval tokens to browser-shell.html\n\n## Context\n\nThe browser-s",
+      "status": "completed",
+      "duration_seconds": 167.508,
+      "timestamp": "2026-05-08T17:25:51Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f48ae6032419",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 262 P2 \u2014 Find all ROM writes to D007D0 (handler pointer)\n\n## Context\n\nSession 261 fou",
+      "status": "completed",
+      "duration_seconds": 293.054,
+      "timestamp": "2026-05-08T17:27:54Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase262-d007d0-write-sites.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "d4750eb2c4b3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 262 P1 \u2014 Bypass 0x08C69E via IY+0x25 bit 5, trace to cxMain\n\n## Context\n\nSession 261 ",
+      "status": "completed",
+      "duration_seconds": 563.035,
+      "timestamp": "2026-05-08T17:32:22Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 431,
-    "cc_to_codex": 431,
+    "total_calls": 435,
+    "cc_to_codex": 435,
     "codex_to_cc": 0,
-    "completed": 322,
+    "completed": 326,
     "failed": 101,
     "refused": 0,
-    "avg_duration_seconds": 584.59
+    "avg_duration_seconds": 583.364
   }
 }
