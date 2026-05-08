@@ -5171,15 +5171,65 @@
       "timestamp": "2026-05-08T14:08:22Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "c55fb2911193",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 257 P1: Trace 0x09E2EC (shared context-registration function)\n\n## Context\nThis is a T",
+      "status": "completed",
+      "duration_seconds": 572.378,
+      "timestamp": "2026-05-08T14:12:55Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase257-09e2ec-context-reg.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "3c4e84422895",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 257 P3: Extended boot (200K+ steps) to find cx* field population\n\n## Context\nThis is ",
+      "status": "completed",
+      "duration_seconds": 691.755,
+      "timestamp": "2026-05-08T14:14:58Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase257-extended-boot-cx.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "827050b13ea3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Find all SET/RES/BIT sites on IY+9 bit 0\n\n## Context\nThis is a TI-84 Plus CE ROM transpilati",
+      "status": "completed",
+      "duration_seconds": 228.196,
+      "timestamp": "2026-05-08T14:46:47Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f18a8ff7aff0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Search ROM for runtime construction of 0x022264 vector table base\n\n## Context\nThis is a TI-8",
+      "status": "completed",
+      "duration_seconds": 392.8,
+      "timestamp": "2026-05-08T14:49:34Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase258-022264-runtime-construction.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 418,
-    "cc_to_codex": 418,
+    "total_calls": 422,
+    "cc_to_codex": 422,
     "codex_to_cc": 0,
-    "completed": 310,
+    "completed": 314,
     "failed": 100,
     "refused": 0,
-    "avg_duration_seconds": 588.515
+    "avg_duration_seconds": 587.404
   }
 }
