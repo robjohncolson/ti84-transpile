@@ -1600,11 +1600,15 @@ const EVAL_TWO_BYTE_TOKENS = [
   ['binompdf', [0xBB, 0x0A]],  // tBinomPdf
   ['binomcdf', [0xBB, 0x0B]],  // tBinomCdf
   ['randbin',   [0xBB, 0x1F]],  // tRandBin
-  ['rowswap',   [0xBB, 0x2C]],  // tRowSwap
-  ['rswap',     [0xBB, 0x2C]],  // tRowSwap alias
+  ['rowswap',   [0xBB, 0xCD]],  // tRowSwap
+  ['rswap',     [0xBB, 0xCD]],  // tRowSwap alias
   ['det',       [0xBB, 0xC4]],  // tDet
+  ['*row+',     [0xBB, 0xCE]],  // tStarRowPlus
+  ['*row',      [0xBB, 0xCC]],  // tStarRow
   ['rref',      [0xBB, 0xD0]],  // tRref
   ['ref',       [0xBB, 0xD1]],  // tRef
+  ['list>matr', [0xBB, 0xD9]],  // tListMatr
+  ['matr>list', [0xBB, 0xDA]],  // tMatrList
   ['linreg(ax+b)', [0xBB, 0xF4]],  // tLinReg(ax+b)
   ['cubicreg',     [0xBB, 0xF6]],  // tCubicReg
   ['quadreg',      [0xBB, 0xF5]],  // tQuadReg
@@ -1648,7 +1652,7 @@ const EVAL_TWO_BYTE_TOKENS = [
   ['nderiv',    [0x5E, 0x25]],  // nDeriv(
   ['median',    [0xBB, 0x0F]],  // tMedian
   ['fnint',     [0x5E, 0x24]],  // fnInt(
-  ['instring',  [0xBB, 0x34]],  // tInStrng
+  ['instring',  [0xBB, 0x47]],  // tInStrng
   ['sorta',     [0xBB, 0xE3]],  // tSortA
   ['sortd',     [0xBB, 0xE4]],  // tSortD
   ['solve',     [0xBB, 0x36]],  // tSolve
@@ -1660,8 +1664,8 @@ const EVAL_TWO_BYTE_TOKENS = [
   ['onevar',    [0xBB, 0xF2]],  // tOneVar
   ['twovar',    [0xBB, 0xF3]],  // tTwoVar
   ['sum',       [0xBB, 0x30]],  // tSum
-  ['sub',       [0xBB, 0x35]],  // tSubStrng
-  ['expr',      [0xBB, 0x2A]],  // tExpr
+  ['sub',       [0xBB, 0x46]],  // tSubStrng
+  ['expr',      [0xBB, 0x45]],  // tExpr
   ['length',    [0xBB, 0x2D]],  // tLength
   ['dim',       [0xBB, 0x04]],  // tDim
   ['min',       [0xBB, 0x0C]],  // tMin
@@ -4001,6 +4005,154 @@ function evalRunRowSwapTemplate(argText, useBuffer) {
   return evalReturnTemplateMatrix(rows);
 }
 
+// *row(scalar, matrix, row) — multiply row by scalar
+function evalRunStarRowTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 3) {
+    return { error: '*row(scalar,matrix,row) expects 3 arguments.' };
+  }
+
+  const scalarResult = evalReadNumeric(args[0], useBuffer);
+  if (scalarResult.error) return scalarResult;
+
+  const matrixResult = evalReadMatrixArgument(args[1], useBuffer);
+  if (matrixResult.error) return matrixResult;
+  if (matrixResult.values.length === 0) {
+    return { error: '*row requires a non-empty matrix.' };
+  }
+
+  const rowResult = evalReadNumeric(args[2], useBuffer);
+  if (rowResult.error) return rowResult;
+  const rowIdx = Math.trunc(rowResult.value) - 1;
+  if (rowIdx < 0 || rowIdx >= matrixResult.values.length) {
+    return { error: '*row row index is out of range.' };
+  }
+
+  const rows = _cloneMatrix(matrixResult.values);
+  for (let c = 0; c < rows[rowIdx].length; c++) {
+    rows[rowIdx][c] *= scalarResult.value;
+  }
+  if (matrixResult.matrixName) {
+    evalMatrixStore.set(matrixResult.matrixName, _cloneMatrix(rows));
+  }
+  return evalReturnTemplateMatrix(rows);
+}
+
+// *row+(scalar, matrix, rowSrc, rowDest) — scalar*rowSrc + rowDest
+function evalRunStarRowPlusTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 4) {
+    return { error: '*row+(scalar,matrix,rowSrc,rowDest) expects 4 arguments.' };
+  }
+
+  const scalarResult = evalReadNumeric(args[0], useBuffer);
+  if (scalarResult.error) return scalarResult;
+
+  const matrixResult = evalReadMatrixArgument(args[1], useBuffer);
+  if (matrixResult.error) return matrixResult;
+  if (matrixResult.values.length === 0) {
+    return { error: '*row+ requires a non-empty matrix.' };
+  }
+
+  const srcResult = evalReadNumeric(args[2], useBuffer);
+  if (srcResult.error) return srcResult;
+  const destResult = evalReadNumeric(args[3], useBuffer);
+  if (destResult.error) return destResult;
+
+  const srcIdx = Math.trunc(srcResult.value) - 1;
+  const destIdx = Math.trunc(destResult.value) - 1;
+  if (srcIdx < 0 || srcIdx >= matrixResult.values.length ||
+      destIdx < 0 || destIdx >= matrixResult.values.length) {
+    return { error: '*row+ row indices are out of range.' };
+  }
+
+  const rows = _cloneMatrix(matrixResult.values);
+  for (let c = 0; c < rows[destIdx].length; c++) {
+    rows[destIdx][c] += scalarResult.value * rows[srcIdx][c];
+  }
+  if (matrixResult.matrixName) {
+    evalMatrixStore.set(matrixResult.matrixName, _cloneMatrix(rows));
+  }
+  return evalReturnTemplateMatrix(rows);
+}
+
+// Matr>list(matrix, col, listVar) — extract matrix column to list
+function evalRunMatrListTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length < 2 || args.length > 3) {
+    return { error: 'Matr>list(matrix,col[,listVar]) expects 2 or 3 arguments.' };
+  }
+
+  const matrixResult = evalReadMatrixArgument(args[0], useBuffer);
+  if (matrixResult.error) return matrixResult;
+  if (matrixResult.values.length === 0) {
+    return { error: 'Matr>list requires a non-empty matrix.' };
+  }
+
+  const colResult = evalReadNumeric(args[1], useBuffer);
+  if (colResult.error) return colResult;
+  const colIdx = Math.trunc(colResult.value) - 1;
+  if (colIdx < 0 || colIdx >= matrixResult.values[0].length) {
+    return { error: 'Matr>list column index is out of range.' };
+  }
+
+  const values = matrixResult.values.map(row => row[colIdx]);
+
+  if (args.length === 3) {
+    const listName = _normalizeListName(args[2].trim());
+    if (listName) {
+      evalListStore.set(listName, values.slice());
+    }
+  }
+
+  return evalReturnTemplateList(values);
+}
+
+// List>matr(list1, list2, ..., matVar) — combine lists as columns into matrix
+function evalRunListMatrTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length < 2) {
+    return { error: 'List>matr(list1,...,matVar) expects at least 2 arguments.' };
+  }
+
+  // Last argument is the matrix destination variable
+  const matName = _normalizeMatrixName(args[args.length - 1].trim());
+  const listArgs = matName ? args.slice(0, -1) : args;
+
+  const lists = [];
+  for (const arg of listArgs) {
+    const listResult = evalReadListArgument(arg, useBuffer);
+    if (listResult.error) return listResult;
+    lists.push(listResult.values);
+  }
+
+  if (lists.length === 0) {
+    return { error: 'List>matr requires at least one list.' };
+  }
+
+  const numRows = lists[0].length;
+  for (let i = 1; i < lists.length; i++) {
+    if (lists[i].length !== numRows) {
+      return { error: 'List>matr requires all lists to have the same length.' };
+    }
+  }
+
+  const rows = [];
+  for (let r = 0; r < numRows; r++) {
+    const row = [];
+    for (let c = 0; c < lists.length; c++) {
+      row.push(lists[c][r]);
+    }
+    rows.push(row);
+  }
+
+  if (matName) {
+    evalMatrixStore.set(matName, _cloneMatrix(rows));
+  }
+
+  return evalReturnTemplateMatrix(rows);
+}
+
 // det(matrix) — determinant via cofactor expansion
 function evalRunDetTemplate(argText, useBuffer) {
   const matrixResult = evalReadMatrixArgument(argText.trim(), useBuffer);
@@ -5503,6 +5655,23 @@ function runDirectEvalTemplate(expr, useBuffer) {
   let rowSwapArgs = evalMatchWholeCall(expr, 'rowSwap');
   if (rowSwapArgs === null) rowSwapArgs = evalMatchWholeCall(expr, 'rSwap');
   if (rowSwapArgs !== null) return evalRunRowSwapTemplate(rowSwapArgs, useBuffer);
+
+  // *row+( must be checked before *row( to avoid prefix collision
+  const starRowPlusArgs = evalMatchWholeCall(expr, '*row+');
+  if (starRowPlusArgs !== null) return evalRunStarRowPlusTemplate(starRowPlusArgs, useBuffer);
+
+  const starRowArgs = evalMatchWholeCall(expr, '*row');
+  if (starRowArgs !== null) return evalRunStarRowTemplate(starRowArgs, useBuffer);
+
+  const matrListArgs = evalMatchWholeCall(expr, 'Matr▸list');
+  if (matrListArgs !== null) return evalRunMatrListTemplate(matrListArgs, useBuffer);
+  const matrListArgs2 = evalMatchWholeCall(expr, 'Matr>list');
+  if (matrListArgs2 !== null) return evalRunMatrListTemplate(matrListArgs2, useBuffer);
+
+  const listMatrArgs = evalMatchWholeCall(expr, 'List▸matr');
+  if (listMatrArgs !== null) return evalRunListMatrTemplate(listMatrArgs, useBuffer);
+  const listMatrArgs2 = evalMatchWholeCall(expr, 'List>matr');
+  if (listMatrArgs2 !== null) return evalRunListMatrTemplate(listMatrArgs2, useBuffer);
 
   const detArgs = evalMatchWholeCall(expr, 'det');
   if (detArgs !== null) return evalRunDetTemplate(detArgs, useBuffer);

@@ -5385,15 +5385,61 @@
       "timestamp": "2026-05-08T17:32:22Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "ed4035f964e9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Implement 0x006202 Delay Stub in Transpiler\n\n## Context\nThis is a TI-84 Plus CE ROM transpil",
+      "status": "completed",
+      "duration_seconds": 113.614,
+      "timestamp": "2026-05-08T18:04:27Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1ba3428edee8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x0A223A (display-area clear) \u2014 Static ROM Decode\n\n## Context\nThis is a TI-84 Pl",
+      "status": "timeout",
+      "duration_seconds": 900.044,
+      "timestamp": "2026-05-08T18:17:31Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "535954cc24e7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x09C775 Caller Chain \u2014 Sole SET 0,(IY+9) Site\n\n## Context\nThis is a TI-84 Plus CE ROM",
+      "status": "timeout",
+      "duration_seconds": 900.04,
+      "timestamp": "2026-05-08T18:17:32Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e6cc940edf8e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 264 P3: Add Missing Direct-Eval Tokens (expr, sub, inString, matrix helpers)\n\n## Cont",
+      "status": "completed",
+      "duration_seconds": 396.914,
+      "timestamp": "2026-05-08T18:50:46Z",
+      "files_changed": [
+        "TI-84_Plus_CE/browser-shell.html"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 435,
-    "cc_to_codex": 435,
+    "total_calls": 439,
+    "cc_to_codex": 439,
     "codex_to_cc": 0,
-    "completed": 326,
-    "failed": 101,
+    "completed": 328,
+    "failed": 103,
     "refused": 0,
-    "avg_duration_seconds": 583.364
+    "avg_duration_seconds": 583.312
   }
 }
