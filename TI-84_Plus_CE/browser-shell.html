@@ -1602,6 +1602,9 @@ const EVAL_TWO_BYTE_TOKENS = [
   ['randbin',   [0xBB, 0x1F]],  // tRandBin
   ['rowswap',   [0xBB, 0x2C]],  // tRowSwap
   ['rswap',     [0xBB, 0x2C]],  // tRowSwap alias
+  ['det',       [0xBB, 0xC4]],  // tDet
+  ['rref',      [0xBB, 0xD0]],  // tRref
+  ['ref',       [0xBB, 0xD1]],  // tRef
   ['linreg(ax+b)', [0xBB, 0xF4]],  // tLinReg(ax+b)
   ['cubicreg',     [0xBB, 0xF6]],  // tCubicReg
   ['quadreg',      [0xBB, 0xF5]],  // tQuadReg
@@ -3998,6 +4001,137 @@ function evalRunRowSwapTemplate(argText, useBuffer) {
   return evalReturnTemplateMatrix(rows);
 }
 
+// det(matrix) — determinant via cofactor expansion
+function evalRunDetTemplate(argText, useBuffer) {
+  const matrixResult = evalReadMatrixArgument(argText.trim(), useBuffer);
+  if (matrixResult.error) return matrixResult;
+  const rows = matrixResult.values;
+  if (rows.length === 0) return { error: 'det( requires a non-empty matrix.' };
+  if (rows.length !== rows[0].length) return { error: 'det( requires a square matrix.' };
+
+  function det(m) {
+    const n = m.length;
+    if (n === 1) return m[0][0];
+    if (n === 2) return m[0][0] * m[1][1] - m[0][1] * m[1][0];
+    let result = 0;
+    for (let col = 0; col < n; col++) {
+      const minor = [];
+      for (let r = 1; r < n; r++) {
+        const row = [];
+        for (let c = 0; c < n; c++) {
+          if (c !== col) row.push(m[r][c]);
+        }
+        minor.push(row);
+      }
+      result += (col % 2 === 0 ? 1 : -1) * m[0][col] * det(minor);
+    }
+    return result;
+  }
+
+  const result = det(rows);
+  if (!Number.isFinite(result)) return { error: 'det( could not be evaluated.' };
+  return runDirectEval(formatResult(result), useBuffer);
+}
+
+// ref(matrix) — row echelon form via Gaussian elimination (partial pivoting)
+function _rowEchelonForm(inputRows) {
+  const rows = inputRows.map(r => r.slice());
+  const m = rows.length;
+  if (m === 0) return rows;
+  const n = rows[0].length;
+  let pivotRow = 0;
+
+  for (let col = 0; col < n && pivotRow < m; col++) {
+    // Find the row with the largest absolute value in this column
+    let maxRow = pivotRow;
+    let maxVal = Math.abs(rows[pivotRow][col]);
+    for (let r = pivotRow + 1; r < m; r++) {
+      const v = Math.abs(rows[r][col]);
+      if (v > maxVal) { maxVal = v; maxRow = r; }
+    }
+    if (maxVal < 1e-14) continue; // skip zero column
+
+    // Swap rows
+    if (maxRow !== pivotRow) {
+      [rows[pivotRow], rows[maxRow]] = [rows[maxRow], rows[pivotRow]];
+    }
+
+    // Scale pivot row so the pivot is 1
+    const pivotVal = rows[pivotRow][col];
+    for (let c = 0; c < n; c++) rows[pivotRow][c] /= pivotVal;
+
+    // Eliminate below
+    for (let r = pivotRow + 1; r < m; r++) {
+      const factor = rows[r][col];
+      if (Math.abs(factor) < 1e-14) continue;
+      for (let c = 0; c < n; c++) {
+        rows[r][c] -= factor * rows[pivotRow][c];
+      }
+      rows[r][col] = 0; // exact zero
+    }
+    pivotRow++;
+  }
+  return rows;
+}
+
+function evalRunRefTemplate(argText, useBuffer) {
+  const matrixResult = evalReadMatrixArgument(argText.trim(), useBuffer);
+  if (matrixResult.error) return matrixResult;
+  if (matrixResult.values.length === 0) return { error: 'ref( requires a non-empty matrix.' };
+  const rows = _rowEchelonForm(matrixResult.values);
+  return evalReturnTemplateMatrix(rows);
+}
+
+// rref(matrix) — reduced row echelon form via Gauss-Jordan elimination
+function evalRunRrefTemplate(argText, useBuffer) {
+  const matrixResult = evalReadMatrixArgument(argText.trim(), useBuffer);
+  if (matrixResult.error) return matrixResult;
+  if (matrixResult.values.length === 0) return { error: 'rref( requires a non-empty matrix.' };
+
+  const rows = _rowEchelonForm(matrixResult.values);
+  const m = rows.length;
+  const n = rows[0].length;
+
+  // Back-substitution: eliminate above each pivot
+  for (let r = m - 1; r >= 0; r--) {
+    // Find pivot column in this row
+    let pivotCol = -1;
+    for (let c = 0; c < n; c++) {
+      if (Math.abs(rows[r][c]) > 1e-14) { pivotCol = c; break; }
+    }
+    if (pivotCol === -1) continue; // all-zero row
+
+    // Eliminate above
+    for (let above = 0; above < r; above++) {
+      const factor = rows[above][pivotCol];
+      if (Math.abs(factor) < 1e-14) continue;
+      for (let c = 0; c < n; c++) {
+        rows[above][c] -= factor * rows[r][c];
+      }
+      rows[above][pivotCol] = 0; // exact zero
+    }
+  }
+
+  return evalReturnTemplateMatrix(rows);
+}
+
+// Transpose: matrix^T
+function evalRunTransposeTemplate(argText, useBuffer) {
+  const matrixResult = evalReadMatrixArgument(argText.trim(), useBuffer);
+  if (matrixResult.error) return matrixResult;
+  const rows = matrixResult.values;
+  if (rows.length === 0) return evalReturnTemplateMatrix([]);
+  const m = rows.length;
+  const n = rows[0].length;
+  const result = [];
+  for (let c = 0; c < n; c++) {
+    const row = [];
+    for (let r = 0; r < m; r++) row.push(rows[r][c]);
+    result.push(row);
+  }
+  return evalReturnTemplateMatrix(result);
+}
+
 function evalRunExprTemplate(argText, useBuffer) {
   const args = evalSplitArgs(argText);
   if (args.length !== 1) {
@@ -4688,7 +4822,11 @@ function evalRun2SampZTestTemplate(argText, useBuffer) {
   const z = (xbar1 - xbar2) / Math.sqrt((s1 * s1) / n1 + (s2 * s2) / n2);
   const result = _zPValue(z, direction);
   if (!Number.isFinite(result)) return { error: '2-SampZTest could not be evaluated.' };
-  return runDirectEval(formatResult(result), useBuffer);
+  return evalReturnTemplateDisplay(
+    result,
+    `z=${formatResult(z)}, p=${formatResult(result)}`,
+    useBuffer
+  );
 }
 
 // 2-SampTTest(x̄1, s1, n1, x̄2, s2, n2, direction) → p-value (Welch's)
@@ -4774,7 +4912,11 @@ function evalRun2SampTTestTemplate(argText, useBuffer) {
   const df = ((v1 + v2) * (v1 + v2)) / ((v1 * v1) / (n1 - 1) + (v2 * v2) / (n2 - 1));
   const result = _tPValue(t, df, direction);
   if (!Number.isFinite(result)) return { error: '2-SampTTest could not be evaluated.' };
-  return runDirectEval(formatResult(result), useBuffer);
+  return evalReturnTemplateDisplay(
+    result,
+    `t=${formatResult(t)}, p=${formatResult(result)}, df=${formatResult(df)}`,
+    useBuffer
+  );
 }
 
 // 2-SampTInt(xbar1, s1, n1, xbar2, s2, n2, C-level) -> {lower, upper}
@@ -4837,7 +4979,11 @@ function evalRunChiSquareTestTemplate(argText, useBuffer) {
   const df = observed.values.length - 1;
   const result = 1 - _chiSquareCdf(chiSquare, df);
   if (!Number.isFinite(result)) return { error: 'chi2-Test could not be evaluated.' };
-  return runDirectEval(formatResult(result), useBuffer);
+  return evalReturnTemplateDisplay(
+    result,
+    `χ²=${formatResult(chiSquare)}, p=${formatResult(result)}, df=${df}`,
+    useBuffer
+  );
 }
 
 // LinRegTTest(Xlist, Ylist, direction) -> p-value
@@ -4876,9 +5022,14 @@ function evalRunLinRegTTestTemplate(argText, useBuffer) {
   }
   const seSlope = Math.sqrt(sse / ((n - 2) * sxx));
   const t = regression.a / seSlope;
-  const result = _tPValue(t, n - 2, directionResult.value);
+  const df = n - 2;
+  const result = _tPValue(t, df, directionResult.value);
   if (!Number.isFinite(result)) return { error: 'LinRegTTest could not be evaluated.' };
-  return runDirectEval(formatResult(result), useBuffer);
+  return evalReturnTemplateDisplay(
+    result,
+    `t=${formatResult(t)}, p=${formatResult(result)}, df=${df}`,
+    useBuffer
+  );
 }
 
 // ANOVA(list1, list2, ...lists) -> p-value
@@ -4916,7 +5067,11 @@ function evalRunAnovaTemplate(argText, useBuffer) {
   const f = (ssBetween / dfBetween) / (ssWithin / dfWithin);
   const result = 1 - _fCdf(f, dfBetween, dfWithin);
   if (!Number.isFinite(result)) return { error: 'ANOVA could not be evaluated.' };
-  return runDirectEval(formatResult(result), useBuffer);
+  return evalReturnTemplateDisplay(
+    result,
+    `F=${formatResult(f)}, p=${formatResult(result)}, df1=${dfBetween}, df2=${dfWithin}`,
+    useBuffer
+  );
 }
 
 function evalRunListStatTemplate(argText, useBuffer, statFn) {
@@ -5349,6 +5504,15 @@ function runDirectEvalTemplate(expr, useBuffer) {
   if (rowSwapArgs === null) rowSwapArgs = evalMatchWholeCall(expr, 'rSwap');
   if (rowSwapArgs !== null) return evalRunRowSwapTemplate(rowSwapArgs, useBuffer);
 
+  const detArgs = evalMatchWholeCall(expr, 'det');
+  if (detArgs !== null) return evalRunDetTemplate(detArgs, useBuffer);
+
+  const rrefArgs = evalMatchWholeCall(expr, 'rref');
+  if (rrefArgs !== null) return evalRunRrefTemplate(rrefArgs, useBuffer);
+
+  const refArgs = evalMatchWholeCall(expr, 'ref');
+  if (refArgs !== null) return evalRunRefTemplate(refArgs, useBuffer);
+
   const exprArgs = evalMatchWholeCall(expr, 'expr');
   if (exprArgs !== null) return evalRunExprTemplate(exprArgs, useBuffer);
 
@@ -5548,6 +5712,16 @@ function runDirectEvalTemplate(expr, useBuffer) {
   let clrListArgs = evalMatchWholeCommand(expr, 'ClrList');
   if (clrListArgs === null) clrListArgs = evalMatchWholeCall(expr, 'ClrList');
   if (clrListArgs !== null) return evalRunClrListTemplate(clrListArgs);
+
+  // Matrix transpose: [A]^T or [A]ᵀ (suffix operator)
+  const trimmedExpr = expr.trim();
+  const transposeMatch = trimmedExpr.match(/^(.+?)(?:\^T|ᵀ)$/i);
+  if (transposeMatch) {
+    const inner = transposeMatch[1].trim();
+    // Only trigger if inner looks like a matrix ref or literal
+    const matrixResult = evalReadMatrixArgument(inner, useBuffer);
+    if (!matrixResult.error) return evalRunTransposeTemplate(inner, useBuffer);
+  }
 
   return null;
 }
@@ -6422,6 +6596,7 @@ $('btnEvalClear').addEventListener('click', () => {
   evalCachedPerph = null;
   evalVarStore.clear();
   evalListStore.clear();
+  evalMatrixStore.clear();
   evalLastAnsBcd = null;
   // Also clear ROM Parser cache
   rompCachedMem = null;

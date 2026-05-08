@@ -5260,15 +5260,39 @@
         "TI-84_Plus_CE/probe-phase259-d007e0-write-sites.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "7cdb390c6d70",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 259 \u2014 P3: Add more direct-eval tokens to browser-shell.html\n\n## Context\n\nThe browser-",
+      "status": "completed",
+      "duration_seconds": 672.74,
+      "timestamp": "2026-05-08T15:35:18Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3c4066a083f1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Static disassembly of 0x062055 function region (D007E0 writes + cxMain call)\n\n## Context\nThi",
+      "status": "completed",
+      "duration_seconds": 187.326,
+      "timestamp": "2026-05-08T16:07:40Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase260-062055-disasm.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 425,
-    "cc_to_codex": 425,
+    "total_calls": 427,
+    "cc_to_codex": 427,
     "codex_to_cc": 0,
-    "completed": 317,
+    "completed": 319,
     "failed": 100,
     "refused": 0,
-    "avg_duration_seconds": 586.05
+    "avg_duration_seconds": 585.319
   }
 }
