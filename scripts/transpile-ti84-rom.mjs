@@ -54,6 +54,65 @@ function wrap24(value) {
   return value & 0xffffff;
 }
 
+function buildManualBlock(startPc, mode, definition) {
+  return {
+    id: formatKey(startPc, mode),
+    startPc,
+    mode,
+    instructionCount: definition.instructions.length,
+    instructions: definition.instructions,
+    exits: definition.exits,
+    source: definition.sourceLines.join('\n'),
+  };
+}
+
+const BLOCK_OVERRIDES = new Map([
+  ['0061e3:adl', (startPc, mode) => buildManualBlock(startPc, mode, {
+    instructions: [{
+      pc: startPc,
+      mode,
+      bytes: '<manual override>',
+      dasm: 'manual delay loop stub',
+      tag: 'manual-override',
+      length: 0x2a,
+    }],
+    exits: [{ type: 'return' }],
+    sourceLines: [
+      `function block_${formatKey(startPc, mode).replace(':', '_')}(cpu) {`,
+      '  // Delay loop stub - pure delay with no side effects, safe to skip (session 248).',
+      '  // POP HL',
+      '  cpu.hl = cpu.pop();',
+      '  // POP DE',
+      '  cpu.de = cpu.pop();',
+      '  // RET',
+      '  return cpu.popReturn();',
+      '}',
+    ],
+  })],
+  ['0061e3:z80', (startPc, mode) => buildManualBlock(startPc, mode, {
+    instructions: [{
+      pc: startPc,
+      mode,
+      bytes: '<manual override>',
+      dasm: 'manual delay loop stub',
+      tag: 'manual-override',
+      length: 0x2a,
+    }],
+    exits: [{ type: 'return' }],
+    sourceLines: [
+      `function block_${formatKey(startPc, mode).replace(':', '_')}(cpu) {`,
+      '  // Delay loop stub - pure delay with no side effects, safe to skip (session 248).',
+      '  // POP HL',
+      '  cpu.hl = cpu.pop();',
+      '  // POP DE',
+      '  cpu.de = cpu.pop();',
+      '  // RET',
+      '  return cpu.popReturn();',
+      '}',
+    ],
+  })],
+]);
+
 function getWordByteWidth(instruction) {
   if (instruction.prefix === 'SIS' || instruction.prefix === 'LIS') return 2;
   if (instruction.prefix === 'SIL' || instruction.prefix === 'LIL') return 3;
@@ -634,6 +693,11 @@ function emitInstructionJs(instruction) {
 // --- Block builder (unchanged from previous phases) ---
 
 function buildBlock(startPc, mode, options) {
+  const blockOverride = BLOCK_OVERRIDES.get(formatKey(startPc, mode));
+  if (blockOverride) {
+    return blockOverride(startPc, mode);
+  }
+
   const instructions = [];
   const exits = [];
   let currentPc = startPc;

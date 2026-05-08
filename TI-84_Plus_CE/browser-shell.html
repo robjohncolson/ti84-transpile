@@ -1580,6 +1580,8 @@ const EVAL_E_CONSTANT_TOKENS = [0xBF, 0x10, 0x31, 0x11];
 // Two-byte function tokens: sorted longest-first for prefix safety
 const EVAL_TWO_BYTE_TOKENS = [
   ['piecewise', [0xBB, 0x2E]],  // tPiecewise
+  ['1-var stats', [0xBB, 0xF2]],  // tOneVar
+  ['2-var stats', [0xBB, 0xF3]],  // tTwoVar
   ['chi2cdf',   [0xBB, 0x06]],  // tChi2cdf (ASCII alias)
   ['\u03C7\u00B2cdf', [0xBB, 0x06]],  // tChi2cdf
   ['chi2pdf',   [0xBB, 0x07]],  // tChi2pdf (ASCII alias)
@@ -1588,17 +1590,20 @@ const EVAL_TWO_BYTE_TOKENS = [
   ['inv\u03C7\u00B2', [0xBB, 0x3D]],  // tInvChi2
   ['normalcdf', [0xBB, 0x01]],  // tNormalCdf
   ['normalpdf', [0xBB, 0x00]],  // tNormalPdf
+  ['randnorm',  [0xBB, 0x1F]],  // tRandNorm
   ['geometpdf', [0xBB, 0x0C]],  // tGeometPdf
   ['geometcdf', [0xBB, 0x0D]],  // tGeometCdf
   ['remainder', [0xBB, 0x3B]],  // tRemainder
   ['binompdf', [0xBB, 0x0A]],  // tBinomPdf
   ['binomcdf', [0xBB, 0x0B]],  // tBinomCdf
+  ['randbin',   [0xBB, 0x0B]],  // tRandBin
   ['linreg(ax+b)', [0xBB, 0xF4]],  // tLinReg(ax+b)
   ['quadreg',      [0xBB, 0xF5]],  // tQuadReg
   ['expreg',       [0xBB, 0xF6]],  // tExpReg
   ['pwrreg',       [0xBB, 0xF7]],  // tPwrReg
   ['lnreg',        [0xBB, 0xF8]],  // tLnReg
   ['variance', [0xBB, 0x05]],  // tVariance
+  ['tostring',  [0xEF, 0x97]],  // tToString
   ['logbase',   [0xBB, 0x34]],  // tLogBase (2-arg log: logBASE(value,base))
   ['randint',   [0xBB, 0x11]],  // tRandInt
   ['fcdf',      [0xBB, 0x09]],  // tFcdf
@@ -1629,13 +1634,19 @@ const EVAL_TWO_BYTE_TOKENS = [
   ['nderiv',    [0x5E, 0x25]],  // nDeriv(
   ['median',    [0xBB, 0x0F]],  // tMedian
   ['fnint',     [0x5E, 0x24]],  // fnInt(
+  ['instring',  [0xBB, 0x0F]],  // tInStrng
   ['sorta',     [0xBB, 0xE3]],  // tSortA
   ['sortd',     [0xBB, 0xE4]],  // tSortD
   ['solve',     [0xBB, 0x36]],  // tSolve
   ['prod',      [0xBB, 0x2F]],  // tProd
   ['mean',      [0xBB, 0x0E]],  // tMean
   ['seq',       [0xBB, 0x23]],  // tSeq
+  ['onevar',    [0xBB, 0xF2]],  // tOneVar
+  ['twovar',    [0xBB, 0xF3]],  // tTwoVar
   ['sum',       [0xBB, 0x30]],  // tSum
+  ['sub',       [0xBB, 0x0C]],  // tSubStrng
+  ['expr',      [0xBB, 0x2A]],  // tExpr
+  ['length',    [0xBB, 0x2B]],  // tLength
   ['dim',       [0xBB, 0x04]],  // tDim
   ['min',       [0xBB, 0x0C]],  // tMin
   ['max',       [0xBB, 0x0D]],  // tMax
@@ -3066,6 +3077,71 @@ function evalReturnTemplateNumber(value, useBuffer) {
   };
 }
 
+function evalReturnTemplateList(values) {
+  const displays = values.map(v => formatResult(v));
+  return {
+    value: values.slice(),
+    display: `{${displays.join(', ')}}`,
+    steps: 0,
+    errNo: 0,
+    op1Hex: '',
+    ansStored: false,
+  };
+}
+
+function evalFormatStringDisplay(value) {
+  return `"${String(value)
+    .replace(/\\/g, '\\\\')
+    .replace(/\r/g, '\\r')
+    .replace(/\n/g, '\\n')
+    .replace(/\t/g, '\\t')
+    .replace(/"/g, '\\"')}"`;
+}
+
+function evalReturnTemplateString(value) {
+  return {
+    value,
+    display: evalFormatStringDisplay(value),
+    steps: 0,
+    errNo: 0,
+    op1Hex: '',
+    ansStored: false,
+  };
+}
+
+function evalParseStringLiteral(raw) {
+  const trimmed = String(raw || '').trim();
+  if (trimmed.length < 2 || trimmed[0] !== '"' || trimmed[trimmed.length - 1] !== '"') {
+    return null;
+  }
+  let out = '';
+  for (let i = 1; i < trimmed.length - 1; i++) {
+    const ch = trimmed[i];
+    if (ch === '\\' && i + 1 < trimmed.length - 1) {
+      const next = trimmed[++i];
+      if (next === 'n') out += '\n';
+      else if (next === 'r') out += '\r';
+      else if (next === 't') out += '\t';
+      else out += next;
+      continue;
+    }
+    out += ch;
+  }
+  return out;
+}
+
+function evalReadStringArgument(raw, useBuffer) {
+  const literal = evalParseStringLiteral(raw);
+  if (literal !== null) return { value: literal };
+
+  const result = runDirectEval(String(raw || '').trim(), useBuffer);
+  if (result.error) return result;
+  if (typeof result.value !== 'string') {
+    return { error: `Expected a string argument for "${raw}".` };
+  }
+  return { value: result.value };
+}
+
 function evalReadListArgument(expr, useBuffer) {
   const trimmed = expr.trim();
   const listName = _normalizeListName(trimmed);
@@ -3100,6 +3176,319 @@ function evalReadTemplateVariable(raw) {
     return { error: `Invalid template variable: "${raw}" (must be A-Z)` };
   }
   return { variable: variable.toUpperCase() };
+}
+
+function _randNormalSample(mu, sigma) {
+  let u1 = 0;
+  while (u1 <= Number.EPSILON) u1 = Math.random();
+  const u2 = Math.random();
+  const mag = Math.sqrt(-2 * Math.log(u1));
+  return mu + sigma * mag * Math.cos(2 * Math.PI * u2);
+}
+
+function _randBinSample(trials, p) {
+  let total = 0;
+  for (let i = 0; i < trials; i++) {
+    if (Math.random() < p) total++;
+  }
+  return total;
+}
+
+function _medianOfSortedRange(sorted, start, end) {
+  if (start > end) return NaN;
+  const length = end - start + 1;
+  const mid = start + Math.floor((length - 1) / 2);
+  if (length % 2 === 1) return sorted[mid];
+  return (sorted[mid] + sorted[mid + 1]) / 2;
+}
+
+function _oneVarSummary(values) {
+  if (values.length === 0) {
+    return { error: 'OneVar requires at least 1 data point.' };
+  }
+
+  const sorted = values.slice().sort((a, b) => a - b);
+  const n = values.length;
+  let sum = 0;
+  let sumSq = 0;
+  for (const value of values) {
+    sum += value;
+    sumSq += value * value;
+  }
+  const mean = sum / n;
+  let sumSqDev = 0;
+  for (const value of values) {
+    const diff = value - mean;
+    sumSqDev += diff * diff;
+  }
+  const sigmaX = Math.sqrt(sumSqDev / n);
+  const sx = Math.sqrt(n > 1 ? sumSqDev / (n - 1) : 0);
+  const median = _medianOfSortedRange(sorted, 0, n - 1);
+  const lowerEnd = Math.floor(n / 2) - 1;
+  const upperStart = Math.ceil(n / 2);
+  const q1 = lowerEnd >= 0 ? _medianOfSortedRange(sorted, 0, lowerEnd) : sorted[0];
+  const q3 = upperStart < n ? _medianOfSortedRange(sorted, upperStart, n - 1) : sorted[n - 1];
+
+  return {
+    n,
+    mean,
+    sx,
+    sigmaX,
+    sum,
+    sumSq,
+    min: sorted[0],
+    q1,
+    median,
+    q3,
+    max: sorted[n - 1],
+  };
+}
+
+function _twoVarSummary(xValues, yValues) {
+  if (xValues.length !== yValues.length) {
+    return { error: 'TwoVar requires lists of the same length.' };
+  }
+  if (xValues.length < 2) {
+    return { error: 'TwoVar requires at least 2 data points.' };
+  }
+
+  const n = xValues.length;
+  let sumX = 0;
+  let sumY = 0;
+  let sumXY = 0;
+  for (let i = 0; i < n; i++) {
+    sumX += xValues[i];
+    sumY += yValues[i];
+    sumXY += xValues[i] * yValues[i];
+  }
+
+  const xMean = sumX / n;
+  const yMean = sumY / n;
+  let ssX = 0;
+  let ssY = 0;
+  let ssXY = 0;
+  for (let i = 0; i < n; i++) {
+    const dx = xValues[i] - xMean;
+    const dy = yValues[i] - yMean;
+    ssX += dx * dx;
+    ssY += dy * dy;
+    ssXY += dx * dy;
+  }
+
+  const sx = Math.sqrt(ssX / (n - 1));
+  const sy = Math.sqrt(ssY / (n - 1));
+  const r = ssX === 0 || ssY === 0 ? NaN : ssXY / Math.sqrt(ssX * ssY);
+
+  return {
+    n,
+    xMean,
+    yMean,
+    sx,
+    sy,
+    sumX,
+    sumY,
+    sumXY,
+    r,
+  };
+}
+
+function evalRunRandNormTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 2 && args.length !== 3) {
+    return { error: 'randNorm(mean,stdDev[,count]) expects 2 or 3 arguments.' };
+  }
+
+  const meanResult = evalReadNumeric(args[0], useBuffer);
+  if (meanResult.error) return meanResult;
+  const sigmaResult = evalReadNumeric(args[1], useBuffer);
+  if (sigmaResult.error) return sigmaResult;
+  if (sigmaResult.value <= 0) {
+    return { error: 'randNorm requires stdDev > 0.' };
+  }
+
+  if (args.length === 2) {
+    return evalReturnTemplateNumber(_randNormalSample(meanResult.value, sigmaResult.value), useBuffer);
+  }
+
+  const countResult = evalReadNumeric(args[2], useBuffer);
+  if (countResult.error) return countResult;
+  const count = Math.trunc(countResult.value);
+  if (count < 1) return { error: 'randNorm count must be a positive integer.' };
+
+  const values = [];
+  for (let i = 0; i < count; i++) {
+    values.push(_randNormalSample(meanResult.value, sigmaResult.value));
+  }
+  return evalReturnTemplateList(values);
+}
+
+function evalRunRandBinTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 2 && args.length !== 3) {
+    return { error: 'randBin(trials,p[,count]) expects 2 or 3 arguments.' };
+  }
+
+  const trialsResult = evalReadNumeric(args[0], useBuffer);
+  if (trialsResult.error) return trialsResult;
+  const pResult = evalReadNumeric(args[1], useBuffer);
+  if (pResult.error) return pResult;
+
+  const trials = Math.trunc(trialsResult.value);
+  if (trials < 0) return { error: 'randBin requires trials >= 0.' };
+  if (pResult.value < 0 || pResult.value > 1) {
+    return { error: 'randBin requires 0 <= p <= 1.' };
+  }
+
+  if (args.length === 2) {
+    return evalReturnTemplateNumber(_randBinSample(trials, pResult.value), useBuffer);
+  }
+
+  const countResult = evalReadNumeric(args[2], useBuffer);
+  if (countResult.error) return countResult;
+  const count = Math.trunc(countResult.value);
+  if (count < 1) return { error: 'randBin count must be a positive integer.' };
+
+  const values = [];
+  for (let i = 0; i < count; i++) {
+    values.push(_randBinSample(trials, pResult.value));
+  }
+  return evalReturnTemplateList(values);
+}
+
+function evalRunExprTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 1) {
+    return { error: 'expr(string) expects 1 argument.' };
+  }
+  const stringResult = evalReadStringArgument(args[0], useBuffer);
+  if (stringResult.error) return stringResult;
+  return runDirectEval(stringResult.value, useBuffer);
+}
+
+function evalRunToStringTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 1) {
+    return { error: 'toString(value) expects 1 argument.' };
+  }
+
+  const literal = evalParseStringLiteral(args[0]);
+  if (literal !== null) return evalReturnTemplateString(literal);
+
+  const result = runDirectEval(args[0].trim(), useBuffer);
+  if (result.error) return result;
+  if (typeof result.value === 'string') return evalReturnTemplateString(result.value);
+  if (typeof result.value === 'number' && Number.isFinite(result.value)) {
+    return evalReturnTemplateString(formatResult(result.value));
+  }
+  return { error: 'toString requires a numeric or string argument.' };
+}
+
+function evalRunLengthTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 1) {
+    return { error: 'length(value) expects 1 argument.' };
+  }
+
+  const raw = args[0].trim();
+  const literal = evalParseStringLiteral(raw);
+  if (literal !== null) return evalReturnTemplateNumber(literal.length, useBuffer);
+
+  if (_normalizeListName(raw) || (raw.startsWith('{') && raw.endsWith('}'))) {
+    const listResult = evalReadListArgument(raw, useBuffer);
+    if (listResult.error) return listResult;
+    return evalReturnTemplateNumber(listResult.values.length, useBuffer);
+  }
+
+  const result = runDirectEval(raw, useBuffer);
+  if (result.error) return result;
+  if (typeof result.value === 'string') return evalReturnTemplateNumber(result.value.length, useBuffer);
+  if (Array.isArray(result.value)) return evalReturnTemplateNumber(result.value.length, useBuffer);
+  return { error: 'length requires a string or list argument.' };
+}
+
+function evalRunInStringTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 2 && args.length !== 3) {
+    return { error: 'inString(haystack,needle[,start]) expects 2 or 3 arguments.' };
+  }
+
+  const haystackResult = evalReadStringArgument(args[0], useBuffer);
+  if (haystackResult.error) return haystackResult;
+  const needleResult = evalReadStringArgument(args[1], useBuffer);
+  if (needleResult.error) return needleResult;
+
+  let startIndex = 0;
+  if (args.length === 3) {
+    const startResult = evalReadNumeric(args[2], useBuffer);
+    if (startResult.error) return startResult;
+    startIndex = Math.max(0, Math.trunc(startResult.value) - 1);
+  }
+
+  const index = haystackResult.value.indexOf(needleResult.value, startIndex);
+  return evalReturnTemplateNumber(index < 0 ? 0 : index + 1, useBuffer);
+}
+
+function evalRunSubTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 3) {
+    return { error: 'sub(string,start,length) expects 3 arguments.' };
+  }
+
+  const stringResult = evalReadStringArgument(args[0], useBuffer);
+  if (stringResult.error) return stringResult;
+  const startResult = evalReadNumeric(args[1], useBuffer);
+  if (startResult.error) return startResult;
+  const lengthResult = evalReadNumeric(args[2], useBuffer);
+  if (lengthResult.error) return lengthResult;
+
+  const start = Math.max(0, Math.trunc(startResult.value) - 1);
+  const count = Math.max(0, Math.trunc(lengthResult.value));
+  return evalReturnTemplateString(stringResult.value.slice(start, start + count));
+}
+
+function evalRunOneVarTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 1) {
+    return { error: 'OneVar requires 1 list argument.' };
+  }
+
+  const listResult = evalReadListArgument(args[0], useBuffer);
+  if (listResult.error) return listResult;
+  const summary = _oneVarSummary(listResult.values);
+  if (summary.error) return summary;
+
+  return {
+    value: summary,
+    display: `n=${formatResult(summary.n)}, mean=${formatResult(summary.mean)}, Sx=${formatResult(summary.sx)}, sigmaX=${formatResult(summary.sigmaX)}, sum=${formatResult(summary.sum)}, sumSq=${formatResult(summary.sumSq)}, min=${formatResult(summary.min)}, Q1=${formatResult(summary.q1)}, Med=${formatResult(summary.median)}, Q3=${formatResult(summary.q3)}, max=${formatResult(summary.max)}`,
+    steps: 0,
+    errNo: 0,
+    op1Hex: '',
+    ansStored: false,
+  };
+}
+
+function evalRunTwoVarTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 2) {
+    return { error: 'TwoVar requires 2 list arguments.' };
+  }
+
+  const xList = evalReadListArgument(args[0], useBuffer);
+  if (xList.error) return xList;
+  const yList = evalReadListArgument(args[1], useBuffer);
+  if (yList.error) return yList;
+
+  const summary = _twoVarSummary(xList.values, yList.values);
+  if (summary.error) return summary;
+
+  return {
+    value: summary,
+    display: `n=${formatResult(summary.n)}, xMean=${formatResult(summary.xMean)}, yMean=${formatResult(summary.yMean)}, Sx=${formatResult(summary.sx)}, Sy=${formatResult(summary.sy)}, sumX=${formatResult(summary.sumX)}, sumY=${formatResult(summary.sumY)}, sumXY=${formatResult(summary.sumXY)}, r=${formatResult(summary.r)}`,
+    steps: 0,
+    errNo: 0,
+    op1Hex: '',
+    ansStored: false,
+  };
 }
 
 function evalRunSigmaTemplate(argText, useBuffer) {
@@ -4156,6 +4545,39 @@ function runDirectEvalTemplate(expr, useBuffer) {
 
   const piecewiseArgs = evalMatchWholeCall(expr, 'piecewise');
   if (piecewiseArgs !== null) return evalRunPiecewiseTemplate(piecewiseArgs, useBuffer);
+
+  const randNormArgs = evalMatchWholeCall(expr, 'randNorm');
+  if (randNormArgs !== null) return evalRunRandNormTemplate(randNormArgs, useBuffer);
+
+  const randBinArgs = evalMatchWholeCall(expr, 'randBin');
+  if (randBinArgs !== null) return evalRunRandBinTemplate(randBinArgs, useBuffer);
+
+  const exprArgs = evalMatchWholeCall(expr, 'expr');
+  if (exprArgs !== null) return evalRunExprTemplate(exprArgs, useBuffer);
+
+  const toStringArgs = evalMatchWholeCall(expr, 'toString');
+  if (toStringArgs !== null) return evalRunToStringTemplate(toStringArgs, useBuffer);
+
+  const lengthArgs = evalMatchWholeCall(expr, 'length');
+  if (lengthArgs !== null) return evalRunLengthTemplate(lengthArgs, useBuffer);
+
+  const inStringArgs = evalMatchWholeCall(expr, 'inString');
+  if (inStringArgs !== null) return evalRunInStringTemplate(inStringArgs, useBuffer);
+
+  const subArgs = evalMatchWholeCall(expr, 'sub');
+  if (subArgs !== null) return evalRunSubTemplate(subArgs, useBuffer);
+
+  let oneVarArgs = evalMatchWholeCommand(expr, 'OneVar');
+  if (oneVarArgs === null) oneVarArgs = evalMatchWholeCommand(expr, '1-Var Stats');
+  if (oneVarArgs === null) oneVarArgs = evalMatchWholeCall(expr, 'OneVar');
+  if (oneVarArgs === null) oneVarArgs = evalMatchWholeCall(expr, '1-Var Stats');
+  if (oneVarArgs !== null) return evalRunOneVarTemplate(oneVarArgs, useBuffer);
+
+  let twoVarArgs = evalMatchWholeCommand(expr, 'TwoVar');
+  if (twoVarArgs === null) twoVarArgs = evalMatchWholeCommand(expr, '2-Var Stats');
+  if (twoVarArgs === null) twoVarArgs = evalMatchWholeCall(expr, 'TwoVar');
+  if (twoVarArgs === null) twoVarArgs = evalMatchWholeCall(expr, '2-Var Stats');
+  if (twoVarArgs !== null) return evalRunTwoVarTemplate(twoVarArgs, useBuffer);
 
   // Statistical distribution functions (AP Stats)
   const chiSquareArgs = evalMatchWholeCall(expr, '\u03C7\u00B2cdf');
