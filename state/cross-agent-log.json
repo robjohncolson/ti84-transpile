@@ -4643,15 +4643,63 @@
       "timestamp": "2026-05-08T04:58:07Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "a5b04d522a42",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x088772 \u2014 second sub-call from 0x051ADC (xxxx)\n\n## Context\nSession 243 decoded 0x051A",
+      "status": "completed",
+      "duration_seconds": 631.01,
+      "timestamp": "2026-05-08T05:32:58Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a2682d1b8251",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x09D06B \u2014 sub-call from 0x051ADC mode filter (vvvv)\n\n## Context\nSession 243 decoded 0",
+      "status": "completed",
+      "duration_seconds": 761.361,
+      "timestamp": "2026-05-08T05:35:07Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d83013eac659",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate 0x04E53E/0x04E4FF \u2014 nested CALLs in 0x04E447\u21920x0A1B5B path (yyyy)\n\n## Context\nSe",
+      "status": "completed",
+      "duration_seconds": 789.469,
+      "timestamp": "2026-05-08T05:35:38Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase244-04e53e-04e4ff-intermediate.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "2399d09181aa",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x08BFCD \u2014 display chain exit target (uuuu)\n\n## Context\nSession 243 traced the display",
+      "status": "completed",
+      "duration_seconds": 824.083,
+      "timestamp": "2026-05-08T05:36:08Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase244-08bfcd-display-exit.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 374,
-    "cc_to_codex": 374,
+    "total_calls": 378,
+    "cc_to_codex": 378,
     "codex_to_cc": 0,
-    "completed": 277,
+    "completed": 281,
     "failed": 89,
     "refused": 0,
-    "avg_duration_seconds": 588.12
+    "avg_duration_seconds": 589.848
   }
 }
