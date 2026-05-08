@@ -4257,15 +4257,105 @@
       "timestamp": "2026-05-07T22:57:20Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "fb3144d49701",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x02FFED \u2014 special/fallthrough exit path (mmm)\n\n## Context\nYou are working on a TI-84 ",
+      "status": "completed",
+      "duration_seconds": 441.337,
+      "timestamp": "2026-05-07T23:29:54Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f2e529ffc464",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x000578 app-context check (ooo)\n\n## Context\nYou are working on a TI-84 Plus CE ROM tr",
+      "status": "completed",
+      "duration_seconds": 652.995,
+      "timestamp": "2026-05-07T23:33:29Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase235-000578-app-context.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "c86fc697b6da",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x02FFAE \u2014 normal key dispatch block (lll)\n\n## Context\nYou are working on a TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 847.223,
+      "timestamp": "2026-05-07T23:36:38Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "60d5b716d693",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate key code 0x44 and BIT 4,(IY+0x4B) (nnn)\n\n## Context\nYou are working on a TI-84 P",
+      "status": "timeout",
+      "duration_seconds": 900.057,
+      "timestamp": "2026-05-07T23:37:35Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c6f5cae5490d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task (qqq): Trace D00824 Writers \u2014 Which Fire During Normal Operation?\n\n## Context\nYou are working",
+      "status": "failed",
+      "duration_seconds": 363.424,
+      "timestamp": "2026-05-08T00:09:02Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6f2f39e961c3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task (ppp): Trace 0x02FD99 \u2014 Event Loop Re-entry Point\n\n## Context\nYou are working on a TI-84 Plus",
+      "status": "failed",
+      "duration_seconds": 372.094,
+      "timestamp": "2026-05-08T00:09:09Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c032bfc9850a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task (sss): Map Full Home-Screen Key Event Path End-to-End\n\n## Context\nYou are working on a TI-84 ",
+      "status": "failed",
+      "duration_seconds": 374.095,
+      "timestamp": "2026-05-08T00:09:17Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f921427bd66e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task (rrr): Investigate 0x04EB0B \u2014 CP 0x1D / CP 0x44 Sequence\n\n## Context\nYou are working on a TI-",
+      "status": "failed",
+      "duration_seconds": 375.726,
+      "timestamp": "2026-05-08T00:09:17Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 340,
-    "cc_to_codex": 340,
+    "total_calls": 348,
+    "cc_to_codex": 348,
     "codex_to_cc": 0,
-    "completed": 256,
-    "failed": 77,
+    "completed": 259,
+    "failed": 82,
     "refused": 0,
-    "avg_duration_seconds": 580.99
+    "avg_duration_seconds": 580.068
   }
 }
