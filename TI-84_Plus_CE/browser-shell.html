@@ -1591,6 +1591,7 @@ const EVAL_TWO_BYTE_TOKENS = [
   ['normalcdf', [0xBB, 0x01]],  // tNormalCdf
   ['normalpdf', [0xBB, 0x00]],  // tNormalPdf
   ['randnorm',  [0xBB, 0x1E]],  // tRandNorm
+  ['identity',  [0xBB, 0x39]],  // tIdentity
   ['geometpdf', [0xBB, 0x0C]],  // tGeometPdf
   ['geometcdf', [0xBB, 0x0D]],  // tGeometCdf
   ['poissonpdf', [0xBB, 0x0E]],  // tPoissonPdf
@@ -1599,6 +1600,8 @@ const EVAL_TWO_BYTE_TOKENS = [
   ['binompdf', [0xBB, 0x0A]],  // tBinomPdf
   ['binomcdf', [0xBB, 0x0B]],  // tBinomCdf
   ['randbin',   [0xBB, 0x1F]],  // tRandBin
+  ['rowswap',   [0xBB, 0x2C]],  // tRowSwap
+  ['rswap',     [0xBB, 0x2C]],  // tRowSwap alias
   ['linreg(ax+b)', [0xBB, 0xF4]],  // tLinReg(ax+b)
   ['cubicreg',     [0xBB, 0xF6]],  // tCubicReg
   ['quadreg',      [0xBB, 0xF5]],  // tQuadReg
@@ -1611,6 +1614,7 @@ const EVAL_TWO_BYTE_TOKENS = [
   ['tostring',  [0xEF, 0x97]],  // tToString
   ['logbase',   [0xBB, 0x34]],  // tLogBase (2-arg log: logBASE(value,base))
   ['randint',   [0xBB, 0x11]],  // tRandInt
+  ['randm',     [0xBB, 0x38]],  // tRandM
   ['fcdf',      [0xBB, 0x09]],  // tFcdf
   ['fpdf',      [0xBB, 0x0F]],  // tFpdf
   ['tcdf',      [0xBB, 0x08]],  // tTcdf
@@ -1645,9 +1649,11 @@ const EVAL_TWO_BYTE_TOKENS = [
   ['sorta',     [0xBB, 0xE3]],  // tSortA
   ['sortd',     [0xBB, 0xE4]],  // tSortD
   ['solve',     [0xBB, 0x36]],  // tSolve
+  ['fill',      [0xBB, 0x3A]],  // tFill
   ['prod',      [0xBB, 0x2F]],  // tProd
   ['mean',      [0xBB, 0x0E]],  // tMean
   ['seq',       [0xBB, 0x23]],  // tSeq
+  ['ident',     [0xBB, 0x39]],  // identity( alias
   ['onevar',    [0xBB, 0xF2]],  // tOneVar
   ['twovar',    [0xBB, 0xF3]],  // tTwoVar
   ['sum',       [0xBB, 0x30]],  // tSum
@@ -1733,6 +1739,7 @@ const EVAL_MATCH_TOKENS = [
   ['<>', 0x6F],
   ['->', 0x04],
   ['not', 0xB8],
+  ['rand', 0xAB],
   ['xor', 0x3D],
   ['ans', 0x72],
   ['ee', 0x3B],
@@ -1799,6 +1806,7 @@ let evalCachedPostCreateOpBase = 0;
 // JS-side variable store: letter → 9-byte BCD Uint8Array
 const evalVarStore = new Map();
 const evalListStore = new Map();
+const evalMatrixStore = new Map();
 // Last Ans BCD for re-creation during variable rebuild
 let evalLastAnsBcd = null;
 let Ans = 0;
@@ -2801,6 +2809,36 @@ function _getStoredList(listName) {
   return Array.isArray(stored) ? stored.slice() : [];
 }
 
+function _normalizeMatrixName(raw) {
+  const trimmed = String(raw || '').trim();
+  const match = trimmed.match(/^(?:\[\s*([A-J])\s*\]|mat\s*([A-J]))$/i);
+  if (!match) return null;
+  return `[${(match[1] || match[2]).toUpperCase()}]`;
+}
+
+function _cloneMatrix(matrix) {
+  return matrix.map(row => row.slice());
+}
+
+function _getStoredMatrix(matrixName) {
+  const stored = evalMatrixStore.get(matrixName);
+  return Array.isArray(stored) ? _cloneMatrix(stored) : null;
+}
+
+function evalIsMatrixValue(value) {
+  if (!Array.isArray(value)) return false;
+  if (value.length === 0) return true;
+  if (!Array.isArray(value[0])) return false;
+  const width = value[0].length;
+  for (let row = 0; row < value.length; row++) {
+    if (!Array.isArray(value[row]) || value[row].length !== width) return false;
+    for (let col = 0; col < value[row].length; col++) {
+      if (typeof value[row][col] !== 'number' || !Number.isFinite(value[row][col])) return false;
+    }
+  }
+  return true;
+}
+
 function _listMean(arr) {
   let sum = 0;
   for (let i = 0; i < arr.length; i++) sum += arr[i];
@@ -3479,6 +3517,76 @@ function evalReadListArgument(expr, useBuffer) {
   return { values: result.value.slice(), listName: null };
 }
 
+function evalParseMatrixLiteral(expr, useBuffer) {
+  const trimmed = expr.trim();
+  if (!trimmed.startsWith('[') || !trimmed.endsWith(']')) return null;
+
+  const body = trimmed.slice(1, -1).trim();
+  if (!body) return { values: [], matrixName: null };
+
+  const rows = [];
+  for (let i = 0; i < body.length; ) {
+    while (i < body.length && (body[i] === ',' || /\s/.test(body[i]))) i++;
+    if (i >= body.length) break;
+    if (body[i] !== '[') return null;
+
+    let depth = 0;
+    let close = -1;
+    for (let j = i; j < body.length; j++) {
+      if (body[j] === '[') depth++;
+      else if (body[j] === ']') {
+        depth--;
+        if (depth === 0) {
+          close = j;
+          break;
+        }
+      }
+    }
+    if (close < 0) return { error: 'Malformed matrix literal.' };
+
+    const rowText = body.slice(i + 1, close).trim();
+    const elems = rowText ? evalSplitArgs(rowText) : [];
+    const row = [];
+    for (const elem of elems) {
+      const result = evalReadNumeric(elem, useBuffer);
+      if (result.error) return result;
+      row.push(result.value);
+    }
+    rows.push(row);
+    i = close + 1;
+  }
+
+  if (rows.length === 0) return { values: [], matrixName: null };
+  const width = rows[0].length;
+  for (let row = 1; row < rows.length; row++) {
+    if (rows[row].length !== width) {
+      return { error: 'Matrix rows must all have the same length.' };
+    }
+  }
+
+  return { values: rows, matrixName: null };
+}
+
+function evalReadMatrixArgument(expr, useBuffer) {
+  const trimmed = expr.trim();
+  const matrixName = _normalizeMatrixName(trimmed);
+  if (matrixName) {
+    const values = _getStoredMatrix(matrixName);
+    if (!values) return { error: `Matrix ${matrixName} is undefined.` };
+    return { values, matrixName };
+  }
+
+  const literal = evalParseMatrixLiteral(trimmed, useBuffer);
+  if (literal) return literal;
+
+  const result = runDirectEval(trimmed, useBuffer);
+  if (result.error) return result;
+  if (!evalIsMatrixValue(result.value)) {
+    return { error: 'Expected a matrix argument.' };
+  }
+  return { values: _cloneMatrix(result.value), matrixName: null };
+}
+
 function _expandRegressionDataByFreq(xValues, yValues, freqValues, commandName) {
   if (freqValues.length !== xValues.length) {
     return { error: `${commandName} requires the frequency list to match the data length.` };
@@ -3734,6 +3842,160 @@ function evalRunRandBinTemplate(argText, useBuffer) {
     values.push(_randBinSample(trials, pResult.value));
   }
   return evalReturnTemplateList(values);
+}
+
+function evalRunRandTemplate(argText, useBuffer) {
+  if (argText === null || argText.trim() === '') {
+    return evalReturnTemplateNumber(Math.random(), useBuffer);
+  }
+  const args = evalSplitArgs(argText);
+  if (args.length !== 1) {
+    return { error: 'rand or rand(n) expects 0 or 1 argument.' };
+  }
+  const countResult = evalReadNumeric(args[0], useBuffer);
+  if (countResult.error) return countResult;
+  const count = Math.trunc(countResult.value);
+  if (count < 1) return { error: 'rand count must be a positive integer.' };
+  const values = [];
+  for (let i = 0; i < count; i++) {
+    values.push(Math.random());
+  }
+  return evalReturnTemplateList(values);
+}
+
+function evalReturnTemplateMatrix(rows) {
+  const display = '[' + rows.map(r => '[' + r.map(v => formatResult(v)).join(', ') + ']').join(', ') + ']';
+  return {
+    value: rows.map(r => r.slice()),
+    display,
+    steps: 0,
+    errNo: 0,
+    op1Hex: '',
+    ansStored: false,
+  };
+}
+
+function evalRunIdentityTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 1) {
+    return { error: 'identity(n) expects 1 argument.' };
+  }
+  const nResult = evalReadNumeric(args[0], useBuffer);
+  if (nResult.error) return nResult;
+  const n = Math.trunc(nResult.value);
+  if (n < 1) return { error: 'identity requires n >= 1.' };
+  const rows = [];
+  for (let r = 0; r < n; r++) {
+    const row = [];
+    for (let col = 0; col < n; col++) {
+      row.push(r === col ? 1 : 0);
+    }
+    rows.push(row);
+  }
+  return evalReturnTemplateMatrix(rows);
+}
+
+function evalRunRandMTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 2) {
+    return { error: 'randM(rows,cols) expects 2 arguments.' };
+  }
+  const rowsResult = evalReadNumeric(args[0], useBuffer);
+  if (rowsResult.error) return rowsResult;
+  const colsResult = evalReadNumeric(args[1], useBuffer);
+  if (colsResult.error) return colsResult;
+  const numRows = Math.trunc(rowsResult.value);
+  const numCols = Math.trunc(colsResult.value);
+  if (numRows < 1 || numCols < 1) return { error: 'randM requires rows >= 1 and cols >= 1.' };
+  const rows = [];
+  for (let r = 0; r < numRows; r++) {
+    const row = [];
+    for (let col = 0; col < numCols; col++) {
+      row.push(Math.floor(Math.random() * 19) - 9);
+    }
+    rows.push(row);
+  }
+  return evalReturnTemplateMatrix(rows);
+}
+
+function evalRunFillTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 2) {
+    return { error: 'Fill(value,target) expects 2 arguments.' };
+  }
+
+  const valueResult = evalReadNumeric(args[0], useBuffer);
+  if (valueResult.error) return valueResult;
+
+  const targetRaw = args[1].trim();
+  const listName = _normalizeListName(targetRaw);
+  if (listName) {
+    const values = _getStoredList(listName).map(() => valueResult.value);
+    evalListStore.set(listName, values.slice());
+    return evalReturnTemplateList(values);
+  }
+
+  const matrixName = _normalizeMatrixName(targetRaw);
+  if (matrixName) {
+    const stored = _getStoredMatrix(matrixName);
+    if (!stored) return { error: `Matrix ${matrixName} is undefined.` };
+    const rows = stored.map(row => row.map(() => valueResult.value));
+    evalMatrixStore.set(matrixName, _cloneMatrix(rows));
+    return evalReturnTemplateMatrix(rows);
+  }
+
+  if (targetRaw.startsWith('{') && targetRaw.endsWith('}')) {
+    const listResult = evalReadListArgument(targetRaw, useBuffer);
+    if (listResult.error) return listResult;
+    return evalReturnTemplateList(listResult.values.map(() => valueResult.value));
+  }
+
+  if (/^\[\s*\[/.test(targetRaw)) {
+    const matrixResult = evalReadMatrixArgument(targetRaw, useBuffer);
+    if (matrixResult.error) return matrixResult;
+    return evalReturnTemplateMatrix(matrixResult.values.map(row => row.map(() => valueResult.value)));
+  }
+
+  const targetResult = runDirectEval(targetRaw, useBuffer);
+  if (targetResult.error) return targetResult;
+  if (evalIsMatrixValue(targetResult.value)) {
+    return evalReturnTemplateMatrix(targetResult.value.map(row => row.map(() => valueResult.value)));
+  }
+  if (Array.isArray(targetResult.value)) {
+    return evalReturnTemplateList(targetResult.value.map(() => valueResult.value));
+  }
+  return { error: 'Fill target must be a list or matrix.' };
+}
+
+function evalRunRowSwapTemplate(argText, useBuffer) {
+  const args = evalSplitArgs(argText);
+  if (args.length !== 3) {
+    return { error: 'rowSwap(matrix,rowA,rowB) expects 3 arguments.' };
+  }
+
+  const matrixResult = evalReadMatrixArgument(args[0], useBuffer);
+  if (matrixResult.error) return matrixResult;
+  if (matrixResult.values.length === 0) {
+    return { error: 'rowSwap requires a non-empty matrix.' };
+  }
+
+  const rowAResult = evalReadNumeric(args[1], useBuffer);
+  if (rowAResult.error) return rowAResult;
+  const rowBResult = evalReadNumeric(args[2], useBuffer);
+  if (rowBResult.error) return rowBResult;
+
+  const rowA = Math.trunc(rowAResult.value) - 1;
+  const rowB = Math.trunc(rowBResult.value) - 1;
+  if (rowA < 0 || rowA >= matrixResult.values.length || rowB < 0 || rowB >= matrixResult.values.length) {
+    return { error: 'rowSwap row indices are out of range.' };
+  }
+
+  const rows = _cloneMatrix(matrixResult.values);
+  [rows[rowA], rows[rowB]] = [rows[rowB], rows[rowA]];
+  if (matrixResult.matrixName) {
+    evalMatrixStore.set(matrixResult.matrixName, _cloneMatrix(rows));
+  }
+  return evalReturnTemplateMatrix(rows);
 }
 
 function evalRunExprTemplate(argText, useBuffer) {
@@ -5067,6 +5329,25 @@ function runDirectEvalTemplate(expr, useBuffer) {
 
   const randBinArgs = evalMatchWholeCall(expr, 'randBin');
   if (randBinArgs !== null) return evalRunRandBinTemplate(randBinArgs, useBuffer);
+
+  // rand — standalone or rand(n)
+  const randCallArgs = evalMatchWholeCall(expr, 'rand');
+  if (randCallArgs !== null) return evalRunRandTemplate(randCallArgs, useBuffer);
+  if (expr.trim().toLowerCase() === 'rand') return evalRunRandTemplate('', useBuffer);
+
+  let identityArgs = evalMatchWholeCall(expr, 'identity');
+  if (identityArgs === null) identityArgs = evalMatchWholeCall(expr, 'ident');
+  if (identityArgs !== null) return evalRunIdentityTemplate(identityArgs, useBuffer);
+
+  const randMArgs = evalMatchWholeCall(expr, 'randM');
+  if (randMArgs !== null) return evalRunRandMTemplate(randMArgs, useBuffer);
+
+  const fillArgs = evalMatchWholeCall(expr, 'Fill');
+  if (fillArgs !== null) return evalRunFillTemplate(fillArgs, useBuffer);
+
+  let rowSwapArgs = evalMatchWholeCall(expr, 'rowSwap');
+  if (rowSwapArgs === null) rowSwapArgs = evalMatchWholeCall(expr, 'rSwap');
+  if (rowSwapArgs !== null) return evalRunRowSwapTemplate(rowSwapArgs, useBuffer);
 
   const exprArgs = evalMatchWholeCall(expr, 'expr');
   if (exprArgs !== null) return evalRunExprTemplate(exprArgs, useBuffer);
