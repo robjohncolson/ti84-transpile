@@ -32,3 +32,5 @@
 # Phase 229: Key lookup function at 0x0300F1-0x030172
 0x030100
 0x07A633
+# Session 255: LCD write-enable missing block (session 251 finding)
+0x022264

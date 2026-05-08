@@ -5049,15 +5049,89 @@
       "timestamp": "2026-05-08T11:35:47Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "918f8ba45f62",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 254 P3: Add Missing Direct-Eval Tokens to browser-shell.html\n\n## Context\nThe TI-84 Plus CE",
+      "status": "completed",
+      "duration_seconds": 448.634,
+      "timestamp": "2026-05-08T12:11:40Z",
+      "files_changed": [
+        "TI-84_Plus_CE/browser-shell.html"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "010becf523d4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 254 P2: 0x056900 Dispatch Table Populator Trace\n\n## Context\nThe TI-84 Plus CE OS has a dyn",
+      "status": "completed",
+      "duration_seconds": 482.562,
+      "timestamp": "2026-05-08T12:12:13Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase254-dispatch-table-pop.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "25e036896a4a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 254 P1: D007E0 Initialization Trace During OS Boot\n\n## Context\nThe TI-84 Plus CE OS uses R",
+      "status": "completed",
+      "duration_seconds": 617.945,
+      "timestamp": "2026-05-08T12:14:27Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase254-d007e0-boot-trace.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "93df89c37e50",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add transpiler seed at 0x022264 (LCD write-enable missing block)\n\n## Goal\nAdd 0x022264 as a ",
+      "status": "completed",
+      "duration_seconds": 54.628,
+      "timestamp": "2026-05-08T12:45:38Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "40721b468778",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x08C33D \u2014 the CoorMon/context dispatch convergence point\n\n## Goal\nDisassemble and tra",
+      "status": "completed",
+      "duration_seconds": 396.799,
+      "timestamp": "2026-05-08T12:51:17Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase255-08c33d-dispatch-trace.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "fcb0d329a743",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Identify OS context handler table entries (20 entries at 0x08C958)\n\n## Goal\nMap each of the ",
+      "status": "completed",
+      "duration_seconds": 571.653,
+      "timestamp": "2026-05-08T12:54:14Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 408,
-    "cc_to_codex": 408,
+    "total_calls": 414,
+    "cc_to_codex": 414,
     "codex_to_cc": 0,
-    "completed": 300,
+    "completed": 306,
     "failed": 100,
     "refused": 0,
-    "avg_duration_seconds": 592.578
+    "avg_duration_seconds": 590.203
   }
 }
