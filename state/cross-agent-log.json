@@ -5612,15 +5612,61 @@
         "TI-84_Plus_CE/probe-phase268-d007e8-fix.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "62c3535363f9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 269 P3: CODE? Gap Seeds \u2014 Incremental Coverage\n\n## Context\nThe TI-84 CE ROM transpile",
+      "status": "completed",
+      "duration_seconds": 161.721,
+      "timestamp": "2026-05-08T22:05:55Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "37263d7d312e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 269 P2: Timer ISR + Event Loop \u2014 Does ISR Break Polling?\n\n## Context\nThe TI-84 CE OS ",
+      "status": "completed",
+      "duration_seconds": 558.542,
+      "timestamp": "2026-05-08T22:12:30Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase269-isr-event-loop.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "326ffa88eb7b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 269 P1: Disassemble Event Loop Polling Condition\n\n## Context\nThe TI-84 CE OS event lo",
+      "status": "completed",
+      "duration_seconds": 798.33,
+      "timestamp": "2026-05-08T22:16:28Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "015f89495b8e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add 20 CODE? gap seeds from audit-true-uncovered.mjs\n\n## Context\nThe transpiler converts eZ8",
+      "status": "completed",
+      "duration_seconds": 146.176,
+      "timestamp": "2026-05-08T22:46:00Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 454,
-    "cc_to_codex": 454,
+    "total_calls": 458,
+    "cc_to_codex": 458,
     "codex_to_cc": 0,
-    "completed": 341,
+    "completed": 345,
     "failed": 103,
     "refused": 0,
-    "avg_duration_seconds": 576.748
+    "avg_duration_seconds": 575.346
   }
 }
