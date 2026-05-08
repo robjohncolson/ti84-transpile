@@ -5514,15 +5514,113 @@
       "timestamp": "2026-05-08T20:06:54Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "740a6152d2a3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 266 P1: Investigate z80-mode bug at 0x062055\n\n## Context\nFunction 0x062055 is the mai",
+      "status": "completed",
+      "duration_seconds": 601.588,
+      "timestamp": "2026-05-08T20:13:40Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7f5b7b7a49ef",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 266 P3: Implement LogisticReg in browser-shell direct-eval\n\n## Context\nPriority #7 in",
+      "status": "completed",
+      "duration_seconds": 751.562,
+      "timestamp": "2026-05-08T20:16:13Z",
+      "files_changed": [
+        "TI-84_Plus_CE/browser-shell.html"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "7fddcb632eaf",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 267 \u2014 P3: Coverage cleanup \u2014 find and seed largest CODE? gaps\n\n## Context\n\nTrue cover",
+      "status": "completed",
+      "duration_seconds": 123.756,
+      "timestamp": "2026-05-08T20:44:21Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8e5c27602808",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 267 \u2014 P2: cxMain bypass probe \u2014 skip 0x08C69E, jump directly to cxMain\n\n## Context\n\nT",
+      "status": "completed",
+      "duration_seconds": 400.067,
+      "timestamp": "2026-05-08T20:48:56Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase267-cxmain-bypass.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "b6f6f0ca3b41",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 267 \u2014 P1: Disassemble 0x08C69E-0x08C745 and trace D007D0\u2192HL zeroing\n\n## Context\n\nSess",
+      "status": "completed",
+      "duration_seconds": 633.154,
+      "timestamp": "2026-05-08T20:52:47Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "669f8c635f62",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 268 P3 \u2014 Coverage Gap Seeds from audit-true-uncovered\n\n## Context\n\nCurrent state: 50,109 s",
+      "status": "completed",
+      "duration_seconds": 166.743,
+      "timestamp": "2026-05-08T21:26:20Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase200-seeds.txt"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "04d12956fce1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 268 P2 \u2014 0x0582BC Event Loop Deep Trace + Keyboard Scan Reachability\n\n## Context\n\nSession ",
+      "status": "completed",
+      "duration_seconds": 288.681,
+      "timestamp": "2026-05-08T21:28:21Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase268-0582BC-deep-trace.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "03d0c95c478a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 268 P1 \u2014 D007E8 Fix: Seed handler address so LDIR preserves D007D0\n\n## Context\n\nSession 26",
+      "status": "completed",
+      "duration_seconds": 338.427,
+      "timestamp": "2026-05-08T21:29:09Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase268-d007e8-fix.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 446,
-    "cc_to_codex": 446,
+    "total_calls": 454,
+    "cc_to_codex": 454,
     "codex_to_cc": 0,
-    "completed": 333,
+    "completed": 341,
     "failed": 103,
     "refused": 0,
-    "avg_duration_seconds": 579.685
+    "avg_duration_seconds": 576.748
   }
 }
