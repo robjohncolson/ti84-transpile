@@ -5221,15 +5221,54 @@
         "TI-84_Plus_CE/probe-phase258-022264-runtime-construction.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "b55407d2949c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x0A223A (display-area clear) \u2014 first 40 bytes\n\n## Context\nThis is a TI-84 Plus ",
+      "status": "completed",
+      "duration_seconds": 631.716,
+      "timestamp": "2026-05-08T14:53:32Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase258-0a223a-disassemble.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "b69075a85ca4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 259 \u2014 P2: Dump full 0x022200 extended vector table\n\n## Context\n\nSession 256 found tha",
+      "status": "completed",
+      "duration_seconds": 239.716,
+      "timestamp": "2026-05-08T15:28:03Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase259-022200-full-table.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "1215d495da16",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 259 \u2014 P1: Classify all D007E0 write sites (gated vs. direct)\n\n## Context\n\nSession 256",
+      "status": "completed",
+      "duration_seconds": 315.38,
+      "timestamp": "2026-05-08T15:29:17Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase259-d007e0-write-sites.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 422,
-    "cc_to_codex": 422,
+    "total_calls": 425,
+    "cc_to_codex": 425,
     "codex_to_cc": 0,
-    "completed": 314,
+    "completed": 317,
     "failed": 100,
     "refused": 0,
-    "avg_duration_seconds": 587.404
+    "avg_duration_seconds": 586.05
   }
 }
