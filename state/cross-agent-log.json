@@ -5658,15 +5658,74 @@
       "timestamp": "2026-05-08T22:46:00Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "bfe3e9a4d888",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Seed event loop dispatch table with correct 9-byte entry, test if event loop exits\n\n## Conte",
+      "status": "completed",
+      "duration_seconds": 492.758,
+      "timestamp": "2026-05-08T22:51:44Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase270-dispatch-table-seed.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "13262eb03d0c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Enable IFF1=1 + test ISR delivery during event loop\n\n## Context\nSession 269 probe `probe-pha",
+      "status": "completed",
+      "duration_seconds": 807.899,
+      "timestamp": "2026-05-08T22:57:01Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase270-iff1-isr-test.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "b4444990471c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 271 P3: Add 20 CODE? Gap Seeds\n\n## Goal\nAdd 20 new seeds from the top uncovered CODE?",
+      "status": "partial",
+      "duration_seconds": 151.353,
+      "timestamp": "2026-05-08T23:25:34Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "737359f09add",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 271 P1: Disassemble the 5 Polling Blocks\n\n## Goal\nDisassemble the 5 blocks that form ",
+      "status": "completed",
+      "duration_seconds": 307.553,
+      "timestamp": "2026-05-08T23:28:07Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "66e0059292f3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 271 P2: Context Registration (0x09E2EC) Before Event Loop\n\n## Goal\nTest whether calli",
+      "status": "failed",
+      "duration_seconds": 623.461,
+      "timestamp": "2026-05-08T23:33:25Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 458,
-    "cc_to_codex": 458,
+    "total_calls": 463,
+    "cc_to_codex": 463,
     "codex_to_cc": 0,
-    "completed": 345,
-    "failed": 103,
+    "completed": 348,
+    "failed": 104,
     "refused": 0,
-    "avg_duration_seconds": 575.346
+    "avg_duration_seconds": 574.28
   }
 }
