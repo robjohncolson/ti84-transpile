@@ -5717,15 +5717,91 @@
       "timestamp": "2026-05-08T23:33:25Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "76695fa75bdd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 272 P3: Add 20 new CODE? gap seeds to the transpiler\n\n## Context\nThe transpiler curre",
+      "status": "completed",
+      "duration_seconds": 220.851,
+      "timestamp": "2026-05-09T00:07:41Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2e3e7f3b5110",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 272 P2: Trace 0x09CE10 and 0x058322 in the event loop\n\n## Context\nSession 271 ExpC fo",
+      "status": "completed",
+      "duration_seconds": 509.623,
+      "timestamp": "2026-05-09T00:12:28Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase272-event-loop-dispatch-targets.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "409125b85b0f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 272 P1: Disassemble 0x09EFDE \u2014 the stall point in context registration\n\n## Context\nSe",
+      "status": "completed",
+      "duration_seconds": 573.935,
+      "timestamp": "2026-05-09T00:13:31Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase272-09EFDE-stall-disasm.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "6cc0ac919466",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 273 P3: Add 20 CODE? gap seeds to transpiler\n\n## Context\nTI-84 Plus CE ROM transpilat",
+      "status": "completed",
+      "duration_seconds": 278.036,
+      "timestamp": "2026-05-09T00:47:41Z",
+      "files_changed": [
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "2b3e93492dd7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 273 P1: Disassemble 0x09F736 (post-VRAM-fill continuation)\n\n## Context\nWe're investig",
+      "status": "completed",
+      "duration_seconds": 441.784,
+      "timestamp": "2026-05-09T00:50:22Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase273-09f736-disassemble.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "f4de13778157",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 273 P2: Test 0x058322 with BIT 2,(IY+21)=1\n\n## Context\nWe're investigating the TI-84 ",
+      "status": "completed",
+      "duration_seconds": 583.419,
+      "timestamp": "2026-05-09T00:52:45Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase273-058322-bit2-armed.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 463,
-    "cc_to_codex": 463,
+    "total_calls": 469,
+    "cc_to_codex": 469,
     "codex_to_cc": 0,
-    "completed": 348,
+    "completed": 354,
     "failed": 104,
     "refused": 0,
-    "avg_duration_seconds": 574.28
+    "avg_duration_seconds": 572.493
   }
 }

@@ -22239,6 +22239,48 @@ function walkBlocks() {
     // Phase 157 P4: FPDiv JT slot seed — session 156 found 0x0201F4 was missing (fell through to SqRoot at 0x0201F8).
     { pc: 0x0201F4, mode: 'adl' },  // FPDiv JT slot — JP to FPDiv impl at 0x07CAB9
     { pc: 0x05e619, mode: 'adl' },  // ConvKeyToTok BufInsert loop seed (session 211)
+    // Session 273 P3: top 20 currently unseeded CODE? gap starts from the uncovered-range audit.
+    { pc: 0x0002AC, mode: 'adl' },
+    { pc: 0x0BC8CC, mode: 'adl' },
+    { pc: 0x00A623, mode: 'adl' },
+    { pc: 0x014CD9, mode: 'adl' },
+    { pc: 0x02A113, mode: 'adl' },
+    { pc: 0x02EE27, mode: 'adl' },
+    { pc: 0x03093C, mode: 'adl' },
+    { pc: 0x03701D, mode: 'adl' },
+    { pc: 0x03DD16, mode: 'adl' },
+    { pc: 0x043B55, mode: 'adl' },
+    { pc: 0x043CB5, mode: 'adl' },
+    { pc: 0x04DECD, mode: 'adl' },
+    { pc: 0x057A5C, mode: 'adl' },
+    { pc: 0x05A0DA, mode: 'adl' },
+    { pc: 0x05D49C, mode: 'adl' },
+    { pc: 0x0689B2, mode: 'adl' },
+    { pc: 0x06F12F, mode: 'adl' },
+    { pc: 0x07266F, mode: 'adl' },
+    { pc: 0x07B842, mode: 'adl' },
+    { pc: 0x08AB4C, mode: 'adl' },
+    // Next 20 CODE? gap seeds (30-byte gaps, not yet seeded).
+    { pc: 0x08B4E0, mode: 'adl' },
+    { pc: 0x08E8E0, mode: 'adl' },
+    { pc: 0x09C328, mode: 'adl' },
+    { pc: 0x09D207, mode: 'adl' },
+    { pc: 0x0A0ADD, mode: 'adl' },
+    { pc: 0x0AF702, mode: 'adl' },
+    { pc: 0x0B8988, mode: 'adl' },
+    { pc: 0x0BA4CF, mode: 'adl' },
+    { pc: 0x0BCBA5, mode: 'adl' },
+    { pc: 0x004497, mode: 'adl' },
+    { pc: 0x004AB7, mode: 'adl' },
+    { pc: 0x008F8D, mode: 'adl' },
+    { pc: 0x00A804, mode: 'adl' },
+    { pc: 0x0105CF, mode: 'adl' },
+    { pc: 0x02AB72, mode: 'adl' },
+    { pc: 0x030CFD, mode: 'adl' },
+    { pc: 0x0371F3, mode: 'adl' },
+    { pc: 0x0433A1, mode: 'adl' },
+    { pc: 0x049C94, mode: 'adl' },
+    { pc: 0x049DDA, mode: 'adl' },
     // Phase 248: pure delay-loop routine stubbed via BLOCK_OVERRIDES to return immediately.
     { pc: 0x006202, mode: 'adl' },  // Delay loop entry - skip port-0x03 speed wait with POP HL / POP DE / RET
   ];
