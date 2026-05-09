@@ -5793,15 +5793,104 @@
         "TI-84_Plus_CE/probe-phase273-058322-bit2-armed.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "0e7610d3f700",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Test D007E0=0x40 (home/editor mode) to see if event loop routes to 0x058322\n\n## Context\nIn t",
+      "status": "completed",
+      "duration_seconds": 308.775,
+      "timestamp": "2026-05-09T03:38:43Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase274-d007e0-routing.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "99330d64197e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Search ROM binary for instructions that store to D3FFxx range (dispatch table registration)\n",
+      "status": "completed",
+      "duration_seconds": 457.61,
+      "timestamp": "2026-05-09T03:41:10Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase274-d3ffxx-rom-scan.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "dcdd4411c285",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Run 0x09E2EC with VRAM pre-filled to skip fill loop, check for D3FFxx dispatch table writes\n",
+      "status": "completed",
+      "duration_seconds": 473.661,
+      "timestamp": "2026-05-09T03:41:25Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase274-09e2ec-post-fill.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "d440bc38af4e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add 20 CODE? gap seeds from top uncovered ranges + trace 0x0846EA dispatch table scan\n\n## Pa",
+      "status": "completed",
+      "duration_seconds": 639.006,
+      "timestamp": "2026-05-09T03:44:15Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6581d9d82654",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 275 P1: Classify LD HL,0xD3FFFF Sites as Registration vs Reader\n\n## Context\nThe TI-84",
+      "status": "completed",
+      "duration_seconds": 592.954,
+      "timestamp": "2026-05-09T06:28:09Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase275-d3ffff-site-classify.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "59693bdbbe40",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 275 P2: Trace 0x0846EA Caller and Post-Return Dispatch\n\n## Context\nIn the TI-84 Plus ",
+      "status": "completed",
+      "duration_seconds": 616.237,
+      "timestamp": "2026-05-09T06:28:34Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase275-0846ea-caller-trace.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "8724b0155935",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 275 P3: Investigate D0259A Dispatch Table Entry Count\n\n## Context\nIn the TI-84 Plus C",
+      "status": "completed",
+      "duration_seconds": 717.282,
+      "timestamp": "2026-05-09T06:30:16Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase275-d0259a-count.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 469,
-    "cc_to_codex": 469,
+    "total_calls": 476,
+    "cc_to_codex": 476,
     "codex_to_cc": 0,
-    "completed": 354,
+    "completed": 361,
     "failed": 104,
     "refused": 0,
-    "avg_duration_seconds": 572.493
+    "avg_duration_seconds": 572.069
   }
 }
