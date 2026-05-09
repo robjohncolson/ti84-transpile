@@ -5882,15 +5882,161 @@
         "TI-84_Plus_CE/probe-phase275-d0259a-count.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "c0dd16d009ae",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x082BE2/0x084711 Polling Loop\n\n## Context\nThis is a TI-84 Plus CE ROM transpilation p",
+      "status": "completed",
+      "duration_seconds": 579.769,
+      "timestamp": "2026-05-09T09:13:06Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ec6abd604cdf",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x08210D \u2014 Dispatch Table Entry Registration Writer\n\n## Context\nThis is a TI-84 Plus C",
+      "status": "completed",
+      "duration_seconds": 686.831,
+      "timestamp": "2026-05-09T09:14:52Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase276-08210d-entry-writer.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "75f3ecc8ed16",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate 0x0230E7/0x0230FD \u2014 LDIR-copy 9-byte entries after CALL 0x0846EA\n\n## Context\nThi",
+      "status": "timeout",
+      "duration_seconds": 900.063,
+      "timestamp": "2026-05-09T09:18:28Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "505d3d6e2c5a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 277 \u2014 P2: Trace 0x09DEE0 callers (dispatch table RESET trigger)\n\n## Context\n\nYou are ",
+      "status": "completed",
+      "duration_seconds": 322.13,
+      "timestamp": "2026-05-09T11:53:22Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5695426ce158",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 277 \u2014 P1: Trace 0x08267D (CALL NC target after 0x0846EA lookups)\n\n## Context\n\nYou are",
+      "status": "completed",
+      "duration_seconds": 455.083,
+      "timestamp": "2026-05-09T11:55:33Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "cc70573abed5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 277 \u2014 P3: Trace callers of 0x0820ED (entry writer setup chain)\n\n## Context\n\nYou are w",
+      "status": "completed",
+      "duration_seconds": 654.933,
+      "timestamp": "2026-05-09T11:58:57Z",
+      "files_changed": [
+        "CONTINUATION_PROMPT_CODEX.md",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase277-0820ed-callers.mjs",
+        "TI-84_Plus_CE/probe-phase277-08267d-call-nc-target.mjs",
+        "TI-84_Plus_CE/probe-phase277-09dee0-callers.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "076d912f538c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x04C885 \u2014 dispatch table match handler\n\n## Context\nIn the TI-84 Plus CE ROM, the disp",
+      "status": "completed",
+      "duration_seconds": 521.484,
+      "timestamp": "2026-05-09T15:33:00Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase278-04c885-handler.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "65e2bc5c71a0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x08237A parent function \u2014 VAT table population trigger\n\n## Context\nIn the TI-84 Plus ",
+      "status": "completed",
+      "duration_seconds": 642.824,
+      "timestamp": "2026-05-09T15:35:00Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase278-08237a-parent.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "82a23e19d804",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x09DD62 \u2014 single caller of 0x09DEE0 (dispatch table reset)\n\n## Context\nIn the TI-84 P",
+      "status": "timeout",
+      "duration_seconds": 900.059,
+      "timestamp": "2026-05-09T15:39:21Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "44c6be14ad8b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate 10-byte vs 9-byte stride discrepancy in dispatch table\n\n## Context\nIn the TI-84 ",
+      "status": "timeout",
+      "duration_seconds": 900.056,
+      "timestamp": "2026-05-09T15:39:22Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e71a3d0035e4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 279 P2: Trace match exit path at 0x08474B\n\n## Context\nYou are working on the TI-84 Pl",
+      "status": "completed",
+      "duration_seconds": 453.314,
+      "timestamp": "2026-05-09T17:25:15Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "88bb51e3864d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 279 P4: Trace 0x0821AE \u2014 entry pointer validator\n\n## Context\nYou are working on the T",
+      "status": "completed",
+      "duration_seconds": 463.087,
+      "timestamp": "2026-05-09T17:25:28Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase279-0821ae-validator.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 476,
-    "cc_to_codex": 476,
+    "total_calls": 488,
+    "cc_to_codex": 488,
     "codex_to_cc": 0,
-    "completed": 361,
-    "failed": 104,
+    "completed": 370,
+    "failed": 107,
     "refused": 0,
-    "avg_duration_seconds": 572.069
+    "avg_duration_seconds": 573.328
   }
 }
