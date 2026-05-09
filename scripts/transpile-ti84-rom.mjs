@@ -22281,6 +22281,27 @@ function walkBlocks() {
     { pc: 0x0433A1, mode: 'adl' },
     { pc: 0x049C94, mode: 'adl' },
     { pc: 0x049DDA, mode: 'adl' },
+    // Session 274 P1: next 20 live CODE? gap seeds from the current uncovered-range audit.
+    { pc: 0x0002B0, mode: 'adl' },
+    { pc: 0x04DC6E, mode: 'adl' },
+    { pc: 0x04DE0C, mode: 'adl' },
+    { pc: 0x04F443, mode: 'adl' },
+    { pc: 0x05954F, mode: 'adl' },
+    { pc: 0x05B6BE, mode: 'adl' },
+    { pc: 0x061AE4, mode: 'adl' },
+    { pc: 0x064A53, mode: 'adl' },
+    { pc: 0x0740FC, mode: 'adl' },
+    { pc: 0x07D27B, mode: 'adl' },
+    { pc: 0x086F99, mode: 'adl' },
+    { pc: 0x0873F9, mode: 'adl' },
+    { pc: 0x0905C8, mode: 'adl' },
+    { pc: 0x09C3E9, mode: 'adl' },
+    { pc: 0x0054A0, mode: 'adl' },
+    { pc: 0x00742D, mode: 'adl' },
+    { pc: 0x00891C, mode: 'adl' },
+    { pc: 0x00A2F3, mode: 'adl' },
+    { pc: 0x010403, mode: 'adl' },
+    { pc: 0x014B9D, mode: 'adl' },
     // Phase 248: pure delay-loop routine stubbed via BLOCK_OVERRIDES to return immediately.
     { pc: 0x006202, mode: 'adl' },  // Delay loop entry - skip port-0x03 speed wait with POP HL / POP DE / RET
   ];
