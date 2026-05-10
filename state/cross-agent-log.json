@@ -6323,15 +6323,26 @@
         "TI-84_Plus_CE/probe-phase287-0a0806-token-table.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "0f9969d5dc0d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 287 \u2014 P3: Trace E00900 reader clusters (0x040Fxx, 0x0465xx)\n\n## Context\nThe TI-84 CE ",
+      "status": "timeout",
+      "duration_seconds": 900.034,
+      "timestamp": "2026-05-10T15:33:25Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 513,
-    "cc_to_codex": 513,
+    "total_calls": 514,
+    "cc_to_codex": 514,
     "codex_to_cc": 0,
     "completed": 387,
-    "failed": 115,
+    "failed": 116,
     "refused": 0,
-    "avg_duration_seconds": 579.917
+    "avg_duration_seconds": 580.539
   }
 }
