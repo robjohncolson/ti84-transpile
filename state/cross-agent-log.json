@@ -6168,15 +6168,111 @@
       "timestamp": "2026-05-10T04:26:16Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "b4b706ae4f7a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 283 P1: Trace 0x040CE6 \u2014 STAT event loop event processing\n\n## Context\nThis is a TI-84",
+      "status": "completed",
+      "duration_seconds": 696.749,
+      "timestamp": "2026-05-10T04:29:04Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase283-040ce6-event-proc.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "9815e9ea8878",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 283 P3: Trace 0x0A1B5B glyph renderer \u2014 byte to pixels in VRAM\n\n## Context\nThis is a ",
+      "status": "timeout",
+      "duration_seconds": 900.042,
+      "timestamp": "2026-05-10T04:32:31Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9d8f2da52f29",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 284 P1: Trace 0x05411A Core Renderer Trampoline\n\n## Context\nYou are working on the TI",
+      "status": "completed",
+      "duration_seconds": 680.98,
+      "timestamp": "2026-05-10T07:13:43Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e63ac0f0b1eb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 284 P2: Trace 0x09E017 Key Event Handler\n\n## Context\nYou are working on the TI-84 Plu",
+      "status": "timeout",
+      "duration_seconds": 900.045,
+      "timestamp": "2026-05-10T07:17:24Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "20982197e165",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 284 P3: Trace 0x027111 Low-Level Keyboard Scan\n\n## Context\nYou are working on the TI-",
+      "status": "timeout",
+      "duration_seconds": 900.05,
+      "timestamp": "2026-05-10T07:17:25Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "18d12a50bb8a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 285 P3: Trace 0x0A1CAC \u2014 Called After GetModelName\n\n## Context\nSession 282 decoded 0x",
+      "status": "completed",
+      "duration_seconds": 734.596,
+      "timestamp": "2026-05-10T10:00:30Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase285-0a1cac-post-getmodel.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "651e42b4936d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 285 P2: Find the Real Keyboard Matrix Reader (MMIO 0xE00810-0xE00817)\n\n## Context\nSes",
+      "status": "completed",
+      "duration_seconds": 831.833,
+      "timestamp": "2026-05-10T10:02:06Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase285-mmio-kbd-reader.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "85649cb5e851",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 285 P1: Trace 0x02FCB3 \u2014 Blocking Key Wait\n\n## Context\nSession 284 discovered that 0x",
+      "status": "completed",
+      "duration_seconds": 867.596,
+      "timestamp": "2026-05-10T10:02:39Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase285-02fcb3-key-wait.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 500,
-    "cc_to_codex": 500,
+    "total_calls": 508,
+    "cc_to_codex": 508,
     "codex_to_cc": 0,
-    "completed": 378,
-    "failed": 111,
+    "completed": 383,
+    "failed": 114,
     "refused": 0,
-    "avg_duration_seconds": 576.915
+    "avg_duration_seconds": 580.648
   }
 }
