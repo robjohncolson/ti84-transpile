@@ -6146,15 +6146,37 @@
         "TI-84_Plus_CE/probe-phase282-09ed50-subroutines.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "4e2bad66e075",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 282 P2: Trace 0x09E11B \u2014 shared menu renderer\n\n## Context\nThis is a TI-84 Plus CE ROM",
+      "status": "timeout",
+      "duration_seconds": 900.048,
+      "timestamp": "2026-05-10T01:47:46Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "27de4bece3a6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 283 P2: Trace 0x09E2AE \u2014 where do STAT CALC menu item strings come from?\n\n## Context\n",
+      "status": "completed",
+      "duration_seconds": 526.982,
+      "timestamp": "2026-05-10T04:26:16Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 498,
-    "cc_to_codex": 498,
+    "total_calls": 500,
+    "cc_to_codex": 500,
     "codex_to_cc": 0,
-    "completed": 377,
-    "failed": 110,
+    "completed": 378,
+    "failed": 111,
     "refused": 0,
-    "avg_duration_seconds": 576.366
+    "avg_duration_seconds": 576.915
   }
 }
