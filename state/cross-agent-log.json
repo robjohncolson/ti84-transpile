@@ -6334,15 +6334,104 @@
       "timestamp": "2026-05-10T15:33:25Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "3d915f604d38",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace who calls 0x046500 (the full keyboard matrix scanner)\n\n## Context\nWe're reverse-engine",
+      "status": "completed",
+      "duration_seconds": 5443.074,
+      "timestamp": "2026-05-10T19:33:51Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase288-046500-callers.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "2875fa4a97a5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Check code immediately before 0x0159C0 for fall-through entry\n\n## Context\nWe're reverse-engi",
+      "status": "timeout",
+      "duration_seconds": 5517.364,
+      "timestamp": "2026-05-10T19:35:04Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3ba6fa2a6d1a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Cross-reference 593-entry token table with browser-shell direct-eval token map\n\n## Context\nW",
+      "status": "completed",
+      "duration_seconds": 5596.71,
+      "timestamp": "2026-05-10T19:36:28Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase288-token-coverage-gaps.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "35c56ce3e05e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map the D17731-D1773A buffer consumers\n\n## Context\nWe're reverse-engineering the TI-84 Plus ",
+      "status": "timeout",
+      "duration_seconds": 5693.206,
+      "timestamp": "2026-05-10T19:38:03Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1147bd6921b2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 289 \u2014 Priority P1: Decode 0x005A75 (scan-code-to-key-code converter)\n\n## Context\n\nThi",
+      "status": "completed",
+      "duration_seconds": 341.631,
+      "timestamp": "2026-05-10T23:37:54Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase289-0059E9-callers.mjs",
+        "TI-84_Plus_CE/probe-phase289-005A75-decoder.mjs",
+        "TI-84_Plus_CE/probe-phase289-01598B-context.mjs",
+        "TI-84_Plus_CE/probe-phase289-0159CD-callers.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "28218cd6d86c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 289 \u2014 Priority P4: Decode LD IX,0x0159BD at 0x01598B\n\n## Context\n\nThis is the TI-84 P",
+      "status": "failed",
+      "duration_seconds": 478.385,
+      "timestamp": "2026-05-10T23:40:15Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "190a65aa1168",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 289 \u2014 Priority P2: Trace CALL sites to 0x0059E9\n\n## Context\n\nThis is the TI-84 Plus C",
+      "status": "completed",
+      "duration_seconds": 488.099,
+      "timestamp": "2026-05-10T23:40:21Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase289-0059E9-callers.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 514,
-    "cc_to_codex": 514,
+    "total_calls": 521,
+    "cc_to_codex": 521,
     "codex_to_cc": 0,
-    "completed": 387,
-    "failed": 116,
+    "completed": 391,
+    "failed": 119,
     "refused": 0,
-    "avg_duration_seconds": 580.539
+    "avg_duration_seconds": 617.957
   }
 }
