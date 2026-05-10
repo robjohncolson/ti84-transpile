@@ -6264,15 +6264,74 @@
         "TI-84_Plus_CE/probe-phase285-02fcb3-key-wait.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "f672b2524858",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 286 \u2014 P1: Trace 0x0893D1 STAT Key Dispatcher\n\n## Context\nIn session 285, we decoded 0",
+      "status": "failed",
+      "duration_seconds": 402.644,
+      "timestamp": "2026-05-10T12:38:07Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "4ec2ba49bad1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 286 \u2014 P3: Investigate 0x048AC4 Keyboard RAM Initializer\n\n## Context\nSession 285 found",
+      "status": "completed",
+      "duration_seconds": 525.359,
+      "timestamp": "2026-05-10T12:40:13Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2039d1408bda",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 286 \u2014 P2: Trace 0x0159C0 Foreground Keyboard Scanner End-to-End\n\n## Context\nSession 2",
+      "status": "completed",
+      "duration_seconds": 608.967,
+      "timestamp": "2026-05-10T12:41:36Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "42f76792dfbf",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 287 \u2014 P1: Find indirect callers of 0x0159C0 (keyboard scanner)\n\n## Context\nSession 28",
+      "status": "completed",
+      "duration_seconds": 443.878,
+      "timestamp": "2026-05-10T15:25:46Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase287-0159c0-indirect-callers.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "16cc972fbdee",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 287 \u2014 P2: Map the token table at 0x0A0806\n\n## Context\nSession 283 identified a STAT C",
+      "status": "completed",
+      "duration_seconds": 547.199,
+      "timestamp": "2026-05-10T15:27:31Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase287-0a0806-token-table.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 508,
-    "cc_to_codex": 508,
+    "total_calls": 513,
+    "cc_to_codex": 513,
     "codex_to_cc": 0,
-    "completed": 383,
-    "failed": 114,
+    "completed": 387,
+    "failed": 115,
     "refused": 0,
-    "avg_duration_seconds": 580.648
+    "avg_duration_seconds": 579.917
   }
 }
