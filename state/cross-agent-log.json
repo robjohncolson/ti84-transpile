@@ -6028,15 +6028,133 @@
         "TI-84_Plus_CE/probe-phase279-0821ae-validator.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "36811f7ee743",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 279 P1: Trace 0x09E0A1 and 0x09E0D9 \u2014 callers of 0x09DD14\n\n## Context\nYou are working",
+      "status": "completed",
+      "duration_seconds": 867.132,
+      "timestamp": "2026-05-09T17:32:07Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase279-09e0a1-09e0d9-callers.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "266728c36841",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 279 P3: Trace 0x020514 jump table\n\n## Context\nYou are working on the TI-84 Plus CE RO",
+      "status": "timeout",
+      "duration_seconds": 900.041,
+      "timestamp": "2026-05-09T17:32:44Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9a1dd4b74f55",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 280 P3: Trace 0x09EDC3\n\n## Context\nYou are working on a TI-84 Plus CE ROM transpilati",
+      "status": "completed",
+      "duration_seconds": 803.052,
+      "timestamp": "2026-05-09T20:16:04Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6442b3e155bf",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 280 P1: Investigate D02AD7-D02AD9 Consumers\n\n## Context\nYou are working on a TI-84 Pl",
+      "status": "completed",
+      "duration_seconds": 892.762,
+      "timestamp": "2026-05-09T20:17:25Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase280-d02ad7-consumers.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "d68034feab9b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 280 P2: Trace 0x040BE4-0x040C89 Full STAT Dispatcher\n\n## Context\nYou are working on a",
+      "status": "timeout",
+      "duration_seconds": 900.078,
+      "timestamp": "2026-05-09T20:17:37Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "4125e5aeb6b2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Categorize FindSym (0x0846EA) Callers by OS Subsystem\n\n## Context\nFindSym at 0x0846EA is the",
+      "status": "completed",
+      "duration_seconds": 258.822,
+      "timestamp": "2026-05-09T22:51:41Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "0ee131fd2272",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x09E296 \u2014 STAT CALC Post-Init Function\n\n## Context\nIn the TI-84 Plus CE OS ROM, the S",
+      "status": "completed",
+      "duration_seconds": 613.043,
+      "timestamp": "2026-05-09T22:57:37Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase281-09e296-trace.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "154385c7ef8f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x09ED50 \u2014 Display/Menu Setup Function\n\n## Context\nIn the TI-84 Plus CE OS ROM, functi",
+      "status": "timeout",
+      "duration_seconds": 900.064,
+      "timestamp": "2026-05-09T23:02:26Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3a88f0bbb8b7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 282 P1: Trace 0x09EE86 helper \u2014 what does 0x000138 do, what's at 0x09EF36?\n\n## Contex",
+      "status": "completed",
+      "duration_seconds": 514.047,
+      "timestamp": "2026-05-10T01:41:19Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6bc886440178",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 282 P3: Map the 4 subroutines called by 0x09ED50\n\n## Context\nThis is a TI-84 Plus CE ",
+      "status": "completed",
+      "duration_seconds": 596.947,
+      "timestamp": "2026-05-10T01:42:45Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase282-09ed50-subroutines.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 488,
-    "cc_to_codex": 488,
+    "total_calls": 498,
+    "cc_to_codex": 498,
     "codex_to_cc": 0,
-    "completed": 370,
-    "failed": 107,
+    "completed": 377,
+    "failed": 110,
     "refused": 0,
-    "avg_duration_seconds": 573.328
+    "avg_duration_seconds": 576.366
   }
 }
