@@ -6587,15 +6587,65 @@
       "timestamp": "2026-05-11T08:03:07Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "7f6fc711755f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x02FD8F \u2014 Actual Key Acquisition Function\n\n## Context\nThe TI-84 Plus CE ROM tra",
+      "status": "completed",
+      "duration_seconds": 408.148,
+      "timestamp": "2026-05-11T10:43:57Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase293-02fd8f-key-acquire.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "45a46cf55f7f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x088657 and 0x08C4E9 Token Dispatchers Deeper\n\n## Context\nSession 292 mapped 14 KEY_D",
+      "status": "completed",
+      "duration_seconds": 608.082,
+      "timestamp": "2026-05-11T10:47:19Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase293-token-dispatcher-trace.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "408049f29bee",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Cross-Reference CP Values Across All 14 Dispatchers\n\n## Context\nSession 292 mapped 14 KEY_DI",
+      "status": "completed",
+      "duration_seconds": 812.864,
+      "timestamp": "2026-05-11T10:50:45Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase293-cp-crossref.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "f70b81db4867",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x0258DA's CP 0x28 Handler at 0x0257CC (CLEAR Key Handler)\n\n## Context\nSession 292 map",
+      "status": "timeout",
+      "duration_seconds": 900.052,
+      "timestamp": "2026-05-11T10:52:14Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 534,
-    "cc_to_codex": 534,
+    "total_calls": 538,
+    "cc_to_codex": 538,
     "codex_to_cc": 0,
-    "completed": 401,
-    "failed": 122,
+    "completed": 404,
+    "failed": 123,
     "refused": 0,
-    "avg_duration_seconds": 617.433
+    "avg_duration_seconds": 617.915
   }
 }
