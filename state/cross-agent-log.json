@@ -6774,15 +6774,48 @@
         "TI-84_Plus_CE/probe-phase296-05622e-pack-helper.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "6153a89531bf",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode D02661/D02662 Mode-State Semantics\n\n## Context\nIn the TI-84 Plus CE OS, function 0x0A",
+      "status": "timeout",
+      "duration_seconds": 900.046,
+      "timestamp": "2026-05-11T19:02:19Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "bf3a70e9b0e0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# P1: Keyboard MMIO Hunt \u2014 Find all IN A,(C) instructions reading keyboard matrix ports 0xE009xx\n\n##",
+      "status": "completed",
+      "duration_seconds": 312.474,
+      "timestamp": "2026-05-11T21:37:19Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ac2e6a8bbd06",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# P2: Trace 0x08C308 \u2014 Subcall from _RectFill (0x09EF44)\n\n## Context\nSession 296 disassembled 0x09EF",
+      "status": "completed",
+      "duration_seconds": 593.129,
+      "timestamp": "2026-05-11T21:42:01Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 549,
-    "cc_to_codex": 549,
+    "total_calls": 552,
+    "cc_to_codex": 552,
     "codex_to_cc": 0,
-    "completed": 414,
-    "failed": 124,
+    "completed": 416,
+    "failed": 125,
     "refused": 0,
-    "avg_duration_seconds": 615.012
+    "avg_duration_seconds": 614.941
   }
 }
