@@ -6637,15 +6637,152 @@
       "timestamp": "2026-05-11T10:52:14Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "6ac024a987f0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 294 P1: Disassemble 0x03013A (main key acquisition delegate)\n\n## Context\nThe TI-84 Pl",
+      "status": "completed",
+      "duration_seconds": 303.981,
+      "timestamp": "2026-05-11T13:22:25Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase294-03013a-key-acquire.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "89905003ba81",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 294 P3: Trace 0x096E22 (default key handler)\n\n## Context\nIn the TI-84 Plus CE OS, the",
+      "status": "completed",
+      "duration_seconds": 363.912,
+      "timestamp": "2026-05-11T13:23:28Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ad843e68b866",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 294 P2: Disassemble 0x0AF408 (follow-on token dispatcher)\n\n## Context\nThe TI-84 Plus ",
+      "status": "completed",
+      "duration_seconds": 466.38,
+      "timestamp": "2026-05-11T13:25:09Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase294-0af408-token-dispatch.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "003cb480b86f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 294 P4: Identify which dispatcher handles CLEAR (scan code 0x28)\n\n## Context\nSession ",
+      "status": "timeout",
+      "duration_seconds": 900.041,
+      "timestamp": "2026-05-11T13:32:26Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e36a1f81c6ec",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 295 \u2014 P1: Disassemble 0x04E966 (fifth level of keyboard acquisition)\n\n## Context\nThe ",
+      "status": "completed",
+      "duration_seconds": 291.466,
+      "timestamp": "2026-05-11T16:07:29Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase295-04e966-keyboard-hw.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "fc3bab364757",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 295 \u2014 P2: Disassemble 0x0AF877 (token classifier/normalizer)\n\n## Context\nThe TI-84 Pl",
+      "status": "completed",
+      "duration_seconds": 357.045,
+      "timestamp": "2026-05-11T16:08:37Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase295-0af877-token-classifier.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "71a09e9e97bb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 295 \u2014 P4: Trace 0x0AF062 (case-1/2 token handler)\n\n## Context\nThe TI-84 Plus CE token",
+      "status": "completed",
+      "duration_seconds": 451.669,
+      "timestamp": "2026-05-11T16:10:15Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase295-0af062-case12-handler.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "dac2fe1bba9f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 295 \u2014 P3: Trace 0x022331 (CoorMon dispatch \u2014 CLEAR token handler)\n\n## Context\nThe TI-",
+      "status": "completed",
+      "duration_seconds": 855.488,
+      "timestamp": "2026-05-11T16:16:57Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase295-022331-coormon.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "5fa004cee7e7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x0236F9 \u2014 Token Descriptor Sink\n\n## Context\nIn the TI-84 Plus CE OS, when a key is pr",
+      "status": "completed",
+      "duration_seconds": 323.743,
+      "timestamp": "2026-05-11T18:52:40Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "eaf119b1b065",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x09EF44 \u2014 Keyboard MMIO Discovery (7th Level)\n\n## Context\nWe are tracing the TI",
+      "status": "completed",
+      "duration_seconds": 418.273,
+      "timestamp": "2026-05-11T18:54:10Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase296-09ef44-keyboard-mmio.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "be989f266e26",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x05622E \u2014 A+keyExtend Pack Helper\n\n## Context\nIn the TI-84 Plus CE OS token pipeline,",
+      "status": "completed",
+      "duration_seconds": 471.171,
+      "timestamp": "2026-05-11T18:55:09Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase296-05622e-pack-helper.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 538,
-    "cc_to_codex": 538,
+    "total_calls": 549,
+    "cc_to_codex": 549,
     "codex_to_cc": 0,
-    "completed": 404,
-    "failed": 123,
+    "completed": 414,
+    "failed": 124,
     "refused": 0,
-    "avg_duration_seconds": 617.915
+    "avg_duration_seconds": 615.012
   }
 }
