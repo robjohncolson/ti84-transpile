@@ -6508,15 +6508,94 @@
         "TI-84_Plus_CE/browser-shell.html"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "09c81fd7559f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 291 \u2014 P3: Deep-Dive 0x0562xx D0058C Writers (Editor Region)\n\n## Context\nThree of the ",
+      "status": "completed",
+      "duration_seconds": 576.012,
+      "timestamp": "2026-05-11T05:14:15Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e7ae21e193c1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 291 \u2014 P1: Classify 27 D0058C Write Sites by Parent Function\n\n## Context\nD0058C is the",
+      "status": "completed",
+      "duration_seconds": 759.692,
+      "timestamp": "2026-05-11T05:17:15Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase291-d0058c-write-classify.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "c036fb5661cf",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 291 \u2014 P2: Trace D0058C READ Sites\n\n## Context\nD0058C is the TI-84 Plus CE OS RAM loca",
+      "status": "timeout",
+      "duration_seconds": 900.043,
+      "timestamp": "2026-05-11T05:19:37Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c686d342ff16",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 292 \u2014 Priority 4: Trace 0x021ED0 callers (scan code injection API)\n\n## Context\nWe are",
+      "status": "failed",
+      "duration_seconds": 515.312,
+      "timestamp": "2026-05-11T07:56:47Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "10117fb811f2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 292 \u2014 Priority 2: Decode 0x02FCB3 (GetCSC equivalent) full disassembly\n\n## Context\nWe",
+      "status": "completed",
+      "duration_seconds": 547.865,
+      "timestamp": "2026-05-11T07:57:17Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "bd482ffd8298",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 292 \u2014 Priority 3: Map STAT writers 0x08C35A/0x08C36E/0x08C7A1\n\n## Context\nWe are reve",
+      "status": "completed",
+      "duration_seconds": 649.307,
+      "timestamp": "2026-05-11T07:58:59Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b8edf8dff3d3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 292 \u2014 Priority 1: Trace KEY_DISPATCH CP values at 0x0258DA and 0x02659C\n\n## Context\nW",
+      "status": "timeout",
+      "duration_seconds": 900.033,
+      "timestamp": "2026-05-11T08:03:07Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 527,
-    "cc_to_codex": 527,
+    "total_calls": 534,
+    "cc_to_codex": 534,
     "codex_to_cc": 0,
-    "completed": 397,
-    "failed": 119,
+    "completed": 401,
+    "failed": 122,
     "refused": 0,
-    "avg_duration_seconds": 616.434
+    "avg_duration_seconds": 617.433
   }
 }
