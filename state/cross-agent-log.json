@@ -6469,15 +6469,54 @@
         "TI-84_Plus_CE/probe-phase290-00596E-trace.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "9e95561201bc",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 290 \u2014 P3: Map the 0x0146A3-0x0146DB cluster (5 consecutive CALLs to 0x0059E9)\n\n## Con",
+      "status": "completed",
+      "duration_seconds": 750.591,
+      "timestamp": "2026-05-11T02:30:11Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase290-0146A3-cluster.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "2276576a9b55",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 290 \u2014 P4: Decode the 0x0015xx callers of 0x0059E9\n\n## Context\nYou are working on the ",
+      "status": "completed",
+      "duration_seconds": 779.466,
+      "timestamp": "2026-05-11T02:30:41Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase290-0015xx-callers.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "df631938eac9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 291 \u2014 P4: Add randIntNoRep( to EVAL_TWO_BYTE_TOKENS\n\n## Context\nThe browser shell's e",
+      "status": "completed",
+      "duration_seconds": 63.024,
+      "timestamp": "2026-05-11T05:05:44Z",
+      "files_changed": [
+        "TI-84_Plus_CE/browser-shell.html"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 524,
-    "cc_to_codex": 524,
+    "total_calls": 527,
+    "cc_to_codex": 527,
     "codex_to_cc": 0,
-    "completed": 394,
+    "completed": 397,
     "failed": 119,
     "refused": 0,
-    "avg_duration_seconds": 616.923
+    "avg_duration_seconds": 616.434
   }
 }
