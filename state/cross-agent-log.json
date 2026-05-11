@@ -6423,15 +6423,61 @@
         "TI-84_Plus_CE/probe-phase289-0059E9-callers.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "9204c2e2b502",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 289 \u2014 Priority P3: Check 0x0159CD (5 CALL sites)\n\n## Context\n\nThis is the TI-84 Plus ",
+      "status": "completed",
+      "duration_seconds": 543.25,
+      "timestamp": "2026-05-10T23:41:19Z",
+      "files_changed": [
+        "CONTINUATION_PROMPT_CODEX.md",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase289-0059E9-callers.mjs",
+        "TI-84_Plus_CE/probe-phase289-005A75-decoder.mjs",
+        "TI-84_Plus_CE/probe-phase289-01598B-context.mjs",
+        "TI-84_Plus_CE/probe-phase289-0159CD-callers.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "1913f67d1eb5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 290 \u2014 P1: Decode 0x0059C6 fully (find D0058C writer)\n\n## Context\nYou are working on t",
+      "status": "completed",
+      "duration_seconds": 303.348,
+      "timestamp": "2026-05-11T02:22:38Z",
+      "files_changed": [
+        "CONTINUATION_PROMPT_CODEX.md",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase290-0059C6-d0058c-writer.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "70af118af5b5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 290 \u2014 P2: Trace 0x00596E (table-base resolver)\n\n## Context\nYou are working on the TI-",
+      "status": "completed",
+      "duration_seconds": 465.547,
+      "timestamp": "2026-05-11T02:25:25Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase290-00596E-trace.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 521,
-    "cc_to_codex": 521,
+    "total_calls": 524,
+    "cc_to_codex": 524,
     "codex_to_cc": 0,
-    "completed": 391,
+    "completed": 394,
     "failed": 119,
     "refused": 0,
-    "avg_duration_seconds": 617.957
+    "avg_duration_seconds": 616.923
   }
 }
