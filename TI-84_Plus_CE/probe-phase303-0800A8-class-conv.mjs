@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -7,312 +8,440 @@ import { decodeInstruction } from './ez80-decoder.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rom = readFileSync(path.join(__dirname, 'ROM.rom'));
 
-function hex(v, w = 6) { return '0x' + (v >>> 0).toString(16).toUpperCase().padStart(w, '0'); }
-function hex2(v) { return '0x' + (v >>> 0).toString(16).toUpperCase().padStart(2, '0'); }
+const TARGET = 0x0800A8;
+const TARGET_CONTEXT_START = 0x0800A0;
+const TARGET_SCAN_LIMIT = 0x080900;
+const TARGET_HELPER = 0x080259;
+const KEY_CLASS_ENTRY = 0x058D54;
+const KEY_CLASS_MAX_INSTRUCTIONS = 30;
 
-function fmtInst(inst) {
-  const t = inst.tag;
-  if (t === 'nop') return 'NOP';
-  if (t === 'ret') return 'RET';
-  if (t === 'ret-conditional') return `RET ${inst.condition.toUpperCase()}`;
-  if (t === 'call') return `CALL ${hex(inst.target)}`;
-  if (t === 'call-conditional') return `CALL ${inst.condition.toUpperCase()}, ${hex(inst.target)}`;
-  if (t === 'jp') return `JP ${hex(inst.target)}`;
-  if (t === 'jp-conditional') return `JP ${inst.condition.toUpperCase()}, ${hex(inst.target)}`;
-  if (t === 'jp-indirect') return `JP (${(inst.register || 'hl').toUpperCase()})`;
-  if (t === 'jr') return `JR ${hex(inst.target)}`;
-  if (t === 'jr-conditional') return `JR ${inst.condition.toUpperCase()}, ${hex(inst.target)}`;
-  if (t === 'djnz') return `DJNZ ${hex(inst.target)}`;
-  if (t === 'ld-reg-imm') return `LD ${inst.dest.toUpperCase()}, ${hex2(inst.value)}`;
-  if (t === 'ld-pair-imm') return `LD ${inst.pair.toUpperCase()}, ${hex(inst.value)}`;
-  if (t === 'ld-reg-reg') return `LD ${inst.dest.toUpperCase()}, ${inst.src.toUpperCase()}`;
-  if (t === 'ld-reg-ind') return `LD ${inst.dest.toUpperCase()}, (${inst.src.toUpperCase()})`;
-  if (t === 'ld-ind-reg') return `LD (${inst.dest.toUpperCase()}), ${inst.src.toUpperCase()}`;
-  if (t === 'ld-ind-imm') return `LD (HL), ${hex2(inst.value)}`;
-  if (t === 'ld-mem-reg') return `LD (${hex(inst.addr)}), ${inst.src.toUpperCase()}`;
-  if (t === 'ld-reg-mem') return `LD ${inst.dest ? inst.dest.toUpperCase() : 'A'}, (${hex(inst.addr)})`;
-  if (t === 'ld-pair-mem') {
-    const dir = inst.direction === 'to-mem' ? 'store' : 'load';
-    return `LD ${dir === 'store' ? `(${hex(inst.addr)}), ${inst.pair.toUpperCase()}` : `${inst.pair.toUpperCase()}, (${hex(inst.addr)})`}`;
-  }
-  if (t === 'ld-reg-ixd') return `LD ${inst.dest.toUpperCase()}, (${(inst.indexRegister||'ix').toUpperCase()}+${inst.displacement})`;
-  if (t === 'ld-ixd-reg') return `LD (${(inst.indexRegister||'ix').toUpperCase()}+${inst.displacement}), ${inst.src.toUpperCase()}`;
-  if (t === 'ld-ixd-imm') return `LD (${(inst.indexRegister||'ix').toUpperCase()}+${inst.displacement}), ${hex2(inst.value)}`;
-  if (t === 'ld-pair-indexed') return `LD ${inst.pair.toUpperCase()}, (${(inst.indexRegister||'iy').toUpperCase()}+${inst.displacement})`;
-  if (t === 'ld-indexed-pair') return `LD (${(inst.indexRegister||'iy').toUpperCase()}+${inst.displacement}), ${inst.pair.toUpperCase()}`;
-  if (t === 'push') return `PUSH ${inst.pair.toUpperCase()}`;
-  if (t === 'pop') return `POP ${inst.pair.toUpperCase()}`;
-  if (t === 'inc-reg') return `INC ${inst.reg.toUpperCase()}`;
-  if (t === 'dec-reg') return `DEC ${inst.reg.toUpperCase()}`;
-  if (t === 'inc-pair') return `INC ${inst.pair.toUpperCase()}`;
-  if (t === 'dec-pair') return `DEC ${inst.pair.toUpperCase()}`;
-  if (t === 'add-pair') return `ADD ${inst.dest.toUpperCase()}, ${inst.src.toUpperCase()}`;
-  if (t === 'alu-reg') return `${inst.op.toUpperCase()} A, ${inst.reg ? inst.reg.toUpperCase() : '?'}`;
-  if (t === 'alu-imm') return `${inst.op.toUpperCase()} ${hex2(inst.value)}`;
-  if (t === 'alu-ind') return `${inst.op.toUpperCase()} (HL)`;
-  if (t === 'alu-indexed') return `${inst.op.toUpperCase()} (${(inst.register||'ix').toUpperCase()}+${inst.offset})`;
-  if (t === 'rst') return `RST ${hex2(inst.vector)}`;
-  if (t === 'ex-af') return "EX AF, AF'";
-  if (t === 'exx') return 'EXX';
-  if (t === 'ex-de-hl') return 'EX DE, HL';
-  if (t === 'ex-sp-hl') return 'EX (SP), HL';
-  if (t === 'di') return 'DI'; if (t === 'ei') return 'EI';
-  if (t === 'halt') return 'HALT'; if (t === 'scf') return 'SCF';
-  if (t === 'ccf') return 'CCF'; if (t === 'cpl') return 'CPL';
-  if (t === 'daa') return 'DAA'; if (t === 'rla') return 'RLA';
-  if (t === 'rra') return 'RRA'; if (t === 'rlca') return 'RLCA';
-  if (t === 'rrca') return 'RRCA'; if (t === 'ldir') return 'LDIR';
-  if (t === 'lddr') return 'LDDR'; if (t === 'ldi') return 'LDI';
-  if (t === 'ldd') return 'LDD'; if (t === 'cpir') return 'CPIR';
-  if (t === 'cpdr') return 'CPDR';
-  if (t === 'in-reg') return `IN ${(inst.reg||'a').toUpperCase()}, (C)`;
-  if (t === 'out-reg') return `OUT (C), ${(inst.reg||'a').toUpperCase()}`;
-  if (t === 'in-imm') return `IN A, (${hex2(inst.port)})`;
-  if (t === 'out-imm') return `OUT (${hex2(inst.port)}), A`;
-  if (t === 'im') return `IM ${inst.mode}`;
-  if (t === 'bit-test') return `BIT ${inst.bit}, ${inst.reg.toUpperCase()}`;
-  if (t === 'bit-test-ind') return `BIT ${inst.bit}, (HL)`;
-  if (t === 'bit-set') return `SET ${inst.bit}, ${inst.reg.toUpperCase()}`;
-  if (t === 'bit-set-ind') return `SET ${inst.bit}, (HL)`;
-  if (t === 'bit-reset') return `RES ${inst.bit}, ${inst.reg.toUpperCase()}`;
-  if (t === 'bit-reset-ind') return `RES ${inst.bit}, (HL)`;
-  if (t === 'rotate-reg') return `${inst.op.toUpperCase()} ${inst.reg.toUpperCase()}`;
-  if (t === 'rotate-ind') return `${inst.op.toUpperCase()} (HL)`;
-  if (t === 'neg') return 'NEG';
-  if (t === 'reti') return 'RETI'; if (t === 'retn') return 'RETN';
-  if (t === 'sbc-pair') return `SBC HL, ${inst.src.toUpperCase()}`;
-  if (t === 'adc-pair') return `ADC HL, ${inst.src.toUpperCase()}`;
-  if (t === 'rrd') return 'RRD'; if (t === 'rld') return 'RLD';
-  if (t === 'ld-sp-hl') return 'LD SP, HL';
-  if (t === 'mlt') return `MLT ${inst.pair.toUpperCase()}`;
-  if (t === 'lea') return `LEA ${inst.dest.toUpperCase()}, ${(inst.register||'ix').toUpperCase()}+${inst.offset}`;
-  if (t === 'pea') return `PEA ${(inst.register||'ix').toUpperCase()}+${inst.offset}`;
-  if (t === 'indexed-cb-bit') return `BIT ${inst.bit}, (${(inst.indexRegister||'iy').toUpperCase()}+${inst.displacement})`;
-  if (t === 'indexed-cb-set') return `SET ${inst.bit}, (${(inst.indexRegister||'iy').toUpperCase()}+${inst.displacement})`;
-  if (t === 'indexed-cb-res') return `RES ${inst.bit}, (${(inst.indexRegister||'iy').toUpperCase()}+${inst.displacement})`;
-  if (t === 'indexed-cb-rotate') return `${(inst.op||'?').toUpperCase()} (${(inst.indexRegister||'iy').toUpperCase()}+${inst.displacement})`;
-  if (t === 'ld-pair-ind') return `LD ${inst.pair.toUpperCase()}, (${inst.src.toUpperCase()})`;
-  if (t === 'ld-ind-pair') return `LD (${inst.dest.toUpperCase()}), ${inst.pair.toUpperCase()}`;
-  return `[${t}] ${JSON.stringify(Object.fromEntries(Object.entries(inst).filter(([k]) => !['pc','length','nextPc','mode','modePrefix'].includes(k))))}`;
+const SCAN_CODE_NAMES = {
+  0x00: 'DOWN',
+  0x01: 'LEFT',
+  0x02: 'RIGHT',
+  0x03: 'UP',
+  0x10: 'ENTER',
+  0x11: '+',
+  0x12: '-',
+  0x13: 'x',
+  0x14: '/',
+  0x15: '^',
+  0x16: 'CLEAR',
+  0x20: '(-)',
+  0x21: '3',
+  0x22: '6',
+  0x23: '9',
+  0x24: ')',
+  0x25: 'TAN',
+  0x26: 'VARS',
+  0x30: '.',
+  0x31: '2',
+  0x32: '5',
+  0x33: '8',
+  0x34: '(',
+  0x35: 'COS',
+  0x36: 'PRGM',
+  0x37: 'STAT',
+  0x40: '0',
+  0x41: '1',
+  0x42: '4',
+  0x43: '7',
+  0x44: ',',
+  0x45: 'SIN',
+  0x46: 'APPS',
+  0x47: 'X,T,0,n',
+  0x51: 'STO>',
+  0x52: 'LN',
+  0x53: 'LOG',
+  0x54: 'x^2',
+  0x55: 'x^-1',
+  0x56: 'MATH',
+  0x57: 'ALPHA',
+  0x60: 'GRAPH',
+  0x61: 'TRACE',
+  0x62: 'ZOOM',
+  0x63: 'WINDOW',
+  0x64: 'Y=',
+  0x65: '2ND',
+  0x66: 'MODE',
+  0x67: 'DEL',
+};
+
+function hex(value, width = 6) {
+  return `0x${(value >>> 0).toString(16).toUpperCase().padStart(width, '0')}`;
 }
 
-function disasm(startAddr, count, stopOnRet = true) {
-  let pc = startAddr;
-  const results = [];
-  for (let i = 0; i < count; i++) {
-    if (pc >= rom.length) break;
-    let inst;
-    try { inst = decodeInstruction(rom, pc, 'adl'); } catch(e) { inst = null; }
-    if (!inst) {
-      results.push({ pc, text: `DB ${hex2(rom[pc])}`, inst: null, len: 1 });
-      pc++;
+function formatDisp(value) {
+  return value >= 0 ? `+${value}` : `${value}`;
+}
+
+function bytesAt(addr, length) {
+  return Array.from(rom.subarray(addr, Math.min(addr + length, rom.length)))
+    .map((byte) => byte.toString(16).toUpperCase().padStart(2, '0'))
+    .join(' ');
+}
+
+function disasmAt(addr) {
+  if (addr < 0 || addr >= rom.length) {
+    return null;
+  }
+
+  try {
+    return decodeInstruction(rom, addr, 'adl');
+  } catch {
+    return null;
+  }
+}
+
+function formatInst(inst) {
+  if (!inst) {
+    return '<decode error>';
+  }
+
+  if (inst.dasm) {
+    return inst.dasm;
+  }
+
+  switch (inst.tag) {
+    case 'call':
+      return `CALL ${hex(inst.target)}`;
+    case 'call-conditional':
+      return `CALL ${inst.condition.toUpperCase()}, ${hex(inst.target)}`;
+    case 'jp':
+      return `JP ${hex(inst.target)}`;
+    case 'jp-conditional':
+      return `JP ${inst.condition.toUpperCase()}, ${hex(inst.target)}`;
+    case 'jr':
+      return `JR ${hex(inst.target)}`;
+    case 'jr-conditional':
+      return `JR ${inst.condition.toUpperCase()}, ${hex(inst.target)}`;
+    case 'ret':
+      return 'RET';
+    case 'ret-conditional':
+      return `RET ${inst.condition.toUpperCase()}`;
+    case 'push':
+      return `PUSH ${inst.pair.toUpperCase()}`;
+    case 'pop':
+      return `POP ${inst.pair.toUpperCase()}`;
+    case 'ld-reg-imm':
+      return `LD ${inst.dest.toUpperCase()}, ${hex(inst.value, 2)}`;
+    case 'ld-reg-reg':
+      return `LD ${inst.dest.toUpperCase()}, ${inst.src.toUpperCase()}`;
+    case 'ld-reg-mem':
+      return `LD ${inst.dest.toUpperCase()}, (${hex(inst.addr)})`;
+    case 'ld-mem-reg':
+      return `LD (${hex(inst.addr)}), ${inst.src.toUpperCase()}`;
+    case 'ld-pair-imm':
+      return `LD ${inst.pair.toUpperCase()}, ${hex(inst.value)}`;
+    case 'ld-pair-mem':
+      return `LD ${inst.pair.toUpperCase()}, (${hex(inst.addr)})`;
+    case 'ld-ind-reg':
+      return `LD (${inst.dest.toUpperCase()}), ${inst.src.toUpperCase()}`;
+    case 'ld-reg-ind':
+      return `LD ${inst.dest.toUpperCase()}, (${inst.src.toUpperCase()})`;
+    case 'inc-reg':
+      return `INC ${inst.reg.toUpperCase()}`;
+    case 'dec-reg':
+      return `DEC ${inst.reg.toUpperCase()}`;
+    case 'inc-pair':
+      return `INC ${inst.pair.toUpperCase()}`;
+    case 'dec-pair':
+      return `DEC ${inst.pair.toUpperCase()}`;
+    case 'alu-imm':
+      return `${inst.op.toUpperCase()} ${hex(inst.value, 2)}`;
+    case 'alu-reg':
+      return `${inst.op.toUpperCase()} ${inst.src.toUpperCase()}`;
+    case 'indexed-cb-bit':
+      return `BIT ${inst.bit}, (${inst.indexRegister.toUpperCase()}${formatDisp(inst.displacement)})`;
+    case 'indexed-cb-res':
+      return `RES ${inst.bit}, (${inst.indexRegister.toUpperCase()}${formatDisp(inst.displacement)})`;
+    case 'indexed-cb-set':
+      return `SET ${inst.bit}, (${inst.indexRegister.toUpperCase()}${formatDisp(inst.displacement)})`;
+    case 'ex-de-hl':
+      return 'EX DE, HL';
+    case 'ldir':
+      return 'LDIR';
+    case 'ei':
+      return 'EI';
+    case 'di':
+      return 'DI';
+    case 'nop':
+      return 'NOP';
+    case 'daa':
+      return 'DAA';
+    default:
+      return `[${inst.tag}]`;
+  }
+}
+
+function disasmLinear(start, end, options = {}) {
+  const {
+    maxInstructions = 256,
+    stopOnUnconditionalReturn = false,
+    stopOnUnconditionalJump = false,
+  } = options;
+
+  const lines = [];
+  let pc = start;
+
+  while (pc < end && pc < rom.length && lines.length < maxInstructions) {
+    const inst = disasmAt(pc);
+
+    if (!inst || !inst.length) {
+      lines.push({
+        addr: pc,
+        bytes: bytesAt(pc, 1),
+        text: `DB ${hex(rom[pc], 2)}`,
+        inst: null,
+      });
+      pc += 1;
       continue;
     }
-    const rawBytes = [];
-    for (let b = 0; b < inst.length; b++) rawBytes.push(hex2(rom[pc + b]));
-    const text = fmtInst(inst);
-    results.push({ pc, text, inst, len: inst.length, raw: rawBytes.join(' ') });
-    pc = inst.nextPc || (pc + inst.length);
-    if (inst.tag === 'ret' && stopOnRet) break;
+
+    const line = {
+      addr: pc,
+      bytes: bytesAt(pc, inst.length),
+      text: formatInst(inst),
+      inst,
+    };
+
+    lines.push(line);
+    pc += inst.length;
+
+    if (stopOnUnconditionalReturn && inst.tag === 'ret') {
+      break;
+    }
+
+    if (stopOnUnconditionalJump && inst.tag === 'jp') {
+      break;
+    }
   }
-  return results;
+
+  return lines;
 }
 
-function printDisasm(lines) {
-  for (const l of lines) {
-    const rawStr = (l.raw || '??').padEnd(26);
-    console.log(`  ${hex(l.pc)}: ${rawStr} ${l.text}`);
+function findDirectCalls(target) {
+  const lo = target & 0xFF;
+  const mid = (target >>> 8) & 0xFF;
+  const hi = (target >>> 16) & 0xFF;
+  const hits = [];
+
+  for (let addr = 0; addr <= rom.length - 4; addr++) {
+    if (rom[addr] === 0xCD && rom[addr + 1] === lo && rom[addr + 2] === mid && rom[addr + 3] === hi) {
+      hits.push(addr);
+    }
   }
+
+  return hits;
 }
 
-// ============================================================
-// Section 1: 0x058D54 — key class lookup (ADL mode)
-// ============================================================
-console.log('='.repeat(72));
-console.log('SECTION 1: 0x058D54 key class lookup — ADL mode');
-console.log('='.repeat(72));
-console.log();
-const sec1 = disasm(0x058D54, 50);
-printDisasm(sec1);
-
-// ============================================================
-// Section 2: 0x0800A8 — the REAL call target (confirmed in ADL mode)
-// ============================================================
-console.log('\n' + '='.repeat(72));
-console.log('SECTION 2: 0x0800A8 — scan code filter/gate');
-console.log('='.repeat(72));
-console.log();
-const sec2 = disasm(0x0800A8, 20);
-printDisasm(sec2);
-
-console.log('\n  ANALYSIS:');
-console.log('  0x0800A8 is a GATE/FILTER, not a converter:');
-console.log('  1. BIT 7,(IY+9) — if set, return with Z (no key, "on-key" lockout?)');
-console.log('  2. CALL 0x080259 — THIS is the actual scan code retrieval');
-console.log('  3. RET Z if 0x080259 returned 0');
-console.log('  4. BIT 5,(IY+69) — additional filter (edit mode?)');
-console.log('  5. BIT 5,(IY+68) — additional filter');
-
-// ============================================================
-// Section 3: 0x080259 — the ACTUAL GetCSC implementation
-// ============================================================
-console.log('\n' + '='.repeat(72));
-console.log('SECTION 3: 0x080259 — actual scan code retrieval');
-console.log('='.repeat(72));
-console.log();
-const sec3 = disasm(0x080259, 80);
-printDisasm(sec3);
-
-// Look for sub-calls
-console.log('\n  Sub-calls from 0x080259:');
-for (const l of sec3) {
-  if (l.inst && (l.inst.tag === 'call' || l.inst.tag === 'call-conditional')) {
-    console.log(`    ${hex(l.pc)}: ${l.text}`);
-  }
+function detectTableLoads(lines) {
+  return lines
+    .filter((line) => line.inst?.tag === 'ld-pair-imm' && line.inst.value >= 0 && line.inst.value < rom.length)
+    .map((line) => ({
+      at: line.addr,
+      pair: line.inst.pair.toUpperCase(),
+      tableAddr: line.inst.value,
+    }));
 }
 
-// ============================================================
-// Section 4: SDK _GetCSC -> 0x03FA09
-// ============================================================
-console.log('\n' + '='.repeat(72));
-console.log('SECTION 4: SDK _GetCSC (0x02014C -> 0x03FA09)');
-console.log('='.repeat(72));
-console.log();
-const sec4 = disasm(0x03FA09, 60);
-printDisasm(sec4);
-
-console.log('\n  Sub-calls from 0x03FA09:');
-for (const l of sec4) {
-  if (l.inst && (l.inst.tag === 'call' || l.inst.tag === 'call-conditional')) {
-    console.log(`    ${hex(l.pc)}: ${l.text}`);
-  }
+function detectCpCascade(lines) {
+  return lines
+    .filter((line) => line.inst?.tag === 'alu-imm' && line.inst.op === 'cp')
+    .map((line) => ({ at: line.addr, value: line.inst.value }));
 }
 
-// ============================================================
-// Section 5: Search for callers of 0x0800A8
-//   CALL 0x0800A8 in ADL = CD A8 00 08
-// ============================================================
-console.log('\n' + '='.repeat(72));
-console.log('SECTION 5: All callers of 0x0800A8 (CD A8 00 08)');
-console.log('='.repeat(72));
-console.log();
-
-const callers = [];
-for (let i = 0; i < rom.length - 3; i++) {
-  if (rom[i] === 0xCD && rom[i+1] === 0xA8 && rom[i+2] === 0x00 && rom[i+3] === 0x08) {
-    callers.push(i);
+function writesA(inst) {
+  if (!inst) {
+    return false;
   }
-}
-console.log(`  Found ${callers.length} callers:`);
-for (const addr of callers) {
-  const ctx = disasm(addr - 8, 6, false);
-  const callLine = ctx.find(l => l.pc === addr);
-  // Show 2 before + call + 2 after
-  const before = ctx.filter(l => l.pc < addr).slice(-2);
-  const after = disasm(addr, 4, false).slice(1, 3);
-  for (const l of before) {
-    console.log(`    ${hex(l.pc)}: ${l.text}`);
-  }
-  console.log(`  > ${hex(addr)}: ${callLine ? callLine.text : '???'}`);
-  for (const l of after) {
-    console.log(`    ${hex(l.pc)}: ${l.text}`);
-  }
-  console.log();
-}
 
-// ============================================================
-// Section 6: Search for callers of 0x080259
-//   CALL 0x080259 in ADL = CD 59 02 08
-// ============================================================
-console.log('='.repeat(72));
-console.log('SECTION 6: All callers of 0x080259 (CD 59 02 08)');
-console.log('='.repeat(72));
-console.log();
-
-const callers2 = [];
-for (let i = 0; i < rom.length - 3; i++) {
-  if (rom[i] === 0xCD && rom[i+1] === 0x59 && rom[i+2] === 0x02 && rom[i+3] === 0x08) {
-    callers2.push(i);
-  }
-}
-console.log(`  Found ${callers2.length} callers:`);
-for (const addr of callers2) {
-  const ctx = disasm(addr, 3, false);
-  console.log(`    ${hex(addr)}: ${ctx[0]?.text || '???'}`);
-}
-
-// ============================================================
-// Section 7: Trace deeper into 0x080259's sub-calls
-// ============================================================
-console.log('\n' + '='.repeat(72));
-console.log('SECTION 7: Sub-calls from 0x080259 — deeper trace');
-console.log('='.repeat(72));
-
-const subCalls3 = [];
-for (const l of sec3) {
-  if (l.inst && (l.inst.tag === 'call' || l.inst.tag === 'call-conditional')) {
-    subCalls3.push(l.inst.target);
+  switch (inst.tag) {
+    case 'ld-reg-imm':
+    case 'ld-reg-reg':
+    case 'ld-reg-mem':
+    case 'ld-reg-ind':
+      return inst.dest === 'a';
+    case 'inc-reg':
+    case 'dec-reg':
+      return inst.reg === 'a';
+    case 'alu-reg':
+    case 'alu-imm':
+    case 'alu-ind':
+      return inst.op !== 'cp';
+    case 'rotate-a':
+    case 'ld-a-i':
+    case 'ld-a-r':
+    case 'in-imm':
+      return true;
+    default:
+      return false;
   }
 }
 
-const traced = new Set([0x080259]);
-for (const target of subCalls3) {
-  if (traced.has(target)) continue;
-  traced.add(target);
-  console.log(`\n  --- ${hex(target)} ---`);
-  const sub = disasm(target, 50);
-  printDisasm(sub);
+function dumpTable(tableAddr, length = 256) {
+  console.log(`  Dumping ${Math.min(length, rom.length - tableAddr)} bytes from ${hex(tableAddr)}:`);
+  for (let row = 0; row < length && tableAddr + row < rom.length; row += 16) {
+    const addr = tableAddr + row;
+    const width = Math.min(16, length - row, rom.length - addr);
+    console.log(`    ${hex(addr)}  ${bytesAt(addr, width)}`);
+  }
+
+  const nonZero = [];
+  for (let scanCode = 0; scanCode < length && tableAddr + scanCode < rom.length; scanCode++) {
+    const value = rom[tableAddr + scanCode];
+    if (value !== 0) {
+      nonZero.push({
+        scanCode,
+        value,
+        name: SCAN_CODE_NAMES[scanCode] || '???',
+      });
+    }
+  }
+
+  if (!nonZero.length) {
+    console.log('  All scanned entries are zero.');
+    return;
+  }
+
+  console.log('  Non-zero scan-code -> value entries:');
+  for (const entry of nonZero) {
+    console.log(`    ${hex(entry.scanCode, 2)} -> ${hex(entry.value, 2)}  [${entry.name}]`);
+  }
 }
 
-// ============================================================
-// Section 8: 0x058C65 — the last call from 0x058D54
-// ============================================================
-console.log('\n' + '='.repeat(72));
-console.log('SECTION 8: 0x058C65 — called after key processing');
-console.log('='.repeat(72));
-console.log();
-const sec8 = disasm(0x058C65, 30);
-printDisasm(sec8);
+function printSection(title) {
+  const line = '='.repeat(88);
+  console.log(`\n${line}`);
+  console.log(title);
+  console.log(line);
+}
 
-// ============================================================
-// Section 9: Summary
-// ============================================================
-console.log('\n' + '='.repeat(72));
-console.log('SECTION 9: FULL SUMMARY');
-console.log('='.repeat(72));
-console.log();
-console.log('  CALL CHAIN for key class lookup (0x058D54):');
-console.log('  1. CALL 0x058EC6 — clear flags (IY+83 bits 5,7), optionally call 0x0997ED');
-console.log('  2. RES 7,(IY+69) — clear another flag');
-console.log('  3. CALL 0x0800A8 — SCAN CODE GATE:');
-console.log('     a. BIT 7,(IY+9) — if set, return Z (suppress key)');
-console.log('     b. CALL 0x080259 — GET SCAN CODE from key buffer');
-console.log('     c. RET Z if no key');
-console.log('     d. BIT 5,(IY+69) — filter check');
-console.log('     e. BIT 5,(IY+68) — filter check');
-console.log('  4. JR Z, skip — if no key, jump to cleanup');
-console.log('  5. PUSH AF — save scan code');
-console.log('  6. LD A,0x0A; LD (0xD02505),A — reset APD counter');
-console.log('  7. LD DE,(0x001153); LD D,0x00 — load key processing params');
-console.log('  8. CALL 0x0BD341 — cursor/edit position update?');
-console.log('  9. LD A,(0xD02685); LD (0xD02687),A — copy state');
-console.log('  10. CALL 0x069A8D — key class handler dispatch');
-console.log('  11. RES 4,(IY+12) — clear flag');
-console.log('  12. CALL 0x058C65 — calls 0x0800A8 AGAIN + post-processing');
-console.log('  13. POP AF — restore scan code');
-console.log('  14. RES 3,(IY+1) — clear pending-key flag');
-console.log();
-console.log('  KEY FINDING: 0x0800A8 is NOT a scan-code-to-class CONVERTER.');
-console.log('  It is a SCAN CODE GATE — it retrieves the raw scan code via 0x080259');
-console.log('  and filters it through flag checks. The class DISPATCH happens at');
-console.log('  0x069A8D (called at 0x058D7C), not at 0x0800A8.');
-console.log();
-console.log('  The actual scan-code-to-class conversion likely lives inside 0x069A8D');
-console.log('  or its sub-calls (0x08CA64, 0x0562DE, 0x09747C).');
-console.log();
-console.log('  0x080259 is the core _GetCSC equivalent — retrieves scan code from');
-console.log('  the keyboard buffer. 0x0800A8 wraps it with flag-based gating.');
+function printDisasm(lines, markers = new Map()) {
+  for (const line of lines) {
+    const marker = markers.get(line.addr) || '';
+    console.log(`${hex(line.addr)}  ${line.bytes.padEnd(18)}  ${line.text}${marker}`);
+  }
+}
 
-console.log('\n' + '='.repeat(72));
-console.log('DONE');
-console.log('='.repeat(72));
+const targetBody = disasmLinear(TARGET, TARGET_SCAN_LIMIT, {
+  maxInstructions: 64,
+  stopOnUnconditionalReturn: true,
+});
+
+const targetContextEnd = targetBody.length
+  ? targetBody[targetBody.length - 1].addr + (targetBody[targetBody.length - 1].inst?.length || 1)
+  : TARGET + 1;
+
+const targetContext = disasmLinear(TARGET_CONTEXT_START, targetContextEnd, {
+  maxInstructions: 64,
+});
+
+const helperBody = disasmLinear(TARGET_HELPER, TARGET_HELPER + 0x20, {
+  maxInstructions: 16,
+  stopOnUnconditionalReturn: true,
+});
+
+const targetTableLoads = detectTableLoads(targetBody);
+const targetCpCascade = detectCpCascade(targetBody);
+const helperTableLoads = detectTableLoads(helperBody);
+const helperCpCascade = detectCpCascade(helperBody);
+const targetCallers = findDirectCalls(TARGET);
+const keyClassLines = disasmLinear(KEY_CLASS_ENTRY, KEY_CLASS_ENTRY + 0x90, {
+  maxInstructions: KEY_CLASS_MAX_INSTRUCTIONS,
+  stopOnUnconditionalReturn: true,
+});
+const keyClassCallers = findDirectCalls(KEY_CLASS_ENTRY);
+
+const targetWritesA = targetBody.some((line) => writesA(line.inst));
+const helperWritesA = helperBody.some((line) => writesA(line.inst));
+const bitOpsInTarget = targetBody.filter((line) => line.inst?.tag?.startsWith('indexed-cb-'));
+
+printSection('SECTION 1: 0x0800A8 disassembly');
+console.log('Entry point plus nearby context. The backward branch from 0x0800AC lands at 0x0800A6,');
+console.log('so the local context starts slightly before the entry.');
+printDisasm(
+  targetContext,
+  new Map([
+    [TARGET, '  <<< entry'],
+    [0x0800A6, '  <<< backward-branch target'],
+    [0x0800B8, '  <<< trailing helper entry'],
+  ]),
+);
+
+printSection('SECTION 2: 0x080259 subhelper');
+printDisasm(helperBody, new Map([[TARGET_HELPER, '  <<< helper entry']]));
+
+printSection('SECTION 3: Algorithm identification');
+console.log(`Direct table loads in 0x0800A8: ${targetTableLoads.length}`);
+console.log(`Direct CP-immediate comparisons in 0x0800A8: ${targetCpCascade.length}`);
+console.log(`Direct table loads in 0x080259: ${helperTableLoads.length}`);
+console.log(`Direct CP-immediate comparisons in 0x080259: ${helperCpCascade.length}`);
+console.log(`Indexed BIT/RES/SET operations in 0x0800A8: ${bitOpsInTarget.length}`);
+console.log(`Writes to register A in 0x0800A8: ${targetWritesA ? 'yes' : 'no'}`);
+console.log(`Writes to register A in 0x080259: ${helperWritesA ? 'yes' : 'no'}`);
+
+if (targetTableLoads.length || helperTableLoads.length) {
+  console.log('\nPotential tables were found:');
+  for (const table of [...targetTableLoads, ...helperTableLoads]) {
+    console.log(`- ${hex(table.at)} loads ${table.pair} with ${hex(table.tableAddr)}`);
+    dumpTable(table.tableAddr);
+  }
+} else {
+  console.log('\nNo lookup-table base loads were found in either routine.');
+}
+
+if (targetCpCascade.length || helperCpCascade.length) {
+  console.log('\nCP-immediate cascade entries were found:');
+  for (const cp of [...targetCpCascade, ...helperCpCascade]) {
+    console.log(`- ${hex(cp.at)} compares against ${hex(cp.value, 2)}`);
+  }
+} else {
+  console.log('No CP-immediate cascade was found.');
+}
+
+console.log('\nObserved control pattern:');
+console.log('- 0x0800A8 begins with `BIT 7, (IY+9)` and a backward branch to `0x0800A6`.');
+console.log('- `0x0800A6` is `CP A ; RET`, so that branch returns immediately without changing A.');
+console.log('- If the branch is not taken, 0x0800A8 calls 0x080259.');
+console.log('- 0x080259 is only `BIT 3, (IY+1) ; RET`.');
+console.log('- Back in 0x0800A8, `RET Z` / `BIT 5, (IY+69)` / `RET Z` / `BIT 5, (IY+68)` / `RET`');
+console.log('  forms a flag predicate chain. The routine returns status in flags, not a translated byte in A.');
+console.log('\nAlgorithm verdict: flag gate / condition filter.');
+console.log('This is not a lookup table, not a CP cascade, not a computed jump table, and not a CPIR search.');
+
+printSection('SECTION 4: All direct callers of 0x0800A8');
+console.log(`Found ${targetCallers.length} direct CALL sites for ${hex(TARGET)}:\n`);
+for (const caller of targetCallers) {
+  const nextInst = disasmAt(caller + 4);
+  const nextText = nextInst ? formatInst(nextInst) : '<decode error>';
+  console.log(`- ${hex(caller)}  CALL ${hex(TARGET)}  | next: ${nextText}`);
+}
+
+console.log('\nCaller usage note: every call site immediately branches, returns, or conditionally calls based on Z/NZ.');
+console.log('That matches a shared gate helper and does not match a scan-code translation routine.');
+
+printSection('SECTION 5: 0x058D54 from the beginning');
+printDisasm(
+  keyClassLines,
+  new Map([
+    [KEY_CLASS_ENTRY, '  <<< entry'],
+    [0x058D58, '  <<< immediately after 0x058EC6'],
+    [0x058D5C, '  <<< call 0x0800A8'],
+    [0x058D60, '  <<< branches on Z from 0x0800A8'],
+  ]),
+);
+
+printSection('SECTION 6: Summary');
+console.log(`- 0x0800A8 is not the real scan-code -> class converter.`);
+console.log(`- It does not load any candidate table, does not compare A against class constants, and does not modify A.`);
+console.log(`- Its only direct subcall, 0x080259, is also a one-bit flag test that preserves A.`);
+console.log(`- The 0x058D54 sequence after 0x058EC6 is: RES 7,(IY+69) -> CALL 0x0800A8 -> JR Z, 0x058D89.`);
+console.log(`- When 0x058D54 continues past that gate, it pushes AF before side-effect calls and later pops AF.`);
+console.log(`  That means 0x058D54 is also preserving the incoming A value rather than converting it.`);
+console.log(`- Conclusion: the scan-code/class value is already present in A before 0x058D54 runs, or is produced`);
+console.log(`  somewhere upstream of 0x058D54. The translation is not happening inside 0x058EC6, 0x0800A8, or 0x080259.`);
+console.log(`- Next candidate: trace the producers of A before direct callers of 0x058D54, not later callees in this chain.`);
+console.log(`  Direct CALL sites to 0x058D54 in this ROM: ${keyClassCallers.map((addr) => hex(addr)).join(', ')}`);
+console.log(`  In practice, the most useful upstream data-flow points are the caller at 0x058608 and the caller at 0x0922B7.`);
+console.log(`  One passes A in from a register path, and the other loads A from RAM before calling 0x058D54.`);

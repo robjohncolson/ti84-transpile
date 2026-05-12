@@ -6899,15 +6899,201 @@
       "timestamp": "2026-05-12T02:18:57Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "a45fae6f9663",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 300 P2: Map All 8 Code-Copy Framework Users (0x000D7E)\n\n## Context\nThe TI-84 Plus CE ",
+      "status": "completed",
+      "duration_seconds": 501.786,
+      "timestamp": "2026-05-12T04:10:33Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase300-code-copy-users.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "a8852d132c7a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 300 P3: Trace 0x015930-0x015960 (Scanner Wrapper)\n\n## Context\nIn the TI-84 Plus CE RO",
+      "status": "completed",
+      "duration_seconds": 573.511,
+      "timestamp": "2026-05-12T04:11:47Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase300-scanner-wrapper.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "fb375e479837",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 300 P1: Trace the Event Loop Keyboard Path End-to-End\n\n## Context\nThe TI-84 Plus CE R",
+      "status": "completed",
+      "duration_seconds": 653.227,
+      "timestamp": "2026-05-12T04:13:03Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7cd5487f0a09",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 300 P4: Investigate 0xD00587 Writers\n\n## Context\nIn the TI-84 Plus CE ROM, address 0x",
+      "status": "timeout",
+      "duration_seconds": 900.1,
+      "timestamp": "2026-05-12T04:17:15Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9a9f48733c0a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 301 \u2014 Priority 1: Trace 0x058D54 (Key Class Lookup)\n\n## Context\n\nYou are working on a",
+      "status": "completed",
+      "duration_seconds": 495.808,
+      "timestamp": "2026-05-12T06:10:59Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase301-key-class-lookup.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "1c757db2b513",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 301 \u2014 Priority 4: Trace CoorMon Token Classification (0x08C44D-0x08C530)\n\n## Context\n",
+      "status": "completed",
+      "duration_seconds": 495.93,
+      "timestamp": "2026-05-12T06:11:03Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase301-coormon-classify.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "365ef7743a35",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 301 \u2014 Priority 2: Investigate Dual Scan-Code Deposit Entries\n\n## Context\n\nYou are wor",
+      "status": "completed",
+      "duration_seconds": 568.924,
+      "timestamp": "2026-05-12T06:12:13Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b9af4de190fc",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 301 \u2014 Priority 3: Trace 0x000066 (NMI / Stack Overflow Handler)\n\n## Context\n\nYou are ",
+      "status": "completed",
+      "duration_seconds": 576.904,
+      "timestamp": "2026-05-12T06:12:23Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase301-nmi-handler.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "d163ef4b8a19",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 302 \u2014 Priority 1: Trace 0x058EC6 (Scan Code \u2192 Class Conversion)\n\n## Context\nYou are w",
+      "status": "completed",
+      "duration_seconds": 751.132,
+      "timestamp": "2026-05-12T08:14:54Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6c851f75030a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 302 \u2014 Priority 2: Dump and Decode Two-Byte Token Tables\n\n## Context\nYou are working o",
+      "status": "timeout",
+      "duration_seconds": 900.045,
+      "timestamp": "2026-05-12T08:17:25Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "380481c04e7d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 302 \u2014 Priority 3: Trace 0x022331 (Token Dispatch After CoorMon)\n\n## Context\nYou are w",
+      "status": "timeout",
+      "duration_seconds": 900.042,
+      "timestamp": "2026-05-12T08:17:26Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "0f1a5f148dda",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 302 \u2014 Priority 4: Decode 9-Byte Lookup Tables at 0x027272/0x02727B/0x027284\n\n## Conte",
+      "status": "timeout",
+      "duration_seconds": 900.042,
+      "timestamp": "2026-05-12T08:17:28Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6c07e365e9a9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 303 P1: Trace 0x0800A8 \u2014 Real Scan Code \u2192 Class Conversion\n\n## Context\nThis is a TI-8",
+      "status": "timeout",
+      "duration_seconds": 900.065,
+      "timestamp": "2026-05-12T10:17:27Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "4e115a6ac2a2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 303 P2: Trace 0x0236F9 \u2014 Token Buffer Writer\n\n## Context\nThis is a TI-84 Plus CE OS R",
+      "status": "timeout",
+      "duration_seconds": 900.039,
+      "timestamp": "2026-05-12T10:17:29Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "071d0761d308",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 303 P3: Trace 0x0997ED \u2014 Handler Called from 0x058EC6\n\n## Context\nThis is a TI-84 Plu",
+      "status": "timeout",
+      "duration_seconds": 900.045,
+      "timestamp": "2026-05-12T10:17:31Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5c21b28f549c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 303 P4: Decode 0x028C2D Containing Function (~0x028B9E)\n\n## Context\nThis is a TI-84 P",
+      "status": "timeout",
+      "duration_seconds": 900.081,
+      "timestamp": "2026-05-12T10:17:32Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 560,
-    "cc_to_codex": 560,
+    "total_calls": 576,
+    "cc_to_codex": 576,
     "codex_to_cc": 0,
-    "completed": 421,
-    "failed": 128,
+    "completed": 429,
+    "failed": 136,
     "refused": 0,
-    "avg_duration_seconds": 614.842
+    "avg_duration_seconds": 618.28
   }
 }
