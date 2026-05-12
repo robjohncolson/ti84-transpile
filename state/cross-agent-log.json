@@ -7151,15 +7151,83 @@
       "timestamp": "2026-05-12T14:04:14Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "e3cb1b8bb87d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "-",
+      "status": "completed",
+      "duration_seconds": 759.309,
+      "timestamp": "2026-05-12T14:15:07Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase305-softmenu-strings.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "2430d9c5cc01",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "-",
+      "status": "timeout",
+      "duration_seconds": 900.052,
+      "timestamp": "2026-05-12T14:17:23Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "bf2116d040da",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 306 P1: Find Scan-Code-to-Class Function\n\n## Context\nThis is a TI-84 Plus CE ROM tran",
+      "status": "timeout",
+      "duration_seconds": 900.057,
+      "timestamp": "2026-05-12T16:17:45Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8a079978bb8c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 306 P2: Decode Soft-Key Label Table at 0x02912B\n\n## Context\nThis is a TI-84 Plus CE R",
+      "status": "timeout",
+      "duration_seconds": 900.042,
+      "timestamp": "2026-05-12T16:17:47Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1fa2ea2996f8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 306 P3: Trace SDK _GetCSC IY+40 BIT 3 Check at 0x03FBD0\n\n## Context\nThis is a TI-84 P",
+      "status": "timeout",
+      "duration_seconds": 900.043,
+      "timestamp": "2026-05-12T16:17:49Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7f369c622ce1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 306 P4: Trace 0x07CFA7 / 0x07CF1A (Graph/Matrix and List Handlers)\n\n## Context\nThis i",
+      "status": "timeout",
+      "duration_seconds": 900.049,
+      "timestamp": "2026-05-12T16:17:51Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 582,
-    "cc_to_codex": 582,
+    "total_calls": 588,
+    "cc_to_codex": 588,
     "codex_to_cc": 0,
-    "completed": 431,
-    "failed": 140,
+    "completed": 432,
+    "failed": 145,
     "refused": 0,
-    "avg_duration_seconds": 618.462
+    "avg_duration_seconds": 621.096
   }
 }
