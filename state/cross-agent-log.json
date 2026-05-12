@@ -7219,15 +7219,105 @@
       "timestamp": "2026-05-12T16:17:51Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "e10827d1043d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 307 P1: Map Full 0x09F79B Scan-Code-to-Token Table + Cross-Reference ti84-keyboard.js",
+      "status": "timeout",
+      "duration_seconds": 900.06,
+      "timestamp": "2026-05-12T18:17:45Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "0b450456e187",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 307 P2: Trace Token Descriptor Builder 0x022346\n\n## Context\nIn the TI-84 Plus CE OS e",
+      "status": "timeout",
+      "duration_seconds": 900.034,
+      "timestamp": "2026-05-12T18:17:46Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3aed88cd6b4b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 307 P3: Trace 0x09DDB8 Token Descriptor Table Population\n\n## Context\nSession 304 disc",
+      "status": "timeout",
+      "duration_seconds": 900.045,
+      "timestamp": "2026-05-12T18:17:47Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "eb1d8a1bde3b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 307 P4: Decode 0x07CFD0 Recursive Inner Dispatch (Graph/Matrix LCD Type Handler)\n\n## ",
+      "status": "timeout",
+      "duration_seconds": 900.055,
+      "timestamp": "2026-05-12T18:17:48Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c5389f63aa7f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add skStat browser binding to ti84-keyboard.js\n\n## Context\nThe TI-84 CE keyboard mapping in ",
+      "status": "completed",
+      "duration_seconds": 64.978,
+      "timestamp": "2026-05-12T20:03:24Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6ec092fad88d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map the 2ND-modified token table (gap entries 0x39-0x6F)\n\n## Context\nSession 307 discovered ",
+      "status": "completed",
+      "duration_seconds": 620.538,
+      "timestamp": "2026-05-12T20:12:41Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase308-2nd-token-table.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "a0851758fd07",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x000578 jump table trampoline\n\n## Context\nAddress 0x000578 is called at the entry of ",
+      "status": "completed",
+      "duration_seconds": 643.228,
+      "timestamp": "2026-05-12T20:13:06Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "af8864b2d0ec",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x0855B1 token classifier\n\n## Context\nAddress 0x0855B1 is called from the complex toke",
+      "status": "timeout",
+      "duration_seconds": 900.043,
+      "timestamp": "2026-05-12T20:17:24Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 588,
-    "cc_to_codex": 588,
+    "total_calls": 596,
+    "cc_to_codex": 596,
     "codex_to_cc": 0,
-    "completed": 432,
-    "failed": 145,
+    "completed": 435,
+    "failed": 150,
     "refused": 0,
-    "avg_duration_seconds": 621.096
+    "avg_duration_seconds": 622.54
   }
 }
