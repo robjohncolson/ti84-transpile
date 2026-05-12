@@ -7085,15 +7085,81 @@
       "timestamp": "2026-05-12T10:17:32Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "0f0ececfbc84",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 304 P1: Trace 0x069A8D \u2014 Scan Code \u2192 Class Dispatch\n\n## Context\nThis is a TI-84 Plus ",
+      "status": "timeout",
+      "duration_seconds": 900.068,
+      "timestamp": "2026-05-12T12:18:06Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "db9d5be2c95a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 304 P2: Trace 0x080259 (_GetCSC Core) vs SDK _GetCSC\n\n## Context\nThis is a TI-84 Plus",
+      "status": "timeout",
+      "duration_seconds": 900.043,
+      "timestamp": "2026-05-12T12:18:08Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "90d9ba761c7f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 304 P3: Map Token Descriptor Table at 0xD0227E\n\n## Context\nThis is a TI-84 Plus CE RO",
+      "status": "timeout",
+      "duration_seconds": 900.031,
+      "timestamp": "2026-05-12T12:18:10Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e0b30e92b264",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 304 P4: Trace 0x0997AE \u2014 Edit-Line Display Refresh Sub-Handler\n\n## Context\nThis is a ",
+      "status": "timeout",
+      "duration_seconds": 900.046,
+      "timestamp": "2026-05-12T12:18:11Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6e9183ffb014",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "-",
+      "status": "completed",
+      "duration_seconds": 106.754,
+      "timestamp": "2026-05-12T14:04:13Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "91ca295681b3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "-",
+      "status": "completed",
+      "duration_seconds": 109.055,
+      "timestamp": "2026-05-12T14:04:14Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 576,
-    "cc_to_codex": 576,
+    "total_calls": 582,
+    "cc_to_codex": 582,
     "codex_to_cc": 0,
-    "completed": 429,
-    "failed": 136,
+    "completed": 431,
+    "failed": 140,
     "refused": 0,
-    "avg_duration_seconds": 618.28
+    "avg_duration_seconds": 618.462
   }
 }
