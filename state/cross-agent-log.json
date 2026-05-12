@@ -6853,15 +6853,61 @@
         "TI-84_Plus_CE/probe-phase298-batch-scanner.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "10bf51951525",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 298 \u2014 Priority 3: Trace Secondary Keyboard Scanner at 0x040F16-0x040F59\n\n## Task\nDisa",
+      "status": "completed",
+      "duration_seconds": 732.884,
+      "timestamp": "2026-05-12T00:29:57Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase298-secondary-scanner.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "85999b5c81b2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace GetCSC Caller Chain \u2014 Who Calls 0x0159C0?\n\n## Context\nThe TI-84 Plus CE primary keyboa",
+      "status": "completed",
+      "duration_seconds": 500.772,
+      "timestamp": "2026-05-12T02:12:15Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "463c74a98c47",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate JP 0x000DB6 \u2014 Primary Scanner's Return Path\n\n## Context\nThe TI-84 Plus CE primar",
+      "status": "failed",
+      "duration_seconds": 778.601,
+      "timestamp": "2026-05-12T02:16:57Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a3b0f64011fc",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x040A56 \u2014 Single Caller of Keyboard Init Routine 0x040EE0\n\n## Context\nSession 298 fou",
+      "status": "timeout",
+      "duration_seconds": 900.049,
+      "timestamp": "2026-05-12T02:18:57Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 556,
-    "cc_to_codex": 556,
+    "total_calls": 560,
+    "cc_to_codex": 560,
     "codex_to_cc": 0,
-    "completed": 419,
-    "failed": 126,
+    "completed": 421,
+    "failed": 128,
     "refused": 0,
-    "avg_duration_seconds": 614.027
+    "avg_duration_seconds": 614.842
   }
 }
