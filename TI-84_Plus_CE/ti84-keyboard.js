@@ -44,6 +44,7 @@ export const KEY_MAP = Object.freeze({
   BracketLeft: key(3, 4, '('),
   KeyC: key(3, 5, 'COS'),
   KeyP: key(3, 6, 'PRGM'),
+  KeyR: key(3, 7, 'STAT'),
   // keyMatrix[4] = SDK Group 3: 0 1 4 7 , SIN APPS XTθn
   Digit0: key(4, 0, '0'),
   Numpad0: key(4, 0, '0'),
