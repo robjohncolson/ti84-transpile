@@ -856,6 +856,7 @@ export function createExecutor(blocks, memory, options = {}) {
       column: 0x00,      // 0xE00808: current scan column
       interval: 0x00,    // 0xE0080F: scan interval
       status: 0x02,      // 0xE00818: status (bit 1 = scan complete, always ready)
+      groupSelect: 0xFF, // 0xE00900: active-low keyboard group select mask
       data: new Uint8Array(8).fill(0xFF), // 0xE00810-0xE00817: key data per group
     };
     const kbd = options.peripherals.keyboard;
@@ -913,17 +914,13 @@ export function createExecutor(blocks, memory, options = {}) {
         if (reg === 0x0F) return kbdMmio.interval;
         // 0xE00900 = keyboard scan result byte
         if (reg === 0x100) {
-          // Compute scan code from key matrix: find first pressed key
+          let result = 0xFF;
           for (let g = 0; g < 8; g++) {
-            if (kbd.keyMatrix[g] !== 0xFF) {
-              for (let k = 0; k < 8; k++) {
-                if (((kbd.keyMatrix[g] >> k) & 1) === 0) {
-                  return (g << 4) | k; // group in high nibble, key in low nibble
-                }
-              }
+            if (((kbdMmio.groupSelect >> g) & 1) === 0) {
+              result &= kbd.keyMatrix[g];
             }
           }
-          return 0x00; // no key pressed
+          return result;
         }
         return 0x00;
       }
@@ -948,6 +945,10 @@ export function createExecutor(blocks, memory, options = {}) {
         if (reg === 0x07) kbdMmio.enable = value;
         if (reg === 0x08) kbdMmio.column = value;
         if (reg === 0x0F) kbdMmio.interval = value;
+        if (reg === 0x100) {
+          // 0xE00900: keyboard group select - OS writes group mask before reading key state
+          kbdMmio.groupSelect = value;
+        }
         return;
       }
       origWrite8(addr, value);

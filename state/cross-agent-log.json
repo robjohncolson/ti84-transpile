@@ -6807,15 +6807,61 @@
       "timestamp": "2026-05-11T21:42:01Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "66943f4f60d7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# P3: Trace 0x0AF29B \u2014 INC (HL) that increments D02662\n\n## Context\nSession 296 mapped D02662 write s",
+      "status": "timeout",
+      "duration_seconds": 900.068,
+      "timestamp": "2026-05-11T21:47:10Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "66e3e6a66b5b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 298 \u2014 Priority 2: Fix Missing 0xE00900 Write Handler\n\n## Task\nAdd a write handler for",
+      "status": "completed",
+      "duration_seconds": 78.982,
+      "timestamp": "2026-05-12T00:19:02Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d6582d030afd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 298 \u2014 Priority 1: Disassemble Primary Keyboard Scanner 0x0159C0-0x015AD2\n\n## Task\nPro",
+      "status": "completed",
+      "duration_seconds": 408.709,
+      "timestamp": "2026-05-12T00:24:30Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "be0496fc3709",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 298 \u2014 Priority 4: Trace Batch Keyboard Scanner at 0x046508-0x046673\n\n## Task\nDisassem",
+      "status": "completed",
+      "duration_seconds": 564.149,
+      "timestamp": "2026-05-12T00:27:10Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase298-batch-scanner.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 552,
-    "cc_to_codex": 552,
+    "total_calls": 556,
+    "cc_to_codex": 556,
     "codex_to_cc": 0,
-    "completed": 416,
-    "failed": 125,
+    "completed": 419,
+    "failed": 126,
     "refused": 0,
-    "avg_duration_seconds": 614.941
+    "avg_duration_seconds": 614.027
   }
 }
