@@ -7309,15 +7309,111 @@
       "timestamp": "2026-05-12T20:17:24Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "ecb751fd02a3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 309 \u2014 Priority 2: TRACE 0x042366 setClassResult\n\n## Context\n\nSession 308 decoded the ",
+      "status": "completed",
+      "duration_seconds": 631.431,
+      "timestamp": "2026-05-12T22:12:49Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase309-setClassResult.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "3b0a9d3e45c0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 309 \u2014 Priority 3: MAP THE 56-ENTRY JUMP VECTOR TABLE at 0x000578\n\n## Context\n\nSession",
+      "status": "completed",
+      "duration_seconds": 778.733,
+      "timestamp": "2026-05-12T22:15:18Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase309-jump-vector-table.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "f4a79b2de3bc",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 309 \u2014 Priority 4: TRACE 0x04C979 cpHL_DE comparator\n\n## Context\n\nSession 308 decoded ",
+      "status": "completed",
+      "duration_seconds": 894.622,
+      "timestamp": "2026-05-12T22:17:15Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase309-cpHL-DE.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "22b3611d0367",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 309 \u2014 Priority 1: MAP IY+0x28 BIT FIELD COMPLETELY\n\n## Context\n\nIY = 0xD00080 (OS fla",
+      "status": "timeout",
+      "duration_seconds": 900.034,
+      "timestamp": "2026-05-12T22:17:16Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "138ee8a773db",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 310, Priority 1: CheckIfEmulated Implication for Transpilation\n\n## Context\nYou are wo",
+      "status": "completed",
+      "duration_seconds": 550.563,
+      "timestamp": "2026-05-13T00:11:03Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase310-checkifemulated-analysis.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "cdfc92e88f72",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 310, Priority 2: Trace 0x0421A7 Descriptor Getter\n\n## Context\nYou are working on a TI",
+      "status": "completed",
+      "duration_seconds": 577.868,
+      "timestamp": "2026-05-13T00:11:31Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "0d526a6921b4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 310, Priority 3: Map USB/SPI Peripheral Entries [36-48]\n\n## Context\nYou are working o",
+      "status": "completed",
+      "duration_seconds": 576.501,
+      "timestamp": "2026-05-13T00:11:32Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d62cf75267cb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 310, Priority 4: Map 0x04C960-0x04C990 Comparison Utility Family\n\n## Context\nYou are ",
+      "status": "completed",
+      "duration_seconds": 740.566,
+      "timestamp": "2026-05-13T00:14:18Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 596,
-    "cc_to_codex": 596,
+    "total_calls": 604,
+    "cc_to_codex": 604,
     "codex_to_cc": 0,
-    "completed": 435,
-    "failed": 150,
+    "completed": 442,
+    "failed": 151,
     "refused": 0,
-    "avg_duration_seconds": 622.54
+    "avg_duration_seconds": 623.649
   }
 }
