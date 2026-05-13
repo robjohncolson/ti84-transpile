@@ -7405,15 +7405,26 @@
       "timestamp": "2026-05-13T00:14:18Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "f3775e2f0d5d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: USB Init/Reset Caller Trace\n\n## Context\nSession 310 mapped USB vector table entries [36-48] ",
+      "status": "completed",
+      "duration_seconds": 625.407,
+      "timestamp": "2026-05-13T02:13:55Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 604,
-    "cc_to_codex": 604,
+    "total_calls": 605,
+    "cc_to_codex": 605,
     "codex_to_cc": 0,
-    "completed": 442,
+    "completed": 443,
     "failed": 151,
     "refused": 0,
-    "avg_duration_seconds": 623.649
+    "avg_duration_seconds": 623.652
   }
 }
