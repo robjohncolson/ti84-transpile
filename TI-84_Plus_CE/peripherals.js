@@ -402,6 +402,31 @@ export function createPeripheralBus(options = {}) {
     },
   });
 
+  // LCD DMA status register - 0x00 = idle/complete.
+  // ROM function 0x010A3C busy-loops reading this via 0x007B05; 0xFF (default) causes an infinite hang.
+  register(0x8040, {
+    read() { return 0x00; },
+    write() {},
+  });
+
+  // USB controller ports - values chosen for the shortest success path through the 0x006EDA health check.
+  register(0x0f, {
+    read() { return 0x80; }, // bit 7 = USB power present
+    write() {},
+  });
+  register(0x3030, {
+    read() { return 0x01; }, // bit 0 = VBUS detected
+    write() {},
+  });
+  register(0x3031, {
+    read() { return 0x0c; }, // bits 3:2 = D+/D- line state
+    write() {},
+  });
+  register(0x3082, {
+    read() { return 0x30; }, // bit 4 = PLL locked, bit 5 = port status OK
+    write() {},
+  });
+
   register({ start: 0x5000, end: 0x501f }, createIntcHandler());
 
   return {

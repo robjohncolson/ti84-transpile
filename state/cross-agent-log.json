@@ -7911,15 +7911,72 @@
         "TI-84_Plus_CE/phase321-lcd-sync-report.md"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "8a3663f9d4cd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace the Recursive dispatch_key() Mechanism\n\n## Context\nYou are analyzing the TI-84 Plus CE",
+      "status": "completed",
+      "duration_seconds": 839.831,
+      "timestamp": "2026-05-14T14:16:03Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3c2ddbea87bd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Register LCD DMA and USB Ports in peripherals.js\n\n## Context\nThe TI-84 Plus CE ROM transpila",
+      "status": "completed",
+      "duration_seconds": 105.701,
+      "timestamp": "2026-05-14T16:04:38Z",
+      "files_changed": [
+        "TI-84_Plus_CE/peripherals.js"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "2b9d2ff5ed08",
+      "direction": "cc-to-codex",
+      "task_type": "investigate",
+      "prompt_summary": "# Task: Map the _seqcase Scanning Variant at 0x00211B\n\n## Context\nThe TI-84 Plus CE ROM transpilatio",
+      "status": "completed",
+      "duration_seconds": 611.797,
+      "timestamp": "2026-05-14T16:13:07Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5eb84b0529b3",
+      "direction": "cc-to-codex",
+      "task_type": "investigate",
+      "prompt_summary": "# Task: Trace the Heap Allocator at 0x00E06D\n\n## Context\nThe TI-84 Plus CE ROM transpilation project",
+      "status": "timeout",
+      "duration_seconds": 900.05,
+      "timestamp": "2026-05-14T16:17:56Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9205745ad009",
+      "direction": "cc-to-codex",
+      "task_type": "investigate",
+      "prompt_summary": "# Task: Map the 0x007B00+ LCD Port Wrapper Family\n\n## Context\nThe TI-84 Plus CE ROM transpilation pr",
+      "status": "timeout",
+      "duration_seconds": 900.037,
+      "timestamp": "2026-05-14T16:17:58Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 647,
-    "cc_to_codex": 647,
+    "total_calls": 652,
+    "cc_to_codex": 652,
     "codex_to_cc": 0,
-    "completed": 459,
-    "failed": 175,
+    "completed": 462,
+    "failed": 177,
     "refused": 0,
-    "avg_duration_seconds": 634.447
+    "avg_duration_seconds": 634.731
   }
 }
