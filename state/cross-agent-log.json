@@ -7968,15 +7968,104 @@
       "timestamp": "2026-05-14T16:17:58Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "10678983f01b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Register LCD SPI Panel Ports 0x31xx in peripherals.js\n\n## Context\nYou are working on a TI-84",
+      "status": "completed",
+      "duration_seconds": 104.404,
+      "timestamp": "2026-05-14T18:04:56Z",
+      "files_changed": [
+        "TI-84_Plus_CE/peripherals.js"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "98f9f7a5ce36",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Register LCD DMA Controller Ports in peripherals.js\n\n## Context\nYou are working on a TI-84 P",
+      "status": "completed",
+      "duration_seconds": 180.996,
+      "timestamp": "2026-05-14T18:06:11Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "bd48bc2bf8d9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate 5 Unreferenced LCD Wrapper Functions\n\n## Context\nYou are working on a TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 483.777,
+      "timestamp": "2026-05-14T18:11:18Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase323-unreferenced-lcd-wrappers.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "34fa6c871389",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x055743 (LCD Hardware Init Function)\n\n## Context\nYou are working on a TI-84 Plus CE R",
+      "status": "completed",
+      "duration_seconds": 511.343,
+      "timestamp": "2026-05-14T18:11:44Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase323-055743-lcd-hw-init.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "f306519b00ab",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Build a probe to test LCD DMA path (0x010A3C LCD sync function)\n\n## Context\nThis is the TI-8",
+      "status": "completed",
+      "duration_seconds": 424.366,
+      "timestamp": "2026-05-14T20:09:21Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase324-lcd-dma-sync-test.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "94896c909665",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x055191 and 0x055280 \u2014 the real LCD hardware init candidates\n\n## Context\nThis is the ",
+      "status": "completed",
+      "duration_seconds": 559.924,
+      "timestamp": "2026-05-14T20:11:38Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase324-real-lcd-hw-init.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "3ea015802fb4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x0005CC JP 0x007B70 boot vector\n\n## Context\nThis is the TI-84 Plus CE ROM transpilati",
+      "status": "completed",
+      "duration_seconds": 565.894,
+      "timestamp": "2026-05-14T20:11:46Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase324-boot-vector-0005CC.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 652,
-    "cc_to_codex": 652,
+    "total_calls": 659,
+    "cc_to_codex": 659,
     "codex_to_cc": 0,
-    "completed": 462,
+    "completed": 469,
     "failed": 177,
     "refused": 0,
-    "avg_duration_seconds": 634.731
+    "avg_duration_seconds": 632.284
   }
 }
