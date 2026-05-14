@@ -7641,15 +7641,114 @@
         "TI-84_Plus_CE/phase315-fpunpack2-report.md"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "6fc8a03edd74",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map D177BD-D177C9 Display Callback Cluster\n\n## Context\nYou are working on a TI-84 Plus CE RO",
+      "status": "timeout",
+      "duration_seconds": 900.053,
+      "timestamp": "2026-05-14T00:18:16Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "dca488d62404",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace scrapMem soft-float usage (57 refs)\n\n## Context\nThis is a TI-84 Plus CE ROM transpilat",
+      "status": "timeout",
+      "duration_seconds": 900.056,
+      "timestamp": "2026-05-14T02:17:28Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "03286745a03d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0241A3 multi-callback orchestrator\n\n## Context\nThis is a TI-84 Plus CE ROM transpil",
+      "status": "timeout",
+      "duration_seconds": 900.048,
+      "timestamp": "2026-05-14T02:17:30Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1bfb8fbbca63",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map the 0x00F000-0x00FFFF event dispatch cluster\n\n## Context\nThis is a TI-84 Plus CE ROM tra",
+      "status": "timeout",
+      "duration_seconds": 900.05,
+      "timestamp": "2026-05-14T02:17:32Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "38306440de37",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Identify the two shared _seqcase epilogues\n\n## Context\nThis is a TI-84 Plus CE ROM transpila",
+      "status": "timeout",
+      "duration_seconds": 900.065,
+      "timestamp": "2026-05-14T02:17:33Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5848bbd3796a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: MAP DISPLAY CALLBACK DISPATCH CALL CHAIN from 0x05F685\n\n## Context\nYou are working on a TI-8",
+      "status": "timeout",
+      "duration_seconds": 900.097,
+      "timestamp": "2026-05-14T04:18:24Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2e9f01d55857",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: TRACE 0x0217B0 JP VECTOR TABLE\n\n## Context\nYou are working on a TI-84 Plus CE ROM transpilat",
+      "status": "timeout",
+      "duration_seconds": 900.036,
+      "timestamp": "2026-05-14T04:18:25Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d0b5b65e8076",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: DECODE D13FED STRUCT TABLE\n\n## Context\nYou are working on a TI-84 Plus CE ROM transpilation ",
+      "status": "timeout",
+      "duration_seconds": 900.048,
+      "timestamp": "2026-05-14T04:18:27Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "82370c8ff4d9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: MAP KEY-DISPATCH FUNCTIONS AFTER _seqcase EPILOGUES\n\n## Context\nYou are working on a TI-84 P",
+      "status": "timeout",
+      "duration_seconds": 900.041,
+      "timestamp": "2026-05-14T04:18:28Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 623,
-    "cc_to_codex": 623,
+    "total_calls": 632,
+    "cc_to_codex": 632,
     "codex_to_cc": 0,
     "completed": 453,
-    "failed": 158,
+    "failed": 167,
     "refused": 0,
-    "avg_duration_seconds": 627.512
+    "avg_duration_seconds": 631.393
   }
 }
