@@ -402,11 +402,126 @@ export function createPeripheralBus(options = {}) {
     },
   });
 
-  // LCD DMA status register - 0x00 = idle/complete.
-  // ROM function 0x010A3C busy-loops reading this via 0x007B05; 0xFF (default) causes an infinite hang.
-  register(0x8040, {
-    read() { return 0x00; },
-    write() {},
+  // LCD DMA controller ports (0x8000-0x8041).
+  const lcdDmaState = {
+    timing: [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+    control: 0x00,
+    hStart: 0x00,
+    hEnd: 0x00,
+    vStart: 0x00,
+    vEnd: 0x00,
+    misc: 0x00,
+  };
+
+  register({ start: 0x8000, end: 0x8041 }, {
+    read(port) {
+      switch (port & 0xffff) {
+        case 0x8000: return lcdDmaState.timing[0];
+        case 0x8004: return lcdDmaState.timing[1];
+        case 0x8008: return lcdDmaState.timing[2];
+        case 0x800c: return lcdDmaState.timing[3];
+        case 0x800d: return lcdDmaState.timing[4];
+        case 0x8010: return lcdDmaState.timing[5];
+        case 0x8014: return lcdDmaState.timing[6];
+        case 0x8018: return lcdDmaState.timing[7];
+        case 0x8020: return lcdDmaState.control;
+        case 0x8024: return lcdDmaState.hStart;
+        case 0x8028: return lcdDmaState.hEnd;
+        case 0x802c: return lcdDmaState.vStart;
+        case 0x8030: return lcdDmaState.vEnd;
+        case 0x8034: return lcdDmaState.misc;
+        case 0x8040: return 0x00;
+        case 0x8041: return 0x01;
+        default: return 0x00;
+      }
+    },
+
+    write(port, value) {
+      switch (port & 0xffff) {
+        case 0x8010:
+          lcdDmaState.timing[5] = value;
+          return;
+        case 0x8014:
+          lcdDmaState.timing[6] = value;
+          return;
+        case 0x8018:
+          lcdDmaState.timing[7] = value;
+          return;
+        case 0x8020:
+          lcdDmaState.control = value;
+          return;
+        case 0x8024:
+          lcdDmaState.hStart = value;
+          return;
+        case 0x8028:
+          lcdDmaState.hEnd = value;
+          return;
+        case 0x802c:
+          lcdDmaState.vStart = value;
+          return;
+        case 0x8030:
+          lcdDmaState.vEnd = value;
+          return;
+        case 0x8034:
+          lcdDmaState.misc = value;
+          return;
+        default:
+          return;
+      }
+    },
+  });
+
+  const lcdSpiState = {
+    panel3160: [0, 0, 0, 0],
+    panel3180: [0, 0, 0, 0],
+    panelWrite: [0, 0, 0, 0],
+  };
+
+  register({ start: 0x3161, end: 0x316d }, {
+    read(port) {
+      const offset = port - 0x3161;
+      if (offset % 4 !== 0) {
+        return 0x00;
+      }
+
+      return lcdSpiState.panel3160[Math.floor(offset / 4)] ?? 0x00;
+    },
+    write(port, value) {
+      const offset = port - 0x3161;
+      if (offset % 4 !== 0) {
+        return;
+      }
+
+      lcdSpiState.panel3160[Math.floor(offset / 4)] = value;
+    },
+  });
+
+  register({ start: 0x3181, end: 0x318d }, {
+    read(port) {
+      const offset = port - 0x3181;
+      if (offset % 4 !== 0) {
+        return 0x00;
+      }
+
+      return lcdSpiState.panel3180[Math.floor(offset / 4)] ?? 0x00;
+    },
+    write(port, value) {
+      const offset = port - 0x3181;
+      if (offset % 4 !== 0) {
+        return;
+      }
+
+      lcdSpiState.panel3180[Math.floor(offset / 4)] = value;
+    },
+  });
+
+  register({ start: 0x31a8, end: 0x31ab }, {
+    read(port) {
+      return lcdSpiState.panelWrite[port - 0x31a8] ?? 0x00;
+    },
+    write(port, value) {
+      lcdSpiState.panelWrite[port - 0x31a8] = value;
+    },
   });
 
   // USB controller ports - values chosen for the shortest success path through the 0x006EDA health check.
