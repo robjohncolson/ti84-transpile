@@ -8057,15 +8057,72 @@
         "TI-84_Plus_CE/probe-phase324-boot-vector-0005CC.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "1182b643c971",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate 0x000138 \u2014 the function called by 0x055743\n\n## Context\nThis is the TI-84 Plus CE",
+      "status": "completed",
+      "duration_seconds": 676.653,
+      "timestamp": "2026-05-14T20:13:38Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase324-function-000138.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "4a0f68899e9b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x05F7D9 \u2014 Sole Caller of Vector 0x0005CC (\u21920x007B70)\n\n## Context\nThis is a TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 331.617,
+      "timestamp": "2026-05-14T23:28:19Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "de85541ddf5e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace the LCD Refresh Pipeline End-to-End \u2014 Who Calls 0x055280?\n\n## Context\nThis is a TI-84 ",
+      "status": "completed",
+      "duration_seconds": 400.244,
+      "timestamp": "2026-05-14T23:29:26Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a8744cbc5143",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x055316 \u2014 Display-Driver Config Table Setup\n\n## Context\nThis is a TI-84 Plus CE ROM t",
+      "status": "completed",
+      "duration_seconds": 426.334,
+      "timestamp": "2026-05-14T23:29:55Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "48f9e3daefd7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Register 0xE300xx LCD Controller DMA/SPI MMIO in cpu-runtime.js\n\n## Context\nThe TI-84 Plus C",
+      "status": "completed",
+      "duration_seconds": 502.78,
+      "timestamp": "2026-05-14T23:31:07Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 659,
-    "cc_to_codex": 659,
+    "total_calls": 664,
+    "cc_to_codex": 664,
     "codex_to_cc": 0,
-    "completed": 469,
+    "completed": 474,
     "failed": 177,
     "refused": 0,
-    "avg_duration_seconds": 632.284
+    "avg_duration_seconds": 631.043
   }
 }

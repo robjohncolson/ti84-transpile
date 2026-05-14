@@ -850,6 +850,12 @@ export function createExecutor(blocks, memory, options = {}) {
       f80Writes: 0,
       f80WriteLog: [],
     };
+    const lcdSpiDma = {
+      vramBase: 0xD40000,
+      command: 0x00,
+      status: 0x00,
+      trigger: 0x00,
+    };
     const kbdMmio = {
       mode: 0x00,        // 0xE00803: scan mode
       enable: 0x00,      // 0xE00807: scan enable
@@ -870,6 +876,11 @@ export function createExecutor(blocks, memory, options = {}) {
       return -1;
     };
 
+    const getLcdSpiDmaReg = (addr) => {
+      if (addr >= 0xE30000 && addr < 0xE30030) return addr - 0xE30000;
+      return -1;
+    };
+
     const readLcdMmioReg = (reg) => {
       if (reg === 0x10) return lcdMmio.upbase & 0xFF;
       if (reg === 0x11) return (lcdMmio.upbase >> 8) & 0xFF;
@@ -878,11 +889,32 @@ export function createExecutor(blocks, memory, options = {}) {
       return 0x00;
     };
 
+    const readLcdSpiDmaReg = (reg) => {
+      if (reg === 0x10) return lcdSpiDma.vramBase & 0xFF;
+      if (reg === 0x11) return (lcdSpiDma.vramBase >> 8) & 0xFF;
+      if (reg === 0x12) return (lcdSpiDma.vramBase >> 16) & 0xFF;
+      if (reg === 0x18) return lcdSpiDma.command;
+      if (reg === 0x20) return lcdSpiDma.status;
+      if (reg === 0x28) return lcdSpiDma.trigger;
+      return 0x00;
+    };
+
     const writeLcdMmioReg = (reg, value) => {
       if (reg === 0x10) lcdMmio.upbase = (lcdMmio.upbase & 0xFFFF00) | value;
       if (reg === 0x11) lcdMmio.upbase = (lcdMmio.upbase & 0xFF00FF) | (value << 8);
       if (reg === 0x12) lcdMmio.upbase = (lcdMmio.upbase & 0x00FFFF) | (value << 16);
       if (reg === 0x18) lcdMmio.control = value;
+    };
+
+    const writeLcdSpiDmaReg = (reg, value) => {
+      if (reg === 0x10) lcdSpiDma.vramBase = (lcdSpiDma.vramBase & 0xFFFF00) | value;
+      if (reg === 0x11) lcdSpiDma.vramBase = (lcdSpiDma.vramBase & 0xFF00FF) | (value << 8);
+      if (reg === 0x12) lcdSpiDma.vramBase = (lcdSpiDma.vramBase & 0x00FFFF) | (value << 16);
+      if (reg === 0x18) lcdSpiDma.command = value;
+      if (reg === 0x28) {
+        lcdSpiDma.trigger = value;
+        if (value & 0x04) lcdSpiDma.status = 0x04;
+      }
     };
 
     const recordF80Write = (addr, value) => {
@@ -903,6 +935,8 @@ export function createExecutor(blocks, memory, options = {}) {
     cpu.read8 = (addr) => {
       const lcdReg = getLcdMmioReg(addr);
       if (lcdReg >= 0) return readLcdMmioReg(lcdReg);
+      const lcdSpiDmaReg = getLcdSpiDmaReg(addr);
+      if (lcdSpiDmaReg >= 0) return readLcdSpiDmaReg(lcdSpiDmaReg);
       if (addr >= 0xE00800 && addr < 0xE00920) {
         const reg = addr - 0xE00800;
         if (reg >= 0x10 && reg < 0x18) return kbd.keyMatrix[reg - 0x10]; // key data per group
@@ -937,6 +971,11 @@ export function createExecutor(blocks, memory, options = {}) {
           recordF80Write(addr, byteValue);
         }
         writeLcdMmioReg(lcdReg, byteValue);
+        return;
+      }
+      const lcdSpiDmaReg = getLcdSpiDmaReg(addr);
+      if (lcdSpiDmaReg >= 0) {
+        writeLcdSpiDmaReg(lcdSpiDmaReg, value & 0xFF);
         return;
       }
       if (addr >= 0xE00800 && addr < 0xE00920) {
