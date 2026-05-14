@@ -7740,15 +7740,186 @@
       "timestamp": "2026-05-14T04:18:28Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "681492c3235d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Correlate 0x0241A3 and 0x00F000 Event/Callback Systems\n\n## Context\nThe TI-84 Plus CE OS has ",
+      "status": "timeout",
+      "duration_seconds": 900.037,
+      "timestamp": "2026-05-14T08:17:05Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5a6515f0ed06",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map D177B9 State Transitions (OS Context/Screen State)\n\n## Context\nThe TI-84 Plus CE OS uses",
+      "status": "timeout",
+      "duration_seconds": 900.04,
+      "timestamp": "2026-05-14T08:17:06Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a17e084770bb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x010220 Display Callback Registration\n\n## Context\nThe TI-84 Plus CE OS has a display ",
+      "status": "timeout",
+      "duration_seconds": 900.036,
+      "timestamp": "2026-05-14T08:17:08Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b47f4409a6c2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace BCALL/BJUMP Dispatch Mechanism (RST 28h / RST 30h)\n\n## Context\nThe TI-84 Plus CE OS ha",
+      "status": "timeout",
+      "duration_seconds": 900.034,
+      "timestamp": "2026-05-14T08:17:09Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ba944b6d5213",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map the 6 Crash Stubs (Mega-Table Entries 0-5 + 2022)\n\n## Context\n\nYou're working on the TI-",
+      "status": "blocked",
+      "duration_seconds": 391.838,
+      "timestamp": "2026-05-14T10:09:34Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "27e89371d4b2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace the 26-Vector Display Subsystem (Vectors 224-252)\n\n## Context\n\nYou're working on the T",
+      "status": "completed",
+      "duration_seconds": 670.247,
+      "timestamp": "2026-05-14T10:14:08Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9058d3cd14c4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map the Contiguous D13FD8-D14040 Callback Region\n\n## Context\n\nYou're working on the TI-84 Pl",
+      "status": "timeout",
+      "duration_seconds": 900.038,
+      "timestamp": "2026-05-14T10:17:56Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6aee806ce719",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate State 0x00 (Switch-to-Screen) in D177B9 Dispatch\n\n## Context\n\nYou're working on ",
+      "status": "timeout",
+      "duration_seconds": 900.045,
+      "timestamp": "2026-05-14T10:18:00Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f0cbbea456bd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode the 0x0401E9 and 0x048E7B Crash Paths\n\n## Context\nYou are working on the TI-84 Plus C",
+      "status": "completed",
+      "duration_seconds": 614.936,
+      "timestamp": "2026-05-14T12:12:34Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase320-crash-paths-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "b372bba707f1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace Graph Key Handler Pair (0x0092B7 / 0x042782)\n\n## Context\nYou are working on the TI-84 ",
+      "status": "completed",
+      "duration_seconds": 745.12,
+      "timestamp": "2026-05-14T12:14:41Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase320-graph-key-handler-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "e1a9bacce730",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map All 13 Non-Crash References to 0x0019B5\n\n## Context\nYou are working on the TI-84 Plus CE",
+      "status": "timeout",
+      "duration_seconds": 900.041,
+      "timestamp": "2026-05-14T12:17:18Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9f4e919243db",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate D13FFC USB/Comm Struct\n\n## Context\nYou are working on the TI-84 Plus CE ROM tran",
+      "status": "timeout",
+      "duration_seconds": 900.041,
+      "timestamp": "2026-05-14T12:17:21Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6be0b5ffe8c6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map the 0x006EDA USB Error Checker\n\n## Context\nYou are analyzing the TI-84 Plus CE OS ROM (e",
+      "status": "completed",
+      "duration_seconds": 531.108,
+      "timestamp": "2026-05-14T14:10:56Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "0a5d84e8af84",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode BCALL 0x1E Abort Mechanism\n\n## Context\nYou are analyzing the TI-84 Plus CE OS ROM (eZ",
+      "status": "completed",
+      "duration_seconds": 592.854,
+      "timestamp": "2026-05-14T14:11:59Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e71377994e6c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map LCD Synchronization Function 0x010A3C\n\n## Context\nYou are analyzing the TI-84 Plus CE OS",
+      "status": "completed",
+      "duration_seconds": 700.203,
+      "timestamp": "2026-05-14T14:13:42Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase321-lcd-sync-report.md"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 632,
-    "cc_to_codex": 632,
+    "total_calls": 647,
+    "cc_to_codex": 647,
     "codex_to_cc": 0,
-    "completed": 453,
-    "failed": 167,
+    "completed": 459,
+    "failed": 175,
     "refused": 0,
-    "avg_duration_seconds": 631.393
+    "avg_duration_seconds": 634.447
   }
 }
