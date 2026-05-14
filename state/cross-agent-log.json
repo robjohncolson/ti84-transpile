@@ -7416,15 +7416,240 @@
       "timestamp": "2026-05-13T02:13:55Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "7e4ff2942312",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Find Other General-Purpose Utility Clusters\n\n## Context\nSession 310 mapped the utility famil",
+      "status": "completed",
+      "duration_seconds": 732.057,
+      "timestamp": "2026-05-13T02:15:43Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase311-utility-clusters.mjs",
+        "TI-84_Plus_CE/phase311-utility-clusters-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "86f053072587",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace the 14 Zero-Caller Vector Table Entries\n\n## Context\nThe TI-84 Plus CE OS has a 56-entr",
+      "status": "timeout",
+      "duration_seconds": 900.034,
+      "timestamp": "2026-05-13T02:18:26Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6c62cfc44d32",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Certificate Region Deep Dive (0x3B0001-0x3C0000)\n\n## Context\nSession 310 decoded `0x0421A7` ",
+      "status": "timeout",
+      "duration_seconds": 900.055,
+      "timestamp": "2026-05-13T02:18:28Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1151d1c08e51",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 312 \u2014 Priority 2: Decode Top Low-Address OS API Vectors\n\n## Task\nThe low-address regi",
+      "status": "completed",
+      "duration_seconds": 676.232,
+      "timestamp": "2026-05-13T04:13:40Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2ecc8182a256",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 312 \u2014 Priority 3: Trace Absent Certificate Fields\n\n## Task\nThe certificate region at ",
+      "status": "completed",
+      "duration_seconds": 691.839,
+      "timestamp": "2026-05-13T04:13:57Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase312-absent-cert-fields-report.md",
+        "TI-84_Plus_CE/probe-phase312-absent-cert-fields.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "b517ebe08d98",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 312 \u2014 Priority 1: cpHL_DE_modeDependent vs cpHL_DE Comparison\n\n## Task\nCompare two ut",
+      "status": "completed",
+      "duration_seconds": 729.046,
+      "timestamp": "2026-05-13T04:14:31Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase312-cpHL-DE-comparison-report.md",
+        "TI-84_Plus_CE/probe-phase312-cpHL-DE-comparison.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "72bac3070abc",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 312 \u2014 Priority 4: Map Extended Utility Family 0x04C800-0x04C960\n\n## Task\nThe utility ",
+      "status": "timeout",
+      "duration_seconds": 900.065,
+      "timestamp": "2026-05-13T04:17:26Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f29fc96cbd68",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map _seqcase Inline Table Format (C switch() Pattern)\n\n## Context\nThis is a TI-84 Plus CE RO",
+      "status": "completed",
+      "duration_seconds": 620.603,
+      "timestamp": "2026-05-13T06:13:04Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "800de92afa3a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Entry 49 Callback Mechanism \u2014 Trace 0xD14026\n\n## Context\nThis is a TI-84 Plus CE ROM transpi",
+      "status": "completed",
+      "duration_seconds": 635.559,
+      "timestamp": "2026-05-13T06:13:15Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase313-entry49-callback.mjs",
+        "TI-84_Plus_CE/phase313-entry49-callback-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "52b67a15ee31",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode Soft-Float Library (_fmul, _fadd, _fcmp)\n\n## Context\nThis is a TI-84 Plus CE ROM tran",
+      "status": "completed",
+      "duration_seconds": 842.533,
+      "timestamp": "2026-05-13T06:16:44Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase313-soft-float.mjs",
+        "TI-84_Plus_CE/phase313-soft-float-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "3e90fe018526",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Identify 0x0003F0/0x0003EC Display Functions (159 Callers)\n\n## Context\nThis is a TI-84 Plus ",
+      "status": "timeout",
+      "duration_seconds": 900.041,
+      "timestamp": "2026-05-13T06:17:44Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "91b221bfac41",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace SetTextSpan/SetDisplayRegion Callers \u2014 Build Caller Taxonomy\n\n## Context\nSession 313 d",
+      "status": "completed",
+      "duration_seconds": 753.188,
+      "timestamp": "2026-05-13T22:14:38Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3b36708fcaad",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace scrapMem (0xD02AD7) Usage Beyond Utility Family\n\n## Context\nThe TI-84 Plus CE ROM tran",
+      "status": "timeout",
+      "duration_seconds": 900.853,
+      "timestamp": "2026-05-13T22:17:01Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6009eabc38eb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map _indcall Dispatch Sites (All Callback Slots Using JP (IY) Trampoline)\n\n## Context\nThe TI",
+      "status": "timeout",
+      "duration_seconds": 900.021,
+      "timestamp": "2026-05-13T22:17:01Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2ae87513fa0f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode _fppack at 0x0034EE (IEEE-754 Single-Precision Pack Routine)\n\n## Context\nThe TI-84 Pl",
+      "status": "timeout",
+      "duration_seconds": 900.028,
+      "timestamp": "2026-05-13T22:17:03Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "00873999da23",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 32 Frame-Based _indcall Sites\n\n## Context\nYou are working on a TI-84 Plus CE ROM tran",
+      "status": "blocked",
+      "duration_seconds": 418.44,
+      "timestamp": "2026-05-14T00:10:18Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "50b0e2c81069",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Identify _seqcase Dispatch Targets\n\n## Context\nYou are working on a TI-84 Plus CE ROM transp",
+      "status": "completed",
+      "duration_seconds": 574.649,
+      "timestamp": "2026-05-14T00:12:50Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase315-fpunpack2-report.md",
+        "TI-84_Plus_CE/phase315-frame-indcall-report.md",
+        "TI-84_Plus_CE/phase315-seqcase-targets-report.md",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase315-display-callbacks.mjs",
+        "TI-84_Plus_CE/probe-phase315-fpunpack2.mjs",
+        "TI-84_Plus_CE/probe-phase315-frame-indcall.mjs",
+        "TI-84_Plus_CE/probe-phase315-seqcase-targets.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "163f9d02f80d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace _fpunpack2 Callers (0x0034CC)\n\n## Context\nYou are working on a TI-84 Plus CE ROM trans",
+      "status": "completed",
+      "duration_seconds": 655.256,
+      "timestamp": "2026-05-14T00:14:13Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase315-fpunpack2.mjs",
+        "TI-84_Plus_CE/phase315-fpunpack2-report.md"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 605,
-    "cc_to_codex": 605,
+    "total_calls": 623,
+    "cc_to_codex": 623,
     "codex_to_cc": 0,
-    "completed": 443,
-    "failed": 151,
+    "completed": 453,
+    "failed": 158,
     "refused": 0,
-    "avg_duration_seconds": 623.652
+    "avg_duration_seconds": 627.512
   }
 }
