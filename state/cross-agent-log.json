@@ -8163,15 +8163,209 @@
       "timestamp": "2026-05-15T00:18:04Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "79011a4578a9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x07BF3E (Fixed-Width Font Lookup)\n\n## Context\nYou are working on a TI-84 Plus CE ROM ",
+      "status": "completed",
+      "duration_seconds": 744.145,
+      "timestamp": "2026-05-15T02:15:00Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d7ecc4fe7b8a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x055191 (LCD Sync Gate)\n\n## Context\nYou are working on a TI-84 Plus CE ROM transpilat",
+      "status": "completed",
+      "duration_seconds": 752.714,
+      "timestamp": "2026-05-15T02:15:05Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e9c446557f34",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0A5424 Font Table Lookup\n\n## Context\nYou are working on a TI-84 Plus CE ROM transpi",
+      "status": "timeout",
+      "duration_seconds": 900.075,
+      "timestamp": "2026-05-15T02:17:34Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2ab717e5ee8a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x07C8B7 and 0x07C77F (Display Rendering Pair)\n\n## Context\nYou are working on a TI-84 ",
+      "status": "timeout",
+      "duration_seconds": 900.047,
+      "timestamp": "2026-05-15T02:17:38Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c2fd1a89a683",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x055316 Config Table Selector in Full\n\n## Context\nYou are working on the TI-84 Plus C",
+      "status": "completed",
+      "duration_seconds": 575.668,
+      "timestamp": "2026-05-15T04:11:44Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b194d4d0a7b3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map the Full 0x000120-0x000198 Vector Table\n\n## Context\nYou are working on the TI-84 Plus CE",
+      "status": "completed",
+      "duration_seconds": 662.593,
+      "timestamp": "2026-05-15T04:13:10Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a36dc0caba96",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace Fixed-Width Text Renderer 0x054E21\n\n## Context\nYou are working on the TI-84 Plus CE RO",
+      "status": "completed",
+      "duration_seconds": 895.342,
+      "timestamp": "2026-05-15T04:17:01Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2dbbcf9cd9b2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace Variable-Width Text Renderer 0x054FC6\n\n## Context\nYou are working on the TI-84 Plus CE",
+      "status": "timeout",
+      "duration_seconds": 900.042,
+      "timestamp": "2026-05-15T04:17:04Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7a6bc41fb34d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace pixel writer sub 0x0553F0 in full\n\n## Context\nYou are working on the TI-84 Plus CE ROM",
+      "status": "failed",
+      "duration_seconds": 447.626,
+      "timestamp": "2026-05-15T06:10:39Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "df362572ffb4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode config table at ROM 0x0525D4\n\n## Context\nYou are working on the TI-84 Plus CE ROM tra",
+      "status": "completed",
+      "duration_seconds": 715.025,
+      "timestamp": "2026-05-15T06:15:10Z",
+      "files_changed": [
+        "CONTINUATION_PROMPT_CODEX.md",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase329-caller-continuation.mjs",
+        "TI-84_Plus_CE/probe-phase329-config-table.mjs",
+        "TI-84_Plus_CE/probe-phase329-font-translation.mjs",
+        "TI-84_Plus_CE/probe-phase329-pixel-writer.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "d238d3813b6b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace font translation routines 0x02398E and 0x023A1C\n\n## Context\nYou are working on the TI-",
+      "status": "completed",
+      "duration_seconds": 816.822,
+      "timestamp": "2026-05-15T06:16:53Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "668662b84493",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace caller continuation at 0x0551B1\n\n## Context\nYou are working on the TI-84 Plus CE ROM t",
+      "status": "timeout",
+      "duration_seconds": 900.039,
+      "timestamp": "2026-05-15T06:18:14Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "372c8f1f95d4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map the 19 Hook Registration Stubs at 0x023B31-0x023BDC\n\n## Context\nYou are working on a TI-",
+      "status": "completed",
+      "duration_seconds": 887.002,
+      "timestamp": "2026-05-15T10:17:39Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8b5360c1c39e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace the PutC Pipeline End-to-End\n\n## Context\nYou are working on a TI-84 Plus CE ROM transp",
+      "status": "timeout",
+      "duration_seconds": 900.059,
+      "timestamp": "2026-05-15T10:17:47Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b18899733142",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map the 0x055743 Mode-Switch Function\n\n## Context\nYou are working on a TI-84 Plus CE ROM tra",
+      "status": "timeout",
+      "duration_seconds": 900.046,
+      "timestamp": "2026-05-15T10:17:49Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3b25f65e30ca",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace the Scaling Kernel Dispatch at 0x053573/0x053FF4\n\n## Context\nYou are working on a TI-8",
+      "status": "timeout",
+      "duration_seconds": 900.041,
+      "timestamp": "2026-05-15T10:17:51Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "41fec3983db1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode the LDIR Source Blocks at ROM 0x05550C and 0x055519\n\n## Context\nYou are working on a ",
+      "status": "completed",
+      "duration_seconds": 634.999,
+      "timestamp": "2026-05-15T12:13:15Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 668,
-    "cc_to_codex": 668,
+    "total_calls": 685,
+    "cc_to_codex": 685,
     "codex_to_cc": 0,
-    "completed": 477,
-    "failed": 178,
+    "completed": 486,
+    "failed": 186,
     "refused": 0,
-    "avg_duration_seconds": 630.736
+    "avg_duration_seconds": 634.692
   }
 }
