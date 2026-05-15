@@ -651,6 +651,7 @@ function decodeDDFD(romBytes, startPc, prefixPc, indexReg, mode, modePrefix, imm
 const IN0_REGS = { 0x00: 'b', 0x08: 'c', 0x10: 'd', 0x18: 'e', 0x20: 'h', 0x28: 'l', 0x38: 'a' };
 const OUT0_REGS = { 0x01: 'b', 0x09: 'c', 0x11: 'd', 0x19: 'e', 0x21: 'h', 0x29: 'l', 0x39: 'a' };
 const MLT_REGS = { 0x4c: 'bc', 0x5c: 'de', 0x6c: 'hl', 0x7c: 'sp' };
+const PEA_BASES = { 0x65: 'ix', 0x66: 'iy' };
 const TST_REGS = { 0x04: 'b', 0x0c: 'c', 0x14: 'd', 0x1c: 'e', 0x24: 'h', 0x2c: 'l', 0x3c: 'a' };
 
 function decodeED(romBytes, startPc, edPc, mode, modePrefix, immW) {
@@ -746,6 +747,10 @@ function decodeED(romBytes, startPc, edPc, mode, modePrefix, immW) {
   if (op === 0x34) return emit(0, { tag: 'tst-ind' });
   // TST A, n
   if (op === 0x64) return emit(1, { tag: 'tst-imm', value: operand8 });
+  // PEA IX/IY+d (eZ80). These forms carry an 8-bit displacement byte; if they
+  // are treated as 2-byte ED opcodes the walker falls out of sync and invents
+  // spurious control-flow targets from the displacement stream.
+  if (op in PEA_BASES) return emit(1, { tag: 'pea', base: PEA_BASES[op], displacement: disp });
   // TSTIO n
   if (op === 0x74) return emit(1, { tag: 'tstio', value: operand8 });
   // STMIX / RSMIX — mode-switch; must terminate the block so the next
@@ -768,6 +773,9 @@ function decodeED(romBytes, startPc, edPc, mode, modePrefix, immW) {
   if (op === 0x0f) return emit(0, { tag: 'ld-ind-pair', dest: 'hl', pair: 'bc' });
   if (op === 0x1f) return emit(0, { tag: 'ld-ind-pair', dest: 'hl', pair: 'de' });
   if (op === 0x2f) return emit(0, { tag: 'ld-ind-pair', dest: 'hl', pair: 'hl' });
+  // PEA instructions (eZ80) — push effective address onto stack
+  if (op === 0x65) return emit(1, { tag: 'pea', base: 'ix', displacement: disp });
+  if (op === 0x66) return emit(1, { tag: 'pea', base: 'iy', displacement: disp });
   // LEA instructions (eZ80)
   if (op === 0x02) return emit(1, { tag: 'lea', dest: 'bc', base: 'ix', displacement: disp });
   if (op === 0x03) return emit(1, { tag: 'lea', dest: 'bc', base: 'iy', displacement: disp });

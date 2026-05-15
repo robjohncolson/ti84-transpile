@@ -289,6 +289,7 @@ function buildDasm(d) {
     case 'tst-reg': return `tst a, ${d.reg}`;
     case 'tst-ind': return 'tst a, (hl)';
     case 'tst-imm': return `tst a, ${hex(d.value)}`;
+    case 'pea': return `pea ${d.base}${disp(d.displacement)}`;
     case 'tstio': return `tstio ${hex(d.value)}`;
 
     case 'lea': return `lea ${d.dest}, ${d.base}${disp(d.displacement)}`;
@@ -680,6 +681,11 @@ function emitInstructionJs(instruction) {
   if (tag === 'tst-reg') return [`cpu.test(cpu.a, cpu.${instruction.reg});`];
   if (tag === 'tst-ind') return ["cpu.test(cpu.a, cpu.readIndirect8('hl'));"];
   if (tag === 'tst-imm') return [`cpu.test(cpu.a, ${hex(instruction.value)});`];
+  if (tag === 'pea') {
+    const op = instruction.displacement >= 0 ? '+' : '-';
+    const mag = Math.abs(instruction.displacement);
+    return [`cpu.push((cpu.${instruction.base} ${op} ${mag}) & cpu.addressMask);`];
+  }
   if (tag === 'tstio') return [`cpu.testIo(${hex(instruction.value)});`];
   if (tag === 'otimr') return ['cpu.otimr();'];
   if (tag === 'lea') {
