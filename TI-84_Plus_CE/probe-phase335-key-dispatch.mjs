@@ -33,11 +33,12 @@ const KBD_SCAN_CODE = 0xD00587;
 const KBD_KEY = 0xD0058C;
 const KBD_GETCSC_RESULT = 0xD0058E;
 
+// Keyboard MMIO
+const KBD_MMIO_BASE = 0xE00800;
+const KBD_MMIO_SCAN = 0xE00900;
+
 // Event loop entry
 const COORMON_ENTRY = 0x08BF22;
-
-// Scan-to-keycode table and run limits
-const SCAN_TABLE_ADDR = 0x09F736;
 const EVENT_LOOP_MAX_STEPS = 50000;
 
 function hex(value, width = 6) {
@@ -153,95 +154,6 @@ function createBootedEnvironment() {
   return { mem, peripherals, executor, cpu, boot, kernelInit };
 }
 
-// --- Tracked addresses ---
-
-const TRACKED_ADDRS = new Map([
-  [KBD_SCAN_CODE, 'kbdScanCode'],
-  [KBD_KEY, 'kbdKey'],
-  [KBD_GETCSC_RESULT, 'kbdGetCSC'],
-]);
-
-// --- Instrument memory accesses ---
-
-function installMemoryHooks(cpu, tracked) {
-  const origRead8 = cpu.read8.bind(cpu);
-  const origWrite8 = cpu.write8.bind(cpu);
-  const log = [];
-  let currentPc = 0;
-  let currentStep = 0;
-
-  cpu.read8 = (addr) => {
-    const value = origRead8(addr);
-    const normalizedAddr = addr & 0xFFFFFF;
-    const name = tracked.get(normalizedAddr);
-    if (name) {
-      log.push({ step: currentStep, pc: currentPc, kind: 'read', name, addr: normalizedAddr, value: value & 0xFF });
-    }
-    return value;
-  };
-
-  cpu.write8 = (addr, value) => {
-    const normalizedAddr = addr & 0xFFFFFF;
-    const name = tracked.get(normalizedAddr);
-    if (name) {
-      log.push({ step: currentStep, pc: currentPc, kind: 'write', name, addr: normalizedAddr, value: value & 0xFF });
-    }
-    return origWrite8(addr, value);
-  };
-
-  return {
-    log,
-    updateContext(pc, step) {
-      currentPc = pc;
-      currentStep = step;
-    },
-    uninstall() {
-      cpu.read8 = origRead8;
-      cpu.write8 = origWrite8;
-    },
-  };
-}
-
-// --- Instrument I/O port accesses ---
-
-function installIoHooks(cpu) {
-  const origIoRead = cpu._ioRead;
-  const origIoWrite = cpu._ioWrite;
-  const log = [];
-  let currentPc = 0;
-  let currentStep = 0;
-
-  cpu._ioRead = (port) => {
-    const value = origIoRead(port);
-    // Only log keyboard port (0x01xx range or port & 0xFF == 0x01)
-    const portLow = port & 0xFF;
-    if (portLow === 0x01 || portLow === 0x12) {
-      log.push({ step: currentStep, pc: currentPc, kind: 'in', port, value: value & 0xFF });
-    }
-    return value;
-  };
-
-  cpu._ioWrite = (port, value) => {
-    const portLow = port & 0xFF;
-    if (portLow === 0x01 || portLow === 0x12) {
-      log.push({ step: currentStep, pc: currentPc, kind: 'out', port, value: value & 0xFF });
-    }
-    return origIoWrite(port, value);
-  };
-
-  return {
-    log,
-    updateContext(pc, step) {
-      currentPc = pc;
-      currentStep = step;
-    },
-    uninstall() {
-      cpu._ioRead = origIoRead;
-      cpu._ioWrite = origIoWrite;
-    },
-  };
-}
-
 // ====================================================================
 // Main probe
 // ====================================================================
@@ -250,184 +162,164 @@ console.log('Phase 335: Key dispatch trace through CoorMon (0x08BF22)');
 console.log('='.repeat(65));
 
 // ====================================================================
-// RUN 1: Baseline (no key)
+// RUN 1: ENTER via correct keyMatrix + MMIO/Memory instrumentation
 // ====================================================================
 
-console.log('\n>>> RUN 1: Baseline (no key pressed) <<<');
+console.log('\n>>> RUN 1: ENTER key (keyMatrix[1] bit 0 cleared) with full instrumentation <<<');
 
-const env1 = createBootedEnvironment();
-prepareDirectEntry(env1.cpu, env1.mem);
+const env = createBootedEnvironment();
+const { mem, peripherals, executor, cpu } = env;
 
-const memHooks1 = installMemoryHooks(env1.cpu, TRACKED_ADDRS);
-const ioHooks1 = installIoHooks(env1.cpu);
+// Set ENTER key: SDK Group 6 → keyMatrix[1], bit 0 (active-low: clear the bit)
+const km = peripherals.keyboard?.keyMatrix ?? peripherals.keyMatrix;
+km.fill(0xFF);
+km[1] = 0xFE;  // bit 0 cleared = ENTER pressed
+console.log(`  keyMatrix[1] = ${hex8(km[1])} (ENTER pressed)`);
 
-const blocks1 = [];
-const result1 = env1.executor.runFrom(COORMON_ENTRY, 'adl', {
+prepareDirectEntry(cpu, mem);
+
+// Install hooks using the CPU's callback methods
+const ioLog = [];
+const mmioLog = [];
+let currentPc = 0;
+let currentStep = 0;
+
+// Override onIoRead/onIoWrite for port I/O
+cpu.onIoRead = (port, value) => {
+  ioLog.push({ step: currentStep, pc: currentPc, kind: 'in', port, value: value & 0xFF });
+};
+cpu.onIoWrite = (port, value) => {
+  ioLog.push({ step: currentStep, pc: currentPc, kind: 'out', port, value: value & 0xFF });
+};
+
+// Wrap cpu.read8 to catch reads from key RAM AND keyboard MMIO
+const origRead8 = cpu.read8.bind(cpu);
+const origWrite8 = cpu.write8.bind(cpu);
+const memLog = [];
+
+cpu.read8 = (addr) => {
+  const value = origRead8(addr);
+  const a = addr & 0xFFFFFF;
+  // Track key RAM addresses
+  if (a === KBD_SCAN_CODE || a === KBD_KEY || a === KBD_GETCSC_RESULT) {
+    memLog.push({ step: currentStep, pc: currentPc, kind: 'read', addr: a, value: value & 0xFF });
+  }
+  // Track keyboard MMIO
+  if (a >= KBD_MMIO_BASE && a <= KBD_MMIO_SCAN) {
+    mmioLog.push({ step: currentStep, pc: currentPc, kind: 'read', addr: a, value: value & 0xFF });
+  }
+  return value;
+};
+
+cpu.write8 = (addr, value) => {
+  const a = addr & 0xFFFFFF;
+  if (a === KBD_SCAN_CODE || a === KBD_KEY || a === KBD_GETCSC_RESULT) {
+    memLog.push({ step: currentStep, pc: currentPc, kind: 'write', addr: a, value: value & 0xFF });
+  }
+  if (a >= KBD_MMIO_BASE && a <= KBD_MMIO_SCAN) {
+    mmioLog.push({ step: currentStep, pc: currentPc, kind: 'write', addr: a, value: value & 0xFF });
+  }
+  return origWrite8(addr, value);
+};
+
+// Track blocks and register state at key addresses
+const TRACE_PCS = new Set([
+  0x08BF22, 0x042366, 0x0421A7, 0x0423CC,
+  0x08BF3C, 0x08BF3E, 0x08BF68,
+  0x08BF82, 0x08BF8E, 0x08BFAB,
+]);
+
+const regTrace = [];
+const allBlocks = [];
+const missingBlocks = [];
+
+const result = executor.runFrom(COORMON_ENTRY, 'adl', {
   maxSteps: EVENT_LOOP_MAX_STEPS,
   maxLoopIterations: EVENT_LOOP_MAX_STEPS,
   onBlock(pc, mode, meta, steps) {
     const npc = pc & 0xFFFFFF;
-    memHooks1.updateContext(npc, steps);
-    ioHooks1.updateContext(npc, steps);
-    blocks1.push(npc);
-  },
-});
+    currentPc = npc;
+    currentStep = steps;
+    allBlocks.push(npc);
 
-memHooks1.uninstall();
-ioHooks1.uninstall();
-
-console.log(`Result: steps=${result1.steps} termination=${result1.termination} lastPc=${hex(result1.lastPc)}`);
-console.log(`Key RAM reads/writes: ${memHooks1.log.length}`);
-for (const e of memHooks1.log) {
-  console.log(`  step=${String(e.step).padStart(5)} pc=${hex(e.pc)} ${e.kind.padEnd(5)} ${e.name}(${hex(e.addr)}) = ${hex8(e.value)}`);
-}
-console.log(`Keyboard I/O port accesses: ${ioHooks1.log.length}`);
-for (const e of ioHooks1.log.slice(0, 80)) {
-  console.log(`  step=${String(e.step).padStart(5)} pc=${hex(e.pc)} ${e.kind.padEnd(3)} port=${hex(e.port, 4)} val=${hex8(e.value)}`);
-}
-if (ioHooks1.log.length > 80) {
-  console.log(`  ... ${ioHooks1.log.length - 80} more I/O accesses`);
-}
-
-// ====================================================================
-// RUN 2: ENTER key via correct keyMatrix mapping
-// (ENTER = SDK Group 6, bit 0 → keyMatrix[1], bit 0, active-low)
-// ====================================================================
-
-console.log('\n>>> RUN 2: ENTER key (keyMatrix[1] bit 0 cleared, active-low) <<<');
-
-const env2 = createBootedEnvironment();
-const km2 = env2.peripherals.keyboard?.keyMatrix ?? env2.peripherals.keyMatrix;
-km2.fill(0xFF);
-km2[1] = 0xFE;  // ENTER: SDK Group 6 → keyMatrix[1], bit 0 cleared
-console.log(`  keyMatrix[1] = ${hex8(km2[1])} (ENTER: bit 0 cleared)`);
-
-prepareDirectEntry(env2.cpu, env2.mem);
-
-const memHooks2 = installMemoryHooks(env2.cpu, TRACKED_ADDRS);
-const ioHooks2 = installIoHooks(env2.cpu);
-
-const blocks2 = [];
-const result2 = env2.executor.runFrom(COORMON_ENTRY, 'adl', {
-  maxSteps: EVENT_LOOP_MAX_STEPS,
-  maxLoopIterations: EVENT_LOOP_MAX_STEPS,
-  onBlock(pc, mode, meta, steps) {
-    const npc = pc & 0xFFFFFF;
-    memHooks2.updateContext(npc, steps);
-    ioHooks2.updateContext(npc, steps);
-    blocks2.push(npc);
-  },
-});
-
-memHooks2.uninstall();
-ioHooks2.uninstall();
-
-console.log(`Result: steps=${result2.steps} termination=${result2.termination} lastPc=${hex(result2.lastPc)}`);
-console.log(`Key RAM reads/writes: ${memHooks2.log.length}`);
-for (const e of memHooks2.log) {
-  console.log(`  step=${String(e.step).padStart(5)} pc=${hex(e.pc)} ${e.kind.padEnd(5)} ${e.name}(${hex(e.addr)}) = ${hex8(e.value)}`);
-}
-console.log(`Keyboard I/O port accesses: ${ioHooks2.log.length}`);
-for (const e of ioHooks2.log.slice(0, 80)) {
-  console.log(`  step=${String(e.step).padStart(5)} pc=${hex(e.pc)} ${e.kind.padEnd(3)} port=${hex(e.port, 4)} val=${hex8(e.value)}`);
-}
-if (ioHooks2.log.length > 80) {
-  console.log(`  ... ${ioHooks2.log.length - 80} more I/O accesses`);
-}
-
-// Check divergence
-let diverge2 = -1;
-const maxC2 = Math.min(blocks1.length, blocks2.length);
-for (let i = 0; i < maxC2; i++) {
-  if (blocks1[i] !== blocks2[i]) {
-    diverge2 = i;
-    break;
-  }
-}
-
-if (diverge2 >= 0) {
-  console.log(`\nBlock sequences diverge at index ${diverge2}:`);
-  const s = Math.max(0, diverge2 - 3);
-  const e = Math.min(blocks2.length, diverge2 + 20);
-  for (let i = s; i < e; i++) {
-    const marker = i === diverge2 ? ' <<< DIVERGE' : '';
-    const base = i < blocks1.length ? hex(blocks1[i]) : 'n/a';
-    console.log(`  [${i}] baseline=${base} enter=${hex(blocks2[i])}${marker}`);
-  }
-
-  // Show unique post-divergence blocks
-  const postUnique = [];
-  const postSeen = new Set();
-  for (const pc of blocks2.slice(diverge2)) {
-    if (!postSeen.has(pc)) {
-      postSeen.add(pc);
-      postUnique.push(pc);
+    if (TRACE_PCS.has(npc)) {
+      regTrace.push({
+        step: steps,
+        pc: npc,
+        a: cpu.a,
+        f: cpu.f,
+        hl: cpu._hl,
+        bc: cpu._bc,
+        de: cpu._de,
+      });
     }
-  }
-  console.log(`\nUnique blocks in ENTER dispatch path (${postUnique.length}):`);
-  for (let i = 0; i < postUnique.length; i += 8) {
-    const row = postUnique.slice(i, Math.min(i + 8, postUnique.length));
-    console.log(`  ${row.map(pc => hex(pc)).join(' ')}`);
-  }
-} else {
-  console.log(`\nNo divergence from baseline in ${maxC2} blocks. Sequences identical.`);
+  },
+  onMissingBlock(pc, mode, steps) {
+    missingBlocks.push({ step: steps, pc: pc & 0xFFFFFF, mode });
+  },
+});
+
+// Restore hooks
+cpu.read8 = origRead8;
+cpu.write8 = origWrite8;
+
+console.log(`\nResult: steps=${result.steps} termination=${result.termination} lastPc=${hex(result.lastPc)}`);
+console.log(`Unique blocks: ${new Set(allBlocks).size}`);
+
+// Register trace
+console.log(`\nRegister state at key PCs:`);
+for (const t of regTrace) {
+  console.log(`  step=${String(t.step).padStart(5)} pc=${hex(t.pc)} A=${hex8(t.a)} F=${hex8(t.f)} HL=${hex(t.hl)} BC=${hex(t.bc)} DE=${hex(t.de)}`);
 }
 
-// Post-run RAM
+// Memory access log
+console.log(`\nKey RAM accesses (D00587/D0058C/D0058E): ${memLog.length}`);
+for (const e of memLog.slice(0, 50)) {
+  console.log(`  step=${String(e.step).padStart(5)} pc=${hex(e.pc)} ${e.kind.padEnd(5)} ${hex(e.addr)} = ${hex8(e.value)}`);
+}
+if (memLog.length > 50) {
+  console.log(`  ... ${memLog.length - 50} more`);
+}
+
+// Keyboard MMIO access log
+console.log(`\nKeyboard MMIO accesses (E00800-E00900): ${mmioLog.length}`);
+for (const e of mmioLog.slice(0, 100)) {
+  console.log(`  step=${String(e.step).padStart(5)} pc=${hex(e.pc)} ${e.kind.padEnd(5)} ${hex(e.addr)} = ${hex8(e.value)}`);
+}
+if (mmioLog.length > 100) {
+  console.log(`  ... ${mmioLog.length - 100} more`);
+}
+
+// I/O port log
+console.log(`\nI/O port accesses: ${ioLog.length}`);
+for (const e of ioLog.slice(0, 50)) {
+  console.log(`  step=${String(e.step).padStart(5)} pc=${hex(e.pc)} ${e.kind.padEnd(3)} port=${hex(e.port, 4)} val=${hex8(e.value)}`);
+}
+if (ioLog.length > 50) {
+  console.log(`  ... ${ioLog.length - 50} more`);
+}
+
+// Missing blocks
+if (missingBlocks.length > 0) {
+  console.log(`\nMissing blocks: ${missingBlocks.length}`);
+  for (const e of missingBlocks) {
+    console.log(`  step=${e.step} pc=${hex(e.pc)} mode=${e.mode}`);
+  }
+}
+
+// Post-run RAM state
 console.log(`\nPost-run key RAM:`);
-console.log(`  kbdScanCode  (${hex(KBD_SCAN_CODE)}): ${hex8(env2.mem[KBD_SCAN_CODE])}`);
-console.log(`  kbdKey       (${hex(KBD_KEY)}):       ${hex8(env2.mem[KBD_KEY])}`);
-console.log(`  kbdGetCSC    (${hex(KBD_GETCSC_RESULT)}): ${hex8(env2.mem[KBD_GETCSC_RESULT])}`);
+console.log(`  kbdScanCode  (${hex(KBD_SCAN_CODE)}): ${hex8(mem[KBD_SCAN_CODE])}`);
+console.log(`  kbdKey       (${hex(KBD_KEY)}):       ${hex8(mem[KBD_KEY])}`);
+console.log(`  kbdGetCSC    (${hex(KBD_GETCSC_RESULT)}): ${hex8(mem[KBD_GETCSC_RESULT])}`);
 
 // ====================================================================
-// Decode key CoorMon instructions
+// Decode key CoorMon instructions around GetCSC call and return
 // ====================================================================
 
-console.log('\n--- Key CoorMon instruction decode ---');
-const decodeTargets = [
-  [0x08BF22, 'CoorMon entry: ld iy, IY_BASE'],
-  [0x08BF27, null], [0x08BF2A, null], [0x08BF2D, null], [0x08BF30, null],
-  [0x08BF33, null], [0x08BF36, null], [0x08BF39, null],
-  [0x08BF3C, 'GetCSC return check (jr nz → key detected)'],
-  [0x08BF3E, 'No key: check flags'],
-  [0x08BF42, null], [0x08BF46, null],
-  [0x08BF68, 'KEY DETECTED branch target'],
-  [0x08BF6C, null], [0x08BF70, null], [0x08BF74, null], [0x08BF78, null], [0x08BF7C, null],
-  [0x08BF80, null],
-  [0x08BF82, null],
-];
-
-for (const [addr, label] of decodeTargets) {
-  try {
-    const inst = decodeInstruction(romBytes, addr, 'adl');
-    const bytes = [];
-    for (let j = 0; j < (inst.length || 1); j++) {
-      bytes.push(romBytes[addr + j].toString(16).toUpperCase().padStart(2, '0'));
-    }
-    const labelStr = label ? `  ; ${label}` : '';
-    console.log(`  ${hex(addr)}: ${bytes.join(' ').padEnd(18)} ${(inst.asm || inst.tag || '???').padEnd(20)}${labelStr}`);
-  } catch {
-    console.log(`  ${hex(addr)}: (decode error)`);
-  }
-}
-
-// ====================================================================
-// Scan-to-keycode table dump (0x09F736 is code, not data)
-// ====================================================================
-
-console.log(`\n--- Bytes at 0x09F736 (64 bytes) --- [NOTE: This is CODE, not a data table]`);
-for (let row = 0; row < 64; row += 16) {
-  const addr = SCAN_TABLE_ADDR + row;
-  console.log(`  ${hex(addr)}: ${bytesHex(romBytes, addr, 16)}`);
-}
-
-// ====================================================================
-// Decode instructions around GetCSC (0x042366) to understand return value
-// ====================================================================
-
-console.log('\n--- GetCSC entry disassembly (0x042366) ---');
-let decAddr = 0x042366;
-for (let i = 0; i < 20; i++) {
+console.log('\n--- CoorMon disassembly (0x08BF22 - 0x08BF80) ---');
+let decAddr = 0x08BF22;
+while (decAddr < 0x08BF82) {
   try {
     const inst = decodeInstruction(romBytes, decAddr, 'adl');
     const bytes = [];
@@ -438,21 +330,69 @@ for (let i = 0; i < 20; i++) {
     decAddr += inst.length || 1;
   } catch {
     console.log(`  ${hex(decAddr)}: (decode error)`);
-    break;
+    decAddr += 1;
   }
 }
 
-// ====================================================================
-// Keyboard RAM neighborhood
-// ====================================================================
-
-console.log(`\n--- Key dispatch RAM neighborhood (D00580-D005A0) ---`);
-for (let row = 0xD00580; row < 0xD005A0; row += 16) {
-  const bytes = [];
-  for (let col = 0; col < 16; col++) {
-    bytes.push(env2.mem[row + col].toString(16).toUpperCase().padStart(2, '0'));
+// GetCSC disassembly
+console.log('\n--- GetCSC disassembly (0x042366) ---');
+decAddr = 0x042366;
+for (let i = 0; i < 30 && decAddr < 0x0423D0; i++) {
+  try {
+    const inst = decodeInstruction(romBytes, decAddr, 'adl');
+    const bytes = [];
+    for (let j = 0; j < (inst.length || 1); j++) {
+      bytes.push(romBytes[decAddr + j].toString(16).toUpperCase().padStart(2, '0'));
+    }
+    console.log(`  ${hex(decAddr)}: ${bytes.join(' ').padEnd(18)} ${inst.asm || inst.tag || '???'}`);
+    decAddr += inst.length || 1;
+  } catch {
+    console.log(`  ${hex(decAddr)}: (decode error)`);
+    decAddr += 1;
   }
-  console.log(`  ${hex(row)}: ${bytes.join(' ')}`);
+}
+
+// Inner scan routine
+console.log('\n--- Inner scan routine (0x0421A7) ---');
+decAddr = 0x0421A7;
+for (let i = 0; i < 20 && decAddr < 0x0421C0; i++) {
+  try {
+    const inst = decodeInstruction(romBytes, decAddr, 'adl');
+    const bytes = [];
+    for (let j = 0; j < (inst.length || 1); j++) {
+      bytes.push(romBytes[decAddr + j].toString(16).toUpperCase().padStart(2, '0'));
+    }
+    console.log(`  ${hex(decAddr)}: ${bytes.join(' ').padEnd(18)} ${inst.asm || inst.tag || '???'}`);
+    decAddr += inst.length || 1;
+  } catch {
+    console.log(`  ${hex(decAddr)}: (decode error)`);
+    decAddr += 1;
+  }
+}
+
+// Key scan loop
+console.log('\n--- Key scan loop (0x001C33 - 0x001CF0) ---');
+decAddr = 0x001C33;
+while (decAddr < 0x001CF0) {
+  try {
+    const inst = decodeInstruction(romBytes, decAddr, 'adl');
+    const bytes = [];
+    for (let j = 0; j < (inst.length || 1); j++) {
+      bytes.push(romBytes[decAddr + j].toString(16).toUpperCase().padStart(2, '0'));
+    }
+    console.log(`  ${hex(decAddr)}: ${bytes.join(' ').padEnd(18)} ${inst.asm || inst.tag || '???'}`);
+    decAddr += inst.length || 1;
+  } catch {
+    console.log(`  ${hex(decAddr)}: (decode error)`);
+    decAddr += 1;
+  }
+}
+
+// Scan-to-keycode table dump
+console.log(`\n--- Bytes at 0x09F736 (64 bytes, confirmed CODE not data table) ---`);
+for (let row = 0; row < 64; row += 16) {
+  const addr = 0x09F736 + row;
+  console.log(`  ${hex(addr)}: ${bytesHex(romBytes, addr, 16)}`);
 }
 
 console.log('\nPhase 335 complete.');
