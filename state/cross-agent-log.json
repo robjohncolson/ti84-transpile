@@ -8114,15 +8114,64 @@
       "timestamp": "2026-05-14T23:31:07Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "b3f6a81bb2ee",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Register 0xE30200 region as writable MMIO in cpu-runtime.js\n\nYou are working on the TI-84 Pl",
+      "status": "completed",
+      "duration_seconds": 205.538,
+      "timestamp": "2026-05-15T00:06:27Z",
+      "files_changed": [
+        "TI-84_Plus_CE/cpu-runtime.js",
+        "TI-84_Plus_CE/probe-phase326-e30200-buffer.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "49acd4a87d8b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x0551FE and 0x05523D LCD refresh functions in full\n\nYou are working on the TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 568.801,
+      "timestamp": "2026-05-15T00:12:28Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b7cfdc455968",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode the 6 config table function pointers from 0x055316\n\nYou are working on the TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 644.627,
+      "timestamp": "2026-05-15T00:13:50Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase326-config-table-fptrs.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "6a00f0ee801a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x05749C \u2014 sole caller of LCD timing wrapper 0x05F7D9\n\nYou are working on the TI-84 Pl",
+      "status": "timeout",
+      "duration_seconds": 900.046,
+      "timestamp": "2026-05-15T00:18:04Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 664,
-    "cc_to_codex": 664,
+    "total_calls": 668,
+    "cc_to_codex": 668,
     "codex_to_cc": 0,
-    "completed": 474,
-    "failed": 177,
+    "completed": 477,
+    "failed": 178,
     "refused": 0,
-    "avg_duration_seconds": 631.043
+    "avg_duration_seconds": 630.736
   }
 }
