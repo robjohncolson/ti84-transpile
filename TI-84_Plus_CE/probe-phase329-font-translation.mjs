@@ -1,95 +1,135 @@
 #!/usr/bin/env node
 
-import fs from 'node:fs';
-import os from 'node:os';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { gunzipSync } from 'node:zlib';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 import { decodeInstruction } from './ez80-decoder.js';
 import { createExecutor } from './cpu-runtime.js';
 import { createPeripheralBus } from './peripherals.js';
+import { PRELIFTED_BLOCKS } from './ROM.transpiled.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROM_PATH = path.join(__dirname, 'ROM.rom');
-const TRANSPILED_JS_PATH = path.join(__dirname, 'ROM.transpiled.js');
-const TRANSPILED_GZ_PATH = path.join(__dirname, 'ROM.transpiled.js.gz');
+const rom = readFileSync(path.join(__dirname, 'ROM.rom'));
 
-const rom = fs.readFileSync(ROM_PATH);
-
-const MEM_SIZE = 0x1000000;
-const STACK_BASE = 0xD1A800;
-const RETURN_SENTINEL = 0xFFFFFE;
-
-// --- Target addresses ---
-
-// The 5 original sub-functions from session 226
-const SUBFUNC_0 = 0x02398E; // HL-preserving flag clearer, 55 callers
-const SUBFUNC_1 = 0x0239B3; // loads D025E1
-const SUBFUNC_2 = 0x0239CD; // loads D025E4, uses alternate helper 0x0238B2
-const SUBFUNC_3 = 0x0239E3; // loads D025E7
-const SUBFUNC_4 = 0x0239FE; // loads D025EA, also clears IY+58 bit 1
-
-// The font translation target
-const FONT_XLAT = 0x023A1C; // loads D025ED, clears IY+53 bit 5
-
-// Additional siblings discovered in this region
-const SUBFUNC_6 = 0x023A35; // loads D025F6
-const SUBFUNC_7 = 0x023A50; // loads D025F0
-const SUBFUNC_8 = 0x023A6A; // loads D025F9
-const SUBFUNC_9 = 0x023A84; // loads D025FC
-const SUBFUNC_10 = 0x023A9E; // loads D025F3
-const SUBFUNC_11 = 0x023AB8; // loads D025FF
-
-// Common helpers
-const PTR_DEREF = 0x025758; // LD HL,(HL); LD A,(HL); INC HL; PUSH HL; POP IX; CP 0x83; RET
-const ALT_PTR_DEREF = 0x0238B2; // alternate helper used by SUBFUNC_2
-const Z_PATH_HANDLER = 0x025762; // JP Z target — error/increment counter path
-
-// Region boundaries for full disassembly
 const REGION_START = 0x02398E;
-const REGION_END = 0x023AD1; // last RET of SUBFUNC_11
+const REGION_END = 0x023A50;
 
-// --- Utility functions ---
+const REG_STUB_START = 0x023B31;
+const REG_STUB_END = 0x023BDC;
+
+const BOOT_ENTRY = 0x000000;
+const BOOT_MODE = 'z80';
+const BOOT_MAX_STEPS = 20000;
+const BOOT_MAX_LOOPS = 32;
+
+const IY_BASE = 0xD00080;
+const TRACE_IX = 0xD1A860;
+const TRACE_SP = 0xD1A87E - 3;
+const SENTINEL_RET = 0x7FFFFE;
+
+const D025CF = 0xD025CF;
+const D025D2 = 0xD025D2;
+const D02611 = 0xD02611;
+const D025E1 = 0xD025E1;
+const D025E4 = 0xD025E4;
+const D025E7 = 0xD025E7;
+const D025EA = 0xD025EA;
+const D025ED = 0xD025ED;
+const D025F6 = 0xD025F6;
+
+const FLAG_IY52 = IY_BASE + 52; // 0xD000B4
+const FLAG_IY53 = IY_BASE + 53; // 0xD000B5
+const FLAG_IY54 = IY_BASE + 54; // 0xD000B6
+const FLAG_IY58 = IY_BASE + 58; // 0xD000BA
+
+const POINTER_SLOTS = [
+  D02611,
+  D025E1,
+  D025E4,
+  D025E7,
+  D025EA,
+  D025ED,
+  D025F6,
+];
+
+const ROUTINE_SPECS = [
+  { entry: 0x02398E, slot: D02611, label: 'slot bit1 wrapper' },
+  { entry: 0x0239B3, slot: D025E1, label: 'slot bit4 wrapper' },
+  { entry: 0x0239CD, slot: D025E4, label: 'slot bit2 wrapper' },
+  { entry: 0x0239E3, slot: D025E7, label: 'slot bit3 wrapper' },
+  { entry: 0x0239FE, slot: D025EA, label: 'slot bit4+IY58.1 wrapper' },
+  { entry: 0x023A1C, slot: D025ED, label: 'font hook wrapper' },
+  { entry: 0x023A35, slot: D025F6, label: 'slot IY54.0 wrapper' },
+];
+
+const HELPER_NOTES = new Map([
+  [
+    0x025758,
+    'HL := *(slot), A := *(HL), IX := HL+1, CP A,0x83; Z path enters shared hook dispatcher at 0x025762.',
+  ],
+  [
+    0x0238B2,
+    'DE := *(slot), A := *(DE), D025D2 := DE+1, CP A,0x83; this variant also publishes the post-header pointer.',
+  ],
+]);
+
+const NAME_MAP = new Map([
+  [D025CF, 'D025CF'],
+  [D025D2, 'D025D2'],
+  [D02611, 'D02611'],
+  [D025E1, 'D025E1'],
+  [D025E4, 'D025E4'],
+  [D025E7, 'D025E7'],
+  [D025EA, 'D025EA'],
+  [D025ED, 'D025ED'],
+  [D025F6, 'D025F6'],
+  [FLAG_IY52, 'IY+52 (0xD000B4)'],
+  [FLAG_IY53, 'IY+53 (0xD000B5)'],
+  [FLAG_IY54, 'IY+54 (0xD000B6)'],
+  [FLAG_IY58, 'IY+58 (0xD000BA)'],
+]);
 
 function hex(value, width = 6) {
   if (value === undefined || value === null || Number.isNaN(value)) return 'n/a';
   return `0x${(Number(value) >>> 0).toString(16).toUpperCase().padStart(width, '0')}`;
 }
 
-function hexByte(value) {
+function hb(value) {
   return hex((value ?? 0) & 0xFF, 2);
 }
 
 function bytesToHex(bytes) {
-  return Array.from(bytes, (byte) => hexByte(byte)).join(' ');
+  return Array.from(bytes, (b) => hb(b)).join(' ');
 }
 
-function read24(buffer, addr) {
-  return (
-    (buffer[addr] ?? 0) |
-    ((buffer[addr + 1] ?? 0) << 8) |
-    ((buffer[addr + 2] ?? 0) << 16)
-  ) >>> 0;
+function r24(buf, addr) {
+  return (buf[addr] | (buf[addr + 1] << 8) | (buf[addr + 2] << 16)) >>> 0;
 }
 
-function write24(buffer, addr, value) {
-  buffer[addr] = value & 0xFF;
-  buffer[addr + 1] = (value >> 8) & 0xFF;
-  buffer[addr + 2] = (value >> 16) & 0xFF;
+function w16(buf, addr, value) {
+  buf[addr] = value & 0xFF;
+  buf[addr + 1] = (value >>> 8) & 0xFF;
 }
 
-function formatDisp(value) {
-  return value >= 0 ? `+${value}` : `${value}`;
+function w24(buf, addr, value) {
+  buf[addr] = value & 0xFF;
+  buf[addr + 1] = (value >>> 8) & 0xFF;
+  buf[addr + 2] = (value >>> 16) & 0xFF;
 }
 
-function formatIndexed(indexRegister, displacement) {
-  return `(${String(indexRegister ?? '').toUpperCase()}${formatDisp(displacement)})`;
+function iyAddr(displacement) {
+  return (IY_BASE + displacement) >>> 0;
 }
 
-function decodeSafe(pc) {
+function indexText(registerName, displacement) {
+  const sign = displacement >= 0 ? '+' : '';
+  return `(${String(registerName).toUpperCase()}${sign}${displacement})`;
+}
+
+function decodeSafe(pc, mode = 'adl') {
   try {
-    return decodeInstruction(rom, pc, 'adl');
+    return decodeInstruction(rom, pc, mode);
   } catch {
     return null;
   }
@@ -99,757 +139,683 @@ function nextPc(inst) {
   return inst.nextPc ?? (inst.pc + inst.length);
 }
 
-function isReturn(inst) {
-  return ['ret', 'reti', 'retn', 'ret-conditional'].includes(inst.tag);
+function effectiveAddr(inst) {
+  if (inst.addr === undefined) return null;
+  if ((inst.modePrefix === 'sis' || inst.modePrefix === 'lis') && inst.addr <= 0xFFFF) {
+    return (0xD00000 | inst.addr) >>> 0;
+  }
+  return inst.addr >>> 0;
 }
 
-function formatInstruction(inst) {
-  if (!inst) return '(decode error)';
-  const prefix = inst.modePrefix ? `${String(inst.modePrefix).toUpperCase()} ` : '';
-
+function mnemonic(inst) {
+  const p = inst.modePrefix ? `${String(inst.modePrefix).toUpperCase()} ` : '';
   switch (inst.tag) {
-    case 'push':
-      return `${prefix}PUSH ${String(inst.pair ?? inst.reg ?? inst.src).toUpperCase()}`;
-    case 'pop':
-      return `${prefix}POP ${String(inst.pair ?? inst.reg ?? inst.dest).toUpperCase()}`;
-    case 'call':
-      return `${prefix}CALL ${hex(inst.target)}`;
-    case 'call-conditional':
-      return `${prefix}CALL ${String(inst.condition).toUpperCase()}, ${hex(inst.target)}`;
-    case 'ret':
-      return `${prefix}RET`;
-    case 'ret-conditional':
-      return `${prefix}RET ${String(inst.condition).toUpperCase()}`;
-    case 'jr':
-      return `${prefix}JR ${hex(inst.target)}`;
-    case 'jr-conditional':
-      return `${prefix}JR ${String(inst.condition).toUpperCase()}, ${hex(inst.target)}`;
-    case 'jp':
-      return `${prefix}JP ${hex(inst.target)}`;
-    case 'jp-conditional':
-      return `${prefix}JP ${String(inst.condition).toUpperCase()}, ${hex(inst.target)}`;
-    case 'jp-indirect':
-      return `${prefix}JP (${String(inst.indirectRegister).toUpperCase()})`;
-    case 'ld-pair-imm':
-      return `${prefix}LD ${String(inst.pair).toUpperCase()}, ${hex(inst.value)}`;
-    case 'ld-reg-imm':
-      return `${prefix}LD ${String(inst.dest).toUpperCase()}, ${hexByte(inst.value)}`;
-    case 'ld-reg-reg':
-      return `${prefix}LD ${String(inst.dest).toUpperCase()}, ${String(inst.src).toUpperCase()}`;
-    case 'ld-reg-ind':
-      return `${prefix}LD ${String(inst.dest).toUpperCase()}, (${String(inst.src ?? 'HL').toUpperCase()})`;
-    case 'ld-pair-ind':
-      return `${prefix}LD ${String(inst.pair).toUpperCase()}, (${String(inst.src ?? 'HL').toUpperCase()})`;
+    case 'push': return `${p}PUSH ${String(inst.pair ?? inst.reg ?? '?').toUpperCase()}`;
+    case 'pop': return `${p}POP ${String(inst.pair ?? inst.reg ?? '?').toUpperCase()}`;
+    case 'ld-pair-imm': return `${p}LD ${String(inst.pair).toUpperCase()}, ${hex(inst.value, inst.value <= 0xFFFF ? 4 : 6)}`;
     case 'ld-pair-mem':
-      if (inst.direction === 'to-mem') {
-        return `${prefix}LD (${hex(inst.addr)}), ${String(inst.pair).toUpperCase()}`;
-      }
-      return `${prefix}LD ${String(inst.pair).toUpperCase()}, (${hex(inst.addr)})`;
-    case 'ld-mem-pair':
-      return `${prefix}LD (${hex(inst.addr)}), ${String(inst.pair).toUpperCase()}`;
-    case 'add-pair':
-      return `${prefix}ADD ${String(inst.dest).toUpperCase()}, ${String(inst.src).toUpperCase()}`;
-    case 'sbc-pair':
-      return `${prefix}SBC HL, ${String(inst.src).toUpperCase()}`;
-    case 'alu-reg':
-      return `${prefix}${String(inst.op).toUpperCase()} ${String(inst.src ?? inst.reg).toUpperCase()}`;
-    case 'alu-imm':
-      return `${prefix}${String(inst.op).toUpperCase()} ${hexByte(inst.value)}`;
-    case 'inc-pair':
-      return `${prefix}INC ${String(inst.pair).toUpperCase()}`;
-    case 'dec-pair':
-      return `${prefix}DEC ${String(inst.pair).toUpperCase()}`;
-    case 'inc-reg':
-      return `${prefix}INC (HL)`;
-    case 'dec-reg':
-      return `${prefix}DEC (HL)`;
-    case 'ex-de-hl':
-      return `${prefix}EX DE, HL`;
-    case 'indexed-cb-res':
-      return `${prefix}RES ${inst.bit}, (${String(inst.indexRegister).toUpperCase()}${formatDisp(inst.displacement)})`;
-    case 'indexed-cb-set':
-      return `${prefix}SET ${inst.bit}, (${String(inst.indexRegister).toUpperCase()}${formatDisp(inst.displacement)})`;
-    case 'nop':
-      return `${prefix}NOP`;
-    default: {
-      let text = `${prefix}[${inst.tag}]`;
-      if (inst.target !== undefined) text += ` ${hex(inst.target)}`;
-      if (inst.value !== undefined) text += ` val=${hex(inst.value)}`;
-      if (inst.bit !== undefined) text += ` bit=${inst.bit}`;
-      if (inst.displacement !== undefined) text += ` disp=${inst.displacement}`;
-      if (inst.pair) text += ` ${inst.pair}`;
-      if (inst.src) text += ` src=${inst.src}`;
-      if (inst.dest) text += ` dest=${inst.dest}`;
-      return text;
-    }
+      return inst.direction === 'from-mem'
+        ? `${p}LD ${String(inst.pair).toUpperCase()}, (${hex(effectiveAddr(inst))})`
+        : `${p}LD (${hex(effectiveAddr(inst))}), ${String(inst.pair).toUpperCase()}`;
+    case 'ld-pair-ind': return `${p}LD ${String(inst.pair).toUpperCase()}, (${String(inst.src).toUpperCase()})`;
+    case 'ld-reg-imm': return `${p}LD ${String(inst.dest).toUpperCase()}, ${hb(inst.value)}`;
+    case 'ld-reg-reg': return `${p}LD ${String(inst.dest).toUpperCase()}, ${String(inst.src).toUpperCase()}`;
+    case 'ld-reg-ind': return `${p}LD ${String(inst.dest).toUpperCase()}, (${String(inst.src).toUpperCase()})`;
+    case 'ld-ind-reg': return `${p}LD (${String(inst.dest).toUpperCase()}), ${String(inst.src).toUpperCase()}`;
+    case 'ld-mem-reg': return `${p}LD (${hex(effectiveAddr(inst) ?? inst.addr)}), ${String(inst.src ?? inst.reg ?? '?').toUpperCase()}`;
+    case 'call': return `${p}CALL ${hex(inst.target)}`;
+    case 'jp': return `${p}JP ${hex(inst.target)}`;
+    case 'jp-conditional': return `${p}JP ${String(inst.condition).toUpperCase()}, ${hex(inst.target)}`;
+    case 'jp-indirect': return `${p}JP (${String(inst.indirectRegister ?? 'HL').toUpperCase()})`;
+    case 'jr': return `${p}JR ${hex(inst.target)}`;
+    case 'jr-conditional': return `${p}JR ${String(inst.condition).toUpperCase()}, ${hex(inst.target)}`;
+    case 'ret': return `${p}RET`;
+    case 'ret-conditional': return `${p}RET ${String(inst.condition).toUpperCase()}`;
+    case 'inc-pair': return `${p}INC ${String(inst.pair).toUpperCase()}`;
+    case 'dec-pair': return `${p}DEC ${String(inst.pair).toUpperCase()}`;
+    case 'inc-reg': return `${p}INC ${String(inst.reg).toUpperCase()}`;
+    case 'dec-reg': return `${p}DEC ${String(inst.reg).toUpperCase()}`;
+    case 'alu-imm': return `${p}${String(inst.op).toUpperCase()} ${hb(inst.value)}`;
+    case 'alu-reg': return `${p}${String(inst.op).toUpperCase()} ${String(inst.src ?? inst.reg).toUpperCase()}`;
+    case 'indexed-cb-bit': return `${p}BIT ${inst.bit}, ${indexText(inst.indexRegister, inst.displacement)}`;
+    case 'indexed-cb-set': return `${p}SET ${inst.bit}, ${indexText(inst.indexRegister, inst.displacement)}`;
+    case 'indexed-cb-res': return `${p}RES ${inst.bit}, ${indexText(inst.indexRegister, inst.displacement)}`;
+    case 'ex-de-hl': return `${p}EX DE, HL`;
+    case 'mlt': return `${p}MLT ${String(inst.reg ?? inst.pair).toUpperCase()}`;
+    case 'nop': return `${p}NOP`;
+    case 'di': return `${p}DI`;
+    default: return `${p}[${inst.tag}]`;
   }
 }
 
-function formatBytesFor(inst) {
-  return bytesToHex(rom.subarray(inst.pc, inst.pc + inst.length));
+function formatLine(inst) {
+  const bytes = bytesToHex(rom.subarray(inst.pc, inst.pc + inst.length)).padEnd(18);
+  return `${hex(inst.pc)}: ${bytes} ${mnemonic(inst)}`;
 }
 
-// --- Sub-function catalog ---
-
-const SUB_FUNCTIONS = [
-  { addr: 0x02398E, label: 'SUBFUNC_0', pointer: 0xD02611, iyDisp: 53, iyBit: 1, op: 'RES', storeAddr: 0xD025CF, storeVal: 0x0109, helper: 0x025758 },
-  { addr: 0x0239B3, label: 'SUBFUNC_1', pointer: 0xD025E1, iyDisp: 52, iyBit: 4, op: 'RES', storeAddr: null, storeVal: null, helper: 0x025758 },
-  { addr: 0x0239CD, label: 'SUBFUNC_2', pointer: 0xD025E4, iyDisp: 53, iyBit: 2, op: 'RES', storeAddr: null, storeVal: null, helper: 0x0238B2 },
-  { addr: 0x0239E3, label: 'SUBFUNC_3', pointer: 0xD025E7, iyDisp: 53, iyBit: 3, op: 'RES', storeAddr: null, storeVal: null, helper: 0x025758 },
-  { addr: 0x0239FE, label: 'SUBFUNC_4', pointer: 0xD025EA, iyDisp: [53, 58], iyBit: [4, 1], op: 'RES', storeAddr: null, storeVal: null, helper: 0x025758, note: 'clears TWO IY bits: (IY+53) bit 4 AND (IY+58) bit 1' },
-  { addr: 0x023A1C, label: 'FONT_XLAT', pointer: 0xD025ED, iyDisp: 53, iyBit: 5, op: 'RES', storeAddr: null, storeVal: null, helper: 0x025758, note: 'font translation — called by both font lookup functions' },
-  { addr: 0x023A35, label: 'SUBFUNC_6', pointer: 0xD025F6, iyDisp: 54, iyBit: 0, op: 'RES', storeAddr: null, storeVal: null, helper: 0x025758 },
-  { addr: 0x023A50, label: 'SUBFUNC_7', pointer: 0xD025F0, iyDisp: 53, iyBit: 6, op: 'RES', storeAddr: null, storeVal: null, helper: 0x025758 },
-  { addr: 0x023A6A, label: 'SUBFUNC_8', pointer: 0xD025F9, iyDisp: 54, iyBit: 1, op: 'RES', storeAddr: null, storeVal: null, helper: 0x025758 },
-  { addr: 0x023A84, label: 'SUBFUNC_9', pointer: 0xD025FC, iyDisp: 54, iyBit: 2, op: 'RES', storeAddr: null, storeVal: null, helper: 0x025758 },
-  { addr: 0x023A9E, label: 'SUBFUNC_10', pointer: 0xD025F3, iyDisp: 53, iyBit: 7, op: 'RES', storeAddr: null, storeVal: null, helper: 0x025758 },
-  { addr: 0x023AB8, label: 'SUBFUNC_11', pointer: 0xD025FF, iyDisp: 54, iyBit: 3, op: 'RES', storeAddr: null, storeVal: null, helper: 0x025758 },
-];
-
-// --- Section 1: Full static disassembly ---
-
-function printStaticDisassembly() {
-  console.log('=== Phase 329: Font Translation Routines 0x02398E..0x023AD1 ===\n');
-  console.log(`ROM size: ${hex(rom.length, 8)} bytes`);
-  console.log(`Region: ${hex(REGION_START)} - ${hex(REGION_END)}`);
-  console.log(`Sub-functions identified: ${SUB_FUNCTIONS.length}\n`);
-
-  console.log('1) Full static disassembly of 0x02398E through 0x023AD1\n');
-
-  // Find sub-function boundaries
-  const funcStartSet = new Set(SUB_FUNCTIONS.map((sf) => sf.addr));
-
-  let pc = REGION_START;
-  while (pc <= REGION_END) {
-    if (funcStartSet.has(pc)) {
-      const sf = SUB_FUNCTIONS.find((s) => s.addr === pc);
-      console.log(`\n--- ${sf.label} at ${hex(sf.addr)} ---`);
-      console.log(`    D025xx pointer: ${hex(sf.pointer)}`);
-      const iyDisps = Array.isArray(sf.iyDisp) ? sf.iyDisp : [sf.iyDisp];
-      const iyBits = Array.isArray(sf.iyBit) ? sf.iyBit : [sf.iyBit];
-      for (let i = 0; i < iyDisps.length; i++) {
-        console.log(`    IY flag: ${sf.op} ${iyBits[i]}, (IY+${iyDisps[i]})`);
-      }
-      if (sf.storeAddr) {
-        console.log(`    Store: ${hex(sf.storeVal, 4)} -> ${hex(sf.storeAddr)}`);
-      }
-      console.log(`    Helper: ${hex(sf.helper)}`);
-      if (sf.note) console.log(`    Note: ${sf.note}`);
-      console.log('');
-    }
-
+function decodeRange(start, end) {
+  const lines = [];
+  let pc = start;
+  while (pc < end) {
     const inst = decodeSafe(pc);
     if (!inst || !inst.length) {
-      console.log(`  ${hex(pc)}: ?? (decode error)`);
-      pc++;
+      lines.push(`${hex(pc)}: ${hb(rom[pc])}                DB ${hb(rom[pc])}`);
+      pc += 1;
       continue;
     }
-
-    const bytes = formatBytesFor(inst).padEnd(28);
-    const text = formatInstruction(inst);
-    console.log(`  ${hex(pc)}: ${bytes} ${text}`);
+    lines.push(formatLine(inst));
     pc = nextPc(inst);
   }
+  return lines;
 }
 
-// --- Section 2: Decode 0x023A1C differences ---
-
-function printFontXlatAnalysis() {
-  console.log('\n\n2) 0x023A1C (FONT_XLAT) vs 0x02398E (SUBFUNC_0) comparison\n');
-
-  console.log('Both follow the same template:');
-  console.log('  PUSH IX / PUSH AF / PUSH HL');
-  console.log('  LD HL, <D025xx pointer>');
-  console.log('  CALL 0x025758  (pointer deref: HL=(HL); A=(HL); INC HL; IX=HL; CP 0x83)');
-  console.log('  POP HL  (restore original HL)');
-  console.log('  JP Z, 0x025762  (if derefed byte == 0x83 -> error/counter path)');
-  console.log('  POP AF / POP IX');
-  console.log('  RES <bit>, (IY+<disp>)  (clear specific IY flag)');
-  console.log('  RET\n');
-
-  console.log('Key differences:\n');
-
-  console.log('  SUBFUNC_0 (0x02398E):');
-  console.log('    - Pointer: D02611');
-  console.log('    - Clears: IY+53 bit 1');
-  console.log('    - UNIQUE: After POP HL, does OR 0x01 (sets carry-like flag in A)');
-  console.log('    - UNIQUE: Stores 0x0109 to D025CF (SIS-mode LD)');
-  console.log('    - 55 call sites — by far the most used\n');
-
-  console.log('  FONT_XLAT (0x023A1C):');
-  console.log('    - Pointer: D025ED');
-  console.log('    - Clears: IY+53 bit 5');
-  console.log('    - No extra store, no OR — pure flag clear');
-  console.log('    - 3 call sites: JP at 0x020130, CALL at 0x07BF47, CALL at 0x0A5408');
-  console.log('    - Called specifically by font lookup:');
-  console.log('      0x07BF47 is inside the fixed-width font renderer (0x07BF3E)');
-  console.log('      0x0A5408 is inside the variable-width font renderer (0x0A5424)\n');
-
-  console.log('  SUBFUNC_4 (0x0239FE) is also notable:');
-  console.log('    - Pointer: D025EA');
-  console.log('    - Clears TWO flags: IY+53 bit 4 AND IY+58 bit 1');
-  console.log('    - Only sub-function that touches IY+58\n');
-
-  console.log('  Interpretation:');
-  console.log('    These are all "translation reset" routines. Each one:');
-  console.log('    1. Dereferences a D025xx pointer to get a handler descriptor');
-  console.log('    2. Loads the handler address into IX (via 0x025758)');
-  console.log('    3. Clears an IY-based "translation active" flag');
-  console.log('    The IY+53/IY+54 bits are a bitmask of which translations are currently active.');
-  console.log('    FONT_XLAT specifically resets the "font translation" flag (IY+53 bit 5),');
-  console.log('    which the font lookup functions check before rendering glyphs.\n');
-}
-
-// --- Section 3: D025xx pointer analysis ---
-
-function printPointerAnalysis() {
-  console.log('3) D025xx pointer table analysis\n');
-
-  console.log('Each sub-function loads a different D025xx address into HL before calling');
-  console.log('the pointer deref helper. These are 3-byte pointers in RAM that point to');
-  console.log('handler descriptors. The deref helper does:');
-  console.log('  HL = (HL)          ; follow the 3-byte pointer');
-  console.log('  A = (HL)           ; read first byte of descriptor');
-  console.log('  HL++               ; advance past it');
-  console.log('  IX = HL            ; save descriptor+1 address in IX');
-  console.log('  CP 0x83            ; test if descriptor starts with 0x83 (invalid/unset marker)');
-  console.log('  RET                ; Z flag set if descriptor is invalid\n');
-
-  console.log('Pointer map (RAM address -> purpose):\n');
-
-  const pointerAddrs = SUB_FUNCTIONS.map((sf) => sf.pointer).sort((a, b) => a - b);
-  const uniquePointers = [...new Set(pointerAddrs)];
-
-  for (const addr of uniquePointers) {
-    const sfs = SUB_FUNCTIONS.filter((sf) => sf.pointer === addr);
-    const labels = sfs.map((sf) => `${sf.label} (${hex(sf.addr)})`).join(', ');
-    console.log(`  ${hex(addr)}: used by ${labels}`);
-  }
-
-  console.log('\n  Grouped by IY displacement:\n');
-
-  // IY+52 (0x34)
-  console.log('  IY+52 (flags byte 0x34):');
-  for (const sf of SUB_FUNCTIONS) {
-    const disps = Array.isArray(sf.iyDisp) ? sf.iyDisp : [sf.iyDisp];
-    const bits = Array.isArray(sf.iyBit) ? sf.iyBit : [sf.iyBit];
-    for (let i = 0; i < disps.length; i++) {
-      if (disps[i] === 52) {
-        console.log(`    bit ${bits[i]}: ${sf.label} (${hex(sf.addr)}) -> pointer ${hex(sf.pointer)}`);
-      }
-    }
-  }
-
-  // IY+53 (0x35)
-  console.log('  IY+53 (flags byte 0x35):');
-  for (const sf of SUB_FUNCTIONS) {
-    const disps = Array.isArray(sf.iyDisp) ? sf.iyDisp : [sf.iyDisp];
-    const bits = Array.isArray(sf.iyBit) ? sf.iyBit : [sf.iyBit];
-    for (let i = 0; i < disps.length; i++) {
-      if (disps[i] === 53) {
-        console.log(`    bit ${bits[i]}: ${sf.label} (${hex(sf.addr)}) -> pointer ${hex(sf.pointer)}`);
-      }
-    }
-  }
-
-  // IY+54 (0x36)
-  console.log('  IY+54 (flags byte 0x36):');
-  for (const sf of SUB_FUNCTIONS) {
-    const disps = Array.isArray(sf.iyDisp) ? sf.iyDisp : [sf.iyDisp];
-    const bits = Array.isArray(sf.iyBit) ? sf.iyBit : [sf.iyBit];
-    for (let i = 0; i < disps.length; i++) {
-      if (disps[i] === 54) {
-        console.log(`    bit ${bits[i]}: ${sf.label} (${hex(sf.addr)}) -> pointer ${hex(sf.pointer)}`);
-      }
-    }
-  }
-
-  // IY+58 (0x3A)
-  console.log('  IY+58 (flags byte 0x3A):');
-  for (const sf of SUB_FUNCTIONS) {
-    const disps = Array.isArray(sf.iyDisp) ? sf.iyDisp : [sf.iyDisp];
-    const bits = Array.isArray(sf.iyBit) ? sf.iyBit : [sf.iyBit];
-    for (let i = 0; i < disps.length; i++) {
-      if (disps[i] === 58) {
-        console.log(`    bit ${bits[i]}: ${sf.label} (${hex(sf.addr)}) -> pointer ${hex(sf.pointer)}`);
-      }
-    }
-  }
-
-  console.log('\n  Additional RAM addresses referenced:');
-  console.log(`  ${hex(0xD025CF)}: SUBFUNC_0 stores 0x0109 here (SIS-mode 16-bit store)`);
-  console.log(`  ${hex(0xD025D2)}: used by alternate helper 0x0238B2 (stores HL after deref)`);
-  console.log(`  ${hex(0xD0265B)}: error counter incremented by Z-path handler 0x025762`);
-}
-
-// --- Section 4: Caller scan ---
-
-function scanCallers(targetAddr) {
-  const lo = targetAddr & 0xFF;
-  const mid = (targetAddr >> 8) & 0xFF;
-  const hi = (targetAddr >> 16) & 0xFF;
-  const callers = [];
-
-  for (let i = 0; i < rom.length - 3; i++) {
-    if (rom[i + 1] === lo && rom[i + 2] === mid && rom[i + 3] === hi) {
-      if (rom[i] === 0xCD) {
-        callers.push({ addr: i, type: 'CALL' });
-      } else if (rom[i] === 0xC3) {
-        callers.push({ addr: i, type: 'JP' });
-      }
-    }
-  }
-
-  return callers;
-}
-
-function printCallerScan() {
-  console.log('\n\n4) All callers of 0x023A1C (FONT_XLAT)\n');
-
-  const callers = scanCallers(0x023A1C);
-  console.log(`Found ${callers.length} call/jump sites:\n`);
-
-  for (const caller of callers) {
-    // Show context: disassemble a few instructions before and after
-    const contextStart = Math.max(0, caller.addr - 8);
-    console.log(`  ${caller.type} at ${hex(caller.addr)}:`);
-
-    // Try to find the containing function
-    let funcStart = caller.addr;
-    for (let scan = caller.addr - 1; scan >= caller.addr - 64; scan--) {
-      // Look for a RET or similar terminator just before
-      const byte = rom[scan];
-      if (byte === 0xC9) { // RET
-        funcStart = scan + 1;
-        break;
-      }
-    }
-
-    // Disassemble a few instructions around the call site
-    let pc = caller.addr;
-    for (let j = 0; j < 3; j++) {
-      const inst = decodeSafe(pc);
-      if (!inst) break;
-      const bytes = formatBytesFor(inst).padEnd(28);
-      const text = formatInstruction(inst);
-      const marker = pc === caller.addr ? ' <-- HERE' : '';
-      console.log(`    ${hex(pc)}: ${bytes} ${text}${marker}`);
-      pc = nextPc(inst);
-    }
-    console.log('');
-  }
-
-  // Also show callers of each sub-function for comparison
-  console.log('  Caller counts for all sub-functions:\n');
-  for (const sf of SUB_FUNCTIONS) {
-    const count = scanCallers(sf.addr).length;
-    console.log(`    ${sf.label} (${hex(sf.addr)}): ${count} callers`);
-  }
-  console.log('');
-}
-
-// --- Section 5: Helper function disassembly ---
-
-function printHelperDisassembly() {
-  console.log('5) Helper function disassembly\n');
-
-  console.log('--- 0x025758: Pointer deref helper (used by 11 of 12 sub-functions) ---\n');
-  let pc = PTR_DEREF;
-  while (true) {
+function decodeRoutine(entry, maxInstructions = 32) {
+  const insts = [];
+  let pc = entry;
+  for (let i = 0; i < maxInstructions; i += 1) {
     const inst = decodeSafe(pc);
-    if (!inst) break;
-    const bytes = formatBytesFor(inst).padEnd(28);
-    const text = formatInstruction(inst);
-    let annotation = '';
-    if (inst.tag === 'ld-pair-ind') annotation = ' ; HL = *(HL) — follow the 3-byte pointer';
-    if (inst.tag === 'ld-reg-ind' && inst.dest === 'a') annotation = ' ; A = first byte of target descriptor';
-    if (inst.tag === 'inc-pair') annotation = ' ; advance past the type byte';
-    if (inst.tag === 'push' && inst.pair === 'hl') annotation = ' ; save descriptor+1 addr';
-    if (inst.tag === 'pop' && inst.pair === 'ix') annotation = ' ; IX = descriptor+1 address';
-    if (inst.tag === 'alu-imm') annotation = ' ; test if descriptor type == 0x83 (invalid)';
-    if (inst.tag === 'ret') annotation = ' ; Z flag = descriptor is invalid';
-    console.log(`  ${hex(pc)}: ${bytes} ${text}${annotation}`);
-    if (isReturn(inst)) break;
+    if (!inst || !inst.length) break;
+    insts.push(inst);
     pc = nextPc(inst);
+    if (inst.tag === 'ret') break;
   }
-
-  console.log('\n--- 0x0238B2: Alternate deref helper (used by SUBFUNC_2 only) ---\n');
-  pc = ALT_PTR_DEREF;
-  while (true) {
-    const inst = decodeSafe(pc);
-    if (!inst) break;
-    const bytes = formatBytesFor(inst).padEnd(28);
-    const text = formatInstruction(inst);
-    console.log(`  ${hex(pc)}: ${bytes} ${text}`);
-    if (isReturn(inst)) break;
-    pc = nextPc(inst);
-  }
-
-  console.log('\n--- 0x025762: Z-path error handler (JP Z target) ---\n');
-  pc = Z_PATH_HANDLER;
-  while (true) {
-    const inst = decodeSafe(pc);
-    if (!inst) break;
-    const bytes = formatBytesFor(inst).padEnd(28);
-    const text = formatInstruction(inst);
-    let annotation = '';
-    if (inst.tag === 'ld-pair-imm' && inst.value === 0xD0265B) annotation = ' ; error counter address';
-    if (inst.tag === 'inc-reg') annotation = ' ; increment error counter';
-    console.log(`  ${hex(pc)}: ${bytes} ${text}${annotation}`);
-    if (inst.tag === 'jp' || inst.tag === 'ret') break;
-    pc = nextPc(inst);
-  }
-
-  console.log('\n--- 0x023955: Decrement-and-return (JP target from Z-path) ---\n');
-  pc = 0x023955;
-  while (true) {
-    const inst = decodeSafe(pc);
-    if (!inst) break;
-    const bytes = formatBytesFor(inst).padEnd(28);
-    const text = formatInstruction(inst);
-    let annotation = '';
-    if (inst.tag === 'ld-pair-imm' && inst.value === 0xD0265B) annotation = ' ; same error counter';
-    if (inst.tag === 'dec-reg') annotation = ' ; decrement error counter';
-    console.log(`  ${hex(pc)}: ${bytes} ${text}${annotation}`);
-    if (isReturn(inst)) break;
-    pc = nextPc(inst);
-  }
-  console.log('');
+  return insts;
 }
 
-// --- Section 6: Dynamic traces ---
-
-function ensureTranspiledModule() {
-  if (fs.existsSync(TRANSPILED_JS_PATH)) {
-    return { modulePath: TRANSPILED_JS_PATH, tempModulePath: null };
+function buildStubMap() {
+  const map = new Map();
+  let pc = REG_STUB_START;
+  while (pc < REG_STUB_END) {
+    const first = decodeSafe(pc);
+    if (!first || !first.length) {
+      pc += 1;
+      continue;
+    }
+    const second = decodeSafe(nextPc(first));
+    const third = second ? decodeSafe(nextPc(second)) : null;
+    if (
+      first.tag === 'ld-pair-mem' &&
+      first.pair === 'hl' &&
+      first.direction === 'to-mem' &&
+      second?.tag === 'indexed-cb-set' &&
+      third?.tag === 'ret'
+    ) {
+      const slot = effectiveAddr(first);
+      map.set(slot, {
+        entry: first.pc,
+        slot,
+        displacement: second.displacement,
+        bit: second.bit,
+        flagAddr: iyAddr(second.displacement),
+      });
+      pc = nextPc(third);
+      continue;
+    }
+    pc = nextPc(first);
   }
-  if (!fs.existsSync(TRANSPILED_GZ_PATH)) {
-    throw new Error('Missing both ROM.transpiled.js and ROM.transpiled.js.gz.');
-  }
-  const tempModulePath = path.join(os.tmpdir(), `ti84-phase329-${process.pid}.mjs`);
-  fs.writeFileSync(tempModulePath, gunzipSync(fs.readFileSync(TRANSPILED_GZ_PATH)));
-  return { modulePath: tempModulePath, tempModulePath };
+  return map;
 }
 
-function cleanupTranspiledModule(assets) {
-  if (!assets?.tempModulePath) return;
-  try { fs.unlinkSync(assets.tempModulePath); } catch {}
-}
+function analyzeRoutine(spec, stubMap) {
+  const insts = decodeRoutine(spec.entry);
+  const helper = insts.find((inst) => inst.tag === 'call')?.target ?? null;
+  const clearOps = insts
+    .filter((inst) => inst.tag === 'indexed-cb-res')
+    .map((inst) => ({
+      displacement: inst.displacement,
+      bit: inst.bit,
+      flagAddr: iyAddr(inst.displacement),
+    }));
 
-function normalizeBlocks(rawBlocks) {
-  if (Array.isArray(rawBlocks)) {
-    return Object.fromEntries(
-      rawBlocks.filter((block) => block?.id).map((block) => [block.id, block]),
-    );
-  }
-  return rawBlocks ?? {};
-}
-
-async function loadBlocks() {
-  const assets = ensureTranspiledModule();
-  try {
-    const moduleUrl = pathToFileURL(assets.modulePath).href;
-    const romModule = await import(moduleUrl);
-    const rawBlocks =
-      romModule.PRELIFTED_BLOCKS ??
-      romModule.default?.PRELIFTED_BLOCKS ??
-      romModule.default ??
-      romModule;
-    return normalizeBlocks(rawBlocks);
-  } finally {
-    cleanupTranspiledModule(assets);
-  }
-}
-
-function classifyWrite(addr) {
-  if (addr >= (STACK_BASE - 0x40) && addr < (STACK_BASE + 0x20)) return 'stack';
-  if (addr >= 0xE00000) return 'mmio';
-  if (addr >= 0xD00000) return 'ram';
-  return 'other';
-}
-
-async function runDynamicTrace(blocks, targetAddr, label, setupFn) {
-  const mem = new Uint8Array(MEM_SIZE);
-  mem.set(rom.subarray(0, Math.min(rom.length, MEM_SIZE)));
-
-  const peripherals = createPeripheralBus({ timerInterrupt: false });
-  const executor = createExecutor(blocks, mem, {
-    peripherals,
-    trackMemoryMapped: true,
-  });
-  const cpu = executor.cpu;
-
-  // Default register state
-  cpu.a = 0x42;
-  cpu.f = 0x00;
-  cpu._bc = 0x000000;
-  cpu._de = 0x000000;
-  cpu._hl = 0xABCDEF; // distinctive value to verify HL preservation
-  cpu._ix = 0x000000;
-  cpu._iy = 0xD00000; // TI-OS convention: IY = D00000 (flags base)
-  cpu.sp = STACK_BASE;
-  cpu.halted = false;
-  cpu.iff1 = 0;
-  cpu.iff2 = 0;
-
-  // Push return sentinel
-  cpu.sp -= 3;
-  write24(mem, cpu.sp, RETURN_SENTINEL);
-
-  // Let the setup function configure memory and flags
-  if (setupFn) setupFn(mem, cpu);
-
-  // Snapshot IY flags before execution
-  const iyBase = cpu._iy & 0xFFFFFF;
-  const iy52Before = mem[iyBase + 52];
-  const iy53Before = mem[iyBase + 53];
-  const iy54Before = mem[iyBase + 54];
-  const iy58Before = mem[iyBase + 58];
-  const hlBefore = cpu._hl;
-  const aBefore = cpu.a;
-
-  const blockTrail = [];
-  const ramWrites = [];
-
-  const origWrite8 = cpu.write8.bind(cpu);
-  const origWrite16 = cpu.write16.bind(cpu);
-  const origWrite24 = cpu.write24.bind(cpu);
-
-  function recordWrite(addr, value, width) {
-    const norm = addr & 0xFFFFFF;
-    const region = classifyWrite(norm);
-    if (region === 'ram') {
-      ramWrites.push({
-        addr: norm,
-        value: value & (width === 8 ? 0xFF : width === 16 ? 0xFFFF : 0xFFFFFF),
-        width,
+  const writes = [];
+  for (let i = 0; i < insts.length; i += 1) {
+    const inst = insts[i];
+    const addr = effectiveAddr(inst);
+    if (inst.tag === 'ld-pair-mem' && inst.direction === 'to-mem') {
+      const imm = i > 0 ? insts[i - 1] : null;
+      writes.push({
+        addr,
+        width: 3,
+        value: imm?.tag === 'ld-pair-imm' && imm.pair === 'hl' ? imm.value : null,
       });
     }
   }
 
-  cpu.write8 = (addr, value) => { recordWrite(addr, value, 8); return origWrite8(addr, value); };
-  cpu.write16 = (addr, value) => { recordWrite(addr, value, 16); return origWrite16(addr, value); };
-  cpu.write24 = (addr, value) => { recordWrite(addr, value, 24); return origWrite24(addr, value); };
-
-  const result = executor.runFrom(targetAddr, 'adl', {
-    maxSteps: 64,
-    maxLoopIterations: 16,
-    onBlock(pc) {
-      blockTrail.push(pc);
-    },
-  });
-
-  const logicalTermination =
-    result.termination === 'missing_block' && result.lastPc === RETURN_SENTINEL
-      ? 'returned_to_sentinel'
-      : result.termination;
-
-  const iy52After = mem[iyBase + 52];
-  const iy53After = mem[iyBase + 53];
-  const iy54After = mem[iyBase + 54];
-  const iy58After = mem[iyBase + 58];
-
   return {
-    label,
-    targetAddr,
-    logicalTermination,
-    steps: result.steps,
-    lastPc: result.lastPc,
-    blockTrail,
-    ramWrites,
-    hlBefore,
-    hlAfter: cpu._hl,
-    aBefore,
-    aAfter: cpu.a,
-    iy52: { before: iy52Before, after: iy52After },
-    iy53: { before: iy53Before, after: iy53After },
-    iy54: { before: iy54Before, after: iy54After },
-    iy58: { before: iy58Before, after: iy58After },
-    finalIX: cpu._ix,
-    finalSP: cpu.sp,
+    ...spec,
+    insts,
+    helper,
+    clearOps,
+    writes,
+    stub: stubMap.get(spec.slot) ?? null,
   };
 }
 
-function flagDiff(label, before, after) {
-  if (before === after) return `    ${label}: ${hexByte(before)} (unchanged)`;
-  const changed = before ^ after;
-  const bits = [];
-  for (let b = 0; b < 8; b++) {
-    if (changed & (1 << b)) {
-      const was = (before >> b) & 1;
-      const now = (after >> b) & 1;
-      bits.push(`bit ${b}: ${was}->${now}`);
-    }
-  }
-  return `    ${label}: ${hexByte(before)} -> ${hexByte(after)}  [${bits.join(', ')}]`;
+function classifyBranchOpcode(op) {
+  if (op === 0xCD) return 'CALL';
+  if (op === 0xC3) return 'JP';
+  if ([0xC4, 0xCC, 0xD4, 0xDC, 0xE4, 0xEC, 0xF4, 0xFC].includes(op)) return 'CALL cc';
+  if ([0xC2, 0xCA, 0xD2, 0xDA, 0xE2, 0xEA, 0xF2, 0xFA].includes(op)) return 'JP cc';
+  return `OP ${hb(op)}`;
 }
 
-function printDynamicTrace(result) {
-  console.log(`--- Dynamic trace: ${result.label} ---`);
-  console.log(`  Target: ${hex(result.targetAddr)}`);
-  console.log(`  Termination: ${result.logicalTermination}`);
-  console.log(`  Steps: ${result.steps}`);
-  console.log(`  Block trail: ${result.blockTrail.map((pc) => hex(pc)).join(' -> ')}`);
-  console.log(`  HL: ${hex(result.hlBefore)} -> ${hex(result.hlAfter)} ${result.hlBefore === result.hlAfter ? '(preserved)' : '(CHANGED)'}`);
-  console.log(`  A: ${hexByte(result.aBefore)} -> ${hexByte(result.aAfter)}`);
-  console.log(`  IX after: ${hex(result.finalIX)}`);
-  console.log(`  SP after: ${hex(result.finalSP)}`);
-  console.log('  IY flag changes:');
-  console.log(flagDiff('IY+52', result.iy52.before, result.iy52.after));
-  console.log(flagDiff('IY+53', result.iy53.before, result.iy53.after));
-  console.log(flagDiff('IY+54', result.iy54.before, result.iy54.after));
-  console.log(flagDiff('IY+58', result.iy58.before, result.iy58.after));
-
-  if (result.ramWrites.length) {
-    console.log('  Non-stack RAM writes:');
-    for (const w of result.ramWrites) {
-      console.log(`    write${w.width} ${hex(w.addr)} = ${hex(w.value, w.width / 4)}`);
+function scanBranchRefs(target) {
+  const refs = [];
+  for (let pc = 0; pc < rom.length - 3; pc += 1) {
+    const op = rom[pc];
+    if (
+      op === 0xCD || op === 0xC3 ||
+      [0xC4, 0xCC, 0xD4, 0xDC, 0xE4, 0xEC, 0xF4, 0xFC].includes(op) ||
+      [0xC2, 0xCA, 0xD2, 0xDA, 0xE2, 0xEA, 0xF2, 0xFA].includes(op)
+    ) {
+      const imm = r24(rom, pc + 1);
+      if (imm === target) refs.push({ pc, op, kind: classifyBranchOpcode(op) });
     }
   }
-  console.log('');
+  return refs;
 }
 
-// --- Main ---
+function scanSlotRefs(slot) {
+  const lo = slot & 0xFF;
+  const hi = (slot >>> 8) & 0xFF;
+  const page = (slot >>> 16) & 0xFF;
+  const refs = [];
 
-printStaticDisassembly();
-printFontXlatAnalysis();
-printPointerAnalysis();
-printCallerScan();
-printHelperDisassembly();
+  for (let pc = 0; pc < rom.length - 4; pc += 1) {
+    if (rom[pc] === 0x21 && rom[pc + 1] === lo && rom[pc + 2] === hi && rom[pc + 3] === page) {
+      refs.push({ pc, kind: 'LD HL, slot', slot });
+    }
+    if (rom[pc] === 0x11 && rom[pc + 1] === lo && rom[pc + 2] === hi && rom[pc + 3] === page) {
+      refs.push({ pc, kind: 'LD DE, slot', slot });
+    }
+    if (rom[pc] === 0x01 && rom[pc + 1] === lo && rom[pc + 2] === hi && rom[pc + 3] === page) {
+      refs.push({ pc, kind: 'LD BC, slot', slot });
+    }
+    if (rom[pc] === 0x22 && rom[pc + 1] === lo && rom[pc + 2] === hi && rom[pc + 3] === page) {
+      refs.push({ pc, kind: 'LD (slot), HL', slot });
+    }
+    if (rom[pc] === 0x2A && rom[pc + 1] === lo && rom[pc + 2] === hi && rom[pc + 3] === page) {
+      refs.push({ pc, kind: 'LD HL, (slot)', slot });
+    }
+    if (rom[pc] === 0x32 && rom[pc + 1] === lo && rom[pc + 2] === hi && rom[pc + 3] === page) {
+      refs.push({ pc, kind: 'LD (slot), A', slot });
+    }
+    if (rom[pc] === 0x3A && rom[pc + 1] === lo && rom[pc + 2] === hi && rom[pc + 3] === page) {
+      refs.push({ pc, kind: 'LD A, (slot)', slot });
+    }
+    if (
+      rom[pc] === 0xED &&
+      rom[pc + 1] === 0x53 &&
+      rom[pc + 2] === lo &&
+      rom[pc + 3] === hi &&
+      rom[pc + 4] === page
+    ) {
+      refs.push({ pc, kind: 'LD (slot), DE', slot });
+    }
+    if (
+      rom[pc] === 0xED &&
+      rom[pc + 1] === 0x5B &&
+      rom[pc + 2] === lo &&
+      rom[pc + 3] === hi &&
+      rom[pc + 4] === page
+    ) {
+      refs.push({ pc, kind: 'LD DE, (slot)', slot });
+    }
+  }
 
-console.log('6) Dynamic traces\n');
+  refs.sort((a, b) => a.pc - b.pc);
+  return refs;
+}
 
-const blocksMap = await loadBlocks();
+function stopTrace(name) {
+  const error = new Error('__PHASE329_STOP__');
+  error.stopName = name;
+  return error;
+}
 
-// We need to set up valid pointer chains for the deref to work.
-// Each D025xx pointer must point to a valid descriptor in RAM.
-// We'll create fake descriptors so the deref doesn't hit 0x83 (invalid marker).
+function installWatchHooks(cpu, watchSet, output) {
+  const original = {
+    read8: cpu.read8.bind(cpu),
+    read16: cpu.read16.bind(cpu),
+    read24: cpu.read24.bind(cpu),
+    write8: cpu.write8.bind(cpu),
+    write16: cpu.write16.bind(cpu),
+    write24: cpu.write24.bind(cpu),
+  };
 
-const FAKE_DESCRIPTOR_BASE = 0xD10000; // safe RAM area for fake descriptors
+  const maybeRecord = (list, addr, value, width) => {
+    const a = addr & 0xFFFFFF;
+    if (!watchSet.has(a)) return;
+    list.push({ addr: a, value, width });
+  };
 
-const scenarios = [
-  {
-    targetAddr: SUBFUNC_0,
-    label: 'SUBFUNC_0 (0x02398E) — valid descriptor',
-    setup(mem, cpu) {
-      // Set all IY flag bits so we can see them get cleared
-      const iyBase = cpu._iy & 0xFFFFFF;
-      mem[iyBase + 52] = 0xFF;
-      mem[iyBase + 53] = 0xFF;
-      mem[iyBase + 54] = 0xFF;
-      mem[iyBase + 58] = 0xFF;
+  cpu.read8 = (addr) => {
+    const value = original.read8(addr);
+    maybeRecord(output.reads, addr, value & 0xFF, 1);
+    return value;
+  };
+  cpu.read16 = (addr) => {
+    const value = original.read16(addr);
+    maybeRecord(output.reads, addr, value & 0xFFFF, 2);
+    return value;
+  };
+  cpu.read24 = (addr) => {
+    const value = original.read24(addr);
+    maybeRecord(output.reads, addr, value & 0xFFFFFF, 3);
+    return value;
+  };
 
-      // D02611 -> points to a descriptor at FAKE_DESCRIPTOR_BASE
-      write24(mem, 0xD02611, FAKE_DESCRIPTOR_BASE);
-      // Descriptor: type byte (not 0x83) followed by handler address
-      mem[FAKE_DESCRIPTOR_BASE] = 0x01; // valid type
-      write24(mem, FAKE_DESCRIPTOR_BASE + 1, 0x070000); // fake handler addr
+  cpu.write8 = (addr, value) => {
+    original.write8(addr, value);
+    maybeRecord(output.writes, addr, value & 0xFF, 1);
+  };
+  cpu.write16 = (addr, value) => {
+    original.write16(addr, value);
+    maybeRecord(output.writes, addr, value & 0xFFFF, 2);
+  };
+  cpu.write24 = (addr, value) => {
+    original.write24(addr, value);
+    maybeRecord(output.writes, addr, value & 0xFFFFFF, 3);
+  };
+
+  return () => {
+    cpu.read8 = original.read8;
+    cpu.read16 = original.read16;
+    cpu.read24 = original.read24;
+    cpu.write8 = original.write8;
+    cpu.write16 = original.write16;
+    cpu.write24 = original.write24;
+  };
+}
+
+function createBootSnapshot() {
+  const mem = new Uint8Array(0x1000000);
+  mem.set(rom);
+
+  const executor = createExecutor(PRELIFTED_BLOCKS, mem, {
+    peripherals: createPeripheralBus({ timerInterrupt: false }),
+  });
+
+  const result = executor.runFrom(BOOT_ENTRY, BOOT_MODE, {
+    maxSteps: BOOT_MAX_STEPS,
+    maxLoopIterations: BOOT_MAX_LOOPS,
+  });
+
+  return {
+    mem,
+    result,
+    postCpu: {
+      a: executor.cpu.a & 0xFF,
+      f: executor.cpu.f & 0xFF,
+      sp: executor.cpu.sp & 0xFFFFFF,
+      iy: executor.cpu.iy & 0xFFFFFF,
+      madl: executor.cpu.madl,
+      mbase: executor.cpu.mbase & 0xFF,
     },
-  },
-  {
-    targetAddr: FONT_XLAT,
-    label: 'FONT_XLAT (0x023A1C) — valid descriptor',
-    setup(mem, cpu) {
-      const iyBase = cpu._iy & 0xFFFFFF;
-      mem[iyBase + 52] = 0xFF;
-      mem[iyBase + 53] = 0xFF;
-      mem[iyBase + 54] = 0xFF;
-      mem[iyBase + 58] = 0xFF;
+  };
+}
 
-      // D025ED -> descriptor
-      write24(mem, 0xD025ED, FAKE_DESCRIPTOR_BASE);
-      mem[FAKE_DESCRIPTOR_BASE] = 0x01;
-      write24(mem, FAKE_DESCRIPTOR_BASE + 1, 0x070000);
+function traceRoutine(bootSnapshot, options) {
+  const {
+    label,
+    entry,
+    slot,
+    flagAddr,
+    flagBit,
+    initialA,
+    initialF,
+    initialHL,
+    seedPtr = null,
+    seedBytes = [0x10, 0xAA, 0xBB, 0xCC],
+  } = options;
+
+  const mem = new Uint8Array(bootSnapshot.mem);
+  const slotBefore = r24(mem, slot);
+
+  if (seedPtr !== null) {
+    w24(mem, slot, seedPtr);
+    for (let i = 0; i < seedBytes.length; i += 1) {
+      mem[(seedPtr + i) & 0xFFFFFF] = seedBytes[i] & 0xFF;
+    }
+  }
+
+  mem[flagAddr] |= (1 << flagBit);
+
+  const executor = createExecutor(PRELIFTED_BLOCKS, mem, {
+    peripherals: createPeripheralBus({ timerInterrupt: false }),
+  });
+  const cpu = executor.cpu;
+
+  cpu.halted = false;
+  cpu.iff1 = 0;
+  cpu.iff2 = 0;
+  cpu.madl = 1;
+  cpu.mbase = 0xD0;
+  cpu.iy = IY_BASE;
+  cpu.ix = TRACE_IX;
+  cpu.sp = TRACE_SP;
+  cpu.a = initialA & 0xFF;
+  cpu.f = initialF & 0xFF;
+  cpu.hl = initialHL & 0xFFFFFF;
+  cpu.de = 0;
+  cpu.bc = 0;
+
+  w24(mem, cpu.sp, SENTINEL_RET);
+
+  const pointerValue = r24(mem, slot);
+  const watchSet = new Set([
+    slot,
+    slot + 1,
+    slot + 2,
+    flagAddr,
+    D025CF,
+    D025CF + 1,
+    D025D2,
+    D025D2 + 1,
+    D025D2 + 2,
+    0x000000,
+    0x000001,
+    0x000002,
+  ]);
+  for (let i = 0; i < 4; i += 1) {
+    watchSet.add((pointerValue + i) & 0xFFFFFF);
+  }
+
+  const io = { reads: [], writes: [] };
+  const restore = installWatchHooks(cpu, watchSet, io);
+  const path = [];
+  let termination = 'unknown';
+
+  try {
+    const result = executor.runFrom(entry, 'adl', {
+      maxSteps: 200,
+      maxLoopIterations: 32,
+      onBlock(pc) {
+        const addr = pc & 0xFFFFFF;
+        if (path[path.length - 1] !== addr) path.push(addr);
+        if (addr === SENTINEL_RET) throw stopTrace('sentinel');
+      },
+      onMissingBlock(pc) {
+        const addr = pc & 0xFFFFFF;
+        if (addr === SENTINEL_RET) throw stopTrace('sentinel');
+      },
+    });
+    termination = result?.termination ?? 'completed';
+  } catch (error) {
+    if (error?.message === '__PHASE329_STOP__' && error.stopName === 'sentinel') {
+      termination = 'sentinel-return';
+    } else {
+      restore();
+      throw error;
+    }
+  }
+
+  restore();
+
+  return {
+    label,
+    entry,
+    slot,
+    seedPtr,
+    seedBytes,
+    slotBefore,
+    slotAfter: r24(mem, slot),
+    flagAddr,
+    flagBit,
+    flagBefore: (1 << flagBit),
+    flagAfterByte: mem[flagAddr] & 0xFF,
+    before: {
+      a: initialA & 0xFF,
+      f: initialF & 0xFF,
+      hl: initialHL & 0xFFFFFF,
     },
-  },
-  {
-    targetAddr: FONT_XLAT,
-    label: 'FONT_XLAT (0x023A1C) — invalid descriptor (0x83)',
-    setup(mem, cpu) {
-      const iyBase = cpu._iy & 0xFFFFFF;
-      mem[iyBase + 52] = 0xFF;
-      mem[iyBase + 53] = 0xFF;
-      mem[iyBase + 54] = 0xFF;
-      mem[iyBase + 58] = 0xFF;
-
-      // D025ED -> descriptor with 0x83 type (invalid)
-      write24(mem, 0xD025ED, FAKE_DESCRIPTOR_BASE);
-      mem[FAKE_DESCRIPTOR_BASE] = 0x83; // invalid marker
+    after: {
+      a: cpu.a & 0xFF,
+      f: cpu.f & 0xFF,
+      hl: cpu.hl & 0xFFFFFF,
+      de: cpu.de & 0xFFFFFF,
+      bc: cpu.bc & 0xFFFFFF,
+      sp: cpu.sp & 0xFFFFFF,
+      iy: cpu.iy & 0xFFFFFF,
     },
-  },
-  {
-    targetAddr: SUBFUNC_4,
-    label: 'SUBFUNC_4 (0x0239FE) — valid descriptor (dual flag clear)',
-    setup(mem, cpu) {
-      const iyBase = cpu._iy & 0xFFFFFF;
-      mem[iyBase + 52] = 0xFF;
-      mem[iyBase + 53] = 0xFF;
-      mem[iyBase + 54] = 0xFF;
-      mem[iyBase + 58] = 0xFF;
+    path,
+    reads: io.reads,
+    writes: io.writes,
+    d025cf: r24(mem, D025CF),
+    d025d2: r24(mem, D025D2),
+    pointerValue,
+    pointerBytes: bytesToHex(mem.subarray(pointerValue, pointerValue + 4)),
+    termination,
+  };
+}
 
-      write24(mem, 0xD025EA, FAKE_DESCRIPTOR_BASE);
-      mem[FAKE_DESCRIPTOR_BASE] = 0x01;
-      write24(mem, FAKE_DESCRIPTOR_BASE + 1, 0x070000);
-    },
-  },
-  {
-    targetAddr: SUBFUNC_0,
-    label: 'SUBFUNC_0 (0x02398E) — HL preservation test (HL=0xBEEF42)',
-    setup(mem, cpu) {
-      const iyBase = cpu._iy & 0xFFFFFF;
-      mem[iyBase + 53] = 0xFF;
-      cpu._hl = 0xBEEF42;
+function addrName(addr) {
+  return NAME_MAP.get(addr) ?? hex(addr);
+}
 
-      write24(mem, 0xD02611, FAKE_DESCRIPTOR_BASE);
-      mem[FAKE_DESCRIPTOR_BASE] = 0x01;
-      write24(mem, FAKE_DESCRIPTOR_BASE + 1, 0x070000);
-    },
-  },
-];
+function formatEvent(event) {
+  const widthHex = event.width === 1 ? 2 : event.width === 2 ? 4 : 6;
+  return `${addrName(event.addr)} <= ${hex(event.value, widthHex)}`;
+}
 
-for (const scenario of scenarios) {
-  const result = await runDynamicTrace(
-    blocksMap,
-    scenario.targetAddr,
-    scenario.label,
-    scenario.setup,
+function printSection(title) {
+  console.log(`\n=== ${title} ===`);
+}
+
+function printColdBoot(snapshot) {
+  printSection('Cold Boot Snapshot');
+  console.log(`boot entry: ${hex(BOOT_ENTRY)} (${BOOT_MODE})`);
+  console.log(`termination: ${snapshot.result.termination}`);
+  console.log(`last PC: ${hex(snapshot.result.lastPc ?? snapshot.result.pc ?? 0)}`);
+  console.log(
+    `post-boot CPU: A=${hb(snapshot.postCpu.a)} F=${hb(snapshot.postCpu.f)} ` +
+    `SP=${hex(snapshot.postCpu.sp)} IY=${hex(snapshot.postCpu.iy)} ` +
+    `MADL=${snapshot.postCpu.madl} MBASE=${hb(snapshot.postCpu.mbase)}`,
   );
-  printDynamicTrace(result);
+  console.log('cold-boot slot values:');
+  for (const slot of POINTER_SLOTS) {
+    console.log(`  ${addrName(slot)} = ${hex(r24(snapshot.mem, slot))}`);
+  }
+  console.log('note: the traces below keep this boot RAM image, then switch back to the normal ADL helper calling convention (MADL=1, IY=0xD00080).');
 }
 
-// --- Summary ---
+function printRegionDisassembly() {
+  printSection(`Static Disassembly ${hex(REGION_START)}..${hex(REGION_END - 1)}`);
+  for (const line of decodeRange(REGION_START, REGION_END)) {
+    console.log(`  ${line}`);
+  }
+}
 
-console.log('7) Summary\n');
-console.log('The 0x02398E-0x023AD1 region contains 12 "translation reset" sub-functions.');
-console.log('All share the same template:');
-console.log('  1. Save registers (PUSH IX/AF/HL)');
-console.log('  2. Load a D025xx pointer into HL');
-console.log('  3. Call the pointer-deref helper (0x025758 or 0x0238B2)');
-console.log('     -> follows the pointer, reads descriptor type byte into A,');
-console.log('        loads descriptor+1 address into IX, tests type against 0x83');
-console.log('  4. If type == 0x83 (invalid): jump to error handler that increments D0265B');
-console.log('  5. Otherwise: restore AF/IX, clear specific IY flag bit(s), RET');
-console.log('');
-console.log('FONT_XLAT (0x023A1C) is structurally identical to the others except:');
-console.log('  - Uses pointer D025ED');
-console.log('  - Clears IY+53 bit 5 (the "font translation active" flag)');
-console.log('  - Called by exactly 3 sites:');
-console.log('    * JP at 0x020130 (vector table entry)');
-console.log('    * CALL at 0x07BF47 (inside fixed-width font renderer 0x07BF3E)');
-console.log('    * CALL at 0x0A5408 (inside variable-width font renderer 0x0A5424)');
-console.log('');
-console.log('SUBFUNC_0 (0x02398E) is the only variant with extra side effects:');
-console.log('  - OR 0x01 into A (ensures A != 0 on return)');
-console.log('  - Stores 0x0109 to D025CF (SIS-mode 16-bit store)');
-console.log('  - Has 55 call sites — the "default" translation reset');
-console.log('');
-console.log('The D025xx pointers form a translation handler table:');
-console.log('  D025CF: mode/config value (written by SUBFUNC_0)');
-console.log('  D025D2: secondary handler pointer (written by alt helper 0x0238B2)');
-console.log('  D025E1..D025FF: 3-byte pointers to handler descriptors (one per translation)');
-console.log('  D02611: primary handler pointer (used by SUBFUNC_0)');
-console.log('  D0265B: error counter (incremented when descriptor type == 0x83)');
-console.log('');
-console.log('The IY+52/53/54/58 flag bytes track which translations are currently active.');
-console.log('Each sub-function RES-es its specific bit to mark its translation as inactive.');
-console.log('Font renderers check IY+53 bit 5 before glyph lookup; FONT_XLAT clears it.');
+function printRoutineSummary(routines) {
+  printSection('Sibling Routine Map');
+  console.log(`found ${routines.length} wrappers in the family by ${hex(REGION_END - 1)}:`);
+  for (const routine of routines) {
+    const clearText = routine.clearOps
+      .map((op) => `${hex(op.flagAddr)} bit ${op.bit}`)
+      .join(', ');
+    const writeText = routine.writes
+      .map((w) => `${addrName(w.addr)}${w.value !== null ? `=${hex(w.value, w.value <= 0xFFFF ? 4 : 6)}` : ''}`)
+      .join(', ');
+    console.log(`  ${hex(routine.entry)}: slot ${addrName(routine.slot)} via ${hex(routine.helper)}; clears ${clearText || 'n/a'}`);
+    if (routine.stub) {
+      console.log(`    paired registration stub: ${hex(routine.stub.entry)} sets ${hex(routine.stub.flagAddr)} bit ${routine.stub.bit}`);
+    }
+    if (routine.helper && HELPER_NOTES.has(routine.helper)) {
+      console.log(`    helper note: ${HELPER_NOTES.get(routine.helper)}`);
+    }
+    if (writeText) {
+      console.log(`    extra writes: ${writeText}`);
+    }
+  }
+}
+
+function print023A1CBranchAnalysis(routines) {
+  const hook = routines.find((routine) => routine.entry === 0x023A1C);
+  const clearer = routines.find((routine) => routine.entry === 0x02398E);
+
+  printSection('0x023A1C Branch Analysis');
+  for (const inst of hook.insts) {
+    console.log(`  ${formatLine(inst)}`);
+  }
+
+  console.log('\n  branch summary:');
+  console.log(`    slot read: ${addrName(hook.slot)} -> helper ${hex(hook.helper)}`);
+  console.log('    Z path: first byte at the slot target is 0x83, so JP Z goes to 0x025762 (shared hook dispatcher).');
+  console.log('    NZ path: AF and HL are restored, IX is restored, bit 5 in IY+53 is cleared, then RET.');
+
+  console.log('\n  compared with 0x02398E:');
+  console.log(`    ${hex(clearer.entry)} uses ${addrName(clearer.slot)} instead of ${addrName(hook.slot)}.`);
+  console.log(`    ${hex(clearer.entry)} clears bit 1 in IY+53, ORs A with 0x01, and stores 0x0109 to ${addrName(D025CF)}.`);
+  console.log(`    ${hex(hook.entry)} clears bit 5 in IY+53 only; it does not touch ${addrName(D025CF)} and it restores AF exactly.`);
+  console.log('    conclusion: 0x023A1C is not the character translation itself. It is another slot-driven hook wrapper that font code calls when the bit-5 font hook is armed.');
+}
+
+function printSlotRefs(snapshot) {
+  printSection('Pointer Slot Trace');
+  console.log('cold-boot values are all zero, so the slots are not persistent font tables loaded at reset.');
+  console.log('each slot is paired with a registration stub that stores caller-supplied HL and sets a matching IY bit.');
+
+  for (const slot of POINTER_SLOTS) {
+    const refs = scanSlotRefs(slot);
+    console.log(`\n  ${addrName(slot)} = ${hex(r24(snapshot.mem, slot))}`);
+    for (const ref of refs) {
+      console.log(`    ${hex(ref.pc)} ${ref.kind}`);
+    }
+  }
+
+  console.log('\n  interpretation:');
+  console.log('    the slot family behaves like registered hook/thunk pointers, not font descriptor records.');
+  console.log('    the shared helper 0x025758 dereferences the slot, reads byte 0 at the target, and compares it against 0x83.');
+  console.log('    when byte 0 equals 0x83, control diverts into the shared hook path at 0x025762, which eventually jumps via IX=target+1.');
+  console.log('    that is callback/thunk behavior, so these slots look like mode-registered handlers used by the font/key pipelines.');
+}
+
+function print023A1CCallers() {
+  const refs = scanBranchRefs(0x023A1C);
+
+  printSection('Callers Of 0x023A1C');
+  for (const ref of refs) {
+    console.log(`  ${hex(ref.pc)} ${ref.kind} ${hex(0x023A1C)}`);
+  }
+
+  console.log('\n  fixed-width path:');
+  for (const line of decodeRange(0x07BF3E, 0x07BF5C)) {
+    console.log(`    ${line}`);
+  }
+
+  console.log('\n  variable-width width/metric path:');
+  for (const line of decodeRange(0x0A53FA, 0x0A5424)) {
+    console.log(`    ${line}`);
+  }
+
+  console.log('\n  path summary:');
+  console.log('    0x07BF47: fixed-width lookup 0x07BF3E calls 0x023A1C when BIT 5,(IY+53) is set.');
+  console.log('    0x0A5408: the variable-width width/metric helper at 0x0A53FA calls 0x023A1C when BIT 5,(IY+53) is set.');
+  console.log('    0x0A5424 itself does not call 0x023A1C directly; it only uses the bit-1 path through 0x02398E.');
+  console.log('    0x020130 is the OS jump-table alias (JP 0x023A1C), not a font routine by itself.');
+}
+
+function printTrace(trace) {
+  console.log(`\n  ${trace.label}`);
+  console.log(`    entry: ${hex(trace.entry)} slot: ${addrName(trace.slot)} initial-slot=${hex(trace.slotBefore)} active-flag=${addrName(trace.flagAddr)} bit ${trace.flagBit}`);
+  if (trace.seedPtr !== null) {
+    console.log(`    seeded slot target: ${hex(trace.seedPtr)} bytes=${trace.seedBytes.map(hb).join(' ')}`);
+  }
+  console.log(
+    `    before: A=${hb(trace.before.a)} F=${hb(trace.before.f)} HL=${hex(trace.before.hl)} ` +
+    `slotTarget=${hex(trace.pointerValue)} flagByte=${hb(trace.flagBefore)}`,
+  );
+  console.log(
+    `    after:  A=${hb(trace.after.a)} F=${hb(trace.after.f)} HL=${hex(trace.after.hl)} ` +
+    `SP=${hex(trace.after.sp)} flagByte=${hb(trace.flagAfterByte)} ` +
+    `${addrName(D025CF)}=${hex(trace.d025cf)} ${addrName(D025D2)}=${hex(trace.d025d2)}`,
+  );
+  console.log(`    pointer bytes: ${trace.pointerBytes}`);
+  console.log(`    path: ${trace.path.map((pc) => hex(pc)).join(' -> ') || '(none)'}`);
+  console.log(`    reads: ${trace.reads.length ? trace.reads.map(formatEvent).join(' | ') : '(none)'}`);
+  console.log(`    writes: ${trace.writes.length ? trace.writes.map(formatEvent).join(' | ') : '(none)'}`);
+  console.log(`    termination: ${trace.termination}`);
+}
+
+function printDynamicTraces(snapshot) {
+  printSection('Dynamic Traces');
+  console.log('all traces reuse the cold-boot RAM image, then call the helpers directly with ADL/IY state restored.');
+  console.log('cold traces show real boot contents (all slots zero); seeded traces inject a nonzero slot target so the dereference is visible.');
+
+  const traces = [
+    traceRoutine(snapshot, {
+      label: '0x02398E / cold slot',
+      entry: 0x02398E,
+      slot: D02611,
+      flagAddr: FLAG_IY53,
+      flagBit: 1,
+      initialA: 0x76,
+      initialF: 0xA5,
+      initialHL: 0x123456,
+    }),
+    traceRoutine(snapshot, {
+      label: '0x02398E / seeded nonzero slot',
+      entry: 0x02398E,
+      slot: D02611,
+      flagAddr: FLAG_IY53,
+      flagBit: 1,
+      initialA: 0x76,
+      initialF: 0xA5,
+      initialHL: 0x123456,
+      seedPtr: 0xD20000,
+      seedBytes: [0x10, 0xAA, 0xBB, 0xCC],
+    }),
+    traceRoutine(snapshot, {
+      label: '0x023A1C / cold slot',
+      entry: 0x023A1C,
+      slot: D025ED,
+      flagAddr: FLAG_IY53,
+      flagBit: 5,
+      initialA: 0x01,
+      initialF: 0xA5,
+      initialHL: 0x654321,
+    }),
+    traceRoutine(snapshot, {
+      label: '0x023A1C / seeded nonzero slot',
+      entry: 0x023A1C,
+      slot: D025ED,
+      flagAddr: FLAG_IY53,
+      flagBit: 5,
+      initialA: 0x01,
+      initialF: 0xA5,
+      initialHL: 0x654321,
+      seedPtr: 0xD20020,
+      seedBytes: [0x11, 0xDD, 0xEE, 0xFF],
+    }),
+  ];
+
+  for (const trace of traces) {
+    printTrace(trace);
+  }
+
+  console.log('\n  trace takeaways:');
+  console.log('    0x02398E preserves HL but mutates A/F (0x76 -> 0x77 in the font-style scenario) and writes 0x0109 to D025CF.');
+  console.log('    0x023A1C preserves A/F/HL exactly on the NZ path and only clears bit 5 in IY+53.');
+  console.log('    both routines dereference their slot first, inspect byte 0 at the target, and clear the matching IY flag bit after the NZ return path.');
+}
+
+function main() {
+  const stubMap = buildStubMap();
+  const routines = ROUTINE_SPECS.map((spec) => analyzeRoutine(spec, stubMap));
+  const snapshot = createBootSnapshot();
+
+  console.log('Phase 329: Font translation hook family 0x02398E / 0x023A1C');
+  console.log(`ROM size: ${hex(rom.length, 8)} bytes`);
+
+  printColdBoot(snapshot);
+  printRegionDisassembly();
+  printRoutineSummary(routines);
+  print023A1CBranchAnalysis(routines);
+  printSlotRefs(snapshot);
+  print023A1CCallers();
+  printDynamicTraces(snapshot);
+
+  console.log('\nPhase 329 complete.');
+}
+
+main();
