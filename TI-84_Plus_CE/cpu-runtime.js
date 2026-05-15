@@ -855,6 +855,7 @@ export function createExecutor(blocks, memory, options = {}) {
       command: 0x00,
       status: 0x00,
       trigger: 0x00,
+      buffer: new Uint8Array(512),
     };
     const kbdMmio = {
       mode: 0x00,        // 0xE00803: scan mode
@@ -881,6 +882,11 @@ export function createExecutor(blocks, memory, options = {}) {
       return -1;
     };
 
+    const getLcdSpiDmaBufferOffset = (addr) => {
+      if (addr >= 0xE30200 && addr < 0xE30400) return addr - 0xE30200;
+      return -1;
+    };
+
     const readLcdMmioReg = (reg) => {
       if (reg === 0x10) return lcdMmio.upbase & 0xFF;
       if (reg === 0x11) return (lcdMmio.upbase >> 8) & 0xFF;
@@ -899,6 +905,8 @@ export function createExecutor(blocks, memory, options = {}) {
       return 0x00;
     };
 
+    const readLcdSpiDmaBufferByte = (offset) => lcdSpiDma.buffer[offset] ?? 0x00;
+
     const writeLcdMmioReg = (reg, value) => {
       if (reg === 0x10) lcdMmio.upbase = (lcdMmio.upbase & 0xFFFF00) | value;
       if (reg === 0x11) lcdMmio.upbase = (lcdMmio.upbase & 0xFF00FF) | (value << 8);
@@ -915,6 +923,10 @@ export function createExecutor(blocks, memory, options = {}) {
         lcdSpiDma.trigger = value;
         if (value & 0x04) lcdSpiDma.status = 0x04;
       }
+    };
+
+    const writeLcdSpiDmaBufferByte = (offset, value) => {
+      lcdSpiDma.buffer[offset] = value;
     };
 
     const recordF80Write = (addr, value) => {
@@ -937,6 +949,8 @@ export function createExecutor(blocks, memory, options = {}) {
       if (lcdReg >= 0) return readLcdMmioReg(lcdReg);
       const lcdSpiDmaReg = getLcdSpiDmaReg(addr);
       if (lcdSpiDmaReg >= 0) return readLcdSpiDmaReg(lcdSpiDmaReg);
+      const lcdSpiDmaBufferOffset = getLcdSpiDmaBufferOffset(addr);
+      if (lcdSpiDmaBufferOffset >= 0) return readLcdSpiDmaBufferByte(lcdSpiDmaBufferOffset);
       if (addr >= 0xE00800 && addr < 0xE00920) {
         const reg = addr - 0xE00800;
         if (reg >= 0x10 && reg < 0x18) return kbd.keyMatrix[reg - 0x10]; // key data per group
@@ -976,6 +990,11 @@ export function createExecutor(blocks, memory, options = {}) {
       const lcdSpiDmaReg = getLcdSpiDmaReg(addr);
       if (lcdSpiDmaReg >= 0) {
         writeLcdSpiDmaReg(lcdSpiDmaReg, value & 0xFF);
+        return;
+      }
+      const lcdSpiDmaBufferOffset = getLcdSpiDmaBufferOffset(addr);
+      if (lcdSpiDmaBufferOffset >= 0) {
+        writeLcdSpiDmaBufferByte(lcdSpiDmaBufferOffset, value & 0xFF);
         return;
       }
       if (addr >= 0xE00800 && addr < 0xE00920) {
