@@ -774,8 +774,6 @@ function decodeED(romBytes, startPc, edPc, mode, modePrefix, immW) {
   if (op === 0x1f) return emit(0, { tag: 'ld-ind-pair', dest: 'hl', pair: 'de' });
   if (op === 0x2f) return emit(0, { tag: 'ld-ind-pair', dest: 'hl', pair: 'hl' });
   // PEA instructions (eZ80) — push effective address onto stack
-  if (op === 0x65) return emit(1, { tag: 'pea', base: 'ix', displacement: disp });
-  if (op === 0x66) return emit(1, { tag: 'pea', base: 'iy', displacement: disp });
   // LEA instructions (eZ80)
   if (op === 0x02) return emit(1, { tag: 'lea', dest: 'bc', base: 'ix', displacement: disp });
   if (op === 0x03) return emit(1, { tag: 'lea', dest: 'bc', base: 'iy', displacement: disp });
