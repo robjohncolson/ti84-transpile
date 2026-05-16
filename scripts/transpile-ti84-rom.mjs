@@ -22318,6 +22318,8 @@ function walkBlocks() {
 
   // Phase 341: z80-mode seed for kernel init return address (session 340 diagnosed missing_block at 0x00001A:z80)
   seedEntries.push({ pc: 0x00001A, mode: 'z80' });
+  // Phase 342: z80-mode seed for kernel init (session 341 diagnosed missing_block at 0x009006:z80)
+  seedEntries.push({ pc: 0x009006, mode: 'z80' });
 
   seedEntries.push(...knownEntryAnchors);
 
