@@ -8727,15 +8727,101 @@
         "TI-84_Plus_CE/probe-phase339-iy9-gate.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "d1458783c478",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 340 P2: Trace 0x0582B8 and HOME_HANDLER area\n\n## Context\n\nThe TI-84 Plus CE OS CoorMo",
+      "status": "completed",
+      "duration_seconds": 575.028,
+      "timestamp": "2026-05-16T04:12:05Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "beeafd2ef0e4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 340 P3: Map all ROM readers of 0xD007CA (cxMain pointer)\n\n## Context\n\nThe TI-84 Plus ",
+      "status": "completed",
+      "duration_seconds": 683.884,
+      "timestamp": "2026-05-16T04:13:55Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase340-cxmain-readers.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "11400742eb9c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 340 P1: Diagnose kernel init halt at 0x0019B5\n\n## Context\n\nThe TI-84 Plus CE ROM tran",
+      "status": "completed",
+      "duration_seconds": 786.685,
+      "timestamp": "2026-05-16T04:15:35Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8a531d641614",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add z80-mode seed at 0x00001A to transpiler + verify kernel init progresses further\n\n## Cont",
+      "status": "completed",
+      "duration_seconds": 260.044,
+      "timestamp": "2026-05-16T06:06:52Z",
+      "files_changed": [
+        "scripts/transpile-ti84-rom.mjs",
+        "TI-84_Plus_CE/probe-phase341-kernel-init-z80-seed.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "be2d79a63b07",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace full CoorMon entry 0x08C331 \u2192 0x08C449 (undecoded setup region)\n\n## Context\nThe full C",
+      "status": "completed",
+      "duration_seconds": 354.193,
+      "timestamp": "2026-05-16T06:08:28Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase341-coormon-entry.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "99f52f9d928c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map all 19 cxMain (0xD007CA) write sites \u2014 classify each by handler installed\n\n## Context\nFr",
+      "status": "completed",
+      "duration_seconds": 519.356,
+      "timestamp": "2026-05-16T06:11:17Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ee7b851d2da2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate 0x08C8CB context setup \u2014 how HOME context is installed\n\n## Context\nFrom session ",
+      "status": "completed",
+      "duration_seconds": 614.742,
+      "timestamp": "2026-05-16T06:12:51Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase341-context-setup.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 715,
-    "cc_to_codex": 715,
+    "total_calls": 722,
+    "cc_to_codex": 722,
     "codex_to_cc": 0,
-    "completed": 511,
+    "completed": 518,
     "failed": 190,
     "refused": 0,
-    "avg_duration_seconds": 632.069
+    "avg_duration_seconds": 631.196
   }
 }

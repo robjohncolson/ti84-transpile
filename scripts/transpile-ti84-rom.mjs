@@ -22316,6 +22316,9 @@ function walkBlocks() {
     seedEntries.push({ pc: offset, mode: offset === 0 ? 'z80' : 'adl' });
   }
 
+  // Phase 341: z80-mode seed for kernel init return address (session 340 diagnosed missing_block at 0x00001A:z80)
+  seedEntries.push({ pc: 0x00001A, mode: 'z80' });
+
   seedEntries.push(...knownEntryAnchors);
 
   const queue = [...seedEntries];
