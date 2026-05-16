@@ -8357,15 +8357,323 @@
       "timestamp": "2026-05-15T12:13:15Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "d374ab2a1c59",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map the 54 BPP-Flag Reader Blocks\n\n## Context\nYou are working on a TI-84 Plus CE ROM transpi",
+      "status": "completed",
+      "duration_seconds": 760.549,
+      "timestamp": "2026-05-15T12:15:17Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ea62c0c7d62c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace Missing_Block Terminators in the Text Rendering Path\n\n## Context\nYou are working on a ",
+      "status": "completed",
+      "duration_seconds": 830.731,
+      "timestamp": "2026-05-15T12:16:29Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "4df42b06a7d9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace the Glyph Scaler Call Chain 0x053396\u21920x0533BD\u21920x053573\n\n## Context\nYou are working on ",
+      "status": "timeout",
+      "duration_seconds": 900.086,
+      "timestamp": "2026-05-15T12:17:35Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f18dbe55606c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Fix the Workflow Probe Event Loop (Priority A \u2014 \u2605\u2605\u2605)\n\n## Context\nThe workflow probe (`TI-84_",
+      "status": "completed",
+      "duration_seconds": 161.204,
+      "timestamp": "2026-05-15T14:05:53Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "12bd3e279d14",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map the 0x023D14 Hook Iterator (Priority B \u2014 \u2605\u2605\u2605)\n\n## Context\nThe TI-84 CE OS has a hook sys",
+      "status": "completed",
+      "duration_seconds": 756.18,
+      "timestamp": "2026-05-15T14:15:50Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "86a1c145843e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace the Glyph Bitmap-to-RGB565 No-Scale Path (Priority C \u2014 \u2605\u2605)\n\n## Context\nSession 332 dec",
+      "status": "timeout",
+      "duration_seconds": 900.036,
+      "timestamp": "2026-05-15T14:18:15Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c9f0b1a18e8e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map the 5 Callers of glyph_add_bias (0x053396) (Priority D \u2014 \u2605\u2605)\n\n## Context\nSession 332 ide",
+      "status": "timeout",
+      "duration_seconds": 900.033,
+      "timestamp": "2026-05-15T14:18:17Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b4888f928ee5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 334 \u2014 P1: Discover the OS Main Event Loop\n\n## Context\n\nThis is a TI-84 Plus CE ROM tr",
+      "status": "completed",
+      "duration_seconds": 394.483,
+      "timestamp": "2026-05-15T16:09:39Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase334-event-loop.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "3f4e2a651463",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 334 \u2014 P3: Verify Font Base Address 0x0040EE vs 0x003D6E\n\n## Context\n\nThis is a TI-84 ",
+      "status": "completed",
+      "duration_seconds": 403.919,
+      "timestamp": "2026-05-15T16:09:52Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9211a713f70f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 334 \u2014 P2: Investigate Missing Block 0xFB65ED\n\n## Context\n\nThis is a TI-84 Plus CE ROM",
+      "status": "completed",
+      "duration_seconds": 561.851,
+      "timestamp": "2026-05-15T16:12:28Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase334-missing-block.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "d208f3babc1b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 334 \u2014 P4: Map Hook Iterator Callers (who calls 0x023D14?)\n\n## Context\n\nThis is a TI-8",
+      "status": "completed",
+      "duration_seconds": 706.197,
+      "timestamp": "2026-05-15T16:14:55Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "0be0ef35c099",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 335 \u2014 Priority 2: Fix ED 65 Transpiler Misdecoding\n\n## Context\nSession 334 found that",
+      "status": "completed",
+      "duration_seconds": 304.297,
+      "timestamp": "2026-05-15T18:07:06Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8d180c94533c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 335 \u2014 Priority 1: Trace OS Key Dispatch through 0x08BF22\n\n## Context\nThe TI-84 Plus C",
+      "status": "completed",
+      "duration_seconds": 377.624,
+      "timestamp": "2026-05-15T18:08:18Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase335-key-dispatch.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "40dac75a26a5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 335 \u2014 Priority 4: Trace Display Refresh Path inside 0x08BF22\n\n## Context\nSession 334 ",
+      "status": "completed",
+      "duration_seconds": 763.84,
+      "timestamp": "2026-05-15T18:14:48Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase335-display-refresh.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "591612cb795b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 335 \u2014 Priority 3: Investigate cxMain Initialization\n\n## Context\nThe TI-84 Plus CE OS ",
+      "status": "completed",
+      "duration_seconds": 842.846,
+      "timestamp": "2026-05-15T18:16:06Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c1e9be8326b1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 336 \u2014 Priority (e): Clean up duplicate PEA decoder entries\n\n## Goal\nRemove dead-code ",
+      "status": "completed",
+      "duration_seconds": 54.703,
+      "timestamp": "2026-05-15T20:03:28Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "058728c3883b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 336 \u2014 Priority (b): Enable keyboard input\n\n## Goal\nFind which RAM byte the OS bytecod",
+      "status": "blocked",
+      "duration_seconds": 558.263,
+      "timestamp": "2026-05-15T20:11:48Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c4756ebf82a0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 336 \u2014 Priority (d): Map the 0x09EFDE VRAM fill kernel\n\n## Goal\nDetermine what the blo",
+      "status": "completed",
+      "duration_seconds": 771.9,
+      "timestamp": "2026-05-15T20:15:24Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase336-vram-fill.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "13ce29befd2d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 336 \u2014 Priority (a): Populate cxMain during boot\n\n## Goal\nTrace the code path from ker",
+      "status": "timeout",
+      "duration_seconds": 900.04,
+      "timestamp": "2026-05-15T20:17:28Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b140a070d6c6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Patch GetCSC return value for keyboard input\n\n## Context\nThis is a TI-84 Plus CE ROM transpi",
+      "status": "completed",
+      "duration_seconds": 308.274,
+      "timestamp": "2026-05-15T22:07:51Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase337-getcsc-patch.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "d91502643516",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Increase kernel init step limit to test natural context dispatch\n\n## Context\nThis is a TI-84",
+      "status": "completed",
+      "duration_seconds": 308.179,
+      "timestamp": "2026-05-15T22:07:56Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase337-extended-init.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "7f2d33df3bd6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace CoorMon no-key path to find missing blocks\n\n## Context\nThis is a TI-84 Plus CE ROM tra",
+      "status": "completed",
+      "duration_seconds": 520.005,
+      "timestamp": "2026-05-15T22:11:24Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase337-coormon-nokey.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "edb8191494bc",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace FillRect callers at 0x09F008\n\n## Context\nThis is a TI-84 Plus CE ROM transpilation pro",
+      "status": "completed",
+      "duration_seconds": 647.924,
+      "timestamp": "2026-05-15T22:13:34Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase337-fillrect-callers.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "0a4f150136ac",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Build Multi-Iteration CoorMon Event Loop with Key Injection\n\n## Context\nYou are working on a",
+      "status": "completed",
+      "duration_seconds": 201.377,
+      "timestamp": "2026-05-16T00:07:05Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase338-multi-iteration-loop.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "02b37b25722f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace Key Dispatch Flow Past 0x08BF68\n\n## Context\nYou are working on a TI-84 Plus CE ROM tra",
+      "status": "completed",
+      "duration_seconds": 446.682,
+      "timestamp": "2026-05-16T00:11:13Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "55a4f69ee56d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map VRAM Fill Dynamic Call Chain During CoorMon\n\n## Context\nYou are working on a TI-84 Plus ",
+      "status": "completed",
+      "duration_seconds": 517.499,
+      "timestamp": "2026-05-16T00:12:25Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase338-vram-call-chain.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 685,
-    "cc_to_codex": 685,
+    "total_calls": 711,
+    "cc_to_codex": 711,
     "codex_to_cc": 0,
-    "completed": 486,
-    "failed": 186,
+    "completed": 507,
+    "failed": 190,
     "refused": 0,
-    "avg_duration_seconds": 634.692
+    "avg_duration_seconds": 632.296
   }
 }

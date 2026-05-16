@@ -71,10 +71,15 @@ function createPllHandler(state) {
     },
 
     write(port, value) {
-      if (!state.pll.configured || value !== state.pll.lastWrite) {
-        state.pll.remainingReads = state.pll.delay;
-        state.pll.locked = false;
-      }
+      // Every write to the PLL config register triggers a relock sequence,
+      // regardless of whether the same value is written again. On real
+      // hardware a PLL reconfiguration always requires time to re-lock.
+      // Without this unconditional reset, the init loop at 0x000658-0x0006A8
+      // sees an already-locked PLL on re-entry and RET PO fires before the
+      // subsequent init code runs, sending execution to address 0x000000
+      // (reset vector) in an infinite loop.
+      state.pll.remainingReads = state.pll.delay;
+      state.pll.locked = false;
       state.pll.configured = true;
       state.pll.lastWrite = value;
     },
