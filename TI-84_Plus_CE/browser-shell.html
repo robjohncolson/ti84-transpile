@@ -61,6 +61,13 @@ button.active { background: #2a5a2a; border-color: #4a8a4a; }
       <button id="btnAutoRun" disabled>AutoRun</button>
       <button id="btnReset">Reset</button>
     </div>
+    <div class="controls" style="align-items: center;">
+      <label style="color: #999; font-size: 12px; cursor: pointer; user-select: none;">
+        <input id="coormonMode" type="checkbox" style="vertical-align: middle; margin-right: 3px;" />
+        CoorMon mode (experimental)
+      </label>
+      <span class="control-note" style="margin-bottom: 0;">Skips boot and re-enters 0x08C331 each frame. Reset or Boot to apply.</span>
+    </div>
     <div class="controls">
       <button id="btnShowMode" disabled>MODE</button>
       <button id="btnShowPlot" disabled>Y=/Plot</button>
@@ -343,7 +350,11 @@ let kbdDown = null;
 let kbdUp = null;
 let lcd = null;
 let autoRunning = false;
+let runtimeMode = 'direct';
+const RUNTIME_MODE_DIRECT = 'direct';
+const RUNTIME_MODE_COORMON = 'coormon';
 const STEPS_PER_FRAME = 2000;
+const COORMON_FRAME_STEPS = 50000;
 const KEY_BURST_STEPS = 2000;
 const KEYBOARD_IRQ_ENABLE_HIGH_PORT = 0x5006;
 const KEYBOARD_IRQ_ENABLE_HIGH_BIT = 0x08; // bit 3 of the high byte = interrupt 19 overall
@@ -356,6 +367,9 @@ let alphaActive = false;
 const SET_TEXT_FG_ENTRY = 0x0802b2;
 const SCREEN_STACK_TOP = 0xD1A87E;
 const SCREEN_RENDER_STACK_BYTES = 12;
+const COORMON_ENTRY = 0x08C331;
+const COORMON_HOME_HANDLER = 0x058241;
+const COORMON_CXMAIN_ADDR = 0xD007CA;
 const TEXT_FG_COLOR = 0x000000;
 const MENU_MODE_STATE_ADDR = 0xD007E0;
 const CUSTOM_TEXT_ADDR = 0xD1B000;
@@ -460,6 +474,26 @@ function getScanCodeForPcCode(code) {
   return GETCSC_SCAN_CODE_BY_PC_CODE[code] ?? null;
 }
 
+function isCoorMonModeRequested() {
+  return $('coormonMode')?.checked === true;
+}
+
+function isCoorMonRuntime() {
+  return runtimeMode === RUNTIME_MODE_COORMON;
+}
+
+function getCoorMonScanCodeForPcCode(code) {
+  const mapping = KEY_MAP[code];
+  if (!mapping) return null;
+  return ((mapping.group & 0x0F) << 4) | (mapping.bit & 0x0F);
+}
+
+function getDisplayScanCodeForPcCode(code) {
+  return isCoorMonRuntime()
+    ? getCoorMonScanCodeForPcCode(code)
+    : getScanCodeForPcCode(code);
+}
+
 function getKeyboardModifierIndex(memory) {
   const flags = memory?.[MODIFIER_STATE_ADDR] ?? 0;
   const second = (flags & MODIFIER_2ND_MASK) !== 0 ? 1 : 0;
@@ -467,8 +501,22 @@ function getKeyboardModifierIndex(memory) {
   return alpha | second;
 }
 
+function getActiveCoorMonScanCode() {
+  const pressedCode = kbd?.getKeyState?.().pressedKeys?.[0];
+  if (!pressedCode) return 0x00;
+  return getCoorMonScanCodeForPcCode(pressedCode) ?? 0x00;
+}
+
+function writeCoorMonKeyEventFromState() {
+  if (!cpu?.memory) return 0x00;
+  const scanCode = getActiveCoorMonScanCode() & 0xFF;
+  cpu.memory[KEY_EVENT_BUFFER_ADDR] = scanCode;
+  return scanCode;
+}
+
 function writeTranslatedKeyEvent(code) {
   if (!cpu?.memory) return;
+  if (isCoorMonRuntime()) return;
 
   if (handleModifierKeys(code)) return;
 
@@ -1226,7 +1274,7 @@ function updateKeyStateDisplay() {
     return;
   }
 
-  const scanCode = getScanCodeForPcCode(state.pressedKeys[0]);
+  const scanCode = getDisplayScanCodeForPcCode(state.pressedKeys[0]);
   $('scanCode').textContent = scanCode == null
     ? '0x00'
     : `0x${hex(scanCode, 2)}`;
@@ -1259,14 +1307,68 @@ function enableKeyboardIRQ() {
   log(`<span class="info">--- Keyboard IRQ enabled (0x5006=0x${hex(enableHighByte, 2)}) ---</span>`);
 }
 
+function seedCoorMonRuntime() {
+  if (!cpu?.memory) return;
+  cpu.halted = false;
+  cpu.iff1 = 0;
+  cpu.iff2 = 0;
+  cpu.madl = 1;
+  cpu.mbase = 0xD0;
+  cpu.iy = 0xD00080;
+  cpu.sp = SCREEN_STACK_TOP;
+  evalWrite24(cpu.memory, COORMON_CXMAIN_ADDR, COORMON_HOME_HANDLER);
+}
+
+function initializeCoorMonRuntime() {
+  runtimeMode = RUNTIME_MODE_COORMON;
+  totalSteps = 0;
+  lastPc = COORMON_ENTRY;
+  lastMode = 'adl';
+  seedCoorMonRuntime();
+  writeCoorMonKeyEventFromState();
+  updateRegs();
+  syncLCDState();
+  if (lcd) lcd.renderFrame();
+  updateKeyStateDisplay();
+  updateKeyboardOverlay();
+  setStatus('CoorMon mode armed. Click AutoRun to drive 0x08C331 from requestAnimationFrame.');
+  log(`<span class="info">--- CoorMon mode seeded (entry=0x${hex(COORMON_ENTRY, 6)}, cxMain=0x${hex(COORMON_HOME_HANDLER, 6)}, SP=0x${hex(SCREEN_STACK_TOP, 6)}, IY=0xD00080) ---</span>`);
+}
+
+function runCoorMonFrame(stepBudget = COORMON_FRAME_STEPS) {
+  if (!executor || !cpu?.memory) return;
+  seedCoorMonRuntime();
+  const scanCode = writeCoorMonKeyEventFromState();
+  const result = executor.runFrom(COORMON_ENTRY, 'adl', {
+    maxSteps: stepBudget,
+    maxLoopIterations: 10000,
+  });
+  totalSteps += result.steps;
+  lastPc = result.lastPc;
+  lastMode = result.lastMode;
+  updateRegs();
+  syncLCDState();
+  if (lcd) lcd.renderFrame();
+  updateKeyStateDisplay();
+  updateKeyboardOverlay();
+  setStatus(`CoorMon: scan=0x${hex(scanCode, 2)}, ${result.steps} steps, ${result.termination} | Total: ${totalSteps}`);
+  if (result.termination === 'halt') {
+    log(`<span class="info">--- CoorMon HALT at ${hex(result.lastPc, 6)} ---</span>`);
+  }
+}
+
 function autoRunFrame() {
   if (!autoRunning || !executor) return;
-  runSteps(STEPS_PER_FRAME);
+  runSteps(isCoorMonRuntime() ? COORMON_FRAME_STEPS : STEPS_PER_FRAME);
   requestAnimationFrame(autoRunFrame);
 }
 
 function runSteps(n) {
   if (!executor) return;
+  if (isCoorMonRuntime()) {
+    runCoorMonFrame(n);
+    return;
+  }
   const result = executor.runFrom(lastPc, lastMode, {
     maxSteps: n,
     maxLoopIterations: 64,
@@ -1311,9 +1413,15 @@ $('btnBoot').addEventListener('click', async () => {
   const mem = new Uint8Array(0x1000000);
   mem.set(romBytes);
   romBytes = mem;
-  peripherals = createPeripheralBus({ pllDelay: 2, timerMode: 'nmi', timerInterval: 100 });
+  const requestedRuntimeMode = isCoorMonModeRequested()
+    ? RUNTIME_MODE_COORMON
+    : RUNTIME_MODE_DIRECT;
+  peripherals = requestedRuntimeMode === RUNTIME_MODE_COORMON
+    ? createPeripheralBus({ pllDelay: 2, timerInterrupt: false })
+    : createPeripheralBus({ pllDelay: 2, timerMode: 'nmi', timerInterval: 100 });
   executor = createExecutor(PRELIFTED_BLOCKS, romBytes, { peripherals });
   cpu = executor.cpu;
+  runtimeMode = requestedRuntimeMode;
   secondActive = false;
   alphaActive = false;
   updateModifierFlags();
@@ -1342,6 +1450,9 @@ $('btnBoot').addEventListener('click', async () => {
   kbdUp = (e) => {
     if (isEditableTarget(e)) return;
     kbd.handleKeyUp(e);
+    if (isCoorMonRuntime()) {
+      writeCoorMonKeyEventFromState();
+    }
     updateKeyStateDisplay();
     updateKeyboardOverlay();
   };
@@ -1359,6 +1470,11 @@ $('btnBoot').addEventListener('click', async () => {
   updateKeyboardOverlay();
   shellBooted = true;
   syncErrorBannerControls();
+
+  if (runtimeMode === RUNTIME_MODE_COORMON) {
+    initializeCoorMonRuntime();
+    return;
+  }
 
   log(`<span class="info">--- Boot from 0x000000:z80 ---</span>`);
   enableButtons(true);
@@ -1507,6 +1623,11 @@ $('btnAutoRun').addEventListener('click', () => {
   if (autoRunning) requestAnimationFrame(autoRunFrame);
 });
 
+$('coormonMode').addEventListener('change', () => {
+  if (!shellBooted) return;
+  flashStatus('Mode change will apply on the next Boot or Reset.', 1200);
+});
+
 $('btnReset').addEventListener('click', () => {
   if (kbd) {
     document.removeEventListener('keydown', kbdDown);
@@ -1529,6 +1650,7 @@ $('btnReset').addEventListener('click', () => {
   updateKeyboardOverlay();
   executor = null;
   cpu = null;
+  runtimeMode = RUNTIME_MODE_DIRECT;
   totalSteps = 0;
   lastPc = 0;
   lastMode = 'z80';
