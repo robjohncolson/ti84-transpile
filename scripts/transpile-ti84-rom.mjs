@@ -129,6 +129,12 @@ function getWordWriteAccessor(instruction) {
   return getWordByteWidth(instruction) === 2 ? 'write16' : 'write24';
 }
 
+function getWordForceShortArg(instruction) {
+  if (instruction.prefix === 'SIS' || instruction.prefix === 'LIS') return ', true';
+  if (instruction.prefix === 'SIL' || instruction.prefix === 'LIL') return ', false';
+  return '';
+}
+
 // Whether a memory-access instruction's immediate address should be composed
 // with MBASE. This applies when the immediate is 16-bit (Z80 mode or .SIS/.LIS
 // prefix in ADL mode). On eZ80, MBASE is the upper 8 bits of the effective
@@ -539,9 +545,9 @@ function emitInstructionJs(instruction) {
   if (tag === 'dec-pair') return [`cpu.${instruction.pair} = (cpu.${instruction.pair} - 1) & cpu.addressMask;`];
 
   // --- 16-bit ALU ---
-  if (tag === 'add-pair') return [`cpu.${instruction.dest} = cpu.addWord(cpu.${instruction.dest}, cpu.${instruction.src});`];
-  if (tag === 'sbc-pair') return [`cpu.hl = cpu.subtractWithBorrowWord(cpu.hl, cpu.${instruction.src});`];
-  if (tag === 'adc-pair') return [`cpu.hl = cpu.addWithCarryWord(cpu.hl, cpu.${instruction.src});`];
+  if (tag === 'add-pair') return [`cpu.${instruction.dest} = cpu.addWord(cpu.${instruction.dest}, cpu.${instruction.src}${getWordForceShortArg(instruction)});`];
+  if (tag === 'sbc-pair') return [`cpu.hl = cpu.subtractWithBorrowWord(cpu.hl, cpu.${instruction.src}${getWordForceShortArg(instruction)});`];
+  if (tag === 'adc-pair') return [`cpu.hl = cpu.addWithCarryWord(cpu.hl, cpu.${instruction.src}${getWordForceShortArg(instruction)});`];
 
   // --- PUSH / POP ---
   if (tag === 'push') return [`cpu.push(cpu.${instruction.pair});`];
@@ -22320,6 +22326,8 @@ function walkBlocks() {
   seedEntries.push({ pc: 0x00001A, mode: 'z80' });
   // Phase 342: z80-mode seed for kernel init (session 341 diagnosed missing_block at 0x009006:z80)
   seedEntries.push({ pc: 0x009006, mode: 'z80' });
+  // Phase 345: z80-mode seed for boot path (session 344 diagnosed missing_block at 0x000800:z80)
+  seedEntries.push({ pc: 0x000800, mode: 'z80' });
 
   seedEntries.push(...knownEntryAnchors);
 

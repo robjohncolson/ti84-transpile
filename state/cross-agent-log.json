@@ -8813,15 +8813,198 @@
         "TI-84_Plus_CE/probe-phase341-context-setup.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "4056d0234f31",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add Z80-mode seed at 0x009006 to the transpiler\n\n## Context\nThe TI-84 Plus CE ROM transpiler",
+      "status": "completed",
+      "duration_seconds": 212.556,
+      "timestamp": "2026-05-16T08:06:22Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "781db6958cda",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode the 0x08C958 context handler table\n\n## Context\nThe TI-84 Plus CE OS uses a context ha",
+      "status": "completed",
+      "duration_seconds": 329.595,
+      "timestamp": "2026-05-16T08:08:20Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "dc926f0d7bfd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Identify the 15 unknown handler addresses from cxMain write registry\n\n## Context\nSession 341",
+      "status": "completed",
+      "duration_seconds": 382.846,
+      "timestamp": "2026-05-16T08:09:17Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "56626930d83f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x0A27DD \u2014 the scan code provider function\n\n## Context\nThe TI-84 Plus CE OS event loop",
+      "status": "completed",
+      "duration_seconds": 385.208,
+      "timestamp": "2026-05-16T08:09:18Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "19510c66294b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x08C9AC Initialization Block\n\n## Context\nSession 342 found that immediately after th",
+      "status": "completed",
+      "duration_seconds": 554.923,
+      "timestamp": "2026-05-16T10:11:10Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "693fa800e501",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Identify All 28 Context Table Handlers\n\n## Context\nThe TI-84 Plus CE OS has a context handle",
+      "status": "completed",
+      "duration_seconds": 577.423,
+      "timestamp": "2026-05-16T10:11:28Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase343-all-28-handlers.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "d43bc0ed4860",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace Kernel Init Alternative Path\n\n## Context\nThe TI-84 Plus CE kernel init boot trace (fro",
+      "status": "completed",
+      "duration_seconds": 577.968,
+      "timestamp": "2026-05-16T10:11:30Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "da3dac888be9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map Deferred Callback System (0x0A27DD)\n\n## Context\nSession 342 traced 0x0A27DD as a deferre",
+      "status": "timeout",
+      "duration_seconds": 900.036,
+      "timestamp": "2026-05-16T10:16:54Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "02387d735c76",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace Boot Entry 0x000658 Through PLL Init to RST 0x38 Handler\n\n## Context\nYou are working o",
+      "status": "completed",
+      "duration_seconds": 625.995,
+      "timestamp": "2026-05-16T12:13:31Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase344-boot-trace-full.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "452a11a6f415",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x0008BB to Understand Boot Diversion Condition\n\n## Context\nYou are working on the TI-",
+      "status": "completed",
+      "duration_seconds": 795.978,
+      "timestamp": "2026-05-16T12:16:23Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "36446e5cdd99",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Deep Scan Code Dispatch \u2014 Disassemble Handler[14] and Handler[22] Subroutines\n\n## Context\nYo",
+      "status": "timeout",
+      "duration_seconds": 900.048,
+      "timestamp": "2026-05-16T12:18:08Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "411f150346a2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 345 \u2014 Priority 2: Add Z80-Mode Seed at 0x000800\n\n## Context\n\nThe TI-84 Plus CE boot p",
+      "status": "completed",
+      "duration_seconds": 79.668,
+      "timestamp": "2026-05-16T14:03:55Z",
+      "files_changed": [
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "1a1dfad15ee9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 345 \u2014 Priority 1: Fix .SIL/.SIS PREFIX ALU BUG IN TRANSPILER\n\n## Context\n\nThe TI-84 P",
+      "status": "completed",
+      "duration_seconds": 183.051,
+      "timestamp": "2026-05-16T14:05:37Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2eb9bc163d61",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 345 \u2014 Priority 3: Cross-Reference Syscall Trampolines (0x000080-0x0000FF)\n\n## Context",
+      "status": "completed",
+      "duration_seconds": 388.583,
+      "timestamp": "2026-05-16T14:09:06Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase345-syscall-trampolines.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "2cfc09edb78d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 345 \u2014 Priority 4: Investigate 0xD0058E vs 0xD0058C Scan Code Locations\n\n## Context\n\nI",
+      "status": "completed",
+      "duration_seconds": 396.334,
+      "timestamp": "2026-05-16T14:09:15Z",
+      "files_changed": [
+        "TI-84_Plus_CE/ROM.transpiled.js",
+        "TI-84_Plus_CE/ROM.transpiled.report.json",
+        "TI-84_Plus_CE/cpu-runtime.js",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase344-boot-diversion.mjs",
+        "TI-84_Plus_CE/probe-phase344-handler-dispatch.mjs",
+        "TI-84_Plus_CE/probe-phase345-scancode-d0058e.mjs",
+        "TI-84_Plus_CE/probe-phase345-syscall-trampolines.mjs",
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 722,
-    "cc_to_codex": 722,
+    "total_calls": 737,
+    "cc_to_codex": 737,
     "codex_to_cc": 0,
-    "completed": 518,
-    "failed": 190,
+    "completed": 531,
+    "failed": 192,
     "refused": 0,
-    "avg_duration_seconds": 631.196
+    "avg_duration_seconds": 628.241
   }
 }
