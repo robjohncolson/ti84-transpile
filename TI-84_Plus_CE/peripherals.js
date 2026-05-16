@@ -301,11 +301,16 @@ export function createPeripheralBus(options = {}) {
   }
 
   // Interrupt status/acknowledge registers (ports 0x3D-0x3E)
+  // The boot-side NMI stub masks bits 0-1 from port 0x3D, mirrors them to
+  // port 0x3E, and only loops back to 0x000047 when the masked value is zero.
+  // Returning a non-zero default keeps the emulator on the forward recovery
+  // path instead of forcing the signature-check retry loop every time NMI
+  // fires during early boot.
   // The NMI handler reads 0x3D to determine interrupt source.
   // Returning 0x00 means "no recognized interrupt" → NMI handler takes the
   // alternate path (0x000047 → call 0x0008BB).
   register(0x3d, {
-    read() { return 0x00; },
+    read() { return 0x01; },
     write() {},
   });
   register(0x3e, {
@@ -313,7 +318,11 @@ export function createPeripheralBus(options = {}) {
     write() {},
   });
 
-  // Interrupt controller (FTINTC010) at ports 0x5000-0x5014
+  // Interrupt controller (FTINTC010) at ports 0x5000-0x501F.
+  // The post-HALT ISR currently relies on:
+  //   0x5014-0x5016: masked status bytes 0..2 (read)
+  //   0x5008-0x500A: acknowledge bytes 0..2 (write)
+  //   0x5004-0x5006: enable-mask bytes 0..2 (read/write)
   // Bit mapping: 0=ON, 1-3=timers, 4=OS timer, 10=keyboard, 11=LCD, 12=RTC, 13=USB
   const intcState = {
     rawStatus: 0x00000000,    // port 0x5000: raw interrupt status

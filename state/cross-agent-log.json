@@ -9036,15 +9036,131 @@
         "TI-84_Plus_CE/probe-phase346-synthetic-scancodes.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "0b47750bc88f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Diagnose 0x0019B5 HALT and Post-HALT Continuation\n\n## Context\nThe TI-84 Plus CE ROM boot seq",
+      "status": "completed",
+      "duration_seconds": 479.366,
+      "timestamp": "2026-05-16T18:09:59Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase347-halt-diagnosis.mjs",
+        "state/cross-agent/0b47750bc88f.result.json"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "af88be6ae508",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace Syscall [0] Return Values (0x001768) in Boot Context\n\n## Context\nThe boot sequence rea",
+      "status": "completed",
+      "duration_seconds": 589.466,
+      "timestamp": "2026-05-16T18:11:51Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase347-syscall0-trace.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "3dae1c928e63",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map 0x0867CC State Machine (Parent Handler BIT 5,(IY+0x11))\n\n## Context\nSession 346 discover",
+      "status": "completed",
+      "duration_seconds": 714.44,
+      "timestamp": "2026-05-16T18:13:57Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase347-state-machine-085c.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "e3227d10b598",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 347 \u2014 P2: Integrate CoorMon Event Loop into Browser Shell\n\n## Context\n\nThe TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 504.355,
+      "timestamp": "2026-05-16T20:11:20Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c3505731a8b9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 347 \u2014 P3: Trace Syscall [0] Return Values in Boot Context\n\n## Context\n\nFrom session 3",
+      "status": "completed",
+      "duration_seconds": 643.117,
+      "timestamp": "2026-05-16T20:13:40Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase347-syscall0-trace.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "aba9ef9b7810",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 347 \u2014 P1: Diagnose 0x0019B5 HALT + Post-HALT Continuation\n\n## Context\n\nThe TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 780.456,
+      "timestamp": "2026-05-16T20:15:55Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase347-halt-continuation.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "c521bcfa5228",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 348 \u2014 Priority 1: Fix 0x0008BB ROM Signature Check (Boot HALT Root Cause)\n\n## Context",
+      "status": "completed",
+      "duration_seconds": 373.485,
+      "timestamp": "2026-05-16T22:09:13Z",
+      "files_changed": [
+        "TI-84_Plus_CE/cpu-runtime.js",
+        "TI-84_Plus_CE/probe-phase348-rom-signature-fix.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "e666c885da02",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 348 \u2014 Priority 2: Investigate NMI Path (Port 0x3D Behavior)\n\n## Context\n\nThe TI-84 CE",
+      "status": "completed",
+      "duration_seconds": 599.343,
+      "timestamp": "2026-05-16T22:13:00Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "63c61f3a609e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 348 \u2014 Priority 3: Map Interrupt Controller (Ports 0x5014-0x5016, 0x5008-0x500A)\n\n## C",
+      "status": "completed",
+      "duration_seconds": 751.36,
+      "timestamp": "2026-05-16T22:15:34Z",
+      "files_changed": [
+        "TI-84_Plus_CE/peripherals.js",
+        "TI-84_Plus_CE/probe-phase348-interrupt-controller.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 740,
-    "cc_to_codex": 740,
+    "total_calls": 749,
+    "cc_to_codex": 749,
     "codex_to_cc": 0,
-    "completed": 534,
+    "completed": 543,
     "failed": 192,
     "refused": 0,
-    "avg_duration_seconds": 628.034
+    "avg_duration_seconds": 627.745
   }
 }
