@@ -8665,15 +8665,77 @@
         "TI-84_Plus_CE/probe-phase338-vram-call-chain.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "1441b9281a4a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate and Fix Kernel Init Stuck Loop at 0x00069A\n\n## Context\nYou are working on a TI-8",
+      "status": "completed",
+      "duration_seconds": 767.675,
+      "timestamp": "2026-05-16T00:16:33Z",
+      "files_changed": [
+        "CONTINUATION_PROMPT_CODEX.md",
+        "TI-84_Plus_CE/ROM.transpiled.report.json",
+        "TI-84_Plus_CE/peripherals.js",
+        "TI-84_Plus_CE/phase24b-seeds.txt",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase336-vram-fill.mjs",
+        "TI-84_Plus_CE/probe-phase337-fillrect-callers.mjs",
+        "TI-84_Plus_CE/probe-phase338-key-dispatch-trace.mjs",
+        "TI-84_Plus_CE/probe-phase338-multi-iteration-loop.mjs",
+        "TI-84_Plus_CE/probe-phase338-port28-debug.mjs",
+        "TI-84_Plus_CE/probe-phase338-vram-call-chain.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "7d510b7322f6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Test kernel init with PLL fix \u2014 extended 500K+ steps\n\n## Context\n\nIn session 338, a PLL relo",
+      "status": "completed",
+      "duration_seconds": 325.607,
+      "timestamp": "2026-05-16T02:07:49Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase339-extended-kernel-init.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "227bc4cd8350",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate why cxMain dispatch at 0x08BF82 is never reached + disassemble 0x0BD3FE key proc",
+      "status": "completed",
+      "duration_seconds": 584.955,
+      "timestamp": "2026-05-16T02:12:07Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase339-cxmain-gate.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "09adacc73505",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Explore 0x08BFD1 post-VRAM check \u2014 BIT 3,(IY+9) gate analysis\n\n## Context\n\nIn the TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 688.662,
+      "timestamp": "2026-05-16T02:13:54Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase339-iy9-gate.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 711,
-    "cc_to_codex": 711,
+    "total_calls": 715,
+    "cc_to_codex": 715,
     "codex_to_cc": 0,
-    "completed": 507,
+    "completed": 511,
     "failed": 190,
     "refused": 0,
-    "avg_duration_seconds": 632.296
+    "avg_duration_seconds": 632.069
   }
 }
