@@ -8996,15 +8996,55 @@
         "scripts/transpile-ti84-rom.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "b18bcf3fa656",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 346 \u2014 Priority 1: Re-run Boot Trace with ALU Fix + 0x000800 Seed\n\n## Context\n\nSession",
+      "status": "completed",
+      "duration_seconds": 437.895,
+      "timestamp": "2026-05-16T16:09:05Z",
+      "files_changed": [
+        "TI-84_Plus_CE/ROM.transpiled.js",
+        "TI-84_Plus_CE/ROM.transpiled.report.json",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase346-boot-alu-fix-trace.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "905844862680",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 346 \u2014 Priority 2: Identify Syscall Table Entries\n\n## Context\n\nSession 345 decoded the",
+      "status": "completed",
+      "duration_seconds": 508.784,
+      "timestamp": "2026-05-16T16:10:17Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "10ecc8c86f88",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 346 \u2014 Priority 3: Map Synthetic Scan Code Generators\n\n## Context\n\nSession 345 mapped ",
+      "status": "completed",
+      "duration_seconds": 784.828,
+      "timestamp": "2026-05-16T16:14:54Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase346-synthetic-scancodes.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 737,
-    "cc_to_codex": 737,
+    "total_calls": 740,
+    "cc_to_codex": 740,
     "codex_to_cc": 0,
-    "completed": 531,
+    "completed": 534,
     "failed": 192,
     "refused": 0,
-    "avg_duration_seconds": 628.241
+    "avg_duration_seconds": 628.034
   }
 }
