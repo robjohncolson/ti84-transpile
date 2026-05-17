@@ -753,15 +753,15 @@ function decodeED(romBytes, startPc, edPc, mode, modePrefix, immW) {
   if (op in PEA_BASES) return emit(1, { tag: 'pea', base: PEA_BASES[op], displacement: disp });
   // TSTIO n
   if (op === 0x74) return emit(1, { tag: 'tstio', value: operand8 });
-  // STMIX / RSMIX — mode-switch; must terminate the block so the next
-  // instruction is decoded in the new mode (instruction widths depend on
-  // ADL flag at decode time). Marked as kind='mode-switch' so buildBlock
-  // adds a fallthrough exit with targetMode set to the new mode.
-  if (op === 0x7d) return emit(0, { tag: 'stmix', kind: 'mode-switch', nextMode: 'adl' });
-  if (op === 0x7e) return emit(0, { tag: 'rsmix', kind: 'mode-switch', nextMode: 'z80' });
+  // STMIX / RSMIX — set/reset the MADL bit (Mixed ADL). Controls whether
+  // interrupts/exceptions execute in ADL or z80 mode. Does NOT change the
+  // CPU's current execution mode, so these are simple instructions that
+  // do not terminate blocks.
+  if (op === 0x6d) return emit(0, { tag: 'stmix' });
+  if (op === 0x6e) return emit(0, { tag: 'rsmix' });
   // LD MB, A / LD A, MB — eZ80 MBASE register access
-  if (op === 0x6d) return emit(0, { tag: 'ld-mb-a' });
-  if (op === 0x6e) return emit(0, { tag: 'ld-a-mb' });
+  if (op === 0x7d) return emit(0, { tag: 'ld-mb-a' });
+  if (op === 0x7e) return emit(0, { tag: 'ld-a-mb' });
   // SLP
   if (op === 0x76) return emit(0, { tag: 'slp', terminates: true });
   // OTIMR
