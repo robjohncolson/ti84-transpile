@@ -9261,15 +9261,179 @@
         "TI-84_Plus_CE/probe-phase351-missing-blocks.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "f100764f090c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Extended Boot Trace (10K Steps) with Full I/O Logging\n\n## Context\nSession 351 fixed the GPIO",
+      "status": "completed",
+      "duration_seconds": 163.394,
+      "timestamp": "2026-05-17T10:04:37Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase352-extended-boot-10k.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "32bcd24935ec",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add z80-mode Seed at 0x00D7BE + Retranspile + Verify\n\n## Context\nThe 10K-step boot trace (pr",
+      "status": "completed",
+      "duration_seconds": 95.266,
+      "timestamp": "2026-05-17T10:08:11Z",
+      "files_changed": [
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "0086d4d14be6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Verify Browser Shell Boot After GPIO Fix\n\n## Context\nSession 351 changed GPIO port 0x03 defa",
+      "status": "completed",
+      "duration_seconds": 503.643,
+      "timestamp": "2026-05-17T10:10:20Z",
+      "files_changed": [
+        ".auto-session-352-p4.md",
+        "TI-84_Plus_CE/ROM.transpiled.js",
+        "TI-84_Plus_CE/ROM.transpiled.report.json",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase352-browser-boot-verify.mjs",
+        "TI-84_Plus_CE/probe-phase352-browser-shell-boot-verify.mjs",
+        "TI-84_Plus_CE/probe-phase352-extended-boot-10k.mjs",
+        "TI-84_Plus_CE/probe-phase352-region-disasm.mjs",
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "a53b2d125ad6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x0158F8 Region + Furthest-Reached Blocks\n\n## Context\nAfter the GPIO port 0x03 f",
+      "status": "completed",
+      "duration_seconds": 548.954,
+      "timestamp": "2026-05-17T10:11:04Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase352-region-0x0158F8.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "3b5ac825c5e7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Extend Boot to 50K Steps With Loop Detection\n\n## Context\nThe TI-84 Plus CE ROM transpilation",
+      "status": "completed",
+      "duration_seconds": 426.83,
+      "timestamp": "2026-05-17T12:23:18Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase353-boot-50k-loop.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "3da6b369b0a1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate Port 0x0009 (CPU Speed Control) Boot Gate\n\n## Context\nThe TI-84 Plus CE ROM tran",
+      "status": "completed",
+      "duration_seconds": 623.617,
+      "timestamp": "2026-05-17T12:26:31Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase353-port0009-analysis.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "dc2e52eeecf2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Diagnose Boot Steady-State Loop Structure\n\n## Context\nThe TI-84 Plus CE ROM transpilation pr",
+      "status": "completed",
+      "duration_seconds": 629.69,
+      "timestamp": "2026-05-17T12:26:36Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase353-loop-diagnosis.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "e6b1e8f190b6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate Port 0xD018 (LCD Controller Status) Boot Gate\n\n## Context\nThe TI-84 Plus CE ROM ",
+      "status": "timeout",
+      "duration_seconds": 900.065,
+      "timestamp": "2026-05-17T12:31:10Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d6b8f3c6b39f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 354 \u2014 Priority 2: Investigate Port 0x000D (Interrupt Flag Register)\n\n## Context\nThe T",
+      "status": "completed",
+      "duration_seconds": 275.339,
+      "timestamp": "2026-05-17T14:12:51Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase353-portD018-analysis.mjs",
+        "TI-84_Plus_CE/probe-phase354-port000D-test.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "bc289aff4f25",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 354 \u2014 Priority 1: Trace Cycle Boundary (Find the Backward Branch)\n\n## Context\nThe TI-",
+      "status": "completed",
+      "duration_seconds": 320.251,
+      "timestamp": "2026-05-17T14:13:34Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase354-cycle-boundary.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "823b03f2a9a6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 354 \u2014 Priority 3: Investigate Port 0xB020/0xB024 as Potential Loop Cause\n\n## Context\n",
+      "status": "completed",
+      "duration_seconds": 398.96,
+      "timestamp": "2026-05-17T14:14:57Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase354-portB020-analysis.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "2e5f0aec93da",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 354 \u2014 Priority 4: Trace Call Stack Through One Cycle\n\n## Context\nThe TI-84 Plus CE bo",
+      "status": "completed",
+      "duration_seconds": 706.171,
+      "timestamp": "2026-05-17T14:20:06Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase354-call-stack-trace.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 758,
-    "cc_to_codex": 758,
+    "total_calls": 770,
+    "cc_to_codex": 770,
     "codex_to_cc": 0,
-    "completed": 552,
-    "failed": 192,
+    "completed": 563,
+    "failed": 193,
     "refused": 0,
-    "avg_duration_seconds": 624.214
+    "avg_duration_seconds": 621.749
   }
 }
