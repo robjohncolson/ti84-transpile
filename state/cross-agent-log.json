@@ -9425,15 +9425,111 @@
         "TI-84_Plus_CE/probe-phase354-call-stack-trace.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "2f731ca0ac7b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 355 \u2014 P4: Test RST 38h Bypass\n\n## Context\nTI-84 Plus CE ROM transpilation project. Bo",
+      "status": "completed",
+      "duration_seconds": 537.536,
+      "timestamp": "2026-05-17T16:12:05Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "105e16bcaf8e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 355 \u2014 P3: Investigate 0x001768 Stub + Jump Table at 0x000080\n\n## Context\nTI-84 Plus C",
+      "status": "completed",
+      "duration_seconds": 539.511,
+      "timestamp": "2026-05-17T16:12:06Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "cb595332af08",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 355 \u2014 P1: Trace 0x00D33B \u2192 RST 38h Transition\n\n## Context\nThis is a TI-84 Plus CE ROM",
+      "status": "completed",
+      "duration_seconds": 551.407,
+      "timestamp": "2026-05-17T16:12:14Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "84670f80b5da",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 355 \u2014 P2: Disassemble RST 38h Handler + 0x0006F3-0x000720 Dispatch Logic\n\n## Context\n",
+      "status": "timeout",
+      "duration_seconds": 900.065,
+      "timestamp": "2026-05-17T16:18:05Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b746d4222ce2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Verify browser shell loads and renders after transpiler changes\n\n## Context\nTI-84 Plus CE RO",
+      "status": "completed",
+      "duration_seconds": 287.09,
+      "timestamp": "2026-05-17T18:08:01Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase356-browser-shell-verify.mjs",
+        "TI-84_Plus_CE/probe-phase356-z80-seed-audit.mjs",
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "57dbaea171b9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Audit and clean up spurious z80-mode seeds in transpiler\n\n## Context\nTI-84 Plus CE ROM trans",
+      "status": "completed",
+      "duration_seconds": 357.053,
+      "timestamp": "2026-05-17T18:09:10Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase356-browser-shell-verify.mjs",
+        "TI-84_Plus_CE/probe-phase356-z80-seed-audit.mjs",
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "ffd0ada13a84",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Implement repeated NMI wake boot probe\n\n## Context\nTI-84 Plus CE ROM transpilation project. ",
+      "status": "completed",
+      "duration_seconds": 395.379,
+      "timestamp": "2026-05-17T18:09:46Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "cc5fe191de90",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace NMI handler at 0x000066 + disassemble HALT context at 0x0019B5\n\n## Context\nThis is a T",
+      "status": "timeout",
+      "duration_seconds": 900.038,
+      "timestamp": "2026-05-17T18:18:09Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 770,
-    "cc_to_codex": 770,
+    "total_calls": 778,
+    "cc_to_codex": 778,
     "codex_to_cc": 0,
-    "completed": 563,
-    "failed": 193,
+    "completed": 569,
+    "failed": 195,
     "refused": 0,
-    "avg_duration_seconds": 621.749
+    "avg_duration_seconds": 621.099
   }
 }

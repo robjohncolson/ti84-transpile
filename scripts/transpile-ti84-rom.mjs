@@ -22298,15 +22298,6 @@ function walkBlocks() {
     seedEntries.push({ pc: offset, mode: offset === 0 ? 'z80' : 'adl' });
   }
 
-  // Phase 341: z80-mode seed for kernel init return address (session 340 diagnosed missing_block at 0x00001A:z80)
-  seedEntries.push({ pc: 0x00001A, mode: 'z80' });
-  // Phase 345: z80-mode seed for boot path (session 344 diagnosed missing_block at 0x000800:z80)
-  seedEntries.push({ pc: 0x000800, mode: 'z80' });
-  // Phase 342: z80-mode seed for kernel init (session 341 diagnosed missing_block at 0x009006:z80)
-  seedEntries.push({ pc: 0x009006, mode: 'z80' });
-  // Phase 352: z80-mode seed for boot loop coverage (session 352 diagnosed missing_block at 0x00D7BE:z80)
-  seedEntries.push({ pc: 0x00D7BE, mode: 'z80' });
-
   seedEntries.push(...knownEntryAnchors);
 
   const queue = [...seedEntries];
