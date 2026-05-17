@@ -9152,15 +9152,87 @@
         "TI-84_Plus_CE/probe-phase348-interrupt-controller.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "ef109e053dbc",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 349 \u2014 P1: Identify Boot Loop Condition (IN/OUT Trace)\n\n## Context\nAfter session 348's",
+      "status": "completed",
+      "duration_seconds": 173.767,
+      "timestamp": "2026-05-17T00:04:53Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9419ea590f40",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 349 \u2014 P3: Boot With Timer Enabled (100k Steps)\n\n## Context\nAfter session 348's port 0",
+      "status": "completed",
+      "duration_seconds": 373.515,
+      "timestamp": "2026-05-17T00:08:16Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase349-boot-timer.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "f8e7219c226b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 349 \u2014 P2: Trace 0x001AFA-0x005998 Boot Region (Find Loop Jump)\n\n## Context\nAfter sess",
+      "status": "completed",
+      "duration_seconds": 419.197,
+      "timestamp": "2026-05-17T00:09:00Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase349-boot-loop-disasm.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "5065730424ad",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 350, Priority 2: Disassemble Post-Flash-Ready Path (0x0006FA-0x000720)\n\n## Context\nTh",
+      "status": "completed",
+      "duration_seconds": 173.417,
+      "timestamp": "2026-05-17T06:05:48Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e6fa9a3b4aec",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 350, Priority 1: Fix Flash Port 0x06 BIT 2 After PLL Lock\n\n## Context\nThe TI-84 CE bo",
+      "status": "completed",
+      "duration_seconds": 223.101,
+      "timestamp": "2026-05-17T06:06:35Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ed753cfc4972",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 350, Priority 3: Test CoorMon Browser Shell\n\n## Context\nThe browser shell at `TI-84_P",
+      "status": "completed",
+      "duration_seconds": 347.929,
+      "timestamp": "2026-05-17T06:08:44Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase350-browser-shell-test.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 749,
-    "cc_to_codex": 749,
+    "total_calls": 755,
+    "cc_to_codex": 755,
     "codex_to_cc": 0,
-    "completed": 543,
+    "completed": 549,
     "failed": 192,
     "refused": 0,
-    "avg_duration_seconds": 627.745
+    "avg_duration_seconds": 625.022
   }
 }

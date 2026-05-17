@@ -113,11 +113,7 @@ function createGpioHandler(state) {
 function createFlashHandler(state) {
   return {
     read() {
-      // Flash controller status register: reads return hardware status (0xD0 = ready).
-      // Boot code reads port 0x06 but only to SET bit 2 and write back — never branches
-      // on the value. The ISR gate at 0x000704 requires A=0xD0 from IN0 (0x06) for
-      // the CP 0xD0 comparison to pass and dispatch to the callback handler at 0x000710.
-      return 0xD0;
+      return state.pll.locked ? 0xD4 : 0xD0;
     },
 
     write(port, value) {
