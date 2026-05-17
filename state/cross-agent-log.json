@@ -9224,15 +9224,52 @@
         "TI-84_Plus_CE/probe-phase350-browser-shell-test.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "f05a3725e714",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Inspect Transpiled Block 0x00069A \u2014 BIT 2,A \u2192 RET PO Flag Bug\n\n## Context\nThe TI-84 CE boot ",
+      "status": "completed",
+      "duration_seconds": 401.999,
+      "timestamp": "2026-05-17T08:08:53Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase351-ret-po-analysis.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "8d4879810fcc",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace Stack at RET PO Point (0x0006A8)\n\n## Context\nThe TI-84 CE boot is stuck in a 29-block ",
+      "status": "completed",
+      "duration_seconds": 421.78,
+      "timestamp": "2026-05-17T08:09:14Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "94f6a2f71a97",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Check if Block 0x0012CA Exists + Boot Path After RET PO\n\n## Context\nThe TI-84 CE boot is stu",
+      "status": "completed",
+      "duration_seconds": 439.023,
+      "timestamp": "2026-05-17T08:09:33Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase351-missing-blocks.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 755,
-    "cc_to_codex": 755,
+    "total_calls": 758,
+    "cc_to_codex": 758,
     "codex_to_cc": 0,
-    "completed": 549,
+    "completed": 552,
     "failed": 192,
     "refused": 0,
-    "avg_duration_seconds": 625.022
+    "avg_duration_seconds": 624.214
   }
 }
