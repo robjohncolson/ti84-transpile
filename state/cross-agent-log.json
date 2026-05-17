@@ -9521,15 +9521,63 @@
       "timestamp": "2026-05-17T18:18:09Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "bbb17b540cef",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Per-instruction port trace during NMI handler \u2014 read/write ordering\n\n## Context\nThe TI-84 CE",
+      "status": "completed",
+      "duration_seconds": 295.579,
+      "timestamp": "2026-05-17T20:08:46Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c1307d229289",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace post-HALT code at 0x0019BE \u2014 what happens after HALT on real hardware\n\n## Context\nThe ",
+      "status": "completed",
+      "duration_seconds": 504.193,
+      "timestamp": "2026-05-17T20:12:16Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "99ba1e5e4407",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble block 0x001B44 branch logic + RETN audit at 0x000DED\n\n## Context\nThe TI-84 CE NM",
+      "status": "completed",
+      "duration_seconds": 554.529,
+      "timestamp": "2026-05-17T20:13:03Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase357-disasm-nmi-branch.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "51a874a7effd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Test port 0x28 returning 0x00 during NMI handler to escape HALT loop\n\n## Context\nThe TI-84 C",
+      "status": "completed",
+      "duration_seconds": 614.875,
+      "timestamp": "2026-05-17T20:14:01Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase357-port28-escape.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 778,
-    "cc_to_codex": 778,
+    "total_calls": 782,
+    "cc_to_codex": 782,
     "codex_to_cc": 0,
-    "completed": 569,
+    "completed": 573,
     "failed": 195,
     "refused": 0,
-    "avg_duration_seconds": 621.099
+    "avg_duration_seconds": 620.44
   }
 }

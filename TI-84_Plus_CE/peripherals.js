@@ -67,7 +67,7 @@ function createPllHandler(state) {
       }
 
       state.pll.locked = true;
-      return 0x04;
+      return 0x0C;
     },
 
     write(port, value) {
