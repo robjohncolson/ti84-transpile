@@ -175,6 +175,50 @@ function createPhase99CPollUnlockHandler(readValue = 0x00) {
   };
 }
 
+// CE keyboard controller ports (0xA000-0xA010).
+// Group select is active-low; data reads combine all selected matrix rows.
+function createKeyboardControllerHandler(state, keyboardState) {
+  function readSelectedGroups() {
+    let result = 0xFF;
+
+    for (let group = 0; group < keyboardState.keyMatrix.length; group++) {
+      if (((state.keyboardController.groupSelect >> group) & 1) !== 0) {
+        continue;
+      }
+
+      result &= keyboardState.keyMatrix[group];
+    }
+
+    return result;
+  }
+
+  return {
+    read(port) {
+      if (port === 0xA000) {
+        return state.keyboardController.groupSelect & 0xFF;
+      }
+
+      if (port === 0xA008 || port === 0xA010) {
+        return readSelectedGroups();
+      }
+
+      return 0x00;
+    },
+
+    write(port, value) {
+      if (port === 0xA000) {
+        state.keyboardController.groupSelect = (state.keyboardController.groupSelect & 0xFF00) | value;
+        keyboardState.groupSelect = state.keyboardController.groupSelect & 0xFF;
+        return;
+      }
+
+      if (port === 0xA001) {
+        state.keyboardController.groupSelect = (state.keyboardController.groupSelect & 0x00FF) | (value << 8);
+      }
+    },
+  };
+}
+
 export function createPeripheralBus(options = {}) {
   const trace = options.trace === true;
   const handlers = new Map();
@@ -202,6 +246,9 @@ export function createPeripheralBus(options = {}) {
       remainingReads: 0,
       locked: false,
       lastWrite: 0x00,
+    },
+    keyboardController: {
+      groupSelect: 0xFFFF,
     },
     csBase: { 0x1D: 0xFF, 0x1E: 0xFF, 0x1F: 0xFF },
   };
@@ -274,6 +321,9 @@ export function createPeripheralBus(options = {}) {
         remainingReads: state.pll.remainingReads,
         locked: state.pll.locked,
         lastWrite: state.pll.lastWrite,
+      },
+      keyboardController: {
+        groupSelect: state.keyboardController.groupSelect,
       },
       csBase: { ...state.csBase },
     };
@@ -427,6 +477,7 @@ export function createPeripheralBus(options = {}) {
       keyboardState.groupSelect = value;
     },
   });
+  register({ start: 0xa000, end: 0xa010 }, createKeyboardControllerHandler(state, keyboardState));
 
   register(0x00, createCpuControlHandler(state));
   register([0x1D, 0x1F], createCsBaseHandler(state));
@@ -617,5 +668,6 @@ export function createPeripheralBus(options = {}) {
     triggerIRQ,
     setKeyboardIRQ,
     keyboard: keyboardState,
+    keyboardController: state.keyboardController,
   };
 }

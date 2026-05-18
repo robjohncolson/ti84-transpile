@@ -9947,15 +9947,74 @@
       "timestamp": "2026-05-18T20:08:49Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "b5464008dc35",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 366 \u2014 P2: Investigate 0x003D31 (Last PC at 10,000 Steps)\n\n## Context\nYou are working ",
+      "status": "completed",
+      "duration_seconds": 698.88,
+      "timestamp": "2026-05-18T20:14:41Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b0e34b2c5f3f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 366 \u2014 P3: Trace Linked-List Init for 0xD14095-0xD14097\n\n## Context\nYou are working on",
+      "status": "completed",
+      "duration_seconds": 782.359,
+      "timestamp": "2026-05-18T20:16:06Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "247c8a30d2e1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add Seeds 0x05D4BB, 0x003CC2, 0x003D5A, 0x003A73 and Retranspile\n\n## Context\nThe TI-84 CE RO",
+      "status": "partial",
+      "duration_seconds": 69.717,
+      "timestamp": "2026-05-18T22:04:09Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b20985dc3ede",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add Port 0xA000 Keyboard Controller Model to peripherals.js\n\n## Context\nThe TI-84 CE ROM tra",
+      "status": "completed",
+      "duration_seconds": 231.729,
+      "timestamp": "2026-05-18T22:06:53Z",
+      "files_changed": [
+        "TI-84_Plus_CE/peripherals.js"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "d3764fc47306",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Extend Boot to 50,000 Steps (Multi-Phase Probe)\n\n## Context\nThe TI-84 CE ROM transpilation p",
+      "status": "completed",
+      "duration_seconds": 423.366,
+      "timestamp": "2026-05-18T22:10:00Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase367-boot-50k.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 814,
-    "cc_to_codex": 814,
+    "total_calls": 819,
+    "cc_to_codex": 819,
     "codex_to_cc": 0,
-    "completed": 600,
+    "completed": 604,
     "failed": 200,
     "refused": 0,
-    "avg_duration_seconds": 616.875
+    "avg_duration_seconds": 615.803
   }
 }
