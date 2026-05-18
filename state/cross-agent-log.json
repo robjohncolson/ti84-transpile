@@ -9722,15 +9722,65 @@
       "timestamp": "2026-05-18T08:07:09Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "2b90bbddf63c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 360 P3: Disassemble 0x00868E and 0x0088DD\n\n## Context\nTI-84 Plus CE ROM transpilation",
+      "status": "completed",
+      "duration_seconds": 789.865,
+      "timestamp": "2026-05-18T08:16:24Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase360-disasm-frontier.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "78b670841661",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 361 P1: Add Seeds 0x0086B0 and 0x0000FA + Retranspile + Boot Test\n\n## Context\nTI-84 P",
+      "status": "completed",
+      "duration_seconds": 201.054,
+      "timestamp": "2026-05-18T10:05:14Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2f94e317331e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 361 P2: Investigate 0xA86301 (Archive Flash Terminator)\n\n## Context\nTI-84 Plus CE ROM",
+      "status": "completed",
+      "duration_seconds": 508.267,
+      "timestamp": "2026-05-18T10:10:24Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase361-investigate-A86301.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "59250d9c78b0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 361 P3: Trace the 0x002126\u21940x002136 Loop\n\n## Context\nTI-84 Plus CE ROM transpilation ",
+      "status": "completed",
+      "duration_seconds": 580.618,
+      "timestamp": "2026-05-18T10:11:38Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase361-loop-trace.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 795,
-    "cc_to_codex": 795,
+    "total_calls": 799,
+    "cc_to_codex": 799,
     "codex_to_cc": 0,
-    "completed": 582,
+    "completed": 586,
     "failed": 199,
     "refused": 0,
-    "avg_duration_seconds": 619.958
+    "avg_duration_seconds": 619.457
   }
 }
