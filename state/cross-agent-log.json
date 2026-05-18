@@ -9772,15 +9772,89 @@
         "TI-84_Plus_CE/probe-phase361-loop-trace.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "0a505cb722e3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 362 \u2014 P2: Trace 0x00BC31\u21940x00BC47 Pattern\n\n## Context\n\nTI-84 Plus CE ROM transpilatio",
+      "status": "completed",
+      "duration_seconds": 515.903,
+      "timestamp": "2026-05-18T12:10:43Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase362-trace-BC-blocks.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "500017aa0c00",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 362 \u2014 P3: Trace 0x000EA0 Alternate Path\n\n## Context\n\nTI-84 Plus CE ROM transpilation ",
+      "status": "completed",
+      "duration_seconds": 670.591,
+      "timestamp": "2026-05-18T12:13:19Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "738d495d2860",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 362 \u2014 P1: Investigate 0x4C7B21 Boot Terminator + Extended Flash Trampoline\n\n## Contex",
+      "status": "completed",
+      "duration_seconds": 844.725,
+      "timestamp": "2026-05-18T12:16:10Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ec32cf733673",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 363 P3: Disassemble 0x014C63 and 0x014C6B\n\n## Goal\nCreate a probe that disassembles a",
+      "status": "completed",
+      "duration_seconds": 400.358,
+      "timestamp": "2026-05-18T14:09:26Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase363-disasm-014C63.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "b3f22fd3add1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 363 P1: Trace SP Corruption Origin\n\n## Goal\nCreate a probe that instruments the boot ",
+      "status": "completed",
+      "duration_seconds": 639.773,
+      "timestamp": "2026-05-18T14:13:22Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase363-sp-corruption-trace.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "38477b31607b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 363 P2: Investigate RAM Trampoline Stack Behavior\n\n## Goal\nCreate a probe that specif",
+      "status": "completed",
+      "duration_seconds": 664.048,
+      "timestamp": "2026-05-18T14:13:48Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase363-trampoline-stack.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 799,
-    "cc_to_codex": 799,
+    "total_calls": 805,
+    "cc_to_codex": 805,
     "codex_to_cc": 0,
-    "completed": 586,
+    "completed": 592,
     "failed": 199,
     "refused": 0,
-    "avg_duration_seconds": 619.457
+    "avg_duration_seconds": 619.48
   }
 }
