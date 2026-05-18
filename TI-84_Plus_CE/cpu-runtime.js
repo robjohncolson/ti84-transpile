@@ -41,6 +41,10 @@ export class CPU {
     this._hl2 = 0;
 
     // 24-bit standalone registers
+    this.spWarnings = [];
+    this.pc = 0;
+    this.stepCount = 0;
+    this._sp = 0;
     this.sp = 0;
     this._ix = 0;
     this._iy = 0;
@@ -95,6 +99,23 @@ export class CPU {
 
   get af() { return (this.a << 8) | this.f; }
   set af(v) { this.a = (v >> 8) & 0xff; this.f = v & 0xff; }
+
+  get sp() { return this._sp; }
+  set sp(v) {
+    this._sp = v & 0xffffff;
+    if (this._sp < 0x400000 && this._sp !== 0) {
+      const warning = {
+        step: this.stepCount ?? 0,
+        sp: this._sp,
+        pc: this._currentBlockPc ?? this.pc ?? 0,
+      };
+      this.spWarnings.push(warning);
+      if (this.spWarnings.length <= 5) {
+        const stepLabel = this.stepCount ?? '?';
+        console.warn(`[SP WARNING] SP=${this._sp.toString(16)} (ROM space) at PC=${warning.pc.toString(16)} step=${stepLabel}`);
+      }
+    }
+  }
 
   get ix() { return this._ix; }
   set ix(v) { this._ix = v & 0xffffff; }
@@ -1078,6 +1099,8 @@ export function createExecutor(blocks, memory, options = {}) {
       let mode = startMode;
       cpu.madl = mode === 'adl' ? 1 : 0;
       let steps = 0;
+      cpu.pc = pc & 0xffffff;
+      cpu.stepCount = 0;
       let termination = 'max_steps';
       let loopsForced = 0;
       const missingBlocks = new Set();
@@ -1176,6 +1199,8 @@ export function createExecutor(blocks, memory, options = {}) {
         }
 
         const meta = blockMeta[key];
+        cpu.pc = pc & 0xffffff;
+        cpu.stepCount = steps;
         cpu._currentBlockPc = pc;
         if (onBlock) {
           onBlock(pc, mode, meta, steps);

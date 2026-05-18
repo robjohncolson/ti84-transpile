@@ -9846,15 +9846,37 @@
         "TI-84_Plus_CE/probe-phase363-trampoline-stack.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "5f17bc38087f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 364 \u2014 Priority 3: Add SP < 0x400000 Diagnostic Warning to cpu-runtime.js\n\n## Context\n",
+      "status": "completed",
+      "duration_seconds": 254.313,
+      "timestamp": "2026-05-18T16:06:20Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "dcfb405e31df",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 364 \u2014 Priority 1: Trace What Initializes the Linked-List Data at 0xD14095\n\n## Context",
+      "status": "completed",
+      "duration_seconds": 428.885,
+      "timestamp": "2026-05-18T16:09:12Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 805,
-    "cc_to_codex": 805,
+    "total_calls": 807,
+    "cc_to_codex": 807,
     "codex_to_cc": 0,
-    "completed": 592,
+    "completed": 594,
     "failed": 199,
     "refused": 0,
-    "avg_duration_seconds": 619.48
+    "avg_duration_seconds": 618.792
   }
 }
