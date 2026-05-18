@@ -122,6 +122,23 @@ function createFlashHandler(state) {
   };
 }
 
+function createFlashControllerHandler(state) {
+  return {
+    read(port) {
+      if (port === 0x2001) {
+        return 0x00;
+      }
+
+      return 0x00;
+    },
+
+    write(port, value) {
+      state.flashController.lastCommand = port === 0x2000 ? value : state.flashController.lastCommand;
+      state.flashController.writes.set(port, value);
+    },
+  };
+}
+
 function createTimerHandler(state) {
   return {
     read() {
@@ -171,6 +188,10 @@ export function createPeripheralBus(options = {}) {
     },
     flash: {
       lastWrite: 0x00,
+    },
+    flashController: {
+      lastCommand: 0x00,
+      writes: new Map(),
     },
     timers: {
       writes: new Map(),
@@ -239,6 +260,10 @@ export function createPeripheralBus(options = {}) {
       },
       flash: {
         lastWrite: state.flash.lastWrite,
+      },
+      flashController: {
+        lastCommand: state.flashController.lastCommand,
+        writes: cloneWrites(state.flashController.writes),
       },
       timers: {
         writes: cloneWrites(state.timers.writes),
@@ -409,6 +434,15 @@ export function createPeripheralBus(options = {}) {
   register(0x06, createFlashHandler(state));
   register([0x10, 0x18], createTimerHandler(state));
   register(0x28, createPllHandler(state));
+  // Flash/NAND controller ports (0x2000-0x200F).
+  // ROM analysis:
+  //   - 0x006D42 is the only observed direct flash-port handshake in ROM bytes:
+  //     LD BC,0x002000 ; OUT (C),A ; INC BC ; IN A,(C) ; BIT 3,A ; JR NZ,0x006D57
+  //   - probe-phase365-disasm-006D57.mjs documents that loop as a busy-poll on bit 3.
+  //   - Literal LD BC,0x002001 also appears at 0x001899 and 0x04574C, but both sites
+  //     feed LDIR setup and do not issue IN/OUT against the port.
+  // Returning 0x00 from 0x2001 keeps bit 3 clear so the boot poll can complete.
+  register({ start: 0x2000, end: 0x200f }, createFlashControllerHandler(state));
   // Phase 103 report: TI-84_Plus_CE/phase103-port-d00c-d00d-report.md says idle SPI status is D00C=0x02 and D00D=0x00.
   register(0xd00c, createPhase99CPollUnlockHandler(0x02));
   register(0xd00d, createPhase99CPollUnlockHandler(0x00));

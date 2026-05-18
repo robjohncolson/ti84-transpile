@@ -9868,15 +9868,94 @@
       "timestamp": "2026-05-18T16:09:12Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "417a7f3987bb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 364 \u2014 Priority 2: Fix IX Linked-List Termination via Seed or Bypass\n\n## Context\nYou a",
+      "status": "completed",
+      "duration_seconds": 700.959,
+      "timestamp": "2026-05-18T16:13:46Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5a1754209e9c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add Seed 0x006900 and Regenerate Transpiled JS\n\n## Context\nThe TI-84 Plus CE ROM transpilati",
+      "status": "completed",
+      "duration_seconds": 59.548,
+      "timestamp": "2026-05-18T18:04:31Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase200-seeds.txt"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "3067edd6ebbd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Integrate SP Clamp into cpu-runtime.js runFrom() Loop\n\n## Context\nThe TI-84 Plus CE ROM tran",
+      "status": "completed",
+      "duration_seconds": 65.46,
+      "timestamp": "2026-05-18T18:04:35Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "26e09b2429f8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble ROM at 0x006D57 (Fix B Boot Endpoint)\n\n## Context\nThe TI-84 Plus CE ROM transpil",
+      "status": "completed",
+      "duration_seconds": 441.876,
+      "timestamp": "2026-05-18T18:10:55Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "bf58a76ca174",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate 0x00B71B Call Chain and Purpose\n\n## Context\nThe TI-84 Plus CE ROM transpilation ",
+      "status": "timeout",
+      "duration_seconds": 900.042,
+      "timestamp": "2026-05-18T18:18:35Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a87657a80385",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 366 \u2014 P1: Model Flash Controller Port 0x2001 in peripherals.js\n\n## Context\nYou are wo",
+      "status": "completed",
+      "duration_seconds": 259.808,
+      "timestamp": "2026-05-18T20:07:20Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "fb25e233e62e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 366 \u2014 P4: Extend Boot to 50,000 Steps\n\n## Context\nYou are working on a TI-84 Plus CE ",
+      "status": "completed",
+      "duration_seconds": 343.887,
+      "timestamp": "2026-05-18T20:08:49Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 807,
-    "cc_to_codex": 807,
+    "total_calls": 814,
+    "cc_to_codex": 814,
     "codex_to_cc": 0,
-    "completed": 594,
-    "failed": 199,
+    "completed": 600,
+    "failed": 200,
     "refused": 0,
-    "avg_duration_seconds": 618.792
+    "avg_duration_seconds": 616.875
   }
 }
