@@ -1139,6 +1139,23 @@ export function createExecutor(blocks, memory, options = {}) {
           }
           missingBlocks.add(key);
 
+          // RAM trampoline: for missing blocks at RAM addresses (>= 0xD00000),
+          // inject a synthetic RET that pops the return address and continues.
+          // This handles the OS pattern of copying code to RAM and JP (IX) there
+          // (e.g., flash self-test at 0xD18C22).
+          if (pc >= 0xD00000) {
+            const trampolineFn = (cpu) => {
+              const sp = cpu.sp & 0xFFFFFF;
+              const retAddr = cpu.mem[sp] | (cpu.mem[sp + 1] << 8) | (cpu.mem[sp + 2] << 16);
+              cpu.sp = (sp + 3) & 0xFFFFFF;
+              return retAddr;
+            };
+            compiledBlocks[key] = trampolineFn;
+            // Don't increment steps or continue - fall through to re-execute
+            // this block on the next loop iteration (it's now in compiledBlocks)
+            continue;
+          }
+
           // Try to skip ahead and find the next valid block (up to 16 bytes)
           let skipped = false;
           for (let offset = 1; offset <= 16; offset++) {

@@ -9663,15 +9663,74 @@
         "TI-84_Plus_CE/probe-phase358-escape-path-disasm.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "d3cdc76af8bd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 359 P1: RAM Trampoline for Flash Self-Test at 0xD18C22\n\n## Context\n\nThe TI-84 Plus CE",
+      "status": "failed",
+      "duration_seconds": 587.501,
+      "timestamp": "2026-05-18T06:13:41Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "987f08d782e6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 359 P2: Trace Caller Chain of 0x000D82 + Disassemble 0x000D7E Entry\n\n## Context\n\nThe ",
+      "status": "completed",
+      "duration_seconds": 601.301,
+      "timestamp": "2026-05-18T06:13:56Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ab770d50d77e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 359 P3: GPIO Bit 4 Path Analysis \u2014 Test GPIO=0xFF Boot Path\n\n## Context\n\nThe TI-84 Pl",
+      "status": "completed",
+      "duration_seconds": 650.619,
+      "timestamp": "2026-05-18T06:14:47Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase359-gpio-path.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "e971bbf974ca",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 360 P2: Integrate RAM Trampoline into cpu-runtime.js\n\n## Context\nTI-84 Plus CE ROM tr",
+      "status": "completed",
+      "duration_seconds": 94.597,
+      "timestamp": "2026-05-18T08:04:47Z",
+      "files_changed": [
+        "TI-84_Plus_CE/cpu-runtime.js"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "70d1cbbaf54d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 360 P1: Add Seeds at 0x00868E and 0x0088DD\n\n## Context\nTI-84 Plus CE ROM transpilatio",
+      "status": "completed",
+      "duration_seconds": 238.287,
+      "timestamp": "2026-05-18T08:07:09Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 790,
-    "cc_to_codex": 790,
+    "total_calls": 795,
+    "cc_to_codex": 795,
     "codex_to_cc": 0,
-    "completed": 578,
-    "failed": 198,
+    "completed": 582,
+    "failed": 199,
     "refused": 0,
-    "avg_duration_seconds": 621.132
+    "avg_duration_seconds": 619.958
   }
 }
