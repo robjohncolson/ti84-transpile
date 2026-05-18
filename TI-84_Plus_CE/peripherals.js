@@ -134,6 +134,18 @@ function createTimerHandler(state) {
   };
 }
 
+function createCsBaseHandler(state) {
+  return {
+    read(port) {
+      return state.csBase[port] ?? 0xFF;
+    },
+
+    write(port, value) {
+      state.csBase[port] = value;
+    },
+  };
+}
+
 function createPhase99CPollUnlockHandler(readValue = 0x00) {
   const normalizedReadValue = normalizeValue(readValue);
 
@@ -170,6 +182,7 @@ export function createPeripheralBus(options = {}) {
       locked: false,
       lastWrite: 0x00,
     },
+    csBase: { 0x1D: 0xFF, 0x1E: 0xFF, 0x1F: 0xFF },
   };
 
   function logTrace(message) {
@@ -237,6 +250,7 @@ export function createPeripheralBus(options = {}) {
         locked: state.pll.locked,
         lastWrite: state.pll.lastWrite,
       },
+      csBase: { ...state.csBase },
     };
   }
 
@@ -390,6 +404,7 @@ export function createPeripheralBus(options = {}) {
   });
 
   register(0x00, createCpuControlHandler(state));
+  register([0x1D, 0x1F], createCsBaseHandler(state));
   register(0x03, createGpioHandler(state));
   register(0x06, createFlashHandler(state));
   register([0x10, 0x18], createTimerHandler(state));

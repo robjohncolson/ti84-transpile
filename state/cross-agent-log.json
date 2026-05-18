@@ -9569,15 +9569,109 @@
         "TI-84_Plus_CE/probe-phase357-port28-escape.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "5dc65dd1312c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate Port 0x1F Gate at Block 0x000D82\n\n## Context\nYou are working on a TI-84 Plus CE ",
+      "status": "completed",
+      "duration_seconds": 599.284,
+      "timestamp": "2026-05-18T00:14:14Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase358-port1F-gate.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "316339032fa2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Extend Boot Past 0x000D82 by Testing Port 0x1F Values\n\n## Context\nYou are working on a TI-84",
+      "status": "completed",
+      "duration_seconds": 613.428,
+      "timestamp": "2026-05-18T00:14:33Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase358-port1F-extend.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "95ed2bfc5a31",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble Escape Path 0x001EEB-0x001F30\n\n## Context\nYou are working on a TI-84 Plus CE ROM",
+      "status": "completed",
+      "duration_seconds": 707.478,
+      "timestamp": "2026-05-18T00:16:04Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "35d048eec59f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace Block 0x001D37 in Detail\n\n## Context\nYou are working on a TI-84 Plus CE ROM transpilat",
+      "status": "timeout",
+      "duration_seconds": 900.046,
+      "timestamp": "2026-05-18T00:19:18Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2f01d22c3bbb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace Block 0x001D37 in Detail\n\n## Context\nTI-84 Plus CE ROM transpilation project. OS ROM (",
+      "status": "failed",
+      "duration_seconds": 468.243,
+      "timestamp": "2026-05-18T04:11:05Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1604455677e4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Extend Boot Past 0x000D82 - Test Port 0x1F Return Values\n\n## Context\nTI-84 Plus CE ROM trans",
+      "status": "failed",
+      "duration_seconds": 472.57,
+      "timestamp": "2026-05-18T04:11:11Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "43d477ef0323",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate Port 0x1F Gate at 0x000D82 + RAM 0xD02AD9\n\n## Context\nThis is a TI-84 Plus CE RO",
+      "status": "completed",
+      "duration_seconds": 874.394,
+      "timestamp": "2026-05-18T04:17:48Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c9a64922408a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x001EEB-0x001F30 (PLL Escape Path)\n\n## Context\nTI-84 Plus CE ROM transpilation ",
+      "status": "completed",
+      "duration_seconds": 874.865,
+      "timestamp": "2026-05-18T04:17:50Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase358-escape-path-disasm.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 782,
-    "cc_to_codex": 782,
+    "total_calls": 790,
+    "cc_to_codex": 790,
     "codex_to_cc": 0,
-    "completed": 573,
-    "failed": 195,
+    "completed": 578,
+    "failed": 198,
     "refused": 0,
-    "avg_duration_seconds": 620.44
+    "avg_duration_seconds": 621.132
   }
 }
