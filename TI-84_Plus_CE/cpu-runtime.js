@@ -1106,6 +1106,7 @@ export function createExecutor(blocks, memory, options = {}) {
       const missingBlocks = new Set();
       const blockVisits = new Map();
       const dynamicTargets = new Set();
+      let lastGoodSp = null;
 
       // Loop detection: track recent block keys in a small ring buffer
       const recentKeys = [];
@@ -1206,6 +1207,11 @@ export function createExecutor(blocks, memory, options = {}) {
           onBlock(pc, mode, meta, steps);
         }
 
+        const spBefore = cpu.sp & 0xFFFFFF;
+        if (spBefore >= 0x400000) {
+          lastGoodSp = spBefore;
+        }
+
         let result;
         try {
           result = fn(cpu);
@@ -1226,6 +1232,11 @@ export function createExecutor(blocks, memory, options = {}) {
         }
 
         steps++;
+        // SP safety clamp restores a known-good RAM stack after ROM-space corruption.
+        const spAfterBlock = cpu.sp & 0xFFFFFF;
+        if (spAfterBlock < 0x400000 && spAfterBlock !== 0 && lastGoodSp !== null) {
+          cpu.sp = lastGoodSp;
+        }
         blockVisits.set(key, (blockVisits.get(key) || 0) + 1);
 
         if (result === undefined || result === null) {
