@@ -10102,15 +10102,87 @@
         "TI-84_Plus_CE/probe-phase369-disasm-post-scan.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "38d1afbb36be",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 370 \u2014 P1: Simulate Keypress in Event Loop\n\n## Context\nThe TI-84 CE OS event loop at 0",
+      "status": "completed",
+      "duration_seconds": 345.457,
+      "timestamp": "2026-05-19T10:08:55Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f7bef28c2453",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 370 \u2014 P3: Investigate 0x00620D Deeper\n\n## Context\nAddress 0x00620D is called by 0x001",
+      "status": "completed",
+      "duration_seconds": 414.991,
+      "timestamp": "2026-05-19T10:10:08Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase370-disasm-0x620D.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "7e1222da7bcf",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 370 \u2014 P4: BC31 via Post-Trampoline Entry\n\n## Context\nBlock 0x00BC31 is a byte-copy lo",
+      "status": "completed",
+      "duration_seconds": 432.437,
+      "timestamp": "2026-05-19T10:10:26Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase370-bc31-post-trampoline.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "496ee58114f3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 370 \u2014 P2: Enable Timer Interrupt in Event Loop\n\n## Context\nThe TI-84 CE OS event loop",
+      "status": "completed",
+      "duration_seconds": 471.676,
+      "timestamp": "2026-05-19T10:11:02Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "cee29c2a76ee",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Keypress Probe with Higher Loop Limit\n\n## Context\nSession 370's `probe-phase370-keypress-eve",
+      "status": "completed",
+      "duration_seconds": 219.417,
+      "timestamp": "2026-05-19T12:06:44Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase371-keypress-highloop.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "b70b4e54070b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add Coldboot Runtime Mode to Browser Shell\n\n## Context\nThe TI-84 Plus CE ROM transpilation p",
+      "status": "completed",
+      "duration_seconds": 354.651,
+      "timestamp": "2026-05-19T12:08:58Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 827,
-    "cc_to_codex": 827,
+    "total_calls": 833,
+    "cc_to_codex": 833,
     "codex_to_cc": 0,
-    "completed": 611,
+    "completed": 617,
     "failed": 201,
     "refused": 0,
-    "avg_duration_seconds": 613.544
+    "avg_duration_seconds": 611.812
   }
 }

@@ -66,7 +66,11 @@ button.active { background: #2a5a2a; border-color: #4a8a4a; }
         <input id="coormonMode" type="checkbox" style="vertical-align: middle; margin-right: 3px;" />
         CoorMon mode (experimental)
       </label>
-      <span class="control-note" style="margin-bottom: 0;">Skips boot and re-enters 0x08C331 each frame. Reset or Boot to apply.</span>
+      <label style="color: #999; font-size: 12px; cursor: pointer; user-select: none; margin-left: 12px;">
+        <input id="coldbootMode" type="checkbox" style="vertical-align: middle; margin-right: 3px;" />
+        Coldboot (OS event loop)
+      </label>
+      <span class="control-note" style="margin-bottom: 0;">CoorMon: re-enters 0x08C331 each frame. Coldboot: full boot + timer-driven event loop. Reset or Boot to apply.</span>
     </div>
     <div class="controls">
       <button id="btnShowMode" disabled>MODE</button>
@@ -353,8 +357,11 @@ let autoRunning = false;
 let runtimeMode = 'direct';
 const RUNTIME_MODE_DIRECT = 'direct';
 const RUNTIME_MODE_COORMON = 'coormon';
+const RUNTIME_MODE_COLDBOOT = 'coldboot';
 const STEPS_PER_FRAME = 2000;
 const COORMON_FRAME_STEPS = 50000;
+const COLDBOOT_FRAME_STEPS = 50000;
+const COLDBOOT_EVENT_LOOP_ENTRY = 0x003A73;
 const KEY_BURST_STEPS = 2000;
 const KEYBOARD_IRQ_ENABLE_HIGH_PORT = 0x5006;
 const KEYBOARD_IRQ_ENABLE_HIGH_BIT = 0x08; // bit 3 of the high byte = interrupt 19 overall
@@ -478,6 +485,14 @@ function isCoorMonModeRequested() {
   return $('coormonMode')?.checked === true;
 }
 
+function isColdbootModeRequested() {
+  return $('coldbootMode')?.checked === true;
+}
+
+function isColdbootRuntime() {
+  return runtimeMode === RUNTIME_MODE_COLDBOOT;
+}
+
 function isCoorMonRuntime() {
   return runtimeMode === RUNTIME_MODE_COORMON;
 }
@@ -516,7 +531,7 @@ function writeCoorMonKeyEventFromState() {
 
 function writeTranslatedKeyEvent(code) {
   if (!cpu?.memory) return;
-  if (isCoorMonRuntime()) return;
+  if (isCoorMonRuntime() || isColdbootRuntime()) return;
 
   if (handleModifierKeys(code)) return;
 
@@ -1357,14 +1372,133 @@ function runCoorMonFrame(stepBudget = COORMON_FRAME_STEPS) {
   }
 }
 
+function initializeColdbootRuntime() {
+  if (!executor || !cpu?.memory) return;
+  runtimeMode = RUNTIME_MODE_COLDBOOT;
+  totalSteps = 0;
+  const mem = cpu.memory;
+  const cpuSnapshotFields = [
+    'a', 'f', '_bc', '_de', '_hl', '_a2', '_f2', '_bc2', '_de2', '_hl2',
+    'sp', '_ix', '_iy', 'i', 'im', 'iff1', 'iff2', 'madl', 'mbase', 'halted', 'cycles',
+  ];
+
+  // Phase 1: Z80 cold boot
+  log(`<span class="info">--- Coldboot Phase 1: Z80 cold boot (0x000000, 20K steps) ---</span>`);
+  const p1 = executor.runFrom(0x000000, 'z80', { maxSteps: 20000, maxLoopIterations: 32 });
+  totalSteps += p1.steps;
+  log(`<span class="info">--- Phase 1 done: ${p1.steps} steps, ${p1.termination} at 0x${hex(p1.lastPc, 6)} ---</span>`);
+
+  cpu.halted = false;
+  cpu.iff1 = 0;
+  cpu.iff2 = 0;
+  cpu.sp = SCREEN_STACK_TOP - 3;
+  fillSentinel(mem, cpu.sp, 3);
+
+  // Phase 2: Kernel init
+  log(`<span class="info">--- Coldboot Phase 2: Kernel init (0x08C331, 100K steps) ---</span>`);
+  const p2 = executor.runFrom(0x08C331, 'adl', { maxSteps: 100000, maxLoopIterations: 10000 });
+  totalSteps += p2.steps;
+  log(`<span class="info">--- Phase 2 done: ${p2.steps} steps, ${p2.termination} at 0x${hex(p2.lastPc, 6)} ---</span>`);
+
+  cpu.madl = 1;
+  cpu.mbase = 0xD0;
+  cpu._iy = 0xD00080;
+  cpu._hl = 0;
+  cpu.halted = false;
+  cpu.iff1 = 0;
+  cpu.iff2 = 0;
+  cpu.sp = SCREEN_STACK_TOP - 3;
+  fillSentinel(mem, cpu.sp, 3);
+
+  // Phase 3: Post-init
+  log(`<span class="info">--- Coldboot Phase 3: Post-init (0x0802B2, 100 steps) ---</span>`);
+  const p3 = executor.runFrom(0x0802B2, 'adl', { maxSteps: 100, maxLoopIterations: 32 });
+  totalSteps += p3.steps;
+  log(`<span class="info">--- Phase 3 done: ${p3.steps} steps, ${p3.termination} at 0x${hex(p3.lastPc, 6)} ---</span>`);
+
+  const cpuSnapshot = Object.fromEntries(
+    cpuSnapshotFields.map((field) => [field, cpu[field]]),
+  );
+  const lcdSnapshot = executor.lcdMmio
+    ? { upbase: executor.lcdMmio.upbase, control: executor.lcdMmio.control }
+    : null;
+
+  peripherals = createPeripheralBus({ pllDelay: 2, timerInterrupt: true });
+  executor = createExecutor(PRELIFTED_BLOCKS, mem, { peripherals });
+  cpu = executor.cpu;
+  for (const field of cpuSnapshotFields) {
+    cpu[field] = cpuSnapshot[field];
+  }
+  if (lcdSnapshot && executor.lcdMmio) {
+    executor.lcdMmio.upbase = lcdSnapshot.upbase;
+    executor.lcdMmio.control = lcdSnapshot.control;
+  }
+
+  // Set up event loop CPU state
+  cpu.halted = false;
+  cpu.iff1 = 1;
+  cpu.iff2 = 1;
+  cpu.f = 0x40;
+  cpu.madl = 1;
+  cpu.mbase = 0xD0;
+  cpu._ix = 0xD1A860;
+  cpu._iy = 0xD00080;
+  cpu.sp = SCREEN_STACK_TOP - SCREEN_RENDER_STACK_BYTES;
+  fillSentinel(mem, cpu.sp, SCREEN_RENDER_STACK_BYTES);
+
+  // Initialize OS event loop RAM
+  mem[0xD02AD7] = 0xBE;
+  mem[0xD02AD8] = 0x19;
+  mem[0xD02AD9] = 0x00;
+  mem[0xD0009B] |= 0x40;
+
+  lastPc = COLDBOOT_EVENT_LOOP_ENTRY;
+  lastMode = 'adl';
+
+  kbd = createKeyboardManager(peripherals);
+  updateRegs();
+  syncLCDState();
+  if (lcd) lcd.renderFrame();
+  updateKeyStateDisplay();
+  updateKeyboardOverlay();
+
+  setStatus('Coldboot complete. Click AutoRun to drive OS event loop with timer interrupts.');
+  log(`<span class="info">--- Coldboot seeded (entry=0x${hex(COLDBOOT_EVENT_LOOP_ENTRY, 6)}, SP=0x${hex(cpu.sp, 6)}, IY=0xD00080, iff1=1, timerInterrupt=true) ---</span>`);
+}
+
+function runColdbootFrame(stepBudget = COLDBOOT_FRAME_STEPS) {
+  if (!executor || !cpu?.memory) return;
+  const result = executor.runFrom(lastPc, lastMode, {
+    maxSteps: stepBudget,
+    maxLoopIterations: 10000,
+  });
+  totalSteps += result.steps;
+  lastPc = result.lastPc;
+  lastMode = result.lastMode;
+  updateRegs();
+  syncLCDState();
+  if (lcd) lcd.renderFrame();
+  updateKeyStateDisplay();
+  updateKeyboardOverlay();
+  setStatus(`Coldboot: ${result.steps} steps, ${result.termination} | Total: ${totalSteps} | PC=0x${hex(lastPc, 6)}`);
+}
+
 function autoRunFrame() {
   if (!autoRunning || !executor) return;
-  runSteps(isCoorMonRuntime() ? COORMON_FRAME_STEPS : STEPS_PER_FRAME);
+  if (isColdbootRuntime()) {
+    runSteps(COLDBOOT_FRAME_STEPS);
+  } else {
+    runSteps(isCoorMonRuntime() ? COORMON_FRAME_STEPS : STEPS_PER_FRAME);
+  }
   requestAnimationFrame(autoRunFrame);
 }
 
 function runSteps(n) {
   if (!executor) return;
+  if (isColdbootRuntime()) {
+    runColdbootFrame(n);
+    return;
+  }
   if (isCoorMonRuntime()) {
     runCoorMonFrame(n);
     return;
@@ -1413,12 +1547,16 @@ $('btnBoot').addEventListener('click', async () => {
   const mem = new Uint8Array(0x1000000);
   mem.set(romBytes);
   romBytes = mem;
-  const requestedRuntimeMode = isCoorMonModeRequested()
-    ? RUNTIME_MODE_COORMON
-    : RUNTIME_MODE_DIRECT;
+  const requestedRuntimeMode = isColdbootModeRequested()
+    ? RUNTIME_MODE_COLDBOOT
+    : isCoorMonModeRequested()
+      ? RUNTIME_MODE_COORMON
+      : RUNTIME_MODE_DIRECT;
   peripherals = requestedRuntimeMode === RUNTIME_MODE_COORMON
     ? createPeripheralBus({ pllDelay: 2, timerInterrupt: false })
-    : createPeripheralBus({ pllDelay: 2, timerMode: 'nmi', timerInterval: 100 });
+    : requestedRuntimeMode === RUNTIME_MODE_COLDBOOT
+      ? createPeripheralBus({ pllDelay: 2, timerInterrupt: false })
+      : createPeripheralBus({ pllDelay: 2, timerMode: 'nmi', timerInterval: 100 });
   executor = createExecutor(PRELIFTED_BLOCKS, romBytes, { peripherals });
   cpu = executor.cpu;
   runtimeMode = requestedRuntimeMode;
@@ -1473,6 +1611,12 @@ $('btnBoot').addEventListener('click', async () => {
 
   if (runtimeMode === RUNTIME_MODE_COORMON) {
     initializeCoorMonRuntime();
+    return;
+  }
+
+  if (runtimeMode === RUNTIME_MODE_COLDBOOT) {
+    enableButtons(true);
+    initializeColdbootRuntime();
     return;
   }
 
@@ -1624,6 +1768,13 @@ $('btnAutoRun').addEventListener('click', () => {
 });
 
 $('coormonMode').addEventListener('change', () => {
+  if ($('coormonMode').checked) $('coldbootMode').checked = false;
+  if (!shellBooted) return;
+  flashStatus('Mode change will apply on the next Boot or Reset.', 1200);
+});
+
+$('coldbootMode').addEventListener('change', () => {
+  if ($('coldbootMode').checked) $('coormonMode').checked = false;
   if (!shellBooted) return;
   flashStatus('Mode change will apply on the next Boot or Reset.', 1200);
 });
