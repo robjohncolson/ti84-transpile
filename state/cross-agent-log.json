@@ -10174,15 +10174,85 @@
       "timestamp": "2026-05-19T12:08:58Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "dc489b4b081c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble RST 38h Dispatch Chain (0x000038\u21920x0006F3\u21920x000704\u21920x000710)\n\n## Context\nSession",
+      "status": "completed",
+      "duration_seconds": 451.973,
+      "timestamp": "2026-05-19T12:10:38Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase371-rst38-disasm.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "87b622f9094e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate Timer ISR Blocks 0x0019BE-0x001A32\n\n## Context\nSession 370 discovered 6 NEW bloc",
+      "status": "completed",
+      "duration_seconds": 595.504,
+      "timestamp": "2026-05-19T12:13:04Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase371-timer-isr-blocks.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "7eee23645290",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Test Event Loop with Timer Interrupt + Keypress Combined\n\n## Context\nYou are working on the ",
+      "status": "completed",
+      "duration_seconds": 411.158,
+      "timestamp": "2026-05-19T18:10:27Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "cca17b95ca73",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace Key Dispatch Path (0x003A7B to 0x003C60)\n\n## Context\nYou are working on the TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 464.823,
+      "timestamp": "2026-05-19T18:11:19Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7cf7b104f368",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble the 0x003D6B Hot Loop and Surrounding Blocks\n\n## Context\nYou are working on the ",
+      "status": "completed",
+      "duration_seconds": 479.714,
+      "timestamp": "2026-05-19T18:11:32Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2cd560ff1a7e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate Keyboard Interrupt Bit on Ports 0x5015/0x5014/0x500B\n\n## Context\nYou are working",
+      "status": "completed",
+      "duration_seconds": 781.992,
+      "timestamp": "2026-05-19T18:16:39Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 833,
-    "cc_to_codex": 833,
+    "total_calls": 839,
+    "cc_to_codex": 839,
     "codex_to_cc": 0,
-    "completed": 617,
+    "completed": 623,
     "failed": 201,
     "refused": 0,
-    "avg_duration_seconds": 611.812
+    "avg_duration_seconds": 611.233
   }
 }
