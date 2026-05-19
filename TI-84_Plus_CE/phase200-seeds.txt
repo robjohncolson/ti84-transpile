@@ -201,3 +201,8 @@
 0x003CC2
 0x003D5A
 0x003A73
+# Session 369: Post-scan event loop handler seeds
+0x001713
+0x001933
+0x001853
+0x000721

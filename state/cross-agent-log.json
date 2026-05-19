@@ -10041,15 +10041,76 @@
       "timestamp": "2026-05-19T06:11:40Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "44f115144762",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x003A77-0x003A7B (Event Loop No-Key Response)\n\n## Context\nIn the TI-84 Plus CE ",
+      "status": "completed",
+      "duration_seconds": 632.923,
+      "timestamp": "2026-05-19T06:16:22Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase368-disasm-3A77.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "e4f9b402fc11",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add Seeds for Post-Scan Handler Blocks and Retranspile\n\n## Context\nThe OS event loop calls t",
+      "status": "completed",
+      "duration_seconds": 55.572,
+      "timestamp": "2026-05-19T08:04:04Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ae4eb10798d8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Extend Event Loop Probe to Reach Post-Scan Path\n\n## Context\nThe TI-84 Plus CE OS event loop ",
+      "status": "completed",
+      "duration_seconds": 192.68,
+      "timestamp": "2026-05-19T08:06:20Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b6cb6738f53b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Extended Boot Trace to Find BC31 Indirect Caller\n\n## Context\nBlock 0x00BC31 is reached durin",
+      "status": "completed",
+      "duration_seconds": 254.387,
+      "timestamp": "2026-05-19T08:07:26Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase369-bc31-extended-boot.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "4d931159c2ee",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble Post-Scan Handler Blocks\n\n## Context\nThe TI-84 Plus CE OS event loop polls _GetC",
+      "status": "completed",
+      "duration_seconds": 385.326,
+      "timestamp": "2026-05-19T08:09:36Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase369-disasm-post-scan.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 822,
-    "cc_to_codex": 822,
+    "total_calls": 827,
+    "cc_to_codex": 827,
     "codex_to_cc": 0,
-    "completed": 606,
+    "completed": 611,
     "failed": 201,
     "refused": 0,
-    "avg_duration_seconds": 615.426
+    "avg_duration_seconds": 613.544
   }
 }
