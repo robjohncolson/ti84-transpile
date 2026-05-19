@@ -704,5 +704,12 @@ export function createPeripheralBus(options = {}) {
     setKeyboardIRQ,
     keyboard: keyboardState,
     keyboardController: state.keyboardController,
+    setMatrixKey(group, bit, pressed) {
+      if (pressed) {
+        keyboardState.keyMatrix[group] &= ~(1 << bit);
+      } else {
+        keyboardState.keyMatrix[group] |= (1 << bit);
+      }
+    },
   };
 }

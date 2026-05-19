@@ -10244,15 +10244,121 @@
       "timestamp": "2026-05-19T18:16:39Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "912cc66655f7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Fix setKeyboardIRQ in peripherals.js\n\n## Context\nYou are working on a TI-84 Plus CE ROM tran",
+      "status": "completed",
+      "duration_seconds": 165.559,
+      "timestamp": "2026-05-19T20:06:07Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d820db09be8e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Test Direct RAM Injection for Keyboard Input\n\n## Context\nYou are working on a TI-84 Plus CE ",
+      "status": "completed",
+      "duration_seconds": 406.657,
+      "timestamp": "2026-05-19T20:10:06Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase373-direct-ram-inject.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "ae18633637e3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Model LCD Backlight Port 0xB024\n\n## Context\nYou are working on a TI-84 Plus CE ROM transpila",
+      "status": "completed",
+      "duration_seconds": 667.959,
+      "timestamp": "2026-05-19T20:14:31Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "364693578d58",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x003C63 Keyboard Scan Subroutine\n\n## Context\nYou are working on a TI-84 Plus CE",
+      "status": "completed",
+      "duration_seconds": 896.59,
+      "timestamp": "2026-05-19T20:18:14Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase373-disasm-003C63.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "e8b5a12ee7fc",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 374 P2: Investigate Keyboard Scan Multi-Key Rejection\n\n## Context\nThe keyboard scan routin",
+      "status": "completed",
+      "duration_seconds": 320.355,
+      "timestamp": "2026-05-19T22:09:18Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase374-keyboard-groups.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "4e83c1804dda",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 374 P3: Trace 0x003A7D \u2192 0x001937 Dispatch Path\n\n## Context\nWhen ENTER (scan code 0x09) is",
+      "status": "completed",
+      "duration_seconds": 388.801,
+      "timestamp": "2026-05-19T22:10:28Z",
+      "files_changed": [
+        "TI-84_Plus_CE/peripherals.js",
+        "TI-84_Plus_CE/probe-phase373-backlight-port.mjs",
+        "TI-84_Plus_CE/probe-phase373-disasm-003C63.mjs",
+        "TI-84_Plus_CE/probe-phase374-dispatch-disasm.mjs",
+        "TI-84_Plus_CE/probe-phase374-halt-investigation.mjs",
+        "TI-84_Plus_CE/probe-phase374-keyboard-groups.mjs",
+        "TI-84_Plus_CE/probe-phase374-repeat-key-path.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "28e0c3e1d130",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 374 P1: Investigate Halt at 0x001937 After Key Dispatch\n\n## Context\nIn session 373, direct",
+      "status": "completed",
+      "duration_seconds": 564.232,
+      "timestamp": "2026-05-19T22:13:20Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase374-halt-investigation.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "bdb6c3b0c153",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 374 P4: Investigate Repeat-Key vs New-Key Path\n\n## Context\nThe keyboard scan routine at 0x",
+      "status": "completed",
+      "duration_seconds": 636.464,
+      "timestamp": "2026-05-19T22:14:37Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase374-repeat-key-path.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 839,
-    "cc_to_codex": 839,
+    "total_calls": 847,
+    "cc_to_codex": 847,
     "codex_to_cc": 0,
-    "completed": 623,
+    "completed": 631,
     "failed": 201,
     "refused": 0,
-    "avg_duration_seconds": 611.233
+    "avg_duration_seconds": 610.237
   }
 }
