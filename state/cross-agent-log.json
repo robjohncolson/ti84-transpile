@@ -10006,15 +10006,50 @@
         "TI-84_Plus_CE/probe-phase367-boot-50k.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "189f1f0b4f63",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate What Sets IX=0xD140B3 Before 0x00BC47\n\n## Context\nIn the TI-84 CE ROM transpilat",
+      "status": "timeout",
+      "duration_seconds": 900.06,
+      "timestamp": "2026-05-18T22:18:01Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "732713a69859",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Extend Event Loop to 200K Steps\n\n## Context\nIn the TI-84 Plus CE ROM transpilation project, ",
+      "status": "completed",
+      "duration_seconds": 282.588,
+      "timestamp": "2026-05-19T06:10:30Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase368-eventloop-200k.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "e5610ee214e9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x00BC31 Indirect Caller \u2014 How Does Execution Reach 0x00BC31?\n\n## Context\nIn the TI-84",
+      "status": "completed",
+      "duration_seconds": 354.732,
+      "timestamp": "2026-05-19T06:11:40Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 819,
-    "cc_to_codex": 819,
+    "total_calls": 822,
+    "cc_to_codex": 822,
     "codex_to_cc": 0,
-    "completed": 604,
-    "failed": 200,
+    "completed": 606,
+    "failed": 201,
     "refused": 0,
-    "avg_duration_seconds": 615.803
+    "avg_duration_seconds": 615.426
   }
 }
