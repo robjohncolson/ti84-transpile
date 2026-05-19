@@ -43,6 +43,10 @@ function formatHex(value) {
   return `0x${value.toString(16).padStart(2, '0')}`;
 }
 
+const KEY_SCAN_CODE_ADDR = 0xD00587;
+const KEY_AVAILABLE_FLAG_ADDR = 0xD00080;
+const KEY_AVAILABLE_FLAG_MASK = 0x08;
+
 function cloneWrites(map) {
   const result = {};
 
@@ -408,7 +412,7 @@ export function createPeripheralBus(options = {}) {
   //   0x5014-0x5016: masked status bytes 0..2 (read)
   //   0x5008-0x500A: acknowledge bytes 0..2 (write)
   //   0x5004-0x5006: enable-mask bytes 0..2 (read/write)
-  // Bit mapping: 0=ON, 1-3=timers, 4=OS timer, 10=keyboard, 11=LCD, 12=RTC, 13=USB
+  // Keyboard input injection is poll-driven via RAM state, not FTINTC010 bits.
   const intcState = {
     rawStatus: 0x00000000,    // port 0x5000: raw interrupt status
     enableMask: 0x00000000,   // port 0x5004: interrupt enable mask
@@ -416,12 +420,27 @@ export function createPeripheralBus(options = {}) {
     inversion: 0x00000000,    // port 0x5010: signal inversion
   };
 
-  function setKeyboardIRQ(active) {
-    if (active) {
-      intcState.rawStatus |= (1 << 19);
-    } else {
-      intcState.rawStatus &= ~(1 << 19);
+  function setKeyPressed(mem, scanCode) {
+    if (!mem) {
+      return;
     }
+
+    mem[KEY_SCAN_CODE_ADDR] = scanCode & 0xFF;
+    mem[KEY_AVAILABLE_FLAG_ADDR] = (mem[KEY_AVAILABLE_FLAG_ADDR] | KEY_AVAILABLE_FLAG_MASK) & 0xFF;
+  }
+
+  function clearKeyPressed(mem) {
+    if (!mem) {
+      return;
+    }
+
+    mem[KEY_SCAN_CODE_ADDR] = 0x00;
+    mem[KEY_AVAILABLE_FLAG_ADDR] = mem[KEY_AVAILABLE_FLAG_ADDR] & ~KEY_AVAILABLE_FLAG_MASK;
+  }
+
+  function setKeyboardIRQ(active) {
+    // Deprecated: keyboard input on the CE is poll-driven, not interrupt-driven.
+    // Keep the legacy API surface for older browser shell code paths.
   }
 
   // Expose intcState so tick() can set raw status bits
@@ -581,6 +600,20 @@ export function createPeripheralBus(options = {}) {
     },
   });
 
+  // LCD backlight / power control ports (0xB020, 0xB024).
+  // Boot code writes to both during init. Default 0xFF = full power / max brightness.
+  const backlightState = { power: 0xFF, brightness: 0xFF };
+
+  register(0xB020, {
+    read() { return backlightState.power; },
+    write(port, value) { backlightState.power = value; },
+  });
+
+  register(0xB024, {
+    read() { return backlightState.brightness; },
+    write(port, value) { backlightState.brightness = value; },
+  });
+
   const lcdSpiState = {
     panel3160: [0, 0, 0, 0],
     panel3180: [0, 0, 0, 0],
@@ -666,6 +699,8 @@ export function createPeripheralBus(options = {}) {
     acknowledgeNMI,
     triggerNMI,
     triggerIRQ,
+    setKeyPressed,
+    clearKeyPressed,
     setKeyboardIRQ,
     keyboard: keyboardState,
     keyboardController: state.keyboardController,

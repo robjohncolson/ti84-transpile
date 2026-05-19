@@ -1576,6 +1576,10 @@ $('btnBoot').addEventListener('click', async () => {
   kbdDown = (e) => {
     if (isEditableTarget(e)) return;
     kbd.handleKeyDown(e);
+    const scanCode = getScanCodeForPcCode(e.code);
+    if (scanCode != null) {
+      peripherals?.setKeyPressed?.(cpu?.memory, scanCode);
+    }
     writeTranslatedKeyEvent(e.code);
     updateKeyStateDisplay();
     updateKeyboardOverlay();
@@ -1588,6 +1592,9 @@ $('btnBoot').addEventListener('click', async () => {
   kbdUp = (e) => {
     if (isEditableTarget(e)) return;
     kbd.handleKeyUp(e);
+    if (KEY_MAP[e.code]) {
+      peripherals?.clearKeyPressed?.(cpu?.memory);
+    }
     if (isCoorMonRuntime()) {
       writeCoorMonKeyEventFromState();
     }
