@@ -10591,15 +10591,104 @@
       "timestamp": "2026-05-20T08:23:18Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "8c62ae3ee6e9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Update browser-shell.html for DI+HALT Bypass Continuous Operation\n\n## Context\nYou are workin",
+      "status": "completed",
+      "duration_seconds": 391.549,
+      "timestamp": "2026-05-20T10:08:41Z",
+      "files_changed": [
+        "TI-84_Plus_CE/browser-shell.html"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "b62da7401729",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace the Full Wake Sequence at 0x0019BE\n\n## Context\nYou are working on a TI-84 Plus CE ROM ",
+      "status": "completed",
+      "duration_seconds": 631.623,
+      "timestamp": "2026-05-20T10:12:40Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase380-wake-sequence.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "018fb0fc7e7a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map 0x001853 Internal Behavior (Key Handler)\n\n## Context\nYou are working on a TI-84 Plus CE ",
+      "status": "timeout",
+      "duration_seconds": 900.056,
+      "timestamp": "2026-05-20T10:17:12Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c5c763a2b5ab",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Test Key-Specific Dispatch Behavior (CLEAR vs ENTER vs 2ND)\n\n## Context\nYou are working on a",
+      "status": "timeout",
+      "duration_seconds": 900.045,
+      "timestamp": "2026-05-20T10:17:13Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f7c0cd1f2636",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 381 \u2014 P4: Model Port 0x09 Keyboard Hardware in peripherals.js\n\n## Context\nThe TI-84 P",
+      "status": "completed",
+      "duration_seconds": 92.754,
+      "timestamp": "2026-05-20T12:03:57Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ba9dc7a714f6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 381 \u2014 P1: Investigate Translation Table at 0x09F79B\n\n## Context\nThe TI-84 Plus CE OS ",
+      "status": "completed",
+      "duration_seconds": 351.48,
+      "timestamp": "2026-05-20T12:08:12Z",
+      "files_changed": [
+        "TI-84_Plus_CE/peripherals.js",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase381-port03-reset.mjs",
+        "TI-84_Plus_CE/probe-phase381-subroutines-5B96-5BB1.mjs",
+        "TI-84_Plus_CE/probe-phase381-translation-table.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "d09b4d5f1154",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 381 \u2014 P2: Trace 0x005B96 and 0x005BB1 Subroutines\n\n## Context\nThe TI-84 Plus CE OS ke",
+      "status": "completed",
+      "duration_seconds": 434.417,
+      "timestamp": "2026-05-20T12:09:36Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase381-subroutines-5B96-5BB1.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 867,
-    "cc_to_codex": 867,
+    "total_calls": 874,
+    "cc_to_codex": 874,
     "codex_to_cc": 0,
-    "completed": 648,
-    "failed": 204,
+    "completed": 653,
+    "failed": 206,
     "refused": 0,
-    "avg_duration_seconds": 609.563
+    "avg_duration_seconds": 608.916
   }
 }

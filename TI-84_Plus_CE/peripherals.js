@@ -526,6 +526,11 @@ export function createPeripheralBus(options = {}) {
       keyboardState.groupSelect = value;
     },
   });
+  const keyboardScanState = { value: 0x00 };
+  register(0x09, {
+    read() { return keyboardScanState.value; },
+    write(port, value) { keyboardScanState.value = value; },
+  });
   register({ start: 0xa000, end: 0xa01e }, createKeyboardControllerHandler(state, keyboardState));
 
   register(0x00, createCpuControlHandler(state));
