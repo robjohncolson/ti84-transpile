@@ -22298,6 +22298,19 @@ function walkBlocks() {
     { pc: 0x0B084D, mode: 'adl' },  // 54-byte gap
     { pc: 0x0808B0, mode: 'adl' },  // 52-byte gap
     { pc: 0x0686BF, mode: 'adl' },  // 48-byte gap
+    // Session 384: scan code translation function chain seeds.
+    { pc: 0x0300CB, mode: 'adl' },  // Parent of 0x03010D translation table lookup
+    { pc: 0x0300A1, mode: 'adl' },  // Adjacent function, reads 0xD0058F
+    { pc: 0x03FBF2, mode: 'adl' },  // Called from 0x0300FF in 0x0300CB
+    // Session 384: remaining coverage gap seeds from session 382 audit.
+    { pc: 0x003ECE, mode: 'adl' },  // coverage gap candidate
+    { pc: 0x057466, mode: 'adl' },  // coverage gap candidate
+    { pc: 0x04B5AF, mode: 'adl' },  // coverage gap candidate
+    { pc: 0x04B5CF, mode: 'adl' },  // coverage gap candidate
+    { pc: 0x0AEAE0, mode: 'adl' },  // coverage gap candidate
+    { pc: 0x007D75, mode: 'adl' },  // coverage gap candidate
+    { pc: 0x03768D, mode: 'adl' },  // coverage gap candidate
+    { pc: 0x04E5DE, mode: 'adl' },  // coverage gap candidate
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
