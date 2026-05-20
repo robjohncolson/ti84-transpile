@@ -10350,15 +10350,112 @@
         "TI-84_Plus_CE/probe-phase374-repeat-key-path.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "6da6d2325db3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add seed addresses 0x003C98 and 0x003C9C to transpiler\n\n## Context\nThe TI-84 Plus CE keyboar",
+      "status": "completed",
+      "duration_seconds": 85.762,
+      "timestamp": "2026-05-20T00:04:20Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7c5079754f52",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Seed RAM 0x020100 with 0x00A55A and test normal key dispatch path\n\n## Context\nThe TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 368.703,
+      "timestamp": "2026-05-20T00:09:00Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase375-flash-seed-test.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "cd338c64864b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate H register state and block boundaries in keyboard scan 0x003C63-0x003D2E\n\n## Con",
+      "status": "completed",
+      "duration_seconds": 691.855,
+      "timestamp": "2026-05-20T00:14:28Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase375-h-register-scan.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "1174eada23f3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x001853 and 0x000721 (normal key dispatch handlers)\n\n## Context\nThe TI-84 Plus ",
+      "status": "completed",
+      "duration_seconds": 824.509,
+      "timestamp": "2026-05-20T00:16:37Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase375-normal-dispatch-disasm.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "ee394102a929",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 376 P3: Seed 0x020100 and 0xD177BA in Coldboot Boot Init\n\n## Context\n\nThe TI-84 Plus ",
+      "status": "completed",
+      "duration_seconds": 148.523,
+      "timestamp": "2026-05-20T02:05:55Z",
+      "files_changed": [
+        "TI-84_Plus_CE/browser-shell.html",
+        "TI-84_Plus_CE/phase200-seeds.txt"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "f73ac2c4dd9d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 376 P4: Disassemble 0x0067F8 Key Dispatch Entry\n\n## Context\n\nThe function at 0x0067F8",
+      "status": "completed",
+      "duration_seconds": 554.197,
+      "timestamp": "2026-05-20T02:12:42Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "68ea47d95238",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 376 P1: Investigate Key Dispatch Table Format at 0x020000+\n\n## Context\n\nThe TI-84 Plu",
+      "status": "completed",
+      "duration_seconds": 699.904,
+      "timestamp": "2026-05-20T02:15:02Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "37ceecddfb8c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 376 P2: Test Natural Keyboard Dispatch with Fixed Ports\n\n## Context\n\nSession 375 fixe",
+      "status": "timeout",
+      "duration_seconds": 900.054,
+      "timestamp": "2026-05-20T02:18:24Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 847,
-    "cc_to_codex": 847,
+    "total_calls": 855,
+    "cc_to_codex": 855,
     "codex_to_cc": 0,
-    "completed": 631,
-    "failed": 201,
+    "completed": 638,
+    "failed": 202,
     "refused": 0,
-    "avg_duration_seconds": 610.237
+    "avg_duration_seconds": 609.526
   }
 }

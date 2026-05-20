@@ -1452,6 +1452,14 @@ function initializeColdbootRuntime() {
   mem[0xD02AD9] = 0x00;
   mem[0xD0009B] |= 0x40;
 
+  // Flash self-test pass gate (0x001713 checks this via CALL 0x0008BB)
+  mem[0x020100] = 0x5A;
+  mem[0x020101] = 0xA5;
+  mem[0x020102] = 0x00;
+
+  // System flag clear gate (0x001713 checks LD A,(0xD177BA); OR A; RET NZ)
+  mem[0xD177BA] = 0x00;
+
   lastPc = COLDBOOT_EVENT_LOOP_ENTRY;
   lastMode = 'adl';
 
