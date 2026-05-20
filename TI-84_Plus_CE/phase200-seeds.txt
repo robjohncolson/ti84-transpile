@@ -206,3 +206,6 @@
 0x001933
 0x001853
 0x000721
+# Session 375: keyboard scan store-key repeat/new-key entry targets
+0x003C98
+0x003C9C

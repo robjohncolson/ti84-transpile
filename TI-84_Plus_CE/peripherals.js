@@ -179,21 +179,44 @@ function createPhase99CPollUnlockHandler(readValue = 0x00) {
   };
 }
 
-// CE keyboard controller ports (0xA000-0xA010).
-// Group select is active-low; data reads combine all selected matrix rows.
+// CE keyboard controller ports (0xA000-0xA01E).
+//
+// The OS scan routine at 0x003C63 uses two read modes:
+//   1. Combined read (port 0xA008 / 0xA010): returns the OR of inverted
+//      key data across ALL matrix groups (active-HIGH: 0x00 = no key,
+//      non-zero = at least one key pressed somewhere). The group-select
+//      register is ignored for this read — it always scans everything.
+//   2. Per-group read (ports 0xA012, 0xA014, … 0xA01E): each port reads
+//      a single matrix group, active-HIGH. Port 0xA012 = keyMatrix[0],
+//      0xA014 = keyMatrix[1], … 0xA01E = keyMatrix[6].
+//
+// The OS algorithm:
+//   a) Writes 0x01 to 0xA000, reads 0xA008: quick "any key?" check.
+//   b) If non-zero, writes 0x00 to 0xA000 (clear group select).
+//   c) Reads ports 0xA012..0xA01E individually to find WHICH group(s)
+//      have a pressed key and to detect multi-key (error path at 0x003D47).
+//
+// Active-HIGH convention: the scan routine uses JR Z (skip if zero = no key)
+// for both the combined read and the per-group reads.
 function createKeyboardControllerHandler(state, keyboardState) {
-  function readSelectedGroups() {
-    let result = 0xFF;
+  // Combined "any key pressed?" — OR of all inverted groups.
+  function readAnyKeyPressed() {
+    let result = 0x00;
 
     for (let group = 0; group < keyboardState.keyMatrix.length; group++) {
-      if (((state.keyboardController.groupSelect >> group) & 1) !== 0) {
-        continue;
-      }
-
-      result &= keyboardState.keyMatrix[group];
+      result |= (~keyboardState.keyMatrix[group] & 0xFF);
     }
 
     return result;
+  }
+
+  // Per-group read, active-HIGH (inverted from the active-low matrix).
+  function readSingleGroup(group) {
+    if (group < 0 || group >= keyboardState.keyMatrix.length) {
+      return 0x00;
+    }
+
+    return ~keyboardState.keyMatrix[group] & 0xFF;
   }
 
   return {
@@ -202,8 +225,15 @@ function createKeyboardControllerHandler(state, keyboardState) {
         return state.keyboardController.groupSelect & 0xFF;
       }
 
+      // Combined key-detect reads (active-HIGH).
       if (port === 0xA008 || port === 0xA010) {
-        return readSelectedGroups();
+        return readAnyKeyPressed();
+      }
+
+      // Per-group reads: port 0xA012 = group 0, 0xA014 = group 1, …
+      if (port >= 0xA012 && port <= 0xA01E && (port & 1) === 0) {
+        const group = (port - 0xA012) >> 1;
+        return readSingleGroup(group);
       }
 
       return 0x00;
@@ -496,7 +526,7 @@ export function createPeripheralBus(options = {}) {
       keyboardState.groupSelect = value;
     },
   });
-  register({ start: 0xa000, end: 0xa010 }, createKeyboardControllerHandler(state, keyboardState));
+  register({ start: 0xa000, end: 0xa01e }, createKeyboardControllerHandler(state, keyboardState));
 
   register(0x00, createCpuControlHandler(state));
   register([0x1D, 0x1F], createCsBaseHandler(state));
