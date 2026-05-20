@@ -354,6 +354,7 @@ let kbdDown = null;
 let kbdUp = null;
 let lcd = null;
 let autoRunning = false;
+let autoRunSession = 0;
 let runtimeMode = 'direct';
 const RUNTIME_MODE_DIRECT = 'direct';
 const RUNTIME_MODE_COORMON = 'coormon';
@@ -495,6 +496,34 @@ function isColdbootRuntime() {
 
 function isCoorMonRuntime() {
   return runtimeMode === RUNTIME_MODE_COORMON;
+}
+
+function syncAutoRunButton() {
+  $('btnAutoRun').textContent = autoRunning ? 'Stop' : 'AutoRun';
+  $('btnAutoRun').classList.toggle('active', autoRunning);
+}
+
+function stopAutoRunLoop() {
+  autoRunning = false;
+  autoRunSession++;
+  syncAutoRunButton();
+}
+
+function startAutoRunLoop() {
+  if (autoRunning) return;
+  autoRunning = true;
+  const session = ++autoRunSession;
+  syncAutoRunButton();
+  requestAnimationFrame(() => autoRunFrame(session));
+}
+
+function getColdbootRunOptions(stepBudget = COLDBOOT_FRAME_STEPS) {
+  return {
+    maxSteps: stepBudget,
+    maxLoopIterations: 10000,
+    diHaltBypass: true,
+    diHaltBypassEntry: COLDBOOT_EVENT_LOOP_ENTRY,
+  };
 }
 
 function getCoorMonScanCodeForPcCode(code) {
@@ -946,9 +975,7 @@ function renderErrorBanner(config, label) {
     return;
   }
 
-  autoRunning = false;
-  $('btnAutoRun').textContent = 'AutoRun';
-  $('btnAutoRun').classList.remove('active');
+  stopAutoRunLoop();
 
   setStatus(`${label}: cold boot + render setup (this can take a second)...`);
 
@@ -1034,9 +1061,7 @@ function showScreen(entryAddr, entryMode, name, maxSteps = 300000, hlValue = nul
     setStatus('Boot first so the ROM module is loaded.', true);
     return;
   }
-  autoRunning = false;
-  $('btnAutoRun').textContent = 'AutoRun';
-  $('btnAutoRun').classList.remove('active');
+  stopAutoRunLoop();
 
   setStatus(`${name}: cold boot + render setup (this can take a second)...`);
 
@@ -1133,9 +1158,7 @@ function showHomeScreen() {
     setStatus('Boot first so the ROM module is loaded.', true);
     return;
   }
-  autoRunning = false;
-  $('btnAutoRun').textContent = 'AutoRun';
-  $('btnAutoRun').classList.remove('active');
+  stopAutoRunLoop();
 
   setStatus('P112 Home Screen: cold boot + golden-regression parity render...');
 
@@ -1470,16 +1493,14 @@ function initializeColdbootRuntime() {
   updateKeyStateDisplay();
   updateKeyboardOverlay();
 
-  setStatus('Coldboot complete. Click AutoRun to drive OS event loop with timer interrupts.');
-  log(`<span class="info">--- Coldboot seeded (entry=0x${hex(COLDBOOT_EVENT_LOOP_ENTRY, 6)}, SP=0x${hex(cpu.sp, 6)}, IY=0xD00080, iff1=1, timerInterrupt=true) ---</span>`);
+  setStatus('Coldboot complete. OS event loop is running with DI+HALT bypass.');
+  log(`<span class="info">--- Coldboot seeded (entry=0x${hex(COLDBOOT_EVENT_LOOP_ENTRY, 6)}, SP=0x${hex(cpu.sp, 6)}, IY=0xD00080, iff1=1, timerInterrupt=true, diHaltBypass=true) ---</span>`);
+  startAutoRunLoop();
 }
 
 function runColdbootFrame(stepBudget = COLDBOOT_FRAME_STEPS) {
   if (!executor || !cpu?.memory) return;
-  const result = executor.runFrom(lastPc, lastMode, {
-    maxSteps: stepBudget,
-    maxLoopIterations: 10000,
-  });
+  const result = executor.runFrom(lastPc, lastMode, getColdbootRunOptions(stepBudget));
   totalSteps += result.steps;
   lastPc = result.lastPc;
   lastMode = result.lastMode;
@@ -1491,14 +1512,14 @@ function runColdbootFrame(stepBudget = COLDBOOT_FRAME_STEPS) {
   setStatus(`Coldboot: ${result.steps} steps, ${result.termination} | Total: ${totalSteps} | PC=0x${hex(lastPc, 6)}`);
 }
 
-function autoRunFrame() {
-  if (!autoRunning || !executor) return;
+function autoRunFrame(session = autoRunSession) {
+  if (!autoRunning || session !== autoRunSession || !executor) return;
   if (isColdbootRuntime()) {
     runSteps(COLDBOOT_FRAME_STEPS);
   } else {
     runSteps(isCoorMonRuntime() ? COORMON_FRAME_STEPS : STEPS_PER_FRAME);
   }
-  requestAnimationFrame(autoRunFrame);
+  requestAnimationFrame(() => autoRunFrame(session));
 }
 
 function runSteps(n) {
@@ -1593,8 +1614,9 @@ $('btnBoot').addEventListener('click', async () => {
     updateKeyboardOverlay();
     const mappedKey = KEY_MAP[e.code];
     if (mappedKey && !autoRunning && executor) {
-      runSteps(KEY_BURST_STEPS);
-      flashStatus(`Key: ${mappedKey.label} → ${KEY_BURST_STEPS} steps`);
+      const stepCount = isColdbootRuntime() ? COLDBOOT_FRAME_STEPS : KEY_BURST_STEPS;
+      runSteps(stepCount);
+      flashStatus(`Key: ${mappedKey.label} → ${stepCount} steps`);
     }
   };
   kbdUp = (e) => {
@@ -1615,9 +1637,7 @@ $('btnBoot').addEventListener('click', async () => {
   totalSteps = 0;
   lastPc = 0x000000;
   lastMode = 'z80';
-  autoRunning = false;
-  $('btnAutoRun').textContent = 'AutoRun';
-  $('btnAutoRun').classList.remove('active');
+  stopAutoRunLoop();
   $('activeKeys').textContent = 'none';
   $('scanCode').textContent = '0x00';
   updateKeyboardOverlay();
@@ -1776,10 +1796,11 @@ $('btnRenderError').addEventListener('click', () => {
 $('btnShowMemA').addEventListener('click', () => showScreen(0x045e7c, 'adl', 'MemMgmt A (inverse)', 200000));
 $('btnShowMemB').addEventListener('click', () => showScreen(0x045e9c, 'adl', 'MemMgmt B (normal)', 200000));
 $('btnAutoRun').addEventListener('click', () => {
-  autoRunning = !autoRunning;
-  $('btnAutoRun').textContent = autoRunning ? 'Stop' : 'AutoRun';
-  $('btnAutoRun').classList.toggle('active', autoRunning);
-  if (autoRunning) requestAnimationFrame(autoRunFrame);
+  if (autoRunning) {
+    stopAutoRunLoop();
+  } else {
+    startAutoRunLoop();
+  }
 });
 
 $('coormonMode').addEventListener('change', () => {
@@ -1804,9 +1825,7 @@ $('btnReset').addEventListener('click', () => {
     lcd.destroy();
     lcd = null;
   }
-  autoRunning = false;
-  $('btnAutoRun').textContent = 'AutoRun';
-  $('btnAutoRun').classList.remove('active');
+  stopAutoRunLoop();
   $('activeKeys').textContent = 'none';
   $('scanCode').textContent = '0x00';
   secondActive = false;
