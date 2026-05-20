@@ -22292,6 +22292,12 @@ function walkBlocks() {
     { pc: 0x014B9D, mode: 'adl' },
     // Phase 248: pure delay-loop routine stubbed via BLOCK_OVERRIDES to return immediately.
     { pc: 0x006202, mode: 'adl' },  // Delay loop entry - skip port-0x03 speed wait with POP HL / POP DE / RET
+    // Session 383: top coverage gap seeds from session 382 audit.
+    { pc: 0x0BA8B9, mode: 'adl' },  // 61-byte gap, key/mode handler candidate
+    { pc: 0x051C4D, mode: 'adl' },  // 58-byte gap
+    { pc: 0x0B084D, mode: 'adl' },  // 54-byte gap
+    { pc: 0x0808B0, mode: 'adl' },  // 52-byte gap
+    { pc: 0x0686BF, mode: 'adl' },  // 48-byte gap
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {

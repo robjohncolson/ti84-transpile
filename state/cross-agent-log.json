@@ -10680,15 +10680,105 @@
         "TI-84_Plus_CE/probe-phase381-subroutines-5B96-5BB1.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "031eaef4222a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 381 \u2014 P3: Investigate Port 0x03 Bit 4 Cold-Reset Path\n\n## Context\nThe TI-84 Plus CE O",
+      "status": "completed",
+      "duration_seconds": 620.704,
+      "timestamp": "2026-05-20T12:12:44Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8370f46dff41",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Resolve Scan Code Index Discrepancy (Forward vs Reversed Formula)\n\n## Context\nYou are workin",
+      "status": "completed",
+      "duration_seconds": 537.903,
+      "timestamp": "2026-05-20T14:11:35Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "573136abb591",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x0060F7 and 0x0060FA LCD I/O Helpers\n\n## Context\nYou are working on TI-84 Plus CE ROM",
+      "status": "completed",
+      "duration_seconds": 619.409,
+      "timestamp": "2026-05-20T14:13:00Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase382-lcd-io-helpers.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "e12feeb1566e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate 0x005BB1 LCD Init Fast-Path (Why Reinit on Every Key?)\n\n## Context\nYou are worki",
+      "status": "completed",
+      "duration_seconds": 644.616,
+      "timestamp": "2026-05-20T14:13:23Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7f3f081289c4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Coverage Push \u2014 Run Audit and Identify Next Frontier\n\n## Context\nYou are working on TI-84 Pl",
+      "status": "completed",
+      "duration_seconds": 830.02,
+      "timestamp": "2026-05-20T14:16:32Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "01e2538674d6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 383 P2: Model SPI LCD ports 0xD018 and 0xD008 in peripherals.js\n\n## Context\nSession 382 id",
+      "status": "completed",
+      "duration_seconds": 64.3,
+      "timestamp": "2026-05-20T16:04:17Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "776ec8a581d7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 383 P3: Add top coverage seed candidates to the transpiler\n\n## Context\nSession 382's cover",
+      "status": "completed",
+      "duration_seconds": 65.375,
+      "timestamp": "2026-05-20T16:04:19Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b7a92e7ff707",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 383 P4: Trace the scan code conversion step from _GetCSC to translation table\n\n## Context\n",
+      "status": "completed",
+      "duration_seconds": 450.673,
+      "timestamp": "2026-05-20T16:10:46Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 874,
-    "cc_to_codex": 874,
+    "total_calls": 882,
+    "cc_to_codex": 882,
     "codex_to_cc": 0,
-    "completed": 653,
+    "completed": 661,
     "failed": 206,
     "refused": 0,
-    "avg_duration_seconds": 608.916
+    "avg_duration_seconds": 607.739
   }
 }

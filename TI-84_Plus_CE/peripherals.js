@@ -285,6 +285,7 @@ export function createPeripheralBus(options = {}) {
       groupSelect: 0xFFFF,
     },
     csBase: { 0x1D: 0xFF, 0x1E: 0xFF, 0x1F: 0xFF },
+    spiLcd: { command: 0x00, data: 0x00 },
   };
 
   function logTrace(message) {
@@ -360,6 +361,10 @@ export function createPeripheralBus(options = {}) {
         groupSelect: state.keyboardController.groupSelect,
       },
       csBase: { ...state.csBase },
+      spiLcd: {
+        command: state.spiLcd.command,
+        data: state.spiLcd.data,
+      },
     };
   }
 
@@ -551,6 +556,14 @@ export function createPeripheralBus(options = {}) {
   // Phase 103 report: TI-84_Plus_CE/phase103-port-d00c-d00d-report.md says idle SPI status is D00C=0x02 and D00D=0x00.
   register(0xd00c, createPhase99CPollUnlockHandler(0x02));
   register(0xd00d, createPhase99CPollUnlockHandler(0x00));
+  register(0xd018, {
+    read() { return state.spiLcd.command; },
+    write(port, value) { state.spiLcd.command = value; },
+  });
+  register(0xd008, {
+    read() { return state.spiLcd.data; },
+    write(port, value) { state.spiLcd.data = value; },
+  });
   // Memory controller / flash wait states (ports 0x1000-0x1005)
   // Port 0x1005: flash wait states (OS default 0x04 → 9 wait states per flash read)
   const memCtrlState = { waitStates: 0x04, bankCtrl: 0x00 };
