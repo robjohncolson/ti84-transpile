@@ -9,6 +9,7 @@ const FLAG_H = 0x10;
 const FLAG_Y = 0x20;
 const FLAG_Z = 0x40;
 const FLAG_S = 0x80;
+const COLDBOOT_EVENT_LOOP_ENTRY = 0x003A73;
 
 function parity(value) {
   let bits = value & 0xff;
@@ -1094,6 +1095,9 @@ export function createExecutor(blocks, memory, options = {}) {
       const onBlock = opts.onBlock ?? null;
       const maxLoopIter = opts.maxLoopIterations ?? 64;
       const onLoopBreak = opts.onLoopBreak ?? null;
+      const diHaltBypassEntry = opts.diHaltBypassEntry ?? COLDBOOT_EVENT_LOOP_ENTRY;
+      const diHaltBypassEnabled = opts.diHaltBypass
+        ?? (((startAddress & 0xFFFFFF) === diHaltBypassEntry) && startMode === 'adl');
 
       let pc = startAddress;
       let mode = startMode;
@@ -1313,6 +1317,22 @@ export function createExecutor(blocks, memory, options = {}) {
               steps++;
               continue;
             }
+          }
+
+          // Coldboot sleep path: DI + HALT disables IRQ wake, so re-enter the
+          // OS event loop instead of dead-stopping the runtime forever.
+          if (result === -1 && diHaltBypassEnabled && cpu.halted && !cpu.iff1) {
+            cpu.halted = false;
+            cpu.iff1 = 1;
+            cpu.iff2 = 1;
+            cpu.madl = 1;
+            pc = diHaltBypassEntry;
+            mode = 'adl';
+            cpu.pc = pc;
+            loopHitCount = 0;
+            recentKeys.length = 0;
+            steps++;
+            continue;
           }
 
           termination = result === -1 ? 'halt' : 'sleep';

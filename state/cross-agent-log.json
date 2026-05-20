@@ -10447,15 +10447,159 @@
       "timestamp": "2026-05-20T02:18:24Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "1c1d9ff5d9c5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Fix Natural Key Scan Probe\n\n## Context\n\nThis is the TI-84 Plus CE ROM transpilation project.",
+      "status": "completed",
+      "duration_seconds": 367.899,
+      "timestamp": "2026-05-20T04:09:20Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9753559f68ec",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x001713 Caller After 0x0067F8 Returns HL=1\n\n## Context\n\nThis is the TI-84 Plus CE ROM",
+      "status": "completed",
+      "duration_seconds": 425.75,
+      "timestamp": "2026-05-20T04:10:16Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase377-trace-001713.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "4edec7809876",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate JP Table Entries at 0x020104+\n\n## Context\n\nThis is the TI-84 Plus CE ROM transpi",
+      "status": "completed",
+      "duration_seconds": 448.188,
+      "timestamp": "2026-05-20T04:10:41Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase377-jp-table.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "823aad672d1c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Fix Port 0x03 GPIO Value for Key Dispatch\n\n## Context\n\nThis is the TI-84 Plus CE ROM transpi",
+      "status": "completed",
+      "duration_seconds": 649.824,
+      "timestamp": "2026-05-20T04:13:58Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8009d56345ed",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Verify GPIO Fix in Coldboot Mode + Test Key Dispatch\n\n## Context\nSession 377 changed the def",
+      "status": "completed",
+      "duration_seconds": 366.766,
+      "timestamp": "2026-05-20T06:08:52Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase378-coldboot-gpio-verify.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "dee1a68971df",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate HALT at 0x0019B5 \u2014 Is It EI+HALT? Does Timer Unlock It?\n\n## Context\nSession 377 ",
+      "status": "completed",
+      "duration_seconds": 435.577,
+      "timestamp": "2026-05-20T06:10:05Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "99a561fa43ef",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Find the OS Scan Code Lookup Table (0x29 for ENTER)\n\n## Context\nSession 377 discovered that ",
+      "status": "completed",
+      "duration_seconds": 842.88,
+      "timestamp": "2026-05-20T06:16:49Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase378-scancode-table.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "0a7cc63f64f6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x0158DE (Post-Key Handler) and Trace ENTER Key Processing\n\n## Context\nSession 3",
+      "status": "timeout",
+      "duration_seconds": 900.034,
+      "timestamp": "2026-05-20T06:17:48Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "0212bc7bd6d8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 379 \u2014 P4: Test Multiple Keys via Natural Scan\n\n## Context\n\nThe TI-84 Plus CE ROM tran",
+      "status": "completed",
+      "duration_seconds": 456.712,
+      "timestamp": "2026-05-20T08:15:58Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase379-multikey-natural.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "1aae30e24049",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 379 \u2014 P1: Implement DI+HALT Bypass in Coldboot Mode\n\n## Context\n\nThe TI-84 Plus CE RO",
+      "status": "completed",
+      "duration_seconds": 695.297,
+      "timestamp": "2026-05-20T08:19:51Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ac4a7b400bb5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 379 \u2014 P3: Investigate the 0x3B0001 Action Table\n\n## Context\n\nThe TI-84 Plus CE ROM tr",
+      "status": "completed",
+      "duration_seconds": 857.45,
+      "timestamp": "2026-05-20T08:22:38Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase379-disasm-0158BC.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "73bf271dea15",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 379 \u2014 P2: Update keyboard-matrix.md with OS Scan Codes\n\n## Context\n\nThe TI-84 Plus CE",
+      "status": "timeout",
+      "duration_seconds": 900.032,
+      "timestamp": "2026-05-20T08:23:18Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 855,
-    "cc_to_codex": 855,
+    "total_calls": 867,
+    "cc_to_codex": 867,
     "codex_to_cc": 0,
-    "completed": 638,
-    "failed": 202,
+    "completed": 648,
+    "failed": 204,
     "refused": 0,
-    "avg_duration_seconds": 609.526
+    "avg_duration_seconds": 609.563
   }
 }
