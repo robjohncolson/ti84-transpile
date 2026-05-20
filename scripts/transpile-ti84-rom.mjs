@@ -868,6 +868,16 @@ function walkBlocks() {
     { pc: 0x020110, mode: 'adl' },
     { pc: 0x021000, mode: 'adl' },
     { pc: 0x030000, mode: 'adl' },
+    // Session 385: translation dispatcher / key-processing swap entry points
+    { pc: 0x02fe73, mode: 'adl' }, // Main dispatcher re-entry (JP target from 0x030353)
+    { pc: 0x02fe89, mode: 'adl' }, // Internal dispatcher entry (JP from 0x02FDE7 / 0x02FDFE)
+    { pc: 0x02fec8, mode: 'adl' }, // Modifier-check entry (external caller at 0x05B24B)
+    { pc: 0x02fef1, mode: 'adl' }, // Post-modifier check entry (external caller at 0x0773ED)
+    { pc: 0x02fff6, mode: 'adl' }, // 2ND mode path entry (JP target from BIT 3,(IY+0x12) check)
+    { pc: 0x030300, mode: 'adl' }, // Key-processing swap function entry
+    { pc: 0x030357, mode: 'adl' }, // DE=0xFFFF path zero-init handler
+    { pc: 0x030388, mode: 'adl' }, // DE=0xFFFD path handler
+    { pc: 0x0303bf, mode: 'adl' }, // DE=0xFFFE path menu/app handler
     { pc: 0x040000, mode: 'adl' },
     // Phase 9A: additional seeds for coverage expansion
     // ISR handlers (RST vector table continuations)

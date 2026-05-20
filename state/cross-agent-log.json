@@ -10840,15 +10840,76 @@
         "TI-84_Plus_CE/probe-phase385-callers-02FE.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "d256359cf578",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 385 \u2014 P3: Investigate 0x030331 Key-Processing Swap\n\n## Context\n\nThis is a TI-84 Plus ",
+      "status": "completed",
+      "duration_seconds": 521.199,
+      "timestamp": "2026-05-20T20:10:22Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase385-disasm-030331.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "6b5a37c4107f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 385 \u2014 P1: Disassemble 0x02FE50-0x02FF00 (Translation Dispatcher)\n\n## Context\n\nThis is",
+      "status": "completed",
+      "duration_seconds": 758.546,
+      "timestamp": "2026-05-20T20:14:13Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "fcbdbbfc083a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 385 \u2014 P4: Investigate 0xD0058E (107 References)\n\n## Context\n\nThis is a TI-84 Plus CE ",
+      "status": "timeout",
+      "duration_seconds": 900.062,
+      "timestamp": "2026-05-20T20:16:43Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "295dee211f39",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add Seeds for 0x02FE/0x0303 Functions\n\n## Context\nThis is a TI-84 Plus CE ROM transpilation ",
+      "status": "completed",
+      "duration_seconds": 131.347,
+      "timestamp": "2026-05-20T22:04:18Z",
+      "files_changed": [
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "34a3c1c5cdd5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x02FF00-0x030000 (Translation Dispatcher Continuation)\n\n## Context\nThis is a TI",
+      "status": "completed",
+      "duration_seconds": 480.261,
+      "timestamp": "2026-05-20T22:10:01Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase386-disasm-02FF.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 887,
-    "cc_to_codex": 887,
+    "total_calls": 892,
+    "cc_to_codex": 892,
     "codex_to_cc": 0,
-    "completed": 666,
-    "failed": 206,
+    "completed": 670,
+    "failed": 207,
     "refused": 0,
-    "avg_duration_seconds": 606.131
+    "avg_duration_seconds": 605.863
   }
 }
