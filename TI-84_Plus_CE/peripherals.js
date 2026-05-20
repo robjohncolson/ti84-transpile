@@ -261,7 +261,7 @@ export function createPeripheralBus(options = {}) {
       value: 0x00,
     },
     gpio: {
-      readValue: normalizeValue(options.gpioValue ?? 0xef),
+      readValue: normalizeValue(options.gpioValue ?? 0xee),
       lastWrite: 0x00,
     },
     flash: {
