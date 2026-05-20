@@ -10770,15 +10770,85 @@
       "timestamp": "2026-05-20T16:10:46Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "9734906ece51",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 383 P1: Find the parent function of 0x03010D and add as transpiler seed\n\n## Context\nSessio",
+      "status": "completed",
+      "duration_seconds": 702.051,
+      "timestamp": "2026-05-20T16:14:52Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1a845148c9bd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add 0x0300CB + 0x0300A1 + 0x03FBF2 as transpiler seeds + retranspile\n\n## Context\nThis is a T",
+      "status": "completed",
+      "duration_seconds": 76.051,
+      "timestamp": "2026-05-20T18:03:29Z",
+      "files_changed": [
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "de5b8a32cffa",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add remaining 8 coverage seed candidates + retranspile\n\n## Context\nThis is a TI-84 Plus CE R",
+      "status": "completed",
+      "duration_seconds": 188.888,
+      "timestamp": "2026-05-20T18:05:27Z",
+      "files_changed": [
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "bf581d3a9d72",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Find who calls 0x0300CB in the ROM\n\n## Context\nThis is a TI-84 Plus CE ROM transpilation pro",
+      "status": "completed",
+      "duration_seconds": 421.384,
+      "timestamp": "2026-05-20T18:09:17Z",
+      "files_changed": [
+        "CONTINUATION_PROMPT_CODEX.md",
+        "TI-84_Plus_CE/ROM.transpiled.js",
+        "TI-84_Plus_CE/ROM.transpiled.js.gz",
+        "TI-84_Plus_CE/ROM.transpiled.report.json",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase384-callers-0300CB.mjs",
+        "TI-84_Plus_CE/probe-phase384-kbdKey-readers.mjs",
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "e9083c1daea2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 385 \u2014 P2: Trace 0x02FE__ Callers\n\n## Context\n\nThis is a TI-84 Plus CE ROM transpilati",
+      "status": "completed",
+      "duration_seconds": 223.764,
+      "timestamp": "2026-05-20T20:05:23Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase385-callers-02FE.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 882,
-    "cc_to_codex": 882,
+    "total_calls": 887,
+    "cc_to_codex": 887,
     "codex_to_cc": 0,
-    "completed": 661,
+    "completed": 666,
     "failed": 206,
     "refused": 0,
-    "avg_duration_seconds": 607.739
+    "avg_duration_seconds": 606.131
   }
 }
