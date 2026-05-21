@@ -10901,15 +10901,207 @@
         "TI-84_Plus_CE/probe-phase386-disasm-02FF.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "71bbfed8243a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate the 0x09F79B Table Lookup\n\n## Context\nThis is a TI-84 Plus CE ROM transpilation ",
+      "status": "completed",
+      "duration_seconds": 834.242,
+      "timestamp": "2026-05-20T22:15:59Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase386-table-09F79B.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "57ff72ebd24b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace the Two External Callers of the Translation Dispatcher\n\n## Context\nThis is a TI-84 Plu",
+      "status": "timeout",
+      "duration_seconds": 900.065,
+      "timestamp": "2026-05-20T22:17:03Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d79f101addf1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add Seeds for New Call Targets Discovered in Session 386\n\n## Context\nThis is a TI-84 Plus CE",
+      "status": "completed_with_skipped_verification",
+      "duration_seconds": 206.515,
+      "timestamp": "2026-05-21T00:05:23Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "dafbb7c367fb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x0302EB (Token Validation Subroutine)\n\n## Context\nThis is a TI-84 Plus CE ROM t",
+      "status": "completed",
+      "duration_seconds": 607.886,
+      "timestamp": "2026-05-21T00:11:59Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "557d3ebf5b13",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x0301F6 (2ND-Mode Translation Subroutine)\n\n## Context\nThis is a TI-84 Plus CE R",
+      "status": "completed",
+      "duration_seconds": 662.043,
+      "timestamp": "2026-05-21T00:12:52Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase387-disasm-0301F6.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "ee0fc4c1b552",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map the 0x005900-0x005C00 LCD/Display Update Path\n\n## Context\nThis is a TI-84 Plus CE ROM tr",
+      "status": "completed",
+      "duration_seconds": 787.919,
+      "timestamp": "2026-05-21T00:15:02Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "31ec87419f27",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add Seeds for Session 387 Call Targets\n\n## Context\nThis is TI-84 Plus CE ROM transpilation r",
+      "status": "completed",
+      "duration_seconds": 131.246,
+      "timestamp": "2026-05-21T02:04:26Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase99d-report.md",
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "b8c29fae09c9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x03016A (Mode Normalization Delegate)\n\n## Context\nThis is TI-84 Plus CE ROM tra",
+      "status": "completed",
+      "duration_seconds": 515.759,
+      "timestamp": "2026-05-21T02:10:44Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase388-disasm-03016A.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "7ef6ac2c8d9e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x022346\u21920x022359\u21920x0236F9 Key Event Structure\n\n## Context\nThis is TI-84 Plus CE ROM t",
+      "status": "completed",
+      "duration_seconds": 624.778,
+      "timestamp": "2026-05-21T02:12:31Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d8ab368f84da",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x08C5D7 (Tail-Jump Target from Menu Handler)\n\n## Context\nThis is TI-84 Plus CE ",
+      "status": "timeout",
+      "duration_seconds": 900.053,
+      "timestamp": "2026-05-21T02:17:16Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a7353f19f0d6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add Seeds for Session 388 Call Targets\n\n## Context\nThis is the TI-84 Plus CE ROM transpilati",
+      "status": "completed",
+      "duration_seconds": 68.803,
+      "timestamp": "2026-05-21T04:03:21Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "09a750814d41",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x030300 (Translated-Key Output Function)\n\n## Context\nThis is the TI-84 Plus CE ",
+      "status": "completed",
+      "duration_seconds": 570.806,
+      "timestamp": "2026-05-21T04:11:41Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "03da3e12beaa",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate Port 0xDCA0\n\n## Context\nThis is the TI-84 Plus CE ROM transpilation project at `",
+      "status": "completed",
+      "duration_seconds": 672.909,
+      "timestamp": "2026-05-21T04:13:26Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase389-port-DCA0.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "1b87f7bdbda9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x04E950 (Far Delegate from 0x03016A)\n\n## Context\nThis is the TI-84 Plus CE ROM ",
+      "status": "completed",
+      "duration_seconds": 714.28,
+      "timestamp": "2026-05-21T04:14:03Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase389-disasm-04E950.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "5cc03ede4f27",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add seeds for session 389 call targets\n\n## Context\nYou are working on TI-84 Plus CE ROM tran",
+      "status": "completed",
+      "duration_seconds": 128.009,
+      "timestamp": "2026-05-21T06:04:21Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase99d-report.md",
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "e3ea8e094edc",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace the kbdKey\u2194kbdToken swap in 0x030300\n\n## Context\nYou are working on TI-84 Plus CE ROM ",
+      "status": "completed",
+      "duration_seconds": 707.196,
+      "timestamp": "2026-05-21T06:14:03Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 892,
-    "cc_to_codex": 892,
+    "total_calls": 908,
+    "cc_to_codex": 908,
     "codex_to_cc": 0,
-    "completed": 670,
-    "failed": 207,
+    "completed": 683,
+    "failed": 209,
     "refused": 0,
-    "avg_duration_seconds": 605.863
+    "avg_duration_seconds": 605.134
   }
 }

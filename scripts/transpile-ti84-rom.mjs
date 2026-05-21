@@ -906,6 +906,21 @@ function walkBlocks() {
     { pc: 0x04CA87, mode: 'adl' }, // Token 0x01 case handler
     { pc: 0x04CA94, mode: 'adl' }, // Token 0x04 case handler
     { pc: 0x08773F, mode: 'adl' }, // Decimal point handler
+    // Session 390: call targets from 0x04E950/0x030300.
+    { pc: 0x03E141, mode: 'adl' },
+    { pc: 0x04E228, mode: 'adl' },
+    { pc: 0x04EE33, mode: 'adl' },
+    { pc: 0x051B2B, mode: 'adl' },
+    { pc: 0x061E20, mode: 'adl' },
+    { pc: 0x061DEF, mode: 'adl' },
+    { pc: 0x063051, mode: 'adl' },
+    { pc: 0x07F9FB, mode: 'adl' },
+    { pc: 0x082448, mode: 'adl' },
+    { pc: 0x082642, mode: 'adl' },
+    { pc: 0x08383D, mode: 'adl' },
+    { pc: 0x0866E7, mode: 'adl' },
+    { pc: 0x08C7AB, mode: 'adl' },
+    { pc: 0x09EF44, mode: 'adl' },
     { pc: 0x040000, mode: 'adl' },
     // Phase 9A: additional seeds for coverage expansion
     // ISR handlers (RST vector table continuations)
