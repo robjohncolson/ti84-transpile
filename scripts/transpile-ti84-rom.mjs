@@ -22364,6 +22364,13 @@ function walkBlocks() {
     { pc: 0x007D75, mode: 'adl' },  // coverage gap candidate
     { pc: 0x03768D, mode: 'adl' },  // coverage gap candidate
     { pc: 0x04E5DE, mode: 'adl' },  // coverage gap candidate
+    // Session 391: uncovered-range audit seeds from the 2026-05-21 top-gap pass.
+    { pc: 0x000CB3, mode: 'adl' },  // 55-byte gap, direct JP xref from 0x00034C
+    { pc: 0x026DD2, mode: 'adl' },  // 61-byte gap, starts immediately after RET
+    { pc: 0x05B0F0, mode: 'adl' },  // 28-byte gap, starts immediately after RET
+    { pc: 0x05F6AB, mode: 'adl' },  // 28-byte gap, starts immediately after RET
+    { pc: 0x06E4C0, mode: 'adl' },  // 52-byte gap, starts immediately after RET
+    { pc: 0x0ACE99, mode: 'adl' },  // 51-byte gap, starts immediately after RET
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
