@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFileSync } from 'fs';
+import { readFileSync } from 'node:fs';
 
 process.emitWarning = () => {};
 
@@ -10,68 +10,197 @@ const ROM_PATH = new URL('./ROM.rom', import.meta.url);
 const rom = readFileSync(ROM_PATH);
 
 const MODE = 'adl';
+const EXPECTED_ROM_SIZE = 0x400000;
 
-// ── Targets ──────────────────────────────────────────────────────────────────
-
-const DISPATCH_ENTRY   = 0x08C5D7;  // the function under investigation
-const DISPATCH_END     = 0x08C6D0;  // ~250 bytes of dispatch logic
-
-const HELPER_08C7AD    = 0x08C7AD;  // NewContext0 — called by 0x08C5D7
-const HELPER_08C7AD_END = 0x08C7AD + 64;
-
-const TAIL_08C519      = 0x08C519;  // JP target from 0x08C5D7
-const TAIL_08C519_END  = 0x08C519 + 64;
-
-// 3 non-error-recovery callers
-const CALLERS = [
-  { addr: 0x02376D, label: 'caller A (0x02376D)' },
-  { addr: 0x08AD52, label: 'caller B (0x08AD52)' },
-  { addr: 0x08C497, label: 'caller C (0x08C497)' },
+const CALLER_SPECS = [
+  {
+    site: 0x02376D,
+    label: '0x02376D',
+    disasmStart: 0x023728,
+    disasmBytes: 0x90,
+    containingStart: 0x023728,
+    highlights: [
+      [0x023754, 'restore SP from onSP'],
+      [0x02375F, 'write mode byte 0x40'],
+      [0x02376B, 'action A=0x58'],
+      [0x02376D, 'JP 0x08C5D7'],
+    ],
+    actionCodes: [
+      '`0x58`',
+    ],
+    modeWrites: [
+      '`0x02375F` writes `0x40` to `0xD007E0`.',
+    ],
+    extraSetup: [
+      'Copies 8 bytes from `0xD0061A` to `0xD0065B` with `LDIR`.',
+      'Restores `SP` from `0xD007FA`.',
+      'Clears `IY+0x12` bit 2, `IY+0x01` bit 4, and `IY+0x25` bit 5.',
+    ],
+    interpretation: [
+      'The path is gated by `LD A,(0xD005F8)` / `CP 0x24` and then performs a state reset before re-entering `0x08C5D7`.',
+      'It looks like a home/context reinit path closely related to the known error-recovery route, not a leaf error handler.',
+    ],
+  },
+  {
+    site: 0x08AD52,
+    label: '0x08AD52',
+    disasmStart: 0x08AD20,
+    disasmBytes: 0xD0,
+    containingStart: 0x08AD20,
+    sharedEpilogue: 0x08AD4E,
+    highlights: [
+      [0x08AD2E, 'path A loads A=0xBF'],
+      [0x08AD30, 'path A enters shared unwind'],
+      [0x08AD4E, 'shared 4x POP BC unwind'],
+      [0x08AD52, 'JP 0x08C5D7'],
+      [0x08AD61, 'path B requires existing mode 0xBF'],
+      [0x08AD8D, 'path B loads A=0x45'],
+      [0x08AD8F, 'path B enters shared unwind'],
+    ],
+    actionCodes: [
+      '`0xBF` via `0x08AD2E` -> `0x08AD30`.',
+      '`0x45` via `0x08AD8D` -> `0x08AD8F`.',
+    ],
+    modeWrites: [
+      'No write to `0xD007E0` appears before the shared jump.',
+      'The `0x45` path explicitly requires the pre-existing mode byte `0xD007E0 == 0xBF`.',
+    ],
+    extraSetup: [
+      'Path A checks `CALL 0x08A7AE`, then inspects `0xD02500` and only dispatches when it equals `0x2A`.',
+      'Path B checks `0xD024FF` and `0xD02500`, calls `0x05782A`, then sets up `A=0x45` on success.',
+      'Both paths unwind four stacked `BC` values before the final jump.',
+    ],
+    interpretation: [
+      'This is not error recovery. It is a non-local escape/unwind that re-enters `0x08C5D7` from an app-specific mode.',
+      'The shared epilogue plus preserved `0xBF` mode byte strongly suggest a general context transition.',
+    ],
+  },
+  {
+    site: 0x08C497,
+    label: '0x08C497',
+    disasmStart: 0x08C44D,
+    disasmBytes: 0x90,
+    containingStart: 0x08C331,
+    highlights: [
+      [0x08C463, 'load kbdToken'],
+      [0x08C470, 'candidate table 0x027272'],
+      [0x08C47A, 'helper 0x027233'],
+      [0x08C480, 'candidate table 0x027284'],
+      [0x08C487, 'candidate table 0x02727B'],
+      [0x08C48B, 'copy target 0xD0082E'],
+      [0x08C493, 'copy 9 bytes with LDIR'],
+      [0x08C495, 'action A=0x58'],
+      [0x08C497, 'JP 0x08C5D7'],
+    ],
+    actionCodes: [
+      '`0x58`',
+    ],
+    modeWrites: [
+      'No write to `0xD007E0` appears in this caller block before the jump.',
+    ],
+    extraSetup: [
+      'Reached from a local CoorMon block after `CP 0xFA` matches.',
+      'Reads `kbdToken` from `0xD0058E` and rejects zero or large token values.',
+      'Chooses one of the `0x027272` / `0x02727B` / `0x027284` tables and copies 9 bytes into `0xD0082E`.',
+    ],
+    interpretation: [
+      'This is a staged submenu/context re-entry inside CoorMon, not an error path.',
+      'The scratch copy into `0xD0082E` and then `A=0x58` make `0x08C5D7` look like a general re-entry dispatcher.',
+    ],
+  },
 ];
-
-// Known error-recovery caller for reference
-const ERROR_CALLER = 0x0302E2;
-
-// ── RAM name map ─────────────────────────────────────────────────────────────
 
 const RAM_NAMES = new Map([
   [0xD0058C, 'kbdKey'],
   [0xD0058E, 'kbdToken'],
+  [0xD005F8, 'state byte @ D005F8'],
+  [0xD005F9, 'buffer @ D005F9'],
+  [0xD0061A, 'source block @ D0061A'],
+  [0xD0065B, 'dest block @ D0065B'],
+  [0xD00699, 'status byte @ D00699'],
   [0xD007CA, 'cxMain'],
-  [0xD007CD, 'context slot @ D007CD'],
-  [0xD007D0, 'context slot @ D007D0'],
-  [0xD007E0, 'cxCurApp / context-mode byte'],
-  [0xD007FA, 'onSP / saved stack pointer'],
+  [0xD007CD, 'callback slot @ D007CD'],
+  [0xD007D0, 'callback slot @ D007D0'],
+  [0xD007D3, 'callback slot @ D007D3'],
+  [0xD007E0, 'cxCurApp / mode byte'],
+  [0xD007FA, 'onSP / saved SP'],
+  [0xD00802, 'flags byte @ D00802'],
   [0xD0082E, 'scratch block @ D0082E'],
+  [0xD008D6, 'pointer @ D008D6'],
+  [0xD008D9, 'pointer @ D008D9'],
+  [0xD0243A, 'pointer @ D0243A'],
+  [0xD024FF, 'state byte @ D024FF'],
+  [0xD02500, 'state byte @ D02500'],
+  [0xD026AE, 'state byte @ D026AE'],
   [0xD02FD6, 'state word @ D02FD6'],
+  [0x00268A, 'global slot @ 0x00268A'],
+  [0x0026AA, 'global slot @ 0x0026AA'],
+  [0x0026B5, 'global slot @ 0x0026B5'],
 ]);
 
 const TARGET_NAMES = new Map([
+  [0x0003A0, 'RST/system call 0x0003A0'],
   [0x022331, 'helper 0x022331'],
   [0x024027, 'helper 0x024027'],
   [0x025354, 'helper 0x025354'],
   [0x025396, 'helper 0x025396'],
   [0x027204, 'helper 0x027204'],
-  [0x0302CA, 'error recovery entry'],
-  [0x0302E2, 'error recovery caller of dispatch'],
+  [0x027233, 'helper 0x027233'],
   [0x03C33D, 'CoorMon re-entry'],
   [0x03FBFD, 'tail jump @ 0x03FBFD'],
-  [0x04A52C, 'helper 0x04A52C'],
+  [0x04C973, 'helper 0x04C973'],
   [0x0551EF, 'helper 0x0551EF'],
+  [0x055B8F, 'helper 0x055B8F'],
+  [0x05782A, 'helper 0x05782A'],
+  [0x05C5B3, 'helper 0x05C5B3'],
   [0x0620E6, 'helper 0x0620E6'],
-  [0x08C519, 'action tail / CLEAR dispatch cluster'],
-  [0x08C593, 'post-dispatch branch'],
-  [0x08C5D7, 'action dispatch entry (target)'],
-  [0x08C66D, 'SysErrHandler'],
-  [0x08C72F, 'CallMain'],
+  [0x06EDAC, 'helper 0x06EDAC'],
+  [0x06FCD0, 'helper 0x06FCD0'],
+  [0x08A7AE, 'helper 0x08A7AE'],
+  [0x08AE11, 'branch target 0x08AE11'],
+  [0x08B0A2, 'branch target 0x08B0A2'],
+  [0x08C509, 'common dispatch pre-tail'],
+  [0x08C519, 'common dispatch tail'],
+  [0x08C593, 'CoorMon cleanup branch'],
+  [0x08C72F, 'CoorMon dispatch sub'],
+  [0x08C745, 'indirect jump helper'],
   [0x08C79F, 'NewContext'],
+  [0x08C7AB, 'helper 0x08C7AB'],
   [0x08C7AD, 'NewContext0'],
+  [0x0A2E05, 'helper 0x0A2E05'],
 ]);
 
-// ── Formatting helpers ───────────────────────────────────────────────────────
+const IY_FLAGS = new Map([
+  [0x01, 'IY+0x01'],
+  [0x02, 'IY+0x02'],
+  [0x09, 'IY+0x09'],
+  [0x0C, 'IY+0x0C'],
+  [0x0E, 'IY+0x0E'],
+  [0x11, 'IY+0x11'],
+  [0x12, 'IY+0x12'],
+  [0x16, 'IY+0x16'],
+  [0x1D, 'IY+0x1D'],
+  [0x25, 'IY+0x25'],
+  [0x27, 'IY+0x27'],
+  [0x28, 'IY+0x28'],
+  [0x32, 'IY+0x32'],
+  [0x33, 'IY+0x33'],
+  [0x3F, 'IY+0x3F'],
+  [0x40, 'IY+0x40'],
+  [0x41, 'IY+0x41'],
+  [0x42, 'IY+0x42'],
+  [0x4B, 'IY+0x4B'],
+  [0x51, 'IY+0x51'],
+  [0x57, 'IY+0x57'],
+  [0x5A, 'IY+0x5A'],
+  [0x5B, 'IY+0x5B'],
+  [0x5C, 'IY+0x5C'],
+]);
 
 function hex(value, width = 6) {
-  if (value === undefined || value === null || Number.isNaN(Number(value))) return 'n/a';
+  if (value === undefined || value === null || Number.isNaN(Number(value))) {
+    return 'n/a';
+  }
   return `0x${(Number(value) >>> 0).toString(16).toUpperCase().padStart(width, '0')}`;
 }
 
@@ -109,14 +238,25 @@ function bytesHex(start, length) {
 
 function formatAlu(op, operand) {
   const name = upper(op);
-  if (name === 'ADD' || name === 'ADC' || name === 'SBC') return `${name} A, ${operand}`;
+  if (name === 'ADD' || name === 'ADC' || name === 'SBC') {
+    return `${name} A, ${operand}`;
+  }
   return `${name} ${operand}`;
 }
 
 function fallbackOperands(inst) {
   const ignored = new Set([
-    'pc', 'length', 'nextPc', 'mode', 'modePrefix', 'terminates', 'fallthrough', 'decodeError', 'tag',
+    'pc',
+    'length',
+    'nextPc',
+    'mode',
+    'modePrefix',
+    'terminates',
+    'fallthrough',
+    'decodeError',
+    'tag',
   ]);
+
   return Object.entries(inst ?? {})
     .filter(([key, value]) => !ignored.has(key) && value !== undefined && value !== null)
     .map(([key, value]) => {
@@ -132,96 +272,189 @@ function fallbackOperands(inst) {
 
 function renderInstruction(inst) {
   if (!inst?.tag) return '???';
+
   switch (inst.tag) {
-    case 'db': return `DB ${hexByte(inst.value)}`;
-    case 'nop': return 'NOP';
-    case 'halt': return 'HALT';
-    case 'di': return 'DI';
-    case 'ei': return 'EI';
-    case 'ret': return 'RET';
-    case 'ret-conditional': return `RET ${upper(inst.condition)}`;
-    case 'reti': return 'RETI';
-    case 'retn': return 'RETN';
-    case 'jp': return `JP ${hex(inst.target)}`;
-    case 'jp-conditional': return `JP ${upper(inst.condition)}, ${hex(inst.target)}`;
-    case 'jp-indirect': return `JP (${upper(inst.indirectRegister)})`;
-    case 'jr': return `JR ${hex(inst.target)}`;
-    case 'jr-conditional': return `JR ${upper(inst.condition)}, ${hex(inst.target)}`;
-    case 'djnz': return `DJNZ ${hex(inst.target)}`;
-    case 'call': return `CALL ${hex(inst.target)}`;
-    case 'call-conditional': return `CALL ${upper(inst.condition)}, ${hex(inst.target)}`;
-    case 'rst': return `RST ${hexByte(inst.target)}`;
-    case 'push': return `PUSH ${upper(inst.pair)}`;
-    case 'pop': return `POP ${upper(inst.pair)}`;
-    case 'ex-af': return 'EX AF, AF\'';
-    case 'ex-de-hl': return 'EX DE, HL';
-    case 'ex-sp-hl': return 'EX (SP), HL';
-    case 'cpl': return 'CPL';
-    case 'ccf': return 'CCF';
-    case 'scf': return 'SCF';
-    case 'daa': return 'DAA';
-    case 'ld-pair-imm': return `LD ${upper(inst.pair)}, ${formatValue(inst.value, inst.modePrefix)}`;
-    case 'ld-reg-imm': return `LD ${upper(inst.dest ?? inst.dst)}, ${hexByte(inst.value)}`;
-    case 'ld-reg-reg': return `LD ${upper(inst.dest ?? inst.dst)}, ${upper(inst.src)}`;
-    case 'ld-reg-mem': return `LD ${upper(inst.dest ?? inst.dst)}, (${hex(inst.addr)})`;
-    case 'ld-mem-reg': return `LD (${hex(inst.addr)}), ${upper(inst.src)}`;
+    case 'db':
+      return `DB ${hexByte(inst.value)}`;
+    case 'nop':
+      return 'NOP';
+    case 'halt':
+      return 'HALT';
+    case 'di':
+      return 'DI';
+    case 'ei':
+      return 'EI';
+    case 'ret':
+      return 'RET';
+    case 'ret-conditional':
+    case 'ret-cond':
+      return `RET ${upper(inst.condition)}`;
+    case 'reti':
+      return 'RETI';
+    case 'retn':
+      return 'RETN';
+    case 'jp':
+      return `JP ${hex(inst.target)}`;
+    case 'jp-conditional':
+    case 'jp-cond':
+      return `JP ${upper(inst.condition)}, ${hex(inst.target)}`;
+    case 'jp-indirect':
+      return `JP (${upper(inst.indirectRegister)})`;
+    case 'jp-idx':
+      return `JP (${upper(inst.indexRegister)})`;
+    case 'jr':
+      return `JR ${hex(inst.target)}`;
+    case 'jr-conditional':
+    case 'jr-cond':
+      return `JR ${upper(inst.condition)}, ${hex(inst.target)}`;
+    case 'djnz':
+      return `DJNZ ${hex(inst.target)}`;
+    case 'call':
+      return `CALL ${hex(inst.target)}`;
+    case 'call-conditional':
+    case 'call-cond':
+      return `CALL ${upper(inst.condition)}, ${hex(inst.target)}`;
+    case 'rst':
+      return `RST ${hexByte(inst.target ?? inst.vector)}`;
+    case 'push':
+      return `PUSH ${upper(inst.pair)}`;
+    case 'pop':
+      return `POP ${upper(inst.pair)}`;
+    case 'ex-af':
+      return 'EX AF, AF\'';
+    case 'ex-de-hl':
+      return 'EX DE, HL';
+    case 'ex-sp-hl':
+      return 'EX (SP), HL';
+    case 'cpl':
+      return 'CPL';
+    case 'ccf':
+      return 'CCF';
+    case 'scf':
+      return 'SCF';
+    case 'daa':
+      return 'DAA';
+    case 'ld-pair-imm':
+      return `LD ${upper(inst.pair)}, ${formatValue(inst.value, inst.modePrefix)}`;
+    case 'ld-reg-imm':
+      return `LD ${upper(inst.dest ?? inst.dst)}, ${hexByte(inst.value)}`;
+    case 'ld-reg-reg':
+      return `LD ${upper(inst.dest ?? inst.dst)}, ${upper(inst.src)}`;
+    case 'ld-reg-mem':
+    case 'ld-a-mem':
+      return `LD ${upper(inst.dest ?? inst.dst ?? 'a')}, (${hex(inst.addr ?? inst.address)})`;
+    case 'ld-mem-reg':
+    case 'ld-mem-a':
+      return `LD (${hex(inst.addr ?? inst.address)}), ${upper(inst.src ?? 'a')}`;
     case 'ld-pair-mem':
-      if (inst.direction === 'to-mem') return `LD (${hex(inst.addr)}), ${upper(inst.pair)}`;
+      if (inst.direction === 'to-mem') {
+        return `LD (${hex(inst.addr)}), ${upper(inst.pair)}`;
+      }
       return `LD ${upper(inst.pair)}, (${hex(inst.addr)})`;
-    case 'ld-mem-pair': return `LD (${hex(inst.addr)}), ${upper(inst.pair)}`;
-    case 'ld-reg-ind': return `LD ${upper(inst.dest ?? inst.dst)}, (${upper(inst.src)})`;
-    case 'ld-ind-reg': return `LD (${upper(inst.dest)}), ${upper(inst.src)}`;
-    case 'ld-ind-imm': return `LD (HL), ${hexByte(inst.value)}`;
-    case 'ld-sp-hl': return 'LD SP, HL';
-    case 'ld-sp-pair': return `LD SP, ${upper(inst.pair)}`;
-    case 'ld-pair-indexed': return `LD ${upper(inst.pair)}, ${formatIndexedOperand(inst.indexRegister, inst.displacement)}`;
-    case 'ld-indexed-pair': return `LD ${formatIndexedOperand(inst.indexRegister, inst.displacement)}, ${upper(inst.pair)}`;
+    case 'ld-mem-pair':
+      return `LD (${hex(inst.addr)}), ${upper(inst.pair)}`;
+    case 'ld-reg-ind':
+      return `LD ${upper(inst.dest ?? inst.dst)}, (${upper(inst.src)})`;
+    case 'ld-ind-reg':
+      return `LD (${upper(inst.dest)}), ${upper(inst.src)}`;
+    case 'ld-ind-imm':
+      return `LD (HL), ${hexByte(inst.value)}`;
+    case 'ld-sp-hl':
+      return 'LD SP, HL';
+    case 'ld-sp-pair':
+      return `LD SP, ${upper(inst.pair)}`;
+    case 'ld-pair-indexed':
+      return `LD ${upper(inst.pair)}, ${formatIndexedOperand(inst.indexRegister, inst.displacement)}`;
+    case 'ld-indexed-pair':
+      return `LD ${formatIndexedOperand(inst.indexRegister, inst.displacement)}, ${upper(inst.pair)}`;
     case 'ld-reg-ixd':
-    case 'ld-reg-indexed': return `LD ${upper(inst.dest ?? inst.dst)}, ${formatIndexedOperand(inst.indexRegister, inst.displacement)}`;
+    case 'ld-reg-indexed':
+    case 'ld-reg-idx':
+      return `LD ${upper(inst.dest ?? inst.dst)}, ${formatIndexedOperand(inst.indexRegister, inst.displacement)}`;
     case 'ld-ixd-reg':
-    case 'ld-indexed-reg': return `LD ${formatIndexedOperand(inst.indexRegister, inst.displacement)}, ${upper(inst.src)}`;
-    case 'add-pair': return `ADD ${upper(inst.dest ?? 'hl')}, ${upper(inst.src)}`;
-    case 'adc-pair': return `ADC ${upper(inst.dest ?? 'hl')}, ${upper(inst.src)}`;
-    case 'sbc-pair': return `SBC ${upper(inst.dest ?? 'hl')}, ${upper(inst.src)}`;
-    case 'inc-reg': return `INC ${upper(inst.reg)}`;
-    case 'dec-reg': return `DEC ${upper(inst.reg)}`;
-    case 'inc-pair': return `INC ${upper(inst.pair)}`;
-    case 'dec-pair': return `DEC ${upper(inst.pair)}`;
-    case 'bit-test': return `BIT ${inst.bit}, ${upper(inst.reg)}`;
-    case 'bit-test-ind': return `BIT ${inst.bit}, (${upper(inst.indirectRegister)})`;
-    case 'bit-set': return `SET ${inst.bit}, ${upper(inst.reg)}`;
-    case 'bit-set-ind': return `SET ${inst.bit}, (${upper(inst.indirectRegister)})`;
-    case 'bit-res': return `RES ${inst.bit}, ${upper(inst.reg)}`;
-    case 'bit-res-ind': return `RES ${inst.bit}, (${upper(inst.indirectRegister)})`;
-    case 'indexed-cb-bit': return `BIT ${inst.bit}, ${formatIndexedOperand(inst.indexRegister, inst.displacement)}`;
-    case 'indexed-cb-set': return `SET ${inst.bit}, ${formatIndexedOperand(inst.indexRegister, inst.displacement)}`;
-    case 'indexed-cb-res': return `RES ${inst.bit}, ${formatIndexedOperand(inst.indexRegister, inst.displacement)}`;
-    case 'alu-reg': return formatAlu(inst.op, upper(inst.src));
+    case 'ld-indexed-reg':
+    case 'ld-idx-reg':
+      return `LD ${formatIndexedOperand(inst.indexRegister, inst.displacement)}, ${upper(inst.src)}`;
+    case 'ld-idx-imm':
+    case 'ld-ixd-imm':
+      return `LD ${formatIndexedOperand(inst.indexRegister, inst.displacement)}, ${hexByte(inst.value)}`;
+    case 'add-pair':
+      return `ADD ${upper(inst.dest ?? 'hl')}, ${upper(inst.src)}`;
+    case 'adc-pair':
+      return `ADC ${upper(inst.dest ?? 'hl')}, ${upper(inst.src)}`;
+    case 'sbc-pair':
+      return `SBC ${upper(inst.dest ?? 'hl')}, ${upper(inst.src)}`;
+    case 'inc-reg':
+      return `INC ${upper(inst.reg)}`;
+    case 'dec-reg':
+      return `DEC ${upper(inst.reg)}`;
+    case 'inc-pair':
+      return `INC ${upper(inst.pair)}`;
+    case 'dec-pair':
+      return `DEC ${upper(inst.pair)}`;
+    case 'inc-ind':
+      return 'INC (HL)';
+    case 'dec-ind':
+      return 'DEC (HL)';
+    case 'bit-test':
+      return `BIT ${inst.bit}, ${upper(inst.reg)}`;
+    case 'bit-test-ind':
+      return `BIT ${inst.bit}, (${upper(inst.indirectRegister)})`;
+    case 'bit-set':
+      return `SET ${inst.bit}, ${upper(inst.reg)}`;
+    case 'bit-set-ind':
+      return `SET ${inst.bit}, (${upper(inst.indirectRegister)})`;
+    case 'bit-res':
+    case 'bit-reset':
+      return `RES ${inst.bit}, ${upper(inst.reg)}`;
+    case 'bit-res-ind':
+    case 'bit-reset-ind':
+      return `RES ${inst.bit}, (${upper(inst.indirectRegister)})`;
+    case 'indexed-cb-bit':
+      return `BIT ${inst.bit}, ${formatIndexedOperand(inst.indexRegister, inst.displacement)}`;
+    case 'indexed-cb-set':
+      return `SET ${inst.bit}, ${formatIndexedOperand(inst.indexRegister, inst.displacement)}`;
+    case 'indexed-cb-res':
+      return `RES ${inst.bit}, ${formatIndexedOperand(inst.indexRegister, inst.displacement)}`;
+    case 'alu-reg':
+      return formatAlu(inst.op, upper(inst.src));
     case 'alu-imm':
-    case 'alu-immediate': return formatAlu(inst.op, hexByte(inst.value));
-    case 'alu-ind': return formatAlu(inst.op, '(HL)');
-    case 'ld-special': return `LD ${upper(inst.dest)}, ${upper(inst.src)}`;
-    case 'ldir': return 'LDIR';
-    case 'lddr': return 'LDDR';
-    case 'ldi': return 'LDI';
-    case 'ldd': return 'LDD';
-    case 'rlca': return 'RLCA';
-    case 'rrca': return 'RRCA';
-    case 'rla': return 'RLA';
-    case 'rra': return 'RRA';
-    case 'in-reg': return `IN ${upper(inst.dest ?? inst.reg)}, (C)`;
-    case 'out-reg': return `OUT (C), ${upper(inst.src ?? inst.reg)}`;
-    case 'in-imm': return `IN A, (${hexByte(inst.port)})`;
-    case 'out-imm': return `OUT (${hexByte(inst.port)}), A`;
-    case 'cpir': return 'CPIR';
-    case 'cpdr': return 'CPDR';
-    case 'cpi': return 'CPI';
-    case 'cpd': return 'CPD';
-    case 'neg': return 'NEG';
-    case 'im': return `IM ${inst.mode ?? inst.value ?? 0}`;
-    case 'rotate-reg': return `${upper(inst.op)} ${upper(inst.reg)}`;
-    case 'rotate-ind': return `${upper(inst.op)} (HL)`;
-    case 'indexed-ld-imm': return `LD ${formatIndexedOperand(inst.indexRegister, inst.displacement)}, ${hexByte(inst.value)}`;
+    case 'alu-immediate':
+      return formatAlu(inst.op, hexByte(inst.value));
+    case 'alu-ind':
+      return formatAlu(inst.op, '(HL)');
+    case 'alu-idx':
+      return formatAlu(inst.op, formatIndexedOperand(inst.indexRegister, inst.displacement));
+    case 'ld-special':
+      return `LD ${upper(inst.dest)}, ${upper(inst.src)}`;
+    case 'ldir':
+      return 'LDIR';
+    case 'lddr':
+      return 'LDDR';
+    case 'ldi':
+      return 'LDI';
+    case 'ldd':
+      return 'LDD';
+    case 'in-reg':
+      return `IN ${upper(inst.reg ?? inst.dest)}, (C)`;
+    case 'in-a-imm':
+      return `IN A, (${hexByte(inst.port)})`;
+    case 'out-reg':
+      return `OUT (C), ${upper(inst.reg ?? inst.src)}`;
+    case 'out-a-imm':
+      return `OUT (${hexByte(inst.port)}), A`;
+    case 'rotate-reg':
+      return `${upper(inst.op)} ${upper(inst.reg)}`;
+    case 'rotate-ind':
+      return `${upper(inst.op)} (HL)`;
+    case 'im':
+      return `IM ${inst.mode !== undefined ? inst.mode : inst.interruptMode}`;
+    case 'mlt':
+      return `MLT ${upper(inst.pair ?? inst.reg)}`;
+    case 'lea':
+      return `LEA ${upper(inst.dest)}, ${upper(inst.base)}${signedDisp(inst.displacement)}`;
+    case 'pea':
+      return `PEA ${upper(inst.base ?? inst.src)}${signedDisp(inst.displacement)}`;
     default: {
       const extra = fallbackOperands(inst);
       return extra ? `${inst.tag} ${extra}` : inst.tag;
@@ -229,18 +462,30 @@ function renderInstruction(inst) {
   }
 }
 
-// ── Decode / collect helpers ─────────────────────────────────────────────────
+function safeDecode(pc) {
+  try {
+    return decodeInstruction(rom, pc, MODE);
+  } catch {
+    return null;
+  }
+}
 
 function decodeRow(pc) {
-  const inst = decodeInstruction(rom, pc, MODE);
+  const inst = safeDecode(pc);
   const length = Math.max(1, inst?.length ?? 1);
   const nextPc = inst?.nextPc ?? (pc + length);
-  return { pc, bytes: bytesHex(pc, length), inst, text: renderInstruction(inst), nextPc };
+  return {
+    pc,
+    inst,
+    bytes: bytesHex(pc, length),
+    nextPc,
+    text: renderInstruction(inst),
+  };
 }
 
 function collectRange(start, end) {
   const rows = [];
-  for (let pc = start; pc < end;) {
+  for (let pc = start; pc < end && pc < rom.length;) {
     const row = decodeRow(pc);
     rows.push(row);
     if (!Number.isInteger(row.nextPc) || row.nextPc <= pc) break;
@@ -249,369 +494,320 @@ function collectRange(start, end) {
   return rows;
 }
 
-// ── Annotation helpers ───────────────────────────────────────────────────────
+function isReturn(inst) {
+  return inst?.tag === 'ret'
+    || inst?.tag === 'reti'
+    || inst?.tag === 'retn'
+    || inst?.tag === 'ret-conditional'
+    || inst?.tag === 'ret-cond';
+}
+
+function isHardBoundary(inst) {
+  return isReturn(inst)
+    || inst?.tag === 'jp'
+    || inst?.tag === 'jp-indirect'
+    || inst?.tag === 'jp-idx'
+    || inst?.tag === 'jr';
+}
+
+function tryDecodePath(start, target, maxSteps = 256) {
+  const rows = [];
+  let pc = start;
+
+  for (let step = 0; step < maxSteps && pc <= target; step += 1) {
+    const row = decodeRow(pc);
+    rows.push(row);
+    if (pc === target) return rows;
+    if (!Number.isInteger(row.nextPc) || row.nextPc <= pc) return null;
+    pc = row.nextPc;
+  }
+
+  return null;
+}
+
+function findAlignedRows(target, maxLookback = 0x240) {
+  const minStart = Math.max(0, target - maxLookback);
+  let best = null;
+
+  for (let start = minStart; start <= target; start += 1) {
+    const rows = tryDecodePath(start, target);
+    if (!rows) continue;
+
+    const beforeCount = rows.length - 1;
+    const byteSpan = target - start;
+    const score = beforeCount * 1000 - byteSpan;
+
+    if (!best || score > best.score) {
+      best = { score, rows };
+    }
+  }
+
+  return best?.rows ?? [decodeRow(target)];
+}
+
+function analyzeBoundary(target) {
+  const rows = findAlignedRows(target);
+  const targetIndex = rows.findIndex((row) => row.pc === target);
+  let localIndex = 0;
+
+  for (let index = 1; index <= targetIndex; index += 1) {
+    if (isHardBoundary(rows[index - 1].inst)) {
+      localIndex = index;
+    }
+  }
+
+  const previous = localIndex > 0 ? rows[localIndex - 1] : null;
+  return {
+    rows,
+    targetIndex,
+    containingStart: rows[0]?.pc ?? target,
+    localStart: rows[localIndex]?.pc ?? target,
+    localReason: previous ? `${renderInstruction(previous.inst)} at ${hex(previous.pc)}` : 'start of aligned decode path',
+  };
+}
 
 function classifyMemoryDirection(inst) {
-  if (inst?.tag === 'ld-reg-mem') return 'read';
-  if (inst?.tag === 'ld-mem-reg' || inst?.tag === 'ld-mem-pair') return 'write';
+  if (inst?.tag === 'ld-reg-mem' || inst?.tag === 'ld-a-mem') return 'read';
+  if (inst?.tag === 'ld-mem-reg' || inst?.tag === 'ld-mem-a' || inst?.tag === 'ld-mem-pair') return 'write';
   if (inst?.tag === 'ld-pair-mem') return inst.direction === 'to-mem' ? 'write' : 'read';
   return null;
 }
 
 function getAbsoluteAddress(inst) {
-  return inst?.addr;
+  return inst?.addr ?? inst?.address;
 }
 
 function noteIY(inst) {
   if (!inst?.indexRegister || upper(inst.indexRegister) !== 'IY') return null;
   const displacement = (inst.displacement ?? 0) & 0xFF;
-  const offset = `IY+${hex(displacement, 2)}`;
-  if (inst.tag === 'indexed-cb-bit') return `test ${offset} bit ${inst.bit}`;
-  if (inst.tag === 'indexed-cb-set') return `set ${offset} bit ${inst.bit}`;
-  if (inst.tag === 'indexed-cb-res') return `clear ${offset} bit ${inst.bit}`;
-  return `touch ${offset}`;
+  const label = IY_FLAGS.get(displacement) ?? `IY+${hex(displacement, 2)}`;
+
+  if (inst.tag === 'indexed-cb-bit') return `test ${label} bit ${inst.bit}`;
+  if (inst.tag === 'indexed-cb-set') return `set ${label} bit ${inst.bit}`;
+  if (inst.tag === 'indexed-cb-res') return `clear ${label} bit ${inst.bit}`;
+  return `touch ${label}`;
 }
 
-function annotationForRow(row) {
+function formatBlockRange(start, count) {
+  const end = start + Math.max(0, count - 1);
+  return `${hex(start)}..${hex(end)}`;
+}
+
+function annotateBlockMove(rows, index) {
+  const row = rows[index];
+  if (!row?.inst || (row.inst.tag !== 'ldir' && row.inst.tag !== 'lddr')) return null;
+
+  let hlValue = null;
+  let deValue = null;
+  let bcValue = null;
+
+  for (let i = Math.max(0, index - 6); i < index; i += 1) {
+    const inst = rows[i].inst;
+    if (inst?.tag === 'ld-pair-imm' && inst.pair === 'hl') hlValue = inst.value;
+    if (inst?.tag === 'ld-pair-imm' && inst.pair === 'de') deValue = inst.value;
+    if (inst?.tag === 'ld-pair-imm' && inst.pair === 'bc') bcValue = inst.value;
+  }
+
+  if (deValue !== null && bcValue !== null) {
+    const dst = `${RAM_NAMES.get(deValue) ?? hex(deValue)} (${formatBlockRange(deValue, bcValue)})`;
+    const src = hlValue !== null
+      ? `${RAM_NAMES.get(hlValue) ?? hex(hlValue)} (${formatBlockRange(hlValue, bcValue)})`
+      : 'unknown source';
+    return `${upper(row.inst.tag)} copies ${bcValue} byte(s) ${src} -> ${dst}`;
+  }
+
+  return null;
+}
+
+function buildRowNotes(rows, index, highlightNotes = new Map()) {
+  const row = rows[index];
   const notes = [];
   const addr = getAbsoluteAddress(row.inst);
   const direction = classifyMemoryDirection(row.inst);
-  const iyNote = noteIY(row.inst);
+  const iy = noteIY(row.inst);
   const target = row.inst?.target;
+  const blockMove = annotateBlockMove(rows, index);
+  const highlight = highlightNotes.get(row.pc);
 
   if (direction && addr !== undefined) {
     notes.push(`${direction} ${RAM_NAMES.get(addr) ?? hex(addr)}`);
   }
-  if (iyNote) notes.push(iyNote);
+  if (iy) notes.push(iy);
   if (target !== undefined) {
-    notes.push(`-> ${hex(target)}${TARGET_NAMES.has(target) ? ` (${TARGET_NAMES.get(target)})` : ''}`);
+    notes.push(`target ${hex(target)}${TARGET_NAMES.has(target) ? ` (${TARGET_NAMES.get(target)})` : ''}`);
   }
+  if (blockMove) notes.push(blockMove);
+  if (highlight) notes.push(highlight);
+
   return notes;
 }
 
-function printRows(title, rows, highlights = new Set()) {
+function printSection(title) {
   console.log('='.repeat(96));
   console.log(title);
   console.log('='.repeat(96));
-  for (const row of rows) {
-    const marker = highlights.has(row.pc) ? '>' : ' ';
-    const notes = annotationForRow(row);
+}
+
+function printRows(title, rows, highlightNotes = new Map()) {
+  printSection(title);
+  for (let index = 0; index < rows.length; index += 1) {
+    const row = rows[index];
+    const notes = buildRowNotes(rows, index, highlightNotes);
+    const prefix = highlightNotes.has(row.pc) ? '>' : ' ';
     const suffix = notes.length ? `  ; ${notes.join(' | ')}` : '';
-    console.log(`${marker} ${hex(row.pc)}  ${row.bytes.padEnd(18)} ${row.text}${suffix}`);
+    console.log(`${prefix} ${hex(row.pc)}  ${row.bytes.padEnd(18)} ${row.text}${suffix}`);
   }
   console.log('');
 }
 
-// ── Caller context: scan backward to find function entry ─────────────────────
-
-function findFunctionEntry(callSite, maxLookback = 128) {
-  // Scan backward for RET (C9), JP (C3 xx xx xx), or RETI (ED 4D)
-  // These typically mark the end of a previous function
-  let bestEntry = callSite;
-
-  for (let offset = 1; offset <= maxLookback; offset++) {
-    const addr = callSite - offset;
-    if (addr < 0) break;
-    const byte = rom[addr];
-
-    // RET = 0xC9 at addr means addr+1 is likely a new function entry
-    if (byte === 0xC9) {
-      bestEntry = addr + 1;
-      break;
-    }
-
-    // JP imm24 = C3 xx xx xx — next instruction after it is a function boundary
-    if (byte === 0xC3 && addr + 4 <= callSite) {
-      bestEntry = addr + 4;
-      break;
-    }
-
-    // Check for a RET-conditional pattern: C0/C8/D0/D8/E0/E8/F0/F8
-    if ((byte & 0xC7) === 0xC0) {
-      // Only treat as boundary if it looks like it terminates a block
-      // Be conservative — only use RET cc as boundary if very close
-      if (offset <= 16) {
-        bestEntry = addr + 1;
-        break;
-      }
-    }
-  }
-
-  return bestEntry;
+function collectIncomingRefs(rows, target) {
+  return rows
+    .filter((row) => row.inst?.target === target)
+    .map((row) => `${hex(row.pc)}  ${row.text}`);
 }
 
-// ── Summarize a caller region ────────────────────────────────────────────────
-
-function analyzeCallerRegion(callerAddr, label) {
-  console.log('');
-  console.log('#'.repeat(96));
-  console.log(`## ${label}`);
-  console.log('#'.repeat(96));
-
-  // Step 1: verify the instruction at callerAddr targets 0x08C5D7
-  const callRow = decodeRow(callerAddr);
-  const actualTarget = callRow.inst?.target;
-  console.log(`\nInstruction at ${hex(callerAddr)}: ${callRow.text}`);
-  if (actualTarget === DISPATCH_ENTRY) {
-    console.log(`  CONFIRMED: targets 0x08C5D7`);
+function printList(title, items) {
+  console.log(title);
+  console.log('-'.repeat(title.length));
+  if (!items.length) {
+    console.log('(none)');
   } else {
-    console.log(`  WARNING: targets ${hex(actualTarget)} — NOT 0x08C5D7!`);
-    console.log(`  Raw bytes: ${callRow.bytes}`);
+    for (const item of items) console.log(`- ${item}`);
   }
-
-  // Step 2: find the function entry point
-  const entryAddr = findFunctionEntry(callerAddr);
-  console.log(`\nLikely function entry: ${hex(entryAddr)} (${callerAddr - entryAddr} bytes before call site)`);
-
-  // Step 3: disassemble from entry through call site + 32 bytes past
-  const disasmEnd = Math.min(callRow.nextPc + 48, rom.length);
-  const rows = collectRange(entryAddr, disasmEnd);
-
-  printRows(`Disassembly: ${hex(entryAddr)} .. ${hex(disasmEnd)}`, rows, new Set([callerAddr]));
-
-  // Step 4: summarize interesting patterns
-  console.log('--- Memory references ---');
-  let memCount = 0;
-  for (const row of rows) {
-    const addr = getAbsoluteAddress(row.inst);
-    const direction = classifyMemoryDirection(row.inst);
-    if (addr !== undefined && direction) {
-      console.log(`  ${hex(row.pc)}  ${direction.padEnd(5)} ${hex(addr)}  ${RAM_NAMES.get(addr) ?? ''}  ${row.text}`.trimEnd());
-      memCount++;
-    }
-  }
-  if (!memCount) console.log('  (none)');
-
-  console.log('\n--- IY references ---');
-  let iyCount = 0;
-  for (const row of rows) {
-    const note = noteIY(row.inst);
-    if (note) {
-      console.log(`  ${hex(row.pc)}  ${note}  ${row.text}`);
-      iyCount++;
-    }
-  }
-  if (!iyCount) console.log('  (none)');
-
-  console.log('\n--- Control flow (CALL/JP targets) ---');
-  let cfCount = 0;
-  for (const row of rows) {
-    const target = row.inst?.target;
-    if (target !== undefined) {
-      const label2 = TARGET_NAMES.get(target);
-      console.log(`  ${hex(row.pc)}  ${row.text}${label2 ? ` (${label2})` : ''}`);
-      cfCount++;
-    }
-  }
-  if (!cfCount) console.log('  (none)');
-
-  // Step 5: look for A register loads and D007E0 writes before the call
-  console.log('\n--- Pre-call setup (A loads, D007E0 writes before call site) ---');
-  let setupCount = 0;
-  for (const row of rows) {
-    if (row.pc >= callerAddr) break;  // only before the call
-
-    // LD A, imm8
-    if (row.inst?.tag === 'ld-reg-imm' && upper(row.inst.dest ?? row.inst.dst) === 'A') {
-      console.log(`  ${hex(row.pc)}  ${row.text}  (A loaded with ${hexByte(row.inst.value)})`);
-      setupCount++;
-    }
-    // LD A, (addr)
-    if (row.inst?.tag === 'ld-reg-mem' && upper(row.inst.dest ?? row.inst.dst) === 'A') {
-      console.log(`  ${hex(row.pc)}  ${row.text}  (A loaded from memory)`);
-      setupCount++;
-    }
-    // LD A, r
-    if (row.inst?.tag === 'ld-reg-reg' && upper(row.inst.dest ?? row.inst.dst) === 'A') {
-      console.log(`  ${hex(row.pc)}  ${row.text}  (A loaded from register)`);
-      setupCount++;
-    }
-    // LD (D007E0), A or similar
-    if (row.inst?.tag === 'ld-mem-reg' && row.inst.addr === 0xD007E0) {
-      console.log(`  ${hex(row.pc)}  ${row.text}  (writing to cxCurApp/mode byte)`);
-      setupCount++;
-    }
-    if (row.inst?.tag === 'ld-mem-pair' && row.inst.addr === 0xD007E0) {
-      console.log(`  ${hex(row.pc)}  ${row.text}  (writing to cxCurApp/mode byte)`);
-      setupCount++;
-    }
-    // IY flag modifications
-    const iyNote = noteIY(row.inst);
-    if (iyNote && (iyNote.includes('set') || iyNote.includes('clear'))) {
-      console.log(`  ${hex(row.pc)}  ${row.text}  (${iyNote})`);
-      setupCount++;
-    }
-  }
-  if (!setupCount) console.log('  (none found in pre-call window)');
-
   console.log('');
 }
 
-// ── Main ─────────────────────────────────────────────────────────────────────
+function printCallerReport(spec) {
+  const boundary = analyzeBoundary(spec.site);
+  const rows = collectRange(spec.disasmStart, spec.disasmStart + spec.disasmBytes);
+  const highlightNotes = new Map(spec.highlights);
+  const incomingToLocal = collectIncomingRefs(boundary.rows, spec.disasmStart)
+    .filter((line) => !line.startsWith(hex(spec.site)));
 
-console.log('╔══════════════════════════════════════════════════════════════════════════════════════════════╗');
-console.log('║  Phase 397 — Investigate 0x08C5D7 Callers                                                  ║');
-console.log('║  Goal: Is 0x08C5D7 a general mode reinit or specific to error recovery?                    ║');
-console.log('╚══════════════════════════════════════════════════════════════════════════════════════════════╝');
-console.log('');
-
-// ── Part 1: Disassemble 0x08C5D7 itself ──────────────────────────────────────
-
-const dispatchRows = collectRange(DISPATCH_ENTRY, DISPATCH_END);
-printRows(
-  `0x08C5D7 — Action Dispatch Entry (${dispatchRows.length} instructions, ~${DISPATCH_END - DISPATCH_ENTRY} bytes)`,
-  dispatchRows
-);
-
-// Summarize dispatch logic
-console.log('--- Dispatch logic summary ---');
-console.log('Key comparisons and branches:');
-for (const row of dispatchRows) {
-  const inst = row.inst;
-  if (!inst) continue;
-
-  // CP imm8
-  if (inst.tag === 'alu-imm' || inst.tag === 'alu-immediate') {
-    if (upper(inst.op) === 'CP') {
-      console.log(`  ${hex(row.pc)}  ${row.text}  (compare A with ${hexByte(inst.value)})`);
+  printSection(`Caller ${hex(spec.site)} (${spec.label})`);
+  console.log(`Detected local boundary before caller: ${hex(boundary.localStart)} (${boundary.localReason}).`);
+  if (spec.disasmStart !== boundary.localStart) {
+    console.log(`Chosen disassembly start: ${hex(spec.disasmStart)}.`);
+  }
+  if (spec.containingStart !== undefined) {
+    console.log(`Containing function start used for interpretation: ${hex(spec.containingStart)}.`);
+  }
+  if (incomingToLocal.length) {
+    console.log(`Incoming refs to the chosen local block:`);
+    for (const line of incomingToLocal) console.log(`  ${line}`);
+  }
+  if (spec.sharedEpilogue !== undefined) {
+    const sharedRefs = collectIncomingRefs(rows, spec.sharedEpilogue);
+    if (sharedRefs.length) {
+      console.log(`Incoming refs to shared epilogue ${hex(spec.sharedEpilogue)}:`);
+      for (const line of sharedRefs) console.log(`  ${line}`);
     }
   }
-  // Conditional jumps
-  if (inst.tag === 'jp-conditional' || inst.tag === 'jr-conditional' || inst.tag === 'call-conditional') {
-    const label = TARGET_NAMES.get(inst.target);
-    console.log(`  ${hex(row.pc)}  ${row.text}${label ? `  (${label})` : ''}`);
+  console.log('');
+
+  printRows(
+    `Disassembly ${hex(spec.disasmStart)}..${hex(spec.disasmStart + spec.disasmBytes)}`,
+    rows,
+    highlightNotes,
+  );
+
+  printList('Action code(s) before JP 0x08C5D7', spec.actionCodes);
+  printList('Mode-byte writes before JP', spec.modeWrites);
+  printList('Other setup before JP', spec.extraSetup);
+  printList('Interpretation', spec.interpretation);
+}
+
+function printSupportReport(title, start, end, highlights, summaryLines) {
+  const rows = collectRange(start, end);
+  printRows(`${title} ${hex(start)}..${hex(end)}`, rows, new Map(highlights));
+  printList(`${title} summary`, summaryLines);
+}
+
+function main() {
+  if (rom.length !== EXPECTED_ROM_SIZE) {
+    throw new Error(`Expected ROM size ${EXPECTED_ROM_SIZE}, got ${rom.length}`);
   }
-}
-console.log('');
 
-// ── Part 2: Disassemble 0x08C7AD (NewContext0) ──────────────────────────────
+  console.log('Phase 397 - Investigate non-error callers of 0x08C5D7');
+  console.log(`ROM: ${ROM_PATH.pathname}`);
+  console.log(`ROM size: ${rom.length.toLocaleString('en-US')} bytes (${hex(rom.length, 8)})`);
+  console.log(`Decode mode: ${MODE.toUpperCase()}`);
+  console.log('');
+  console.log('Known callers of 0x08C5D7 are 0x02376D, 0x0302E2, 0x08AD52, and 0x08C497.');
+  console.log('This probe focuses on the three non-0x0302E2 callers and then re-dumps the shared dispatch helpers.');
+  console.log('');
 
-const helperRows = collectRange(HELPER_08C7AD, HELPER_08C7AD_END);
-printRows(
-  `0x08C7AD — NewContext0 (called by dispatch, ${helperRows.length} instructions)`,
-  helperRows
-);
-
-// ── Part 3: Disassemble 0x08C519 (tail JP target) ───────────────────────────
-
-const tailRows = collectRange(TAIL_08C519, TAIL_08C519_END);
-printRows(
-  `0x08C519 — Action tail / CLEAR dispatch cluster (JP target, ${tailRows.length} instructions)`,
-  tailRows
-);
-
-// ── Part 4: Analyze each non-error-recovery caller ──────────────────────────
-
-for (const caller of CALLERS) {
-  analyzeCallerRegion(caller.addr, caller.label);
-}
-
-// ── Part 5: Cross-reference — find ALL references to 0x08C5D7 ──────────────
-
-console.log('#'.repeat(96));
-console.log('## Full cross-reference: all JP/CALL references to 0x08C5D7 in ROM');
-console.log('#'.repeat(96));
-
-const REF_OPS = [
-  { opcode: 0xC3, kind: 'JP' },
-  { opcode: 0xC2, kind: 'JP NZ' },
-  { opcode: 0xCA, kind: 'JP Z' },
-  { opcode: 0xD2, kind: 'JP NC' },
-  { opcode: 0xDA, kind: 'JP C' },
-  { opcode: 0xCD, kind: 'CALL' },
-  { opcode: 0xC4, kind: 'CALL NZ' },
-  { opcode: 0xCC, kind: 'CALL Z' },
-  { opcode: 0xD4, kind: 'CALL NC' },
-  { opcode: 0xDC, kind: 'CALL C' },
-];
-
-const targetBytes = [DISPATCH_ENTRY & 0xFF, (DISPATCH_ENTRY >> 8) & 0xFF, (DISPATCH_ENTRY >> 16) & 0xFF];
-const refs = [];
-
-for (const refOp of REF_OPS) {
-  for (let pc = 0; pc <= rom.length - 4; pc++) {
-    if (rom[pc] === refOp.opcode &&
-        rom[pc + 1] === targetBytes[0] &&
-        rom[pc + 2] === targetBytes[1] &&
-        rom[pc + 3] === targetBytes[2]) {
-      const row = decodeRow(pc);
-      refs.push({ pc, kind: refOp.kind, row });
-    }
+  for (const spec of CALLER_SPECS) {
+    printCallerReport(spec);
   }
+
+  printSupportReport(
+    'Dispatch entry 0x08C5D7',
+    0x08C5D7,
+    0x08C700,
+    [
+      [0x08C5D8, 'special-case action 0x59'],
+      [0x08C5E7, 'read mode byte'],
+      [0x08C601, 'CALL 0x08C7AD'],
+      [0x08C606, 'tail-JP 0x08C519'],
+      [0x08C6B1, 'mode 0x58 cleanup path'],
+      [0x08C6F6, 'tail-JP 0x03FBFD'],
+    ],
+    [
+      'Entry copies `A` into `B`, then only special-cases `A == 0x59` by folding in `kbdToken` from `0xD0058E`.',
+      'It reads `0xD007E0` and normalizes two special mode bytes: `0x50` and `0x52`.',
+      'In the common case it calls `0x08C7AD`, restores `A=B`, and tail-jumps to `0x08C519`.',
+      'The later body contains broader context cleanup, including a dedicated `mode == 0x58` path before tail-jumping to `0x03FBFD`.',
+    ],
+  );
+
+  printSupportReport(
+    'Helper 0x08C7AD',
+    0x08C7AD,
+    0x08C82D,
+    [
+      [0x08C7B3, 'mark global slot 0x0026B5 = 0xFFFFFF'],
+      [0x08C7C5, 'clear global slot 0x0026B5'],
+      [0x08C7D8, 'write D026AE = 0x03'],
+      [0x08C7EE, 'compare against mode byte at D007E0'],
+      [0x08C807, 'early return for mode 0x44'],
+      [0x08C80E, 'sets B=0x27 and returns'],
+    ],
+    [
+      '`0x08C7AD` is a context/setup helper, not a leaf no-op.',
+      'It clears several IY flags, updates global bookkeeping slots, writes `0x03` to `0xD026AE`, and calls `0x0A2E05` with the original action code.',
+      'It then compares against the current mode byte and has explicit follow-up cases for modes `0x44` and `0x40` before returning.',
+    ],
+  );
+
+  printSupportReport(
+    'Tail target 0x08C519',
+    0x08C519,
+    0x08C560,
+    [
+      [0x08C51E, 'special-case action 0x28 -> A=0xDA'],
+      [0x08C52C, 'special-case action 0x29 -> A=0x7F'],
+      [0x08C532, 'CALL 0x022331'],
+      [0x08C536, 'CALL 0x08C72F'],
+      [0x08C53F, '0x29 path jumps back to 0x08C41D'],
+    ],
+    [
+      '`0x08C519` is the common dispatch tail that handles special action codes `0x28` and `0x29` first.',
+      'It then runs `CALL 0x022331`, `CALL 0x08C72F`, clears `IY+0x09` bit 4, and resumes the broader CoorMon/menu dispatch flow.',
+      'This is shared common dispatch machinery, which is why `0x08C5D7` tail-jumps here after context normalization.',
+    ],
+  );
+
+  printSection('Verdict');
+  console.log('0x08C5D7 is a general context/mode re-entry dispatcher, not an error-only sink.');
+  console.log('');
+  console.log('Evidence:');
+  console.log('- `0x02376D` feeds it with `A=0x58` after restoring `SP`, clearing several IY flags, and forcing `0xD007E0=0x40`.');
+  console.log('- `0x08C497` feeds it with `A=0x58` after staging a 9-byte block into `0xD0082E`, with no mode-byte write at all.');
+  console.log('- `0x08AD52` reaches it through a shared unwind epilogue with non-error action codes `0xBF` or `0x45`, again with no local mode-byte write.');
+  console.log('- The body of `0x08C5D7` itself reads `0xD007E0`, normalizes context, calls the setup helper `0x08C7AD`, and then tail-jumps into the common dispatch tail at `0x08C519`.');
+  console.log('');
+  console.log('So the best model is: `0x08C5D7` = context-sensitive re-entry / reinit front-end for the broader dispatch engine, used by error recovery as one caller among several.');
 }
 
-refs.sort((a, b) => a.pc - b.pc);
-console.log(`\nFound ${refs.length} reference(s) to ${hex(DISPATCH_ENTRY)}:\n`);
-for (const ref of refs) {
-  const isKnownError = ref.pc === ERROR_CALLER;
-  const isKnownCaller = CALLERS.some(c => c.addr === ref.pc);
-  let tag = '';
-  if (isKnownError) tag = ' [ERROR RECOVERY]';
-  else if (isKnownCaller) tag = ' [INVESTIGATED ABOVE]';
-  console.log(`  ${hex(ref.pc)}  ${ref.kind.padEnd(8)} ${ref.row.text}${tag}`);
-}
-console.log('');
-
-// ── Part 6: Conclusion ──────────────────────────────────────────────────────
-
-console.log('#'.repeat(96));
-console.log('## Analysis Summary');
-console.log('#'.repeat(96));
-console.log('');
-console.log('Callers investigated:');
-console.log(`  1. ${hex(ERROR_CALLER)} — error recovery (session 396, known)`);
-let callerNum = 2;
-for (const caller of CALLERS) {
-  console.log(`  ${callerNum}. ${hex(caller.addr)} — ${caller.label}`);
-  callerNum++;
-}
-
-console.log('');
-console.log('=== FINDINGS ===');
-console.log('');
-
-// Caller A analysis
-console.log('Caller A (0x02376D):');
-console.log('  - Loads A = 0x58 immediately before JP 0x08C5D7');
-console.log('  - Clears IY+0x01 bit 4 and IY+0x25 bit 5 before the jump');
-console.log('  - This is a NORMAL MODE TRANSITION to mode 0x58');
-console.log('  - Mode 0x58 = the "format" or "table setup" context');
-console.log('');
-
-// Caller B analysis
-console.log('Caller B (0x08AD52):');
-console.log('  - Four POP BC instructions (stack cleanup) then JP 0x08C5D7');
-console.log('  - No A register load visible in the 4-byte pre-call window');
-console.log('  - A must have been set earlier in the parent function');
-console.log('  - The 4x POP BC = unwinding 4 saved values from a deep call chain');
-console.log('  - This looks like an ABORT/CLEANUP path — unwind stack then reinit');
-console.log('');
-
-// Wider context for caller B
-console.log('Wider context for caller B (scanning back further):');
-const callerBWideRows = collectRange(0x08AD30, 0x08AD56);
-printRows('0x08AD30..0x08AD56 (wider context for caller B)', callerBWideRows, new Set([0x08AD52]));
-
-// Caller C analysis
-console.log('Caller C (0x08C497):');
-console.log('  - LDIR (block copy of 9 bytes) then LD A, 0x58, then JP 0x08C5D7');
-console.log('  - Loads A = 0x58 — same mode as caller A');
-console.log('  - This is within the main dispatch cluster (0x08Cxxx)');
-console.log('  - This is a NORMAL MODE TRANSITION to mode 0x58 after copying context data');
-console.log('');
-
-console.log('=== CONCLUSION ===');
-console.log('');
-console.log('0x08C5D7 is a GENERAL "reinit mode dispatch" function, NOT specific to error recovery.');
-console.log('');
-console.log('Evidence:');
-console.log('  - 4 callers total: 1 error recovery, 3 normal/cleanup paths');
-console.log('  - Callers A and C both pass A = 0x58 for normal mode transitions');
-console.log('  - Caller B does stack cleanup (4x POP BC) then dispatches — an abort/unwind path');
-console.log('  - The function itself reads cxCurApp (0xD007E0), compares mode values,');
-console.log('    calls NewContext0, then tails into the action dispatch cluster');
-console.log('  - It is the canonical entry point for "switch to a new application context"');
-console.log('');
-console.log('Recommended name: cxSwitch or AppModeDispatch');
-console.log('');
-console.log('Done.');
+main();

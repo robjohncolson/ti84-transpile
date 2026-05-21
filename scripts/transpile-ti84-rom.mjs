@@ -22458,6 +22458,17 @@ function walkBlocks() {
     { pc: 0x03FA09, mode: 'adl' },
     { pc: 0x040D40, mode: 'adl' },
     { pc: 0x08C637, mode: 'adl' },
+    // Session 398 seeds
+    { pc: 0x001786, mode: 'adl' },  // PUSH HL prologue inside low-ROM uncovered helper
+    { pc: 0x0070A9, mode: 'adl' },  // PUSH BC prologue for port-0x70xx I/O wrapper
+    { pc: 0x011B9E, mode: 'adl' },  // PUSH BC prologue in uncovered state/setup helper
+    { pc: 0x02A3BF, mode: 'adl' },  // PUSH BC prologue in uncovered call wrapper
+    { pc: 0x03678D, mode: 'adl' },  // PUSH AF/DI prologue in uncovered interrupt helper
+    { pc: 0x04C8F2, mode: 'adl' },  // PUSH AF prologue in uncovered flag/state writer
+    { pc: 0x05980D, mode: 'adl' },  // PUSH AF prologue in uncovered dispatch helper
+    { pc: 0x07E947, mode: 'adl' },  // PUSH BC prologue in uncovered branch/call helper
+    { pc: 0x08EAEC, mode: 'adl' },  // PUSH AF prologue in uncovered high-ROM call helper
+    { pc: 0x0A2D21, mode: 'adl' },  // PUSH AF prologue in uncovered arithmetic helper
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {

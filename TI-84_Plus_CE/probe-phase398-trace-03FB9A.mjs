@@ -16,30 +16,27 @@ const EXPECTED_ROM_SIZE = 0x400000;
 const OS_IY_BASE = 0xD00080;
 const RAM_START = 0xD00000;
 const RAM_END = 0xE00000;
-const LOCAL_BRANCH_RADIUS = 0x300;
+const LOCAL_BRANCH_RADIUS = 0x400;
 const MAX_VISITED_INSTRUCTIONS = 512;
 
 const FUNCTION_SPECS = [
-  { entry: 0x040D40, minBytes: 0x80, name: '0x040D40 wait-loop helper' },
-  { entry: 0x03FA09, minBytes: 0x40, name: '0x03FA09 result fetch / _GetCSC path' },
-];
-
-const CHECK_TARGETS_040D40 = [
-  0x003A73,
-  0x003D5A,
-  0xD00080,
-  0xD0058C,
+  { entry: 0x03FB9A, minBytes: 0x100, name: '0x03FB9A key-accepted path (post-GetCSC)' },
 ];
 
 const SYMBOL_NAMES = new Map([
   [0x003A73, 'event loop entry'],
   [0x003D5A, '_GetCSC wrapper'],
+  [0x030300, 'event consumption'],
+  [0x02FE73, 'key dispatcher entry'],
+  [0x02FECF, 'mode flag decision tree'],
   [0x03FA09, 'result fetch / _GetCSC path'],
+  [0x03FB9A, 'key-accepted path'],
   [0x040D40, 'wait-loop helper'],
   [0xD00080, 'IY base / key-status flag byte'],
-  [0xD00587, 'kbdScanCode'],
+  [0xD00587, 'kbdGetKy result'],
   [0xD0058C, 'kbdKey'],
-  [0xD0058E, 'kbdToken / translated key'],
+  [0xD0058E, 'kbdToken'],
+  [0xD007E0, 'mode byte'],
 ]);
 
 const CALL_JP_OPCODE_NAMES = new Map([
@@ -1034,14 +1031,31 @@ function printFunctionReport(report) {
   printLoopSummary(report);
 }
 
-function printReferenceChecks(report) {
+function printKeyAcceptedAnnotations(report) {
   console.log('='.repeat(110));
-  console.log('0x040D40 reference checks');
+  console.log('Key-accepted path annotations (known RAM addresses referenced)');
   console.log('='.repeat(110));
-  for (const target of CHECK_TARGETS_040D40) {
-    const hits = findReferencesInReport(report, target);
-    const label = symbolLabel(target);
-    console.log(`${hex(target)}${label ? ` (${label})` : ''}: ${hits.length ? 'YES' : 'no direct reference found'}`);
+
+  const knownAddrs = [0xD00587, 0xD0058C, 0xD0058E, 0xD007E0, 0xD00080];
+  for (const addr of knownAddrs) {
+    const hits = findReferencesInReport(report, addr);
+    const label = symbolLabel(addr);
+    console.log(`${hex(addr)}${label ? ` (${label})` : ''}: ${hits.length ? `${hits.length} reference(s)` : 'no direct reference found'}`);
+    if (hits.length) {
+      for (const hit of hits) {
+        console.log(`  ${hex(hit.pc)}  ${hit.kind.padEnd(12)} ${hit.text}`);
+      }
+    }
+  }
+
+  console.log('');
+
+  const knownTargets = [0x030300, 0x02FE73, 0x02FECF, 0x03FA09, 0x040D40];
+  console.log('Known code targets referenced:');
+  for (const addr of knownTargets) {
+    const hits = findReferencesInReport(report, addr);
+    const label = symbolLabel(addr);
+    console.log(`${hex(addr)}${label ? ` (${label})` : ''}: ${hits.length ? `${hits.length} reference(s)` : 'no direct reference found'}`);
     if (hits.length) {
       for (const hit of hits) {
         console.log(`  ${hex(hit.pc)}  ${hit.kind.padEnd(12)} ${hit.text}`);
@@ -1070,6 +1084,47 @@ function printRomWideXrefs(rom, target) {
   console.log('');
 }
 
+function printSummary(report) {
+  console.log('='.repeat(110));
+  console.log('SUMMARY: What happens to the accepted key at 0x03FB9A');
+  console.log('='.repeat(110));
+
+  const callTargets = report.controlTargets.filter((t) => t.kind === 'CALL');
+  const jumpTargets = report.controlTargets.filter((t) => t.kind === 'JUMP');
+
+  console.log(`Total instructions disassembled: ${count(report.rows.length)}`);
+  console.log(`Total bytes covered: ${count(report.discoveredBytes)}`);
+  console.log(`CALL targets: ${callTargets.length}`);
+  for (const t of callTargets) {
+    const label = symbolLabel(t.target);
+    console.log(`  ${hex(t.pc)} -> CALL ${hex(t.target)}${label ? ` (${label})` : ''}`);
+  }
+  console.log(`JUMP targets: ${jumpTargets.length}`);
+  for (const t of jumpTargets) {
+    const label = symbolLabel(t.target);
+    console.log(`  ${hex(t.pc)} -> JP ${hex(t.target)}${label ? ` (${label})` : ''}`);
+  }
+
+  const ramAddrs = new Set(report.ramRefs.map((r) => r.address));
+  console.log(`Unique RAM addresses touched: ${ramAddrs.size}`);
+  for (const addr of [...ramAddrs].sort((a, b) => a - b)) {
+    const label = symbolLabel(addr);
+    console.log(`  ${hex(addr)}${label ? ` (${label})` : ''}`);
+  }
+
+  const loops = summarizeLoops(report.edges);
+  if (loops.length) {
+    console.log(`Loop structures: ${loops.length}`);
+    for (const loop of loops) {
+      console.log(`  ${hex(loop.from)} -> ${hex(loop.to)}  ${loop.kind}`);
+    }
+  } else {
+    console.log('Loop structures: none');
+  }
+
+  console.log('');
+}
+
 function main() {
   if (!fs.existsSync(ROM_PATH)) {
     throw new Error(`Missing ROM at ${ROM_PATH}`);
@@ -1080,7 +1135,7 @@ function main() {
     throw new Error(`Expected ROM size ${EXPECTED_ROM_SIZE}, got ${rom.length}`);
   }
 
-  console.log('Phase 397 - Wait Loop / Result Fetch Static Probe');
+  console.log('Phase 398 - Trace 0x03FB9A Key-Accepted Path');
   console.log(`ROM path: ${ROM_PATH}`);
   console.log(`ROM size: ${count(rom.length)} bytes (${hex(rom.length, 8)})`);
   console.log(`Assumed OS IY base: ${hex(OS_IY_BASE)}`);
@@ -1092,13 +1147,16 @@ function main() {
     printFunctionReport(report);
   }
 
-  const waitLoopReport = reports.find((report) => report.entry === 0x040D40);
-  if (waitLoopReport) {
-    printReferenceChecks(waitLoopReport);
+  const keyAcceptedReport = reports.find((report) => report.entry === 0x03FB9A);
+  if (keyAcceptedReport) {
+    printKeyAcceptedAnnotations(keyAcceptedReport);
   }
 
-  printRomWideXrefs(rom, 0x040D40);
-  printRomWideXrefs(rom, 0x03FA09);
+  printRomWideXrefs(rom, 0x03FB9A);
+
+  if (keyAcceptedReport) {
+    printSummary(keyAcceptedReport);
+  }
 }
 
 main();

@@ -17,25 +17,23 @@ const IY_BASE = 0xD00080;
 const MIN_TRACE_BYTES = 0x80;
 const MAX_TRACE_INSTRUCTIONS = 256;
 
-const FUNCTIONS = [
-  { entry: 0x04CA87, label: '0x04CA87 key handler lookup (CP 0x01 path)' },
-  { entry: 0x04CA94, label: '0x04CA94 key handler lookup (CP 0x04 path)' },
-];
+const TARGET_ENTRY = 0x03007C;
+const TARGET_LABEL = '0x03007C key dispatch (translated key code in A)';
 
 const KNOWN_DATA_ADDRS = {
-  0x09F79B: 'translation table',
   0xD0058C: 'kbdKey',
   0xD0058E: 'kbdToken',
-  0xD0058F: 'kbdState+0x08',
+  0xD0058F: 'key state',
   0xD007E0: 'mode byte',
+  0x09F79B: 'translation table',
 };
 
 const KNOWN_CODE_TARGETS = {
   0x02FD99: 'common dispatcher tail',
-  0x02237E: 'post-translation commit helper',
-  0x03007C: 'shared output / key commit loop',
+  0x02237E: 'post-translation commit',
+  0x03007C: 'key dispatch (this function)',
   0x030084: 'local port-write helper',
-  0x0301F6: 'mode-normalization helper',
+  0x0301F6: 'mode-normalization',
   0x04CA87: 'key handler lookup (low-range adapter)',
   0x04CA94: 'key handler lookup (high-range adapter)',
 };
@@ -730,6 +728,24 @@ function collectAEvents(instructions) {
           note: `${String(inst.op).toUpperCase()} ${formatIndexed(inst.indexRegister, inst.displacement)} with A`,
         });
         break;
+      case 'ld-reg-ixd':
+        if (inst.dest === 'a') {
+          events.push({
+            pc: inst.pc,
+            kind: 'write',
+            note: `loads A from ${formatIndexed(inst.indexRegister, inst.displacement)}`,
+          });
+        }
+        break;
+      case 'ld-ixd-reg':
+        if (inst.src === 'a') {
+          events.push({
+            pc: inst.pc,
+            kind: 'read',
+            note: `stores A to ${formatIndexed(inst.indexRegister, inst.displacement)}`,
+          });
+        }
+        break;
       case 'in-reg':
         if ((inst.reg ?? inst.dest) === 'a') {
           events.push({
@@ -832,38 +848,34 @@ function printDivider() {
   console.log('-'.repeat(88));
 }
 
-function printCallerReport(rom) {
-  printSectionTitle('Direct CALL/JP References To The Two Lookup Entries');
+function main() {
+  const rom = fs.readFileSync(ROM_PATH);
 
-  for (const fn of FUNCTIONS) {
-    const callers = scanRomForCallers(rom, fn.entry);
-    console.log(`${fn.label}`);
-    if (callers.length === 0) {
-      console.log('  none found');
-      console.log('');
-      continue;
-    }
-
-    for (const caller of callers) {
-      console.log(
-        `  ${hex(caller.caller)}  ${caller.bytes.padEnd(14)}  ${caller.mnemonic.padEnd(9)}  ${hex(fn.entry)}`,
-      );
-    }
-    console.log('');
+  if (rom.length !== EXPECTED_ROM_SIZE) {
+    throw new Error(
+      `Expected ROM size ${hex(EXPECTED_ROM_SIZE, 8)} (${EXPECTED_ROM_SIZE}) bytes, got ${hex(rom.length, 8)} (${rom.length}) bytes.`,
+    );
   }
-}
 
-function printFunctionReport(fn, trace) {
+  console.log(`Phase 398 - Decode ${hex(TARGET_ENTRY)} key dispatch function`);
+  console.log(`ROM: ${ROM_PATH}`);
+  console.log(`Size: ${hex(rom.length, 8)} (${rom.length}) bytes`);
+  console.log(`Decoder mode: ${MODE}`);
+  console.log(`Minimum branch-follow trace budget: ${MIN_TRACE_BYTES} bytes`);
+
+  // --- Disassemble the function ---
+  printSectionTitle(TARGET_LABEL);
+
+  const trace = traceFunction(rom, TARGET_ENTRY);
+
   const memoryAccesses = collectMemoryAccesses(trace.instructions);
   const controlTargets = collectControlTargets(trace.instructions);
   const tableRefs = collectTableRefs(trace.instructions);
   const knownHits = collectKnownHits(trace.instructions);
   const aEvents = collectAEvents(trace.instructions);
 
-  printSectionTitle(fn.label);
-
   console.log(
-    `Trace coverage: ${trace.instructions.length} instructions, ${trace.totalBytes} bytes, branch-following from ${hex(fn.entry)}.`,
+    `Trace coverage: ${trace.instructions.length} instructions, ${trace.totalBytes} bytes, branch-following from ${hex(TARGET_ENTRY)}.`,
   );
   if (aEvents.length > 0 && aEvents[0].kind === 'write') {
     console.log(`A-register headline: incoming A is overwritten before any visible use at ${hex(aEvents[0].pc)}.`);
@@ -943,29 +955,41 @@ function printFunctionReport(fn, trace) {
       `  ${hex(inst.pc)}  ${inst.bytes.padEnd(16)}  ${inst.text}${note ? `  ; ${note}` : ''}`,
     );
   }
-}
 
-function main() {
-  const rom = fs.readFileSync(ROM_PATH);
+  // --- Scan entire ROM for callers ---
+  printSectionTitle(`ROM-wide caller scan for ${hex(TARGET_ENTRY)}`);
 
-  if (rom.length !== EXPECTED_ROM_SIZE) {
-    throw new Error(
-      `Expected ROM size ${hex(EXPECTED_ROM_SIZE, 8)} (${EXPECTED_ROM_SIZE}) bytes, got ${hex(rom.length, 8)} (${rom.length}) bytes.`,
-    );
+  const callers = scanRomForCallers(rom, TARGET_ENTRY);
+  console.log(`Found ${callers.length} CALL/JP references to ${hex(TARGET_ENTRY)} in entire 4MB ROM:`);
+  console.log('');
+
+  if (callers.length === 0) {
+    console.log('  none found');
+  } else {
+    for (const caller of callers) {
+      console.log(
+        `  ${hex(caller.caller)}  ${caller.bytes.padEnd(14)}  ${caller.mnemonic.padEnd(9)}  ${hex(TARGET_ENTRY)}`,
+      );
+    }
   }
 
-  console.log('Phase 397 - Decode 0x04CA87 / 0x04CA94 key handler lookup');
-  console.log(`ROM: ${ROM_PATH}`);
-  console.log(`Size: ${hex(rom.length, 8)} (${rom.length}) bytes`);
-  console.log(`Decoder mode: ${MODE}`);
-  console.log(`Minimum branch-follow trace budget per entry: ${MIN_TRACE_BYTES} bytes`);
+  // --- Summary ---
+  printSectionTitle('Summary');
 
-  printCallerReport(rom);
+  console.log(`Function at ${hex(TARGET_ENTRY)} receives translated key code in register A.`);
+  console.log(`Traced ${trace.instructions.length} instructions (${trace.totalBytes} bytes).`);
+  console.log(`Found ${callers.length} caller(s) across the entire ROM.`);
+  console.log('');
 
-  for (const fn of FUNCTIONS) {
-    const trace = traceFunction(rom, fn.entry);
-    printFunctionReport(fn, trace);
+  if (aEvents.length > 0) {
+    console.log('A-register flow:');
+    const firstUse = aEvents[0];
+    console.log(`  First A event at ${hex(firstUse.pc)}: ${firstUse.note}`);
   }
+
+  console.log('');
+  console.log('Known callers from session 397: 0x04CA87 and 0x04CA94 both JP here with translated key in A.');
+  console.log('This function is the final key->action mapping point in the OS key dispatch chain.');
 
   printDivider();
   console.log('Done.');

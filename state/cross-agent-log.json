@@ -11346,15 +11346,133 @@
       "timestamp": "2026-05-21T16:07:16Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "81eb488fc9b6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 395 P2: Trace Bit 2 of IY+0x12 (Edit/Input Mode) in Key Dispatch\n\n## Context\nYou are ",
+      "status": "completed",
+      "duration_seconds": 593.532,
+      "timestamp": "2026-05-21T16:11:43Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase395-iy12-bit2-dispatch.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "2f09c8e6165b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Coverage Push \u2014 Add Seeds for Uncovered CODE? Regions\n\n## Context\nTI-84 Plus CE ROM transpil",
+      "status": "completed",
+      "duration_seconds": 443.276,
+      "timestamp": "2026-05-21T18:09:58Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "bd447be71160",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace the 0x0302CA Error Recovery Path\n\n## Context\nTI-84 Plus CE ROM transpilation project. ",
+      "status": "completed",
+      "duration_seconds": 528.463,
+      "timestamp": "2026-05-21T18:11:17Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase396-error-recovery-0302CA.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "3e4db48a40af",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode the OS API Helpers at 0x006E6D-0x006E8D (edit mode syscalls)\n\n## Context\nTI-84 Plus C",
+      "status": "failed",
+      "duration_seconds": 557.478,
+      "timestamp": "2026-05-21T18:11:49Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "abf25a0ae91e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode the Mode Flag Decision Tree at 0x02FECF \u2014 Disassemble 0x02FFF6 and 0x0300CB alternate",
+      "status": "timeout",
+      "duration_seconds": 900.088,
+      "timestamp": "2026-05-21T18:17:27Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c6c19456d1bb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 397 \u2014 Priority 4: Coverage Push \u2014 Add Seeds from Recent Sessions\n\n## Context\n\nYou are",
+      "status": "completed",
+      "duration_seconds": 139.537,
+      "timestamp": "2026-05-21T20:04:25Z",
+      "files_changed": [
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "664eac354def",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 397 \u2014 Priority 1: Decode 0x04CA94 and 0x04CA87 Key Handler Lookup\n\n## Context\n\nYou ar",
+      "status": "completed",
+      "duration_seconds": 608.344,
+      "timestamp": "2026-05-21T20:12:09Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2518bacf39bb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 397 \u2014 Priority 3: Investigate 0x08C5D7 Callers\n\n## Context\n\nYou are working on a TI-8",
+      "status": "completed",
+      "duration_seconds": 655.448,
+      "timestamp": "2026-05-21T20:13:00Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "de39154be3bc",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 397 \u2014 Priority 2: Trace 0x040D40 Wait Loop + 0x03FA09 Result Fetch\n\n## Context\n\nYou a",
+      "status": "completed",
+      "duration_seconds": 855.585,
+      "timestamp": "2026-05-21T20:16:18Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase397-wait-loop-040D40.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "f4e8aaafb828",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add Coverage Seeds for Session 398\n\n## Context\nYou are working on a TI-84 Plus CE ROM (eZ80)",
+      "status": "completed",
+      "duration_seconds": 241.448,
+      "timestamp": "2026-05-21T22:06:21Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 929,
-    "cc_to_codex": 929,
+    "total_calls": 939,
+    "cc_to_codex": 939,
     "codex_to_cc": 0,
-    "completed": 702,
-    "failed": 211,
+    "completed": 710,
+    "failed": 213,
     "refused": 0,
-    "avg_duration_seconds": 602.996
+    "avg_duration_seconds": 602.457
   }
 }
