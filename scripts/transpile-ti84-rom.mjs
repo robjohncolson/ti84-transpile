@@ -22451,6 +22451,13 @@ function walkBlocks() {
     { pc: 0x096A4E, mode: 'adl' },  // CP 0x05; JR NZ; PUSH AF; CALL ... — mode-specific helper
     { pc: 0x0A5B8A, mode: 'adl' },  // indexed BIT; JP Z; CALL ... — parser/state helper
     { pc: 0x0B8DDB, mode: 'adl' },  // JR C; CALL; RET; indexed BIT — flash/app branch helper
+    // Auto-session 397: missing seeds from sessions 389/395/396 that were not yet in knownEntryAnchors.
+    { pc: 0x0003A0, mode: 'adl' },
+    { pc: 0x006E7A, mode: 'adl' },
+    { pc: 0x006E84, mode: 'adl' },
+    { pc: 0x03FA09, mode: 'adl' },
+    { pc: 0x040D40, mode: 'adl' },
+    { pc: 0x08C637, mode: 'adl' },
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
