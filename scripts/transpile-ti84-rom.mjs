@@ -22366,6 +22366,10 @@ function walkBlocks() {
     { pc: 0x04E5DE, mode: 'adl' },  // coverage gap candidate
     // Session 391: uncovered-range audit seeds from the 2026-05-21 top-gap pass.
     { pc: 0x000CB3, mode: 'adl' },  // 55-byte gap, direct JP xref from 0x00034C
+    // Session 391: font glyph/mode guard call targets from recent probe follow-up.
+    { pc: 0x005A87, mode: 'adl' },  // Font glyph caller
+    { pc: 0x020130, mode: 'adl' },  // Font mode guard call
+    { pc: 0x020134, mode: 'adl' },  // Font mode guard call
     { pc: 0x026DD2, mode: 'adl' },  // 61-byte gap, starts immediately after RET
     { pc: 0x05B0F0, mode: 'adl' },  // 28-byte gap, starts immediately after RET
     { pc: 0x05F6AB, mode: 'adl' },  // 28-byte gap, starts immediately after RET
