@@ -22419,6 +22419,38 @@ function walkBlocks() {
     { pc: 0x0BD116, mode: 'adl' },  // PUSH AF; CALL nn — flash app subroutine
     { pc: 0x0BD395, mode: 'adl' },  // PUSH AF; PUSH HL; LD A,(nn) — flash app state reader
     { pc: 0x0BD74C, mode: 'adl' },  // PUSH AF; OR C; LD A,0x62 — flash app dispatch
+    // Session 396: coverage push — CODE? gap seeds from audit-true-uncovered pass.
+    { pc: 0x002738, mode: 'adl' },  // PUSH BC; LD B,C — shift helper
+    { pc: 0x00399C, mode: 'adl' },  // PUSH DE; EX DE,HL; LD HL,0x800000 — RAM boundary math
+    { pc: 0x006E6D, mode: 'adl' },  // LD IY,0xD00080; XOR A; BIT 2,(IY+0x12) — IY flag reader
+    { pc: 0x006EC0, mode: 'adl' },  // LD IY,0xD00080; XOR A; BIT 4,(IY+0x09) — IY flag reader
+    { pc: 0x00706D, mode: 'adl' },  // PUSH BC; LD BC,0x007030; IN0 — port 0x7030 I/O
+    { pc: 0x008E94, mode: 'adl' },  // LD BC,0x000011; PUSH BC; LD BC,0x000084 — multi-arg setup
+    { pc: 0x009262, mode: 'adl' },  // LD BC,0x000014; PUSH BC; CALL — multi-arg call chain
+    { pc: 0x00A7E8, mode: 'adl' },  // LD A,(0xD1408C); OR A; JR NZ — LCD-related flag check
+    { pc: 0x00AB94, mode: 'adl' },  // CALL 0x00AD66; PUSH HL; POP BC — helper chain
+    { pc: 0x00AFB7, mode: 'adl' },  // LD A,0x13; LD (0xD1771A),A — state-byte writer
+    { pc: 0x010FD7, mode: 'adl' },  // LD A,(IX+6); OR A; SBC HL,HL — IX-frame signed extend
+    { pc: 0x02C3A0, mode: 'adl' },  // CALL 0x00012C; IX frame setup — deep helper
+    { pc: 0x03CBA0, mode: 'adl' },  // CALL 0x00012C; LD B,A; port 0x3130 read — port I/O wrapper
+    { pc: 0x04BAD1, mode: 'adl' },  // LD IY,0xD00080; CALL 0x0003D0 — IY-frame OS call
+    { pc: 0x05D49F, mode: 'adl' },  // LD BC,(0xD140A6); CALL 0x000264 — peripheral setup call
+    // Session 396: coverage push follow-up — additional validated CODE? gap seeds.
+    { pc: 0x025776, mode: 'adl' },  // DI; indexed bit op; LD A,0x15; CALL — OS flag update helper
+    { pc: 0x02AC2D, mode: 'adl' },  // LD A,(0xD1408C); OR A; JR NZ; CALL — flag-guard helper
+    { pc: 0x03FED3, mode: 'adl' },  // LD A,I; PUSH AF; DI; EXX; CALL — interrupt-state helper
+    { pc: 0x04DEF0, mode: 'adl' },  // LD BC,0x000001; LD (IX-3),BC — IX-frame setup helper
+    { pc: 0x059FD3, mode: 'adl' },  // CALL 0x059FEE; LD B,0x02; JR NZ — dispatch helper
+    { pc: 0x05B660, mode: 'adl' },  // CALL 0x099D2F; indexed bit op; RET — tiny flag helper chain
+    { pc: 0x066228, mode: 'adl' },  // LD C,(IX+9); LD B,0; PUSH BC; CALL — IX-arg helper
+    { pc: 0x06A7C8, mode: 'adl' },  // LD BC,(0xD176A8); IX local setup; PUSH BC — state helper
+    { pc: 0x0725F3, mode: 'adl' },  // CALL 0x000130; LD BC,0; PUSH BC — argument marshaling helper
+    { pc: 0x073623, mode: 'adl' },  // LD HL,0x83074F; PUSH BC; LD A,(nn) — state/dispatch helper
+    { pc: 0x07E54D, mode: 'adl' },  // indexed bit op; CALL; JR Z; CALL; RET — branch helper
+    { pc: 0x0902D5, mode: 'adl' },  // CP 0x03; JR NZ; CALL ... — mode-dispatch arm
+    { pc: 0x096A4E, mode: 'adl' },  // CP 0x05; JR NZ; PUSH AF; CALL ... — mode-specific helper
+    { pc: 0x0A5B8A, mode: 'adl' },  // indexed BIT; JP Z; CALL ... — parser/state helper
+    { pc: 0x0B8DDB, mode: 'adl' },  // JR C; CALL; RET; indexed BIT — flash/app branch helper
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
