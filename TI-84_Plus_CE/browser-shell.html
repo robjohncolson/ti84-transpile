@@ -229,6 +229,12 @@ button.active { background: #2a5a2a; border-color: #4a8a4a; }
       <input id="customDispCol" type="number" min="0" max="25" value="0">
       <button id="btnRenderCustom">Render Custom</button>
     </div>
+    <div class="control-section-title">ROM Font Demo</div>
+    <div class="controls">
+      <button id="btnRenderRomFont">Render "HELLO 123 WORLD"</button>
+    </div>
+    <canvas id="fontDemoCanvas" width="320" height="48"></canvas>
+    <div id="fontDemoStatus" class="control-note">Uses direct char-code indexing from ROM base 0x003D6E.</div>
     <div id="status" class="status">Ready. Click Boot to start.</div>
     <div class="regs" id="regs">
       <span class="label">A=</span><span class="val" id="rA">00</span>
@@ -385,6 +391,14 @@ const CUSTOM_TEXT_MAX_LEN = 20;
 const CUSTOM_TEXT_BUFFER_LEN = 27;
 const LCD_VRAM_BASE = 0xD40000;
 const LCD_VRAM_BYTES = 320 * 240 * 2;
+const ROM_FONT_BASE = 0x003D6E;
+const ROM_FONT_GLYPH_BYTES = 0x1C;
+const ROM_FONT_ROW_BYTES = 2;
+const ROM_FONT_ROWS = 14;
+const ROM_FONT_MAX_WIDTH = ROM_FONT_ROW_BYTES * 8;
+const ROM_FONT_SPACING = 1;
+const ROM_FONT_FALLBACK_ADVANCE = 6;
+const ROM_FONT_DEMO_TEXT = 'HELLO 123 WORLD';
 const ERROR_BANNER_ENTRY = 0x062160;
 const ERROR_BANNER_SELECTOR_ADDR = 0xD008DF;
 const ERROR_BANNER_SELECTOR_ADDR_HEX = '0xD008DF';
@@ -681,6 +695,100 @@ function flashStatus(msg, timeoutMs = 800) {
     statusFlashTimer = null;
     applyStatus(stableStatusMessage, stableStatusIsError ? 'status error' : 'status');
   }, timeoutMs);
+}
+
+// ROM font renderer
+// Base: 0x003D6E, 28 bytes/glyph, 2 bytes/row * 14 rows, MSB-first.
+function getRomFontGlyphAdvance(romData, charCode) {
+  const glyphOffset = ROM_FONT_BASE + ((charCode & 0xFF) * ROM_FONT_GLYPH_BYTES);
+  const glyphEnd = glyphOffset + ROM_FONT_GLYPH_BYTES;
+  if (!romData || glyphEnd > romData.length) {
+    return ROM_FONT_FALLBACK_ADVANCE;
+  }
+
+  let rightmostBit = -1;
+  for (let row = 0; row < ROM_FONT_ROWS; row++) {
+    const rowOffset = glyphOffset + (row * ROM_FONT_ROW_BYTES);
+    const rowBits = (romData[rowOffset] << 8) | romData[rowOffset + 1];
+    if (!rowBits) continue;
+    for (let bit = ROM_FONT_MAX_WIDTH - 1; bit >= 0; bit--) {
+      if (rowBits & (0x8000 >>> bit)) {
+        if (bit > rightmostBit) rightmostBit = bit;
+        break;
+      }
+    }
+  }
+
+  return rightmostBit >= 0 ? rightmostBit + 1 : ROM_FONT_FALLBACK_ADVANCE;
+}
+
+function renderGlyph(romData, charCode, ctx, x, y, fgColor, bgColor = null) {
+  const glyphOffset = ROM_FONT_BASE + ((charCode & 0xFF) * ROM_FONT_GLYPH_BYTES);
+  const glyphEnd = glyphOffset + ROM_FONT_GLYPH_BYTES;
+  if (!romData || !ctx || glyphEnd > romData.length) {
+    return ROM_FONT_FALLBACK_ADVANCE;
+  }
+
+  for (let row = 0; row < ROM_FONT_ROWS; row++) {
+    const rowOffset = glyphOffset + (row * ROM_FONT_ROW_BYTES);
+    const rowBits = (romData[rowOffset] << 8) | romData[rowOffset + 1];
+    for (let bit = 0; bit < ROM_FONT_MAX_WIDTH; bit++) {
+      const bitSet = (rowBits & (0x8000 >>> bit)) !== 0;
+      if (!bitSet && bgColor == null) continue;
+      ctx.fillStyle = bitSet ? fgColor : bgColor;
+      ctx.fillRect(x + bit, y + row, 1, 1);
+    }
+  }
+
+  return getRomFontGlyphAdvance(romData, charCode);
+}
+
+function renderText(romData, text, ctx, x, y, fgColor, bgColor = null) {
+  let cursorX = x;
+  for (const char of text) {
+    const charCode = (char.codePointAt(0) ?? 0x20) & 0xFF;
+    const advance = renderGlyph(romData, charCode, ctx, cursorX, y, fgColor, bgColor);
+    cursorX += advance + ROM_FONT_SPACING;
+  }
+  return cursorX - x;
+}
+
+function getFontDemoRomData() {
+  return cpu?.memory ?? (decodeEmbeddedRom ? decodeEmbeddedRom() : null);
+}
+
+function setFontDemoStatus(message, error = false) {
+  const el = $('fontDemoStatus');
+  if (!el) return;
+  el.textContent = message;
+  el.style.color = error ? '#df7d7d' : '#888';
+}
+
+function renderRomFontDemo() {
+  const romData = getFontDemoRomData();
+  if (!romData) {
+    setFontDemoStatus('Boot once to load the ROM module, then render the demo.', true);
+    return;
+  }
+
+  const canvas = $('fontDemoCanvas');
+  const ctx = canvas?.getContext('2d');
+  if (!canvas || !ctx) {
+    setFontDemoStatus('Font demo canvas is unavailable.', true);
+    return;
+  }
+
+  ctx.imageSmoothingEnabled = false;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = '#08111d';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.save();
+  ctx.scale(2, 2);
+  const renderedWidth = renderText(romData, ROM_FONT_DEMO_TEXT, ctx, 3, 5, '#eaf7ff', null);
+  ctx.restore();
+
+  setFontDemoStatus(`Rendered "${ROM_FONT_DEMO_TEXT}" from 0x003D6E using direct char codes (${renderedWidth}px at 1x, scaled 2x).`);
 }
 
 function enableButtons(booted) {
@@ -1735,6 +1843,7 @@ $('btnRenderCustom').addEventListener('click', () => {
     { addr: CUSTOM_TEXT_ADDR, bytes },
   );
 });
+$('btnRenderRomFont').addEventListener('click', renderRomFontDemo);
 // Phase 47.3: test/info screens identified via strings-near-callers scan
 $('btnKbdTest').addEventListener('click', () => showScreen(0x04615c, 'adl', 'Kbd Test', 400000));
 $('btnFlashTest').addEventListener('click', () => showScreen(0x046246, 'adl', 'FLASH System Test', 400000));
