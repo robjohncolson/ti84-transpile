@@ -878,6 +878,13 @@ function walkBlocks() {
     { pc: 0x030357, mode: 'adl' }, // DE=0xFFFF path zero-init handler
     { pc: 0x030388, mode: 'adl' }, // DE=0xFFFD path handler
     { pc: 0x0303bf, mode: 'adl' }, // DE=0xFFFE path menu/app handler
+    // Session 386: newly discovered key-translation/token call targets.
+    { pc: 0x02237E, mode: 'adl' }, // Token emit alternate path wrapper
+    { pc: 0x0301F6, mode: 'adl' }, // 2ND translation subroutine / alpha remap helper
+    { pc: 0x0302EB, mode: 'adl' }, // Token validation gate
+    { pc: 0x04CA87, mode: 'adl' }, // Token 0x01 case handler
+    { pc: 0x04CA94, mode: 'adl' }, // Token 0x04 case handler
+    { pc: 0x08773F, mode: 'adl' }, // Decimal point handler
     { pc: 0x040000, mode: 'adl' },
     // Phase 9A: additional seeds for coverage expansion
     // ISR handlers (RST vector table continuations)
