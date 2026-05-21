@@ -893,6 +893,16 @@ function walkBlocks() {
     { pc: 0x040D11, mode: 'adl' }, // Called by token gate at 0x0302EB
     { pc: 0x04C979, mode: 'adl' }, // Triple-call search target from 0x0302EB body
     { pc: 0x08285F, mode: 'adl' }, // Called by 0x0302EB body
+    { pc: 0x04E950, mode: 'adl' }, // Session 389: far delegate from 0x03016A / likely 2ND table lookup
+    { pc: 0x0A23C0, mode: 'adl' }, // Session 389: helper called by 0x030173
+    { pc: 0x0A239E, mode: 'adl' }, // Session 389: helper called by 0x030173
+    { pc: 0x08C519, mode: 'adl' }, // Session 389: main dispatcher re-entry from 0x08C5D7
+    { pc: 0x08C7AD, mode: 'adl' }, // Session 389: helper called before dispatch in 0x08C5D7
+    { pc: 0x025354, mode: 'adl' }, // Session 389: context 0x58 cleanup target from 0x08C5D7
+    { pc: 0x025396, mode: 'adl' }, // Session 389: context 0x58 cleanup target from 0x08C5D7
+    { pc: 0x027204, mode: 'adl' }, // Session 389: context 0x58 cleanup target from 0x08C5D7
+    { pc: 0x0551EF, mode: 'adl' }, // Session 389: context 0x58 cleanup target from 0x08C5D7
+    { pc: 0x03FBFD, mode: 'adl' }, // Session 389: tail-jump target from 0x08C5D7 sub-functions
     { pc: 0x04CA87, mode: 'adl' }, // Token 0x01 case handler
     { pc: 0x04CA94, mode: 'adl' }, // Token 0x04 case handler
     { pc: 0x08773F, mode: 'adl' }, // Decimal point handler
