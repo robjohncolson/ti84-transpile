@@ -881,7 +881,18 @@ function walkBlocks() {
     // Session 386: newly discovered key-translation/token call targets.
     { pc: 0x02237E, mode: 'adl' }, // Token emit alternate path wrapper
     { pc: 0x0301F6, mode: 'adl' }, // 2ND translation subroutine / alpha remap helper
+    // Session 387: additional call targets from translation/menu/token analysis.
+    { pc: 0x03016A, mode: 'adl' }, // Mode normalization delegate (called by 0x0301F6)
+    { pc: 0x0331F9, mode: 'adl' }, // Menu context pair 1 (called by 0x030214 context handler)
+    { pc: 0x02F359, mode: 'adl' }, // Menu context pair 2a (called by 0x030214)
+    { pc: 0x02F39A, mode: 'adl' }, // Menu context pair 2b (called by 0x030214)
+    { pc: 0x023FDA, mode: 'adl' }, // 0x3B0000 table search (called by 0x030214)
+    { pc: 0x024027, mode: 'adl' }, // Match handler (called by 0x030214)
+    { pc: 0x08C5D7, mode: 'adl' }, // Tail-jump target from menu handler (JP target from 0x030214)
     { pc: 0x0302EB, mode: 'adl' }, // Token validation gate
+    { pc: 0x040D11, mode: 'adl' }, // Called by token gate at 0x0302EB
+    { pc: 0x04C979, mode: 'adl' }, // Triple-call search target from 0x0302EB body
+    { pc: 0x08285F, mode: 'adl' }, // Called by 0x0302EB body
     { pc: 0x04CA87, mode: 'adl' }, // Token 0x01 case handler
     { pc: 0x04CA94, mode: 'adl' }, // Token 0x04 case handler
     { pc: 0x08773F, mode: 'adl' }, // Decimal point handler
