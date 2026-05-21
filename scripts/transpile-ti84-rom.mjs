@@ -22375,6 +22375,19 @@ function walkBlocks() {
     { pc: 0x05F6AB, mode: 'adl' },  // 28-byte gap, starts immediately after RET
     { pc: 0x06E4C0, mode: 'adl' },  // 52-byte gap, starts immediately after RET
     { pc: 0x0ACE99, mode: 'adl' },  // 51-byte gap, starts immediately after RET
+    // Session 394 P4: uncovered CODE-gap seeds from the 2026-05-21 audit pass.
+    { pc: 0x007B19, mode: 'adl' },  // LCD port 0x8040 16-bit read wrapper from prior wrapper audit
+    { pc: 0x00AA14, mode: 'adl' },  // uncovered exact ADL caller from phase164 caller list
+    { pc: 0x00A496, mode: 'adl' },  // uncovered exact ADL caller from phase164 caller list
+    { pc: 0x02EE6A, mode: 'adl' },  // uncovered call/jp helper start at range boundary
+    { pc: 0x04307B, mode: 'adl' },  // PUSH BC prologue, state-byte writer helper
+    { pc: 0x0431DA, mode: 'adl' },  // call + state write + JP continuation helper
+    { pc: 0x059E90, mode: 'adl' },  // LD A,n / JR dispatch arm chain at uncovered range start
+    { pc: 0x072612, mode: 'adl' },  // uncovered call wrapper immediately after RET epilogue
+    { pc: 0x074B5C, mode: 'adl' },  // prior phase69 missing-block entry after RET
+    { pc: 0x08EA6B, mode: 'adl' },  // uncovered immediate/push branch helper
+    { pc: 0x08ED1A, mode: 'adl' },  // uncovered call-driven helper immediately after RET
+    { pc: 0x0BC8ED, mode: 'adl' },  // tiny call/RET wrapper immediately after RET epilogue
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {

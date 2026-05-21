@@ -2,6 +2,10 @@ function normalizePort(port) {
   return Number(port) & 0xffff;
 }
 
+function normalizeAddress(addr) {
+  return Number(addr) & 0xffffff;
+}
+
 function normalizeValue(value) {
   return Number(value) & 0xff;
 }
@@ -43,9 +47,18 @@ function formatHex(value) {
   return `0x${value.toString(16).padStart(2, '0')}`;
 }
 
+function formatAddress(value) {
+  return `0x${value.toString(16).padStart(6, '0')}`;
+}
+
 const KEY_SCAN_CODE_ADDR = 0xD00587;
 const KEY_AVAILABLE_FLAG_ADDR = 0xD00080;
 const KEY_AVAILABLE_FLAG_MASK = 0x08;
+const LCD_SPI_DMA_BASE_ADDR = 0xE30000;
+const LCD_SPI_DMA_END_ADDR = 0xE30030;
+const LCD_SPI_DMA_PALETTE_BASE_ADDR = 0xE30200;
+const LCD_SPI_DMA_PALETTE_END_ADDR = 0xE30400;
+const LCD_SPI_DMA_PALETTE_SIZE = LCD_SPI_DMA_PALETTE_END_ADDR - LCD_SPI_DMA_PALETTE_BASE_ADDR;
 
 function cloneWrites(map) {
   const result = {};
@@ -286,6 +299,13 @@ export function createPeripheralBus(options = {}) {
     },
     csBase: { 0x1D: 0xFF, 0x1E: 0xFF, 0x1F: 0xFF },
     spiLcd: { command: 0x00, data: 0x00 },
+    lcdSpiDma: {
+      vramBase: 0xD40000,
+      command: 0x00,
+      status: 0x00,
+      trigger: 0x00,
+      palette: new Uint8Array(LCD_SPI_DMA_PALETTE_SIZE),
+    },
   };
 
   function logTrace(message) {
@@ -331,6 +351,121 @@ export function createPeripheralBus(options = {}) {
     logTrace(`[peripherals] write ${formatHex(normalizedPort)} <= ${formatHex(normalizedValue)}`);
   }
 
+  function readMmio8(addr) {
+    if (addr >= LCD_SPI_DMA_PALETTE_BASE_ADDR && addr < LCD_SPI_DMA_PALETTE_END_ADDR) {
+      return state.lcdSpiDma.palette[addr - LCD_SPI_DMA_PALETTE_BASE_ADDR];
+    }
+
+    if (addr < LCD_SPI_DMA_BASE_ADDR || addr >= LCD_SPI_DMA_END_ADDR) {
+      return 0x00;
+    }
+
+    const reg = addr - LCD_SPI_DMA_BASE_ADDR;
+
+    if (reg === 0x10) {
+      return state.lcdSpiDma.vramBase & 0xFF;
+    }
+
+    if (reg === 0x11) {
+      return (state.lcdSpiDma.vramBase >> 8) & 0xFF;
+    }
+
+    if (reg === 0x12) {
+      return (state.lcdSpiDma.vramBase >> 16) & 0xFF;
+    }
+
+    if (reg === 0x18) {
+      return state.lcdSpiDma.command;
+    }
+
+    if (reg === 0x20) {
+      return state.lcdSpiDma.status;
+    }
+
+    if (reg === 0x28) {
+      return state.lcdSpiDma.trigger;
+    }
+
+    return 0x00;
+  }
+
+  function writeMmio8(addr, value) {
+    if (addr >= LCD_SPI_DMA_PALETTE_BASE_ADDR && addr < LCD_SPI_DMA_PALETTE_END_ADDR) {
+      state.lcdSpiDma.palette[addr - LCD_SPI_DMA_PALETTE_BASE_ADDR] = value;
+      return;
+    }
+
+    if (addr < LCD_SPI_DMA_BASE_ADDR || addr >= LCD_SPI_DMA_END_ADDR) {
+      return;
+    }
+
+    const reg = addr - LCD_SPI_DMA_BASE_ADDR;
+
+    if (reg === 0x10) {
+      state.lcdSpiDma.vramBase = (state.lcdSpiDma.vramBase & 0xFFFF00) | value;
+      return;
+    }
+
+    if (reg === 0x11) {
+      state.lcdSpiDma.vramBase = (state.lcdSpiDma.vramBase & 0xFF00FF) | (value << 8);
+      return;
+    }
+
+    if (reg === 0x12) {
+      state.lcdSpiDma.vramBase = (state.lcdSpiDma.vramBase & 0x00FFFF) | (value << 16);
+      return;
+    }
+
+    if (reg === 0x18) {
+      state.lcdSpiDma.command = value;
+      return;
+    }
+
+    if (reg === 0x20) {
+      state.lcdSpiDma.status = value;
+      return;
+    }
+
+    if (reg === 0x28) {
+      state.lcdSpiDma.trigger = value;
+      if (value & 0x04) {
+        state.lcdSpiDma.status = 0x04;
+      }
+    }
+  }
+
+  function read8(addr) {
+    const normalizedAddress = normalizeAddress(addr);
+    const value = normalizeValue(readMmio8(normalizedAddress));
+    logTrace(`[peripherals] read8 ${formatAddress(normalizedAddress)} => ${formatHex(value)}`);
+    return value;
+  }
+
+  function write8(addr, value) {
+    const normalizedAddress = normalizeAddress(addr);
+    const normalizedValue = normalizeValue(value);
+    writeMmio8(normalizedAddress, normalizedValue);
+    logTrace(`[peripherals] write8 ${formatAddress(normalizedAddress)} <= ${formatHex(normalizedValue)}`);
+  }
+
+  function read16(addr) {
+    const normalizedAddress = normalizeAddress(addr);
+    const low = readMmio8(normalizedAddress);
+    const high = readMmio8(normalizeAddress(normalizedAddress + 1));
+    const value = low | (high << 8);
+    logTrace(`[peripherals] read16 ${formatAddress(normalizedAddress)} => 0x${value.toString(16).padStart(4, '0')}`);
+    return value;
+  }
+
+  function write16(addr, value) {
+    const normalizedAddress = normalizeAddress(addr);
+    const low = normalizeValue(value);
+    const high = normalizeValue(value >> 8);
+    writeMmio8(normalizedAddress, low);
+    writeMmio8(normalizeAddress(normalizedAddress + 1), high);
+    logTrace(`[peripherals] write16 ${formatAddress(normalizedAddress)} <= 0x${(low | (high << 8)).toString(16).padStart(4, '0')}`);
+  }
+
   function getState() {
     return {
       cpuControl: {
@@ -364,6 +499,13 @@ export function createPeripheralBus(options = {}) {
       spiLcd: {
         command: state.spiLcd.command,
         data: state.spiLcd.data,
+      },
+      lcdSpiDma: {
+        vramBase: state.lcdSpiDma.vramBase,
+        command: state.lcdSpiDma.command,
+        status: state.lcdSpiDma.status,
+        trigger: state.lcdSpiDma.trigger,
+        palette: Uint8Array.from(state.lcdSpiDma.palette),
       },
     };
   }
@@ -738,6 +880,10 @@ export function createPeripheralBus(options = {}) {
   return {
     read,
     write,
+    read8,
+    write8,
+    read16,
+    write16,
     register,
     getState,
     tick,
@@ -752,6 +898,7 @@ export function createPeripheralBus(options = {}) {
     setKeyboardIRQ,
     keyboard: keyboardState,
     keyboardController: state.keyboardController,
+    lcdSpiDma: state.lcdSpiDma,
     setMatrixKey(group, bit, pressed) {
       if (pressed) {
         keyboardState.keyMatrix[group] &= ~(1 << bit);
