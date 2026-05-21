@@ -22279,6 +22279,21 @@ function walkBlocks() {
     { pc: 0x082BCE, mode: 'adl' },  // FP swap — exchanges OP1 with FPS top entry
     // Phase 157 P4: FPDiv JT slot seed — session 156 found 0x0201F4 was missing (fell through to SqRoot at 0x0201F8).
     { pc: 0x0201F4, mode: 'adl' },  // FPDiv JT slot — JP to FPDiv impl at 0x07CAB9
+    // Session 395 P4: uncovered JP-stub gap seeds from the 2026-05-21 audit pass.
+    { pc: 0x0201FC, mode: 'adl' },  // repeated JP dispatch slot start (c3 df 85 06 c3 fe 85 06)
+    { pc: 0x02027C, mode: 'adl' },  // repeated JP dispatch slot start (c3 bd f7 07 c3 aa 85 06)
+    { pc: 0x02029C, mode: 'adl' },  // repeated JP dispatch slot start (c3 a2 f8 07 c3 ac f8 07)
+    { pc: 0x0202BC, mode: 'adl' },  // repeated JP dispatch slot start (c3 fa f8 07 c3 04 f9 07)
+    { pc: 0x02031C, mode: 'adl' },  // repeated JP dispatch slot start (c3 ef f9 07 c3 fb f9 07)
+    { pc: 0x02037C, mode: 'adl' },  // repeated JP dispatch slot start (c3 c2 fa 07 c3 c6 fa 07)
+    { pc: 0x02039C, mode: 'adl' },  // repeated JP dispatch slot start (c3 f5 fa 07 c3 05 fb 07)
+    { pc: 0x0203BC, mode: 'adl' },  // repeated JP dispatch slot start (c3 80 fb 07 c3 cc fb 07)
+    { pc: 0x0203DC, mode: 'adl' },  // repeated JP dispatch slot start (c3 e2 fc 07 c3 e8 fc 07)
+    { pc: 0x02043C, mode: 'adl' },  // repeated JP dispatch slot start (c3 b9 fd 07 c3 fb fd 07)
+    { pc: 0x0204BC, mode: 'adl' },  // repeated JP dispatch slot start (c3 ec 00 08 c3 15 01 08)
+    { pc: 0x0204DC, mode: 'adl' },  // repeated JP dispatch slot start (c3 82 01 08 c3 88 01 08)
+    { pc: 0x02073C, mode: 'adl' },  // repeated JP dispatch slot start (c3 06 1d 06 c3 0a 1d 06)
+    { pc: 0x0207DC, mode: 'adl' },  // repeated JP dispatch slot start (c3 9a 1e 0a c3 ad 1e 0a)
     { pc: 0x05e619, mode: 'adl' },  // ConvKeyToTok BufInsert loop seed (session 211)
     // Session 273 P3: top 20 currently unseeded CODE? gap starts from the uncovered-range audit.
     { pc: 0x0002AC, mode: 'adl' },
@@ -22388,6 +22403,22 @@ function walkBlocks() {
     { pc: 0x08EA6B, mode: 'adl' },  // uncovered immediate/push branch helper
     { pc: 0x08ED1A, mode: 'adl' },  // uncovered call-driven helper immediately after RET
     { pc: 0x0BC8ED, mode: 'adl' },  // tiny call/RET wrapper immediately after RET epilogue
+    // Session 395 P4: prologue-scan seeds from under-covered flash/port regions (0x014xxx, 0x0BCxxx).
+    { pc: 0x014545, mode: 'adl' },  // PUSH AF; DI; PUSH HL; PUSH BC — flash port handler
+    { pc: 0x014561, mode: 'adl' },  // PUSH IY; LD IY,0xD00080 — OS-style IY frame setup
+    { pc: 0x01468B, mode: 'adl' },  // PUSH AF; DI; PUSH IY; PUSH IX — canonical port handler
+    { pc: 0x014883, mode: 'adl' },  // PUSH AF; DI; PUSH IY — port handler variant
+    { pc: 0x01499F, mode: 'adl' },  // PUSH AF; DI; PUSH IY; PUSH IX — canonical port handler
+    { pc: 0x014E83, mode: 'adl' },  // PUSH AF; DI; LD A,(nn) — flash state reader
+    { pc: 0x0151D6, mode: 'adl' },  // PUSH AF; DI; LD BC,(nn) — flash port controller
+    { pc: 0x015B03, mode: 'adl' },  // PUSH AF; DI; IN0 A,(0x0C) — direct port I/O handler
+    { pc: 0x015B26, mode: 'adl' },  // PUSH AF; LD A,0xF9; OUT (C),A — port output handler
+    { pc: 0x015B37, mode: 'adl' },  // PUSH AF; LD DE,0x00000C — flash bulk setup
+    { pc: 0x0BCDF5, mode: 'adl' },  // PUSH AF; PUSH DE; CALL nn — flash app subroutine
+    { pc: 0x0BD077, mode: 'adl' },  // PUSH AF; PUSH DE; CALL nn — flash app subroutine
+    { pc: 0x0BD116, mode: 'adl' },  // PUSH AF; CALL nn — flash app subroutine
+    { pc: 0x0BD395, mode: 'adl' },  // PUSH AF; PUSH HL; LD A,(nn) — flash app state reader
+    { pc: 0x0BD74C, mode: 'adl' },  // PUSH AF; OR C; LD A,0x62 — flash app dispatch
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {

@@ -11093,15 +11093,268 @@
       "timestamp": "2026-05-21T06:14:03Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "81c51ea19c23",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x09EF44 (deep callee from 0x04E950)\n\n## Context\nYou are working on TI-84 Plus C",
+      "status": "completed",
+      "duration_seconds": 793.501,
+      "timestamp": "2026-05-21T06:15:24Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase390-disasm-09EF44.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "f98aff8bd8cf",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate the 0x005A75 character renderer font data\n\n## Context\nYou are working on TI-84 P",
+      "status": "timeout",
+      "duration_seconds": 900.041,
+      "timestamp": "2026-05-21T06:17:15Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8dde3b1d05f1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble 0x00596E (Font Base Address Loader)\n\n## Context\nThis is a TI-84 Plus CE ROM tran",
+      "status": "completed",
+      "duration_seconds": 222.549,
+      "timestamp": "2026-05-21T08:06:11Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "103f5bd45ac5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Coverage Push \u2014 Audit + Add Seeds\n\n## Context\nThis is a TI-84 Plus CE ROM transpilation proj",
+      "status": "completed",
+      "duration_seconds": 288.449,
+      "timestamp": "2026-05-21T08:07:20Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "77106c111166",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x08C308 (LCD Mode Selector)\n\n## Context\nThis is a TI-84 Plus CE ROM transpilation pro",
+      "status": "completed",
+      "duration_seconds": 625.924,
+      "timestamp": "2026-05-21T08:12:56Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "77e6499196fe",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Identify Scan Code 0x4E and Find the 2ND Translation Table Caller\n\n## Context\nThis is a TI-8",
+      "status": "completed",
+      "duration_seconds": 713.99,
+      "timestamp": "2026-05-21T08:14:21Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase391-scancode-0x4E.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "9fdb5ef6412f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Coverage Push \u2014 Add New Seeds from Recent Sessions\n\n## Context\nYou are working on a TI-84 Pl",
+      "status": "completed",
+      "duration_seconds": 125.132,
+      "timestamp": "2026-05-21T10:04:16Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3c6960e7a0ac",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x030074 Full Context \u2014 Find Callers and Disassemble Parent Function\n\n## Context\nYou a",
+      "status": "completed",
+      "duration_seconds": 521.122,
+      "timestamp": "2026-05-21T10:10:47Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5484cbaf51b6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate 0xD000C6 Initialization \u2014 LCD Mode Flag\n\n## Context\nYou are working on a TI-84 P",
+      "status": "completed",
+      "duration_seconds": 545.773,
+      "timestamp": "2026-05-21T10:11:15Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase392-D000C6-init.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "1e20c40a72d5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Disassemble the 0x030117 Table Reader\n\n## Context\nYou are working on a TI-84 Plus CE ROM tra",
+      "status": "completed",
+      "duration_seconds": 685.347,
+      "timestamp": "2026-05-21T10:13:32Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "69f8a6dcc24a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Implement browser-shell font rendering with corrected base 0x003D6E\n\n## Context\nThis is a TI",
+      "status": "completed",
+      "duration_seconds": 425.518,
+      "timestamp": "2026-05-21T12:09:19Z",
+      "files_changed": [
+        "TI-84_Plus_CE/browser-shell.html"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "0358b5102454",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map the 2ND-mode flag lifecycle (bit 5 of IY+0x12 = 0xD00092)\n\n## Context\nThis is a TI-84 Pl",
+      "status": "completed",
+      "duration_seconds": 579.091,
+      "timestamp": "2026-05-21T12:11:49Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1c821af4e4bb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x02FEDB caller \u2014 what function contains it?\n\n## Context\nThis is a TI-84 Plus CE ROM t",
+      "status": "completed",
+      "duration_seconds": 716.055,
+      "timestamp": "2026-05-21T12:14:04Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2c708b18949d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x05527B and 0x05522C \u2014 the LCD mode setters\n\n## Context\nThis is a TI-84 Plus CE ROM t",
+      "status": "timeout",
+      "duration_seconds": 900.07,
+      "timestamp": "2026-05-21T12:17:12Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "80c879137662",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 394 P3: Model LCD Palette Register 0xE30200 in peripherals.js\n\n## Context\nThe TI-84 P",
+      "status": "completed",
+      "duration_seconds": 324.207,
+      "timestamp": "2026-05-21T14:08:16Z",
+      "files_changed": [
+        "TI-84_Plus_CE/peripherals.js"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "77fc90aff738",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 394 P4: Coverage Push \u2014 Gap Analysis + New Seeds\n\n## Context\nCurrent coverage: ~95.92",
+      "status": "completed",
+      "duration_seconds": 378.05,
+      "timestamp": "2026-05-21T14:09:11Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c54cde5a373b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 394 P2: Decode the IY+0x12 Flags Byte Fully (All 8 Bits)\n\n## Context\nIY = 0xD00080 on",
+      "status": "completed",
+      "duration_seconds": 508.739,
+      "timestamp": "2026-05-21T14:11:18Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase394-iy12-flags.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "6c94315e396d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 394 P1: Trace 0x030353 Key Dispatch Entry from Event Loop\n\n## Context\nWe are tracing ",
+      "status": "completed",
+      "duration_seconds": 729.804,
+      "timestamp": "2026-05-21T14:14:58Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase394-trace-030353.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "7b39c61a4b07",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 395 P3: Implement 8bpp Rendering in Browser Shell\n\n## Context\nYou are working on a TI",
+      "status": "completed",
+      "duration_seconds": 147.476,
+      "timestamp": "2026-05-21T16:04:19Z",
+      "files_changed": [
+        "TI-84_Plus_CE/browser-shell.html"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "709791ed7419",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 395 P4: Coverage Push \u2014 Add Seeds\n\n## Context\nYou are working on a TI-84 Plus CE ROM ",
+      "status": "completed",
+      "duration_seconds": 262.77,
+      "timestamp": "2026-05-21T16:06:15Z",
+      "files_changed": [
+        "TI-84_Plus_CE/browser-shell.html",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase395-disasm-04C979.mjs",
+        "TI-84_Plus_CE/probe-phase395-iy12-bit2-dispatch.mjs",
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "948fa0f5d4b5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 395 P1: Decode 0x04C979 Event Type Classifier\n\n## Context\nYou are working on a TI-84 ",
+      "status": "completed",
+      "duration_seconds": 328.036,
+      "timestamp": "2026-05-21T16:07:16Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 908,
-    "cc_to_codex": 908,
+    "total_calls": 929,
+    "cc_to_codex": 929,
     "codex_to_cc": 0,
-    "completed": 683,
-    "failed": 209,
+    "completed": 702,
+    "failed": 211,
     "refused": 0,
-    "avg_duration_seconds": 605.134
+    "avg_duration_seconds": 602.996
   }
 }

@@ -313,10 +313,78 @@ import { createExecutor } from './cpu-runtime.js';
 import { createPeripheralBus } from './peripherals.js';
 import { KEY_MAP, createKeyboardManager } from './ti84-keyboard.js';
 import { scanCodeToKeyCode } from './scancode-translate.js';
-import { createLCDRenderer } from './ti84-lcd.js';
 
 const hex = (v, w) => v.toString(16).padStart(w, '0');
 const $ = id => document.getElementById(id);
+const LCD_RENDER_WIDTH = 320;
+const LCD_RENDER_HEIGHT = 240;
+const LCD_RENDER_PIXEL_COUNT = LCD_RENDER_WIDTH * LCD_RENDER_HEIGHT;
+const LCD_RENDER_DEFAULT_VRAM_BASE = 0xD40000;
+const LCD_RENDER_MODE_ADDR = 0xD000C6;
+const LCD_RENDER_8BPP_MASK = 0x04;
+
+function createLCDRenderer(canvas, memory, options = {}) {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    throw new Error('2D canvas context is required');
+  }
+
+  const imageData = new ImageData(LCD_RENDER_WIDTH, LCD_RENDER_HEIGHT);
+  const data = imageData.data;
+  const bus = options.bus ?? null;
+  let vramBase = (options.vramBase ?? LCD_RENDER_DEFAULT_VRAM_BASE) & 0xFFFFFF;
+  let frameCount = 0;
+
+  function getPaletteBytes() {
+    if (bus?.lcdSpiDma?.palette) return bus.lcdSpiDma.palette;
+    return bus?.getState?.().lcdSpiDma?.palette ?? null;
+  }
+
+  function renderFrame() {
+    const base = vramBase;
+    const is8bpp = (memory[LCD_RENDER_MODE_ADDR] & LCD_RENDER_8BPP_MASK) !== 0;
+    if (is8bpp) {
+      const palette = getPaletteBytes();
+      for (let i = 0; i < LCD_RENDER_PIXEL_COUNT; i += 1) {
+        const paletteIndex = memory[base + i];
+        const paletteOffset = paletteIndex << 1;
+        const px = palette
+          ? palette[paletteOffset] | (palette[paletteOffset + 1] << 8)
+          : 0;
+        const j = i << 2;
+        data[j] = ((px >> 11) * 255) / 31;
+        data[j + 1] = (((px >> 5) & 0x3F) * 255) / 63;
+        data[j + 2] = ((px & 0x1F) * 255) / 31;
+        data[j + 3] = 255;
+      }
+    } else {
+      for (let i = 0; i < LCD_RENDER_PIXEL_COUNT; i += 1) {
+        const off = base + (i << 1);
+        const px = memory[off] | (memory[off + 1] << 8);
+        const j = i << 2;
+        data[j] = ((px >> 8) & 0xF8) | ((px >> 13) & 0x07);
+        data[j + 1] = ((px >> 3) & 0xFC) | ((px >> 9) & 0x03);
+        data[j + 2] = ((px << 3) & 0xF8) | ((px >> 2) & 0x07);
+        data[j + 3] = 255;
+      }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+    frameCount += 1;
+  }
+
+  function setVRAMBase(addr) {
+    vramBase = addr & 0xFFFFFF;
+  }
+
+  function getState() {
+    return { vramBase, frameCount };
+  }
+
+  function destroy() {}
+
+  return { renderFrame, setVRAMBase, getState, destroy };
+}
 
 const logEl = $('log');
 const statusEl = $('status');
@@ -1144,7 +1212,7 @@ function renderErrorBanner(config, label) {
   lastMode = r.lastMode;
 
   if (lcd) lcd.destroy();
-  lcd = createLCDRenderer($('lcd'), mem);
+  lcd = createLCDRenderer($('lcd'), mem, { bus: p2 });
   syncLCDState();
   lcd.renderFrame();
 
@@ -1243,7 +1311,7 @@ function showScreen(entryAddr, entryMode, name, maxSteps = 300000, hlValue = nul
   lastMode = r.lastMode;
 
   if (lcd) lcd.destroy();
-  lcd = createLCDRenderer($('lcd'), mem);
+  lcd = createLCDRenderer($('lcd'), mem, { bus: p2 });
   syncLCDState();
   lcd.renderFrame();
 
@@ -1385,7 +1453,7 @@ function showHomeScreen() {
   lastMode = r3.lastMode;
 
   if (lcd) lcd.destroy();
-  lcd = createLCDRenderer($('lcd'), mem);
+  lcd = createLCDRenderer($('lcd'), mem, { bus: p2 });
   syncLCDState();
   lcd.renderFrame();
 
@@ -1741,7 +1809,7 @@ $('btnBoot').addEventListener('click', async () => {
   };
   document.addEventListener('keydown', kbdDown);
   document.addEventListener('keyup', kbdUp);
-  lcd = createLCDRenderer($('lcd'), romBytes);
+  lcd = createLCDRenderer($('lcd'), romBytes, { bus: peripherals });
   totalSteps = 0;
   lastPc = 0x000000;
   lastMode = 'z80';
