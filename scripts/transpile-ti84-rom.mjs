@@ -22535,6 +22535,28 @@ function walkBlocks() {
     { pc: 0x0B16B3, mode: 'adl' },
     { pc: 0x051C52, mode: 'adl' },
     { pc: 0x003F48, mode: 'adl' },
+    // auto-session 404: 10 uncovered prologue seeds spread across ROM regions
+    { pc: 0x008A4C, mode: 'adl' },  // PUSH BC; LD BC,0x0007D0; PUSH BC; CALL — low-ROM helper
+    { pc: 0x010EEE, mode: 'adl' },  // PUSH BC; LD BC,0xD17CBD; PUSH BC; CALL 0x00283A — region 0x01 helper
+    { pc: 0x02561B, mode: 'adl' },  // PUSH DE; LD DE,0x00001C; PUSH DE; PUSH BC; CALL — region 0x02 arg setup
+    { pc: 0x031102, mode: 'adl' },  // PUSH BC; LD C,(IY+4); PUSH BC; CALL 0x03C07F — region 0x03 IY dispatch
+    { pc: 0x0412C1, mode: 'adl' },  // PUSH BC; LD BC,1; PUSH BC; LD BC,0x03E8; PUSH BC; CALL — region 0x04
+    { pc: 0x0574CC, mode: 'adl' },  // PUSH AF; LD A,(0xD0060F); PUSH AF; LD A,(0xD0060E); CALL — region 0x05
+    { pc: 0x063611, mode: 'adl' },  // PUSH BC; LD SP,IX; CALL 0x0003EC — region 0x06 stack frame setup
+    { pc: 0x070756, mode: 'adl' },  // PUSH BC; LD BC,0x0BD6B4; PUSH BC; CALL — region 0x07 dispatch
+    { pc: 0x092B61, mode: 'adl' },  // PUSH AF; BIT 4,(IY+0x49); PUSH AF; CALL — region 0x09 flag check
+    { pc: 0x0A933A, mode: 'adl' },  // PUSH AF; LD HL,0xD00619; CALL 0x07FA41 — region 0x0A state init
+    // Session 405: additional uncovered prologue/call-entry seeds from the 2026-05-22 true-uncovered audit.
+    { pc: 0x002771, mode: 'adl' },  // PUSH AF entry immediately after RET; compact low-ROM helper chain
+    { pc: 0x007217, mode: 'adl' },  // PUSH BC + IN0 port-0x702C wrapper at an uncovered range start
+    { pc: 0x01337B, mode: 'adl' },  // erased-boundary CALL/setup wrapper with IX stack-frame setup
+    { pc: 0x031D15, mode: 'adl' },  // erased-boundary CALL + PUSH BC wrapper in a mid-ROM helper path
+    { pc: 0x042B0A, mode: 'adl' },  // erased-boundary CALL/setup wrapper in the 0x042xxx dispatcher region
+    { pc: 0x04A7AA, mode: 'adl' },  // LD IY,0xD00080 prologue immediately after RET; short IY-frame helper
+    { pc: 0x0613C6, mode: 'adl' },  // PUSH BC; PUSH AF; CALL uncovered wrapper in the 0x061xxx control path
+    { pc: 0x08C776, mode: 'adl' },  // LD IY,0xD00080 range-start helper with stack/arg setup
+    { pc: 0x09C948, mode: 'adl' },  // PUSH AF + BIT/CALL branch helper at a fresh 0x09C9xx uncovered entry
+    { pc: 0x0B35DA, mode: 'adl' },  // high-ROM CALL/JR branch helper to spread coverage into app/flash code
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
