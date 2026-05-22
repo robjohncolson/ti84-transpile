@@ -22513,6 +22513,17 @@ function walkBlocks() {
     { pc: 0x0220C8, mode: 'adl' },  // JP 0x0713F6 — OS JT: CALL 0x0130; DD 7E 06 mask check
     { pc: 0x000534, mode: 'adl' },  // JP 0x0070E5 — RST vector: PUSH BC; port I/O handler
     { pc: 0x021548, mode: 'adl' },  // JP 0x023B2C — OS JT: FD CB bit-reset + state store chain
+    // auto-session 401
+    { pc: 0x006ED9, mode: 'adl' },
+    { pc: 0x025AFE, mode: 'adl' },
+    { pc: 0x02A6DD, mode: 'adl' },
+    { pc: 0x03F111, mode: 'adl' },
+    { pc: 0x04A562, mode: 'adl' },
+    { pc: 0x05D4C3, mode: 'adl' },
+    { pc: 0x07F26D, mode: 'adl' },
+    { pc: 0x09C4CE, mode: 'adl' },
+    { pc: 0x0A29C9, mode: 'adl' },
+    { pc: 0x0BC8AE, mode: 'adl' },
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
