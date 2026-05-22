@@ -22491,6 +22491,17 @@ function walkBlocks() {
     { pc: 0x03060B, mode: 'adl' },  // DD 07 FD DD 27 06 09 — IX/IY frame manip helper
     { pc: 0x030DE0, mode: 'adl' },  // DD 07 FD DD 27 06 09 — IX/IY frame manip helper
     { pc: 0x042809, mode: 'adl' },  // LD BC,0; ED 43 F2 76 D1 — register store helper
+    // Session 400: additional uncovered helper/dispatch arms validated from 2026-05-21 audit gaps.
+    { pc: 0x00A436, mode: 'adl' },  // LD BC,0xD15D40; ED 43 ... — low-ROM state copy/helper arm
+    { pc: 0x00B416, mode: 'adl' },  // ED 4B 1677D1; PUSH BC/DE — low-ROM arg setup helper
+    { pc: 0x0305AC, mode: 'adl' },  // DD 07 FD DD 27 06 09 — IX/IY frame manipulation arm
+    { pc: 0x04323C, mode: 'adl' },  // XOR A; LD (0xD17725),A; JP ... — state-reset dispatch arm
+    { pc: 0x04DCF6, mode: 'adl' },  // FD 2A ...; LD A,(IY+6); LD (nn),A — IY-backed state helper
+    { pc: 0x055710, mode: 'adl' },  // FD 21 8000D0; RES 4,(IY+0x0C); JP ... — flag-clear helper
+    { pc: 0x063799, mode: 'adl' },  // ED 4B ...; IX local setup; CP/JR guard chain
+    { pc: 0x06B4E8, mode: 'adl' },  // CP 0x27/0x17/0x19/0x15 with JP arms — dispatch chain
+    { pc: 0x07E587, mode: 'adl' },  // FD CB bit op; CALL; JR; CALL — branch helper
+    { pc: 0x09050A, mode: 'adl' },  // LD A,E; CP 0x01; CALL ...; PUSH/LD DE ... — mode helper
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
