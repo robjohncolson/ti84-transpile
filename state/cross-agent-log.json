@@ -11670,15 +11670,131 @@
       "timestamp": "2026-05-22T08:08:55Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "47881495effb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 403 P3 \u2014 Decode 0x0499C0 Notification Handler\n\n## Context\n\nYou are working on a TI-84",
+      "status": "completed",
+      "duration_seconds": 891.42,
+      "timestamp": "2026-05-22T08:18:05Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase403-decode-0499C0.mjs",
+        "TI-84_Plus_CE/phase403-notification-handler-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "a5162917c52a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 403 P1 \u2014 Trace the 0x07FDD6 Primary Action Byte Interpreter\n\n## Context\n\nYou are work",
+      "status": "timeout",
+      "duration_seconds": 900.039,
+      "timestamp": "2026-05-22T08:18:11Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2b431e4bce9b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 403 P2 \u2014 Find the 0x021D00 Trampoline Table Indexer\n\n## Context\n\nYou are working on a",
+      "status": "timeout",
+      "duration_seconds": 900.04,
+      "timestamp": "2026-05-22T08:18:12Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "06b4885e7371",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add 10 New Transpiler Seeds for Coverage Push\n\n## Context\nYou are working on a TI-84 Plus CE",
+      "status": "completed",
+      "duration_seconds": 433.98,
+      "timestamp": "2026-05-22T10:09:29Z",
+      "files_changed": [
+        "TI-84_Plus_CE/ROM.transpiled.js",
+        "TI-84_Plus_CE/ROM.transpiled.js.gz",
+        "TI-84_Plus_CE/ROM.transpiled.report.json",
+        "TI-84_Plus_CE/phase404-action-pipeline-report.md",
+        "TI-84_Plus_CE/phase404-notification-types-report.md",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase404-action-codec.mjs",
+        "TI-84_Plus_CE/probe-phase404-action-pipeline.mjs",
+        "TI-84_Plus_CE/probe-phase404-notification-types.mjs",
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "300f647a4ebf",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace Notification Type Semantics\n\n## Context\nYou are working on a TI-84 Plus CE ROM (eZ80) ",
+      "status": "completed",
+      "duration_seconds": 603.16,
+      "timestamp": "2026-05-22T10:12:17Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "15b9123c31d1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map the 6-Slot Action Pipeline Data Flow\n\n## Context\nYou are working on a TI-84 Plus CE ROM ",
+      "status": "completed",
+      "duration_seconds": 688.578,
+      "timestamp": "2026-05-22T10:13:39Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "52640c182660",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode the Action Code CODEC Lookup Tables\n\n## Context\nYou are working on a TI-84 Plus CE RO",
+      "status": "completed",
+      "duration_seconds": 847.704,
+      "timestamp": "2026-05-22T10:16:20Z",
+      "files_changed": [
+        "CONTINUATION_PROMPT_CODEX.md",
+        "TI-84_Plus_CE/ROM.transpiled.js",
+        "TI-84_Plus_CE/ROM.transpiled.js.gz",
+        "TI-84_Plus_CE/ROM.transpiled.report.json",
+        "TI-84_Plus_CE/phase404-action-pipeline-report.md",
+        "TI-84_Plus_CE/phase404-notification-types-report.md",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase404-action-codec.mjs",
+        "TI-84_Plus_CE/probe-phase404-action-pipeline.mjs",
+        "TI-84_Plus_CE/probe-phase404-notification-types.mjs",
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "ee15f1ea5172",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 405 P4: Add 20 New Transpiler Seeds\n\n## Context\nThe TI-84 CE ROM transpiler currently",
+      "status": "completed",
+      "duration_seconds": 325.387,
+      "timestamp": "2026-05-22T12:08:11Z",
+      "files_changed": [
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 956,
-    "cc_to_codex": 956,
+    "total_calls": 964,
+    "cc_to_codex": 964,
     "codex_to_cc": 0,
-    "completed": 726,
-    "failed": 214,
+    "completed": 732,
+    "failed": 216,
     "refused": 0,
-    "avg_duration_seconds": 600.358
+    "avg_duration_seconds": 601.175
   }
 }

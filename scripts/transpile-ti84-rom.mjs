@@ -922,6 +922,27 @@ function walkBlocks() {
     { pc: 0x08C7AB, mode: 'adl' },
     { pc: 0x09EF44, mode: 'adl' },
     { pc: 0x040000, mode: 'adl' },
+    // Session 405: uncovered OS-area JP stub seeds from coverage gap scan.
+    { pc: 0x02013c, mode: 'adl' },
+    { pc: 0x02015c, mode: 'adl' },
+    { pc: 0x02017c, mode: 'adl' },
+    { pc: 0x02019c, mode: 'adl' },
+    { pc: 0x0201bc, mode: 'adl' },
+    { pc: 0x02025c, mode: 'adl' },
+    { pc: 0x0202dc, mode: 'adl' },
+    { pc: 0x02033c, mode: 'adl' },
+    { pc: 0x02035c, mode: 'adl' },
+    { pc: 0x0203fc, mode: 'adl' },
+    { pc: 0x02041c, mode: 'adl' },
+    { pc: 0x02045c, mode: 'adl' },
+    { pc: 0x02047c, mode: 'adl' },
+    { pc: 0x02049c, mode: 'adl' },
+    { pc: 0x02051c, mode: 'adl' },
+    { pc: 0x02053c, mode: 'adl' },
+    { pc: 0x02055c, mode: 'adl' },
+    { pc: 0x02057c, mode: 'adl' },
+    { pc: 0x02059c, mode: 'adl' },
+    { pc: 0x0205bc, mode: 'adl' },
     // Phase 9A: additional seeds for coverage expansion
     // ISR handlers (RST vector table continuations)
     { pc: 0x000040, mode: 'adl' },
@@ -22557,6 +22578,27 @@ function walkBlocks() {
     { pc: 0x08C776, mode: 'adl' },  // LD IY,0xD00080 range-start helper with stack/arg setup
     { pc: 0x09C948, mode: 'adl' },  // PUSH AF + BIT/CALL branch helper at a fresh 0x09C9xx uncovered entry
     { pc: 0x0B35DA, mode: 'adl' },  // high-ROM CALL/JR branch helper to spread coverage into app/flash code
+    // auto-session 405: 20 post-RET prologue seeds across low-coverage ROM regions
+    { pc: 0x01586C, mode: 'adl' },  // PUSH IX; LD IX,0 — region 0x015 function entry
+    { pc: 0x0158DE, mode: 'adl' },  // LD IY,0xD00080 — region 0x015 IY-frame setup
+    { pc: 0x015904, mode: 'adl' },  // PUSH BC; LD DE,0xD005FC — region 0x015 arg loader
+    { pc: 0x04C023, mode: 'adl' },  // PUSH IX; LD BC,0x00D6 — region 0x04C helper
+    { pc: 0x04C0B8, mode: 'adl' },  // LD IY,0xD00080 — region 0x04C IY-frame setup
+    { pc: 0x04C159, mode: 'adl' },  // PUSH IX; LD IX,0 — region 0x04C function entry
+    { pc: 0x0580FE, mode: 'adl' },  // PUSH IX; LD IX,0 — region 0x058 function entry
+    { pc: 0x0587E9, mode: 'adl' },  // RES 7,(IY+0x45); CALL — region 0x058 flag-clear path
+    { pc: 0x058B19, mode: 'adl' },  // RES 7,(IY+0x45); CALL — region 0x058 flag-clear path
+    { pc: 0x0881CC, mode: 'adl' },  // PUSH DE; LD A,0x38 — region 0x088 port/IO helper
+    { pc: 0x088684, mode: 'adl' },  // PUSH AF; LD HL,(0xD00595) — region 0x088 state reader
+    { pc: 0x09C2F3, mode: 'adl' },  // BIT 5,(IY+0x44); RET NZ — region 0x09C flag check
+    { pc: 0x09C39D, mode: 'adl' },  // RES 4,(IY+0x13) — region 0x09C flag-reset chain
+    { pc: 0x0A5424, mode: 'adl' },  // PUSH BC; BIT 1,(IY+0x35) — region 0x0A5 branch helper
+    { pc: 0x0A576A, mode: 'adl' },  // PUSH HL; LD DE,0 — region 0x0A5 arg setup
+    { pc: 0x0AC4A9, mode: 'adl' },  // PUSH BC; CALL 0x0B3A68 — region 0x0AC dispatch
+    { pc: 0x0AC769, mode: 'adl' },  // SET 5,(IY+0x05); CALL — region 0x0AC flag-set path
+    { pc: 0x0BC704, mode: 'adl' },  // PUSH DE; CALL 0x0BADC3 — region 0x0BC dispatch
+    { pc: 0x0BC717, mode: 'adl' },  // PUSH AF; BIT 0,(IY+0x02) — region 0x0BC flag check
+    { pc: 0x0BCFFA, mode: 'adl' },  // PUSH AF; PUSH BC; PUSH DE; PUSH HL — region 0x0BC full-save prologue
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
