@@ -22641,6 +22641,27 @@ function walkBlocks() {
     { pc: 0x09B933, mode: 'adl' },  // CALL/compare branch helper in the 0x09B9xx control path
     { pc: 0x09C34C, mode: 'adl' },  // Post-RET bit/set stub chain that gates a nearby CALL helper
     { pc: 0x0BC8D7, mode: 'adl' },  // High-ROM CALL/return stub cluster inside the 0x0BCxxx app/flash region
+    // Auto-session 409: 20 additional uncovered code-entry seeds validated against ROM bytes.
+    { pc: 0x00732B, mode: 'adl' },  // PUSH BC; LD BC,0x701C; IN L/H,(C) port-read helper
+    { pc: 0x008B59, mode: 'adl' },  // PUSH AF; DI; LD BC,0x0BB8 timing/interrupt helper
+    { pc: 0x009CA3, mode: 'adl' },  // LD HL,(0xD140A8); CALL 0x0025E8 state/IX-frame branch arm
+    { pc: 0x00B059, mode: 'adl' },  // CALL; LD (0xD17725),A; JP state-write dispatch arm
+    { pc: 0x02D0A2, mode: 'adl' },  // LD HL,(0xD17713); CALL 0x000138 IX-local setup branch
+    { pc: 0x02E1AE, mode: 'adl' },  // LD BC,(0xD17751); PUSH BC; CALL state-wrapper entry
+    { pc: 0x03672E, mode: 'adl' },  // PUSH BC; CALL; IN A,(C) low-ROM port/dispatch helper
+    { pc: 0x03E10B, mode: 'adl' },  // CALL/CALL; LD IY,0xD00080 IY-frame reset/setup entry
+    { pc: 0x04325D, mode: 'adl' },  // CALL; LD (0xD17725),A; JP state-reset dispatch arm
+    { pc: 0x0436BE, mode: 'adl' },  // CALL; store/reload D17713; CALL validation branch
+    { pc: 0x04CAA1, mode: 'adl' },  // CALL chain with JP NZ branch into the 0x061Dxx path
+    { pc: 0x04DE18, mode: 'adl' },  // CALL; PUSH HL; POP BC; CALL IX-bridge helper
+    { pc: 0x04E018, mode: 'adl' },  // PUSH BC; LD BC,9; PUSH BC argument marshaling helper
+    { pc: 0x05A0C7, mode: 'adl' },  // PUSH BC; CALL 0x09BBA6 compare/dispatch helper
+    { pc: 0x05B49E, mode: 'adl' },  // PUSH AF; CALL/CALL; POP AF call-heavy branch helper
+    { pc: 0x064F42, mode: 'adl' },  // PUSH BC; CALL/CALL/CALL nested helper chain
+    { pc: 0x06A711, mode: 'adl' },  // PUSH BC; load/push D176CB state argument setup entry
+    { pc: 0x08FA6E, mode: 'adl' },  // PUSH DE; LD DE,2; CALL pointer/offset helper
+    { pc: 0x09C3CE, mode: 'adl' },  // PUSH AF; SET bit0/1,(IY+0x0A); RET flag-stub entry
+    { pc: 0x0B330B, mode: 'adl' },  // CALL; POP HL; .SIS store; CALL high-ROM flash/app helper
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
