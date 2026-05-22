@@ -495,6 +495,11 @@ export function createPeripheralBus(options = {}) {
       keyboardController: {
         groupSelect: state.keyboardController.groupSelect,
       },
+      keyCommit: {
+        lastKeyCode: state.keyCommit.lastKeyCode,
+        port25: state.keyCommit.port25,
+        port26: state.keyCommit.port26,
+      },
       csBase: { ...state.csBase },
       spiLcd: {
         command: state.spiLcd.command,
@@ -596,6 +601,7 @@ export function createPeripheralBus(options = {}) {
     latchMode: 0x00000000,    // port 0x500C: latch mode control
     inversion: 0x00000000,    // port 0x5010: signal inversion
   };
+  const keyCommitState = { lastKeyCode: 0, port25: 0, port26: 0 };
 
   function setKeyPressed(mem, scanCode) {
     if (!mem) {
@@ -622,6 +628,7 @@ export function createPeripheralBus(options = {}) {
 
   // Expose intcState so tick() can set raw status bits
   state.intc = intcState;
+  state.keyCommit = keyCommitState;
 
   function createIntcHandler() {
     return {
@@ -685,6 +692,18 @@ export function createPeripheralBus(options = {}) {
   register(0x03, createGpioHandler(state));
   register(0x06, createFlashHandler(state));
   register([0x10, 0x18], createTimerHandler(state));
+  register(0x24, {
+    read: () => keyCommitState.lastKeyCode,
+    write: (port, value) => { keyCommitState.lastKeyCode = value; },
+  });
+  register(0x25, {
+    read: () => keyCommitState.port25,
+    write: (port, value) => { keyCommitState.port25 = value; },
+  });
+  register(0x26, {
+    read: () => keyCommitState.port26,
+    write: (port, value) => { keyCommitState.port26 = value; },
+  });
   register(0x28, createPllHandler(state));
   // Flash/NAND controller ports (0x2000-0x200F).
   // ROM analysis:

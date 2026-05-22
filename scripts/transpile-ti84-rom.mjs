@@ -22469,6 +22469,17 @@ function walkBlocks() {
     { pc: 0x07E947, mode: 'adl' },  // PUSH BC prologue in uncovered branch/call helper
     { pc: 0x08EAEC, mode: 'adl' },  // PUSH AF prologue in uncovered high-ROM call helper
     { pc: 0x0A2D21, mode: 'adl' },  // PUSH AF prologue in uncovered arithmetic helper
+    // Session 399 seeds: 2026-05-21 CODE? audit range starts with code-like entry opcodes.
+    { pc: 0x02A336, mode: 'adl' },  // 0x01... uncovered port/helper dispatch arm
+    { pc: 0x02D3C0, mode: 'adl' },  // 0xCD... uncovered call-wrapper entry
+    { pc: 0x03E296, mode: 'adl' },  // 0xCD... uncovered helper/callback entry
+    { pc: 0x04309B, mode: 'adl' },  // 0x3E... uncovered state-byte writer arm
+    { pc: 0x0596BF, mode: 'adl' },  // 0x11... uncovered DE-load branch arm
+    { pc: 0x059F71, mode: 'adl' },  // 0x3E... uncovered dispatch helper arm
+    { pc: 0x05A0DE, mode: 'adl' },  // 0x06... uncovered call/loop helper
+    { pc: 0x071366, mode: 'adl' },  // 0xCD... uncovered IX-frame helper
+    { pc: 0x073216, mode: 'adl' },  // 0x21... uncovered state/dispatch helper
+    { pc: 0x0BC4E8, mode: 'adl' },  // 0xC3... uncovered flash/app helper entry
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
