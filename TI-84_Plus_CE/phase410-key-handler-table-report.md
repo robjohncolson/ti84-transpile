@@ -1,304 +1,94 @@
 # Phase 410 — Key Handler Table Dump
 
-## Summary
+## Key Dispatch Mechanism
 
-Decoded the key handler dispatch mechanism at 0x05D58F. The OS uses a computed
-function table: `key_code * 4` indexes into a table whose base is stored at
-RAM 0xD1441D. The table installer at 0x05D5C2 sets this base via `LD (D1441D),BC`.
+The OS key dispatch at `0x05D58F` uses a computed function table:
 
-## Callers of 0x05D5C2 (Table Installer)
+1. Reads table base pointer from RAM `0xD1441D`
+2. Computes entry address: `table_base + key_code * 4`
+3. Copies 4-byte handler entry (3-byte address + 1 byte flags) to caller's buffer at `D141B3`
+4. Caller passes result to notification system at `0x02B373`
 
-| Address | Type | Table Base (BC) |
-|---------|------|-----------------|
-| 0x021E78 | JP | (not found) |
+The table installer at `0x05D5C2` (syscall `0x021E78`, entry #1885) takes a table base
+address as a stack parameter and stores it at `D1441D`.
 
-## References to RAM 0xD1441D
+## D1441D Writers
 
-Total: 8 references
+| Address | Source | Value |
+|---------|--------|-------|
+| 0x02B896 | LD BC,0x000000 at 0x02B892 | 0x000000 |
+| 0x02BD19 | LD BC,0x000000 at 0x02BD15 | 0x000000 |
+| 0x041E1C | LD BC,0x000000 at 0x041E18 | 0x000000 |
+| 0x048B6E | LD BC,(IX+252) at 0x048B6B (stack parameter) | (dynamic) |
+| 0x05D5C9 | LD BC,(IX+6) at 0x05D5C6 (stack parameter) | (dynamic) |
 
-- 0x02B897: LD (D1441D),BC
-- 0x02BD1A: LD (D1441D),BC
-- 0x041E1D: LD (D1441D),BC
-- 0x048B48: LD BC,(D1441D)
-- 0x048B6F: LD (D1441D),BC
-- 0x05D593: LD HL,(D1441D)
-- 0x05D5AC: LD BC,(D1441D)
-- 0x05D5CA: LD (D1441D),BC
+**0x048B6E**: Saves current D1441D to (IX-4), zeroes D13FD8 context block, then
+restores the saved value. This is a save/restore across init, not a new table install.
 
-## Table Bases Found
+**0x05D5C9**: The installer function (0x05D5C2) -- reads table base from its first
+stack parameter. Called through syscall 0x021E78 by mode-specific code.
 
-- 0x000000 — IN ROM (dumped below)
-- 0x07DD00 — IN ROM (dumped below)
-- 0xD13FD8 — IN RAM (runtime only)
+## D1441D Readers
 
-## Handler Table Dumps
+| Address | Instruction |
+|---------|-------------|
+| 0x05D593 | LD HL,(D1441D) |
+| 0x048B47 | LD BC,(D1441D) |
+| 0x05D5AB | LD BC,(D1441D) |
 
-### Table at 0x000000
+## Dispatch Callers (0x05D58F)
 
-| Key | Handler | Known |
-|-----|---------|-------|
-| 0x00 | 0x7EEDF3 |  |
-| 0x01 | 0x0658C3 |  |
-| 0x02 | 0x7EEDF3 |  |
-| 0x03 | 0x1AFAC3 |  |
-| 0x04 | 0x7EEDF3 |  |
-| 0x05 | 0x0110C3 |  |
-| 0x06 | 0x7EEDF3 |  |
-| 0x07 | 0x0114C3 |  |
-| 0x08 | 0x7EEDF3 |  |
-| 0x09 | 0x0118C3 |  |
-| 0x0A | 0x7EEDF3 |  |
-| 0x0B | 0x011CC3 |  |
-| 0x0C | 0x7EEDF3 |  |
-| 0x0D | 0x0120C3 |  |
-| 0x0E | 0xDDD908 |  |
-| 0x0F | 0xFDE5FD |  |
-| 0x10 | 0xD00080 |  |
-| 0x11 | 0x0006F3 |  |
-| 0x12 | 0xBBCDC5 |  |
-| 0x13 | 0xE1C100 |  |
-| 0x14 | 0x0019B5 |  |
-| 0x15 | 0x20A8C3 |  |
-| 0x16 | 0xFFFFFF |  |
-| 0x17 | 0xFFFFFF |  |
-| 0x18 | 0xFFFFFF |  |
-| 0x19 | 0xF5FFFF |  |
-| 0x1A | 0xE63D38 |  |
-| 0x1B | 0x3E39ED |  |
-| 0x1C | 0xC3F1D6 |  |
-| 0x1D | 0xFF001A |  |
-| 0x1E | 0xFFFFFF |  |
-| 0x1F | 0xFFFFFF |  |
-| 0x20 | 0x1768C3 |  |
-| 0x21 | 0x1775C3 |  |
-| 0x22 | 0x3C59C3 |  |
-| 0x23 | 0x176DC3 |  |
-| 0x24 | 0x1770C3 |  |
-| 0x25 | 0x277AC3 |  |
-| 0x26 | 0x28F3C3 |  |
-| 0x27 | 0x2794C3 |  |
-| 0x28 | 0x27B7C3 |  |
-| 0x29 | 0x27E8C3 |  |
-| 0x2A | 0x2808C3 |  |
-| 0x2B | 0x283AC3 |  |
-| 0x2C | 0x285FC3 |  |
-| 0x2D | 0x28A5C3 |  |
-| 0x2E | 0x28D2C3 |  |
-| 0x2F | 0x2920C3 |  |
-| 0x30 | 0x294BC3 |  |
-| 0x31 | 0x2970C3 |  |
-| 0x32 | 0x298DC3 |  |
-| 0x33 | 0x29A8C3 |  |
-| 0x34 | 0x29C2C3 |  |
-| 0x35 | 0x29E9C3 |  |
-| 0x36 | 0x29FEC3 |  |
-| 0x37 | 0x2A2FC3 |  |
-| 0x38 | 0x2A64C3 |  |
-| 0x39 | 0x2AABC3 |  |
-| 0x3A | 0x2ADCC3 |  |
-| 0x3B | 0x2AFFC3 |  |
-| 0x3C | 0x2B2FC3 |  |
-| 0x3D | 0x2B5CC3 |  |
-| 0x3E | 0x28D1C3 |  |
-| 0x3F | 0x2588C3 |  |
+Found 2 direct callers:
+- `0x02BDA3`: reads key code from RAM D141B5, stores result at D141B3
+- `0x02BDDE`: reads key code from RAM D141B5, stores result at D141B3
 
-**Unique handlers: 54**
+## D13FD8 Context Structure
 
-- 0x7EEDF3: 7 keys 
-- 0xFFFFFF: 5 keys 
-- 0x0658C3: 1 keys 
-- 0x1AFAC3: 1 keys 
-- 0x0110C3: 1 keys 
-- 0x0114C3: 1 keys 
-- 0x0118C3: 1 keys 
-- 0x011CC3: 1 keys 
-- 0x0120C3: 1 keys 
-- 0xDDD908: 1 keys 
-- 0xFDE5FD: 1 keys 
-- 0xD00080: 1 keys 
-- 0x0006F3: 1 keys 
-- 0xBBCDC5: 1 keys 
-- 0xE1C100: 1 keys 
-- 0x0019B5: 1 keys 
-- 0x20A8C3: 1 keys 
-- 0xF5FFFF: 1 keys 
-- 0xE63D38: 1 keys 
-- 0x3E39ED: 1 keys 
-- 0xC3F1D6: 1 keys 
-- 0xFF001A: 1 keys 
-- 0x1768C3: 1 keys 
-- 0x1775C3: 1 keys 
-- 0x3C59C3: 1 keys 
-- 0x176DC3: 1 keys 
-- 0x1770C3: 1 keys 
-- 0x277AC3: 1 keys 
-- 0x28F3C3: 1 keys 
-- 0x2794C3: 1 keys 
-- 0x27B7C3: 1 keys 
-- 0x27E8C3: 1 keys 
-- 0x2808C3: 1 keys 
-- 0x283AC3: 1 keys 
-- 0x285FC3: 1 keys 
-- 0x28A5C3: 1 keys 
-- 0x28D2C3: 1 keys 
-- 0x2920C3: 1 keys 
-- 0x294BC3: 1 keys 
-- 0x2970C3: 1 keys 
-- 0x298DC3: 1 keys 
-- 0x29A8C3: 1 keys 
-- 0x29C2C3: 1 keys 
-- 0x29E9C3: 1 keys 
-- 0x29FEC3: 1 keys 
-- 0x2A2FC3: 1 keys 
-- 0x2A64C3: 1 keys 
-- 0x2AABC3: 1 keys 
-- 0x2ADCC3: 1 keys 
-- 0x2AFFC3: 1 keys 
-- 0x2B2FC3: 1 keys 
-- 0x2B5CC3: 1 keys 
-- 0x28D1C3: 1 keys 
-- 0x2588C3: 1 keys 
+The 0x448-byte block at D13FD8 is an OS mode context structure:
+- Zeroed during mode init at `0x048B5B`
+- D1441D (table base pointer) is at offset +0x445 within this block
+- The table base pointer points elsewhere (ROM or RAM) to the actual handler table
+- Mode switches involve saving/restoring D1441D and installing new tables
 
-### Table at 0x07DD00
+## Key Code Source
 
-| Key | Handler | Known |
-|-----|---------|-------|
-| 0x00 | 0x34CDD0 |  |
-| 0x01 | 0x21CD07 |  |
-| 0x02 | 0x242107 |  |
-| 0x03 | 0x34CDD0 |  |
-| 0x04 | 0x21CD07 |  |
-| 0x05 | 0x192107 |  |
-| 0x06 | 0xCD7ED0 |  |
-| 0x07 | 0x3807DD |  |
-| 0x08 | 0xCBFDC9 |  |
-| 0x09 | 0xFDC876 |  |
-| 0x0A | 0xCDB648 |  |
-| 0x0B | 0xD007DD |  |
-| 0x0C | 0x9E48CB |  |
-| 0x0D | 0xDD5ECD |  |
-| 0x0E | 0xFD30CD |  |
-| 0x0F | 0x48CBFD |  |
-| 0x10 | 0xDD6ACD |  |
-| 0x11 | 0xCBFDD0 |  |
-| 0x12 | 0xF93AB6 |  |
-| 0x13 | 0x8DFED0 |  |
-| 0x14 | 0x8CFE08 |  |
-| 0x15 | 0xFD69CD |  |
-| 0x16 | 0xCBFDC8 |  |
-| 0x17 | 0x21C9F6 |  |
-| 0x18 | 0x11D006 |  |
-| 0x19 | 0xC3D006 |  |
-| 0x1A | 0x3A07FD |  |
-| 0x1B | 0xE6D006 |  |
-| 0x1C | 0x021FC3 |  |
-| 0x1D | 0xDD82CD |  |
-| 0x1E | 0xDD82CD |  |
-| 0x1F | 0xC3833E |  |
-| 0x20 | 0x3E0663 |  |
-| 0x21 | 0x74ABCD |  |
-| 0x22 | 0x28BCCD |  |
-| 0x23 | 0x29B4CD |  |
-| 0x24 | 0xF920CD |  |
-| 0x25 | 0xF8B6C3 |  |
-| 0x26 | 0x272621 |  |
-| 0x27 | 0x49CBFD |  |
-| 0x28 | 0x27123A |  |
-| 0x29 | 0x2004FE |  |
-| 0x2A | 0x06842A |  |
-| 0x2B | 0xFD2B2B |  |
-| 0x2C | 0xCDEE49 |  |
-| 0x2D | 0xFD069A |  |
-| 0x2E | 0xD8AE49 |  |
-| 0x2F | 0x08F83E |  |
-| 0x30 | 0x090124 |  |
-| 0x31 | 0xD010EC |  |
-| 0x32 | 0x000007 |  |
-| 0x33 | 0x56235E |  |
-| 0x34 | 0xC916CD |  |
-| 0x35 | 0x1A2240 |  |
-| 0x36 | 0x2A40C9 |  |
-| 0x37 | 0x52B727 |  |
-| 0x38 | 0x224042 |  |
-| 0x39 | 0x2A4027 |  |
-| 0x3A | 0x095227 |  |
-| 0x3B | 0x271422 |  |
-| 0x3C | 0x115822 |  |
-| 0x3D | 0x9623CB |  |
-| 0x3E | 0x08E401 |  |
-| 0x3F | 0x96CD2B |  |
+Key codes come from RAM `D141B5`, loaded by `LD C,(D141B5)` before calling
+the dispatch. D141B5 is the "current key buffer" in the OS event system.
 
-**Unique handlers: 61**
+## Handler Entry Format
 
-- 0x34CDD0: 2 keys 
-- 0x21CD07: 2 keys 
-- 0xDD82CD: 2 keys 
-- 0x242107: 1 keys 
-- 0x192107: 1 keys 
-- 0xCD7ED0: 1 keys 
-- 0x3807DD: 1 keys 
-- 0xCBFDC9: 1 keys 
-- 0xFDC876: 1 keys 
-- 0xCDB648: 1 keys 
-- 0xD007DD: 1 keys 
-- 0x9E48CB: 1 keys 
-- 0xDD5ECD: 1 keys 
-- 0xFD30CD: 1 keys 
-- 0x48CBFD: 1 keys 
-- 0xDD6ACD: 1 keys 
-- 0xCBFDD0: 1 keys 
-- 0xF93AB6: 1 keys 
-- 0x8DFED0: 1 keys 
-- 0x8CFE08: 1 keys 
-- 0xFD69CD: 1 keys 
-- 0xCBFDC8: 1 keys 
-- 0x21C9F6: 1 keys 
-- 0x11D006: 1 keys 
-- 0xC3D006: 1 keys 
-- 0x3A07FD: 1 keys 
-- 0xE6D006: 1 keys 
-- 0x021FC3: 1 keys 
-- 0xC3833E: 1 keys 
-- 0x3E0663: 1 keys 
-- 0x74ABCD: 1 keys 
-- 0x28BCCD: 1 keys 
-- 0x29B4CD: 1 keys 
-- 0xF920CD: 1 keys 
-- 0xF8B6C3: 1 keys 
-- 0x272621: 1 keys 
-- 0x49CBFD: 1 keys 
-- 0x27123A: 1 keys 
-- 0x2004FE: 1 keys 
-- 0x06842A: 1 keys 
-- 0xFD2B2B: 1 keys 
-- 0xCDEE49: 1 keys 
-- 0xFD069A: 1 keys 
-- 0xD8AE49: 1 keys 
-- 0x08F83E: 1 keys 
-- 0x090124: 1 keys 
-- 0xD010EC: 1 keys 
-- 0x000007: 1 keys 
-- 0x56235E: 1 keys 
-- 0xC916CD: 1 keys 
-- 0x1A2240: 1 keys 
-- 0x2A40C9: 1 keys 
-- 0x52B727: 1 keys 
-- 0x224042: 1 keys 
-- 0x2A4027: 1 keys 
-- 0x095227: 1 keys 
-- 0x271422: 1 keys 
-- 0x115822: 1 keys 
-- 0x9623CB: 1 keys 
-- 0x08E401: 1 keys 
-- 0x96CD2B: 1 keys 
+Each table entry is 4 bytes:
+- Bytes 0-2: 24-bit handler function address (little-endian)
+- Byte 3: flags or padding (purpose TBD)
 
+## Runtime Table Dump
 
-## Analysis
+Table base was NULL after OS init -- the handler table is installed later
+when a specific mode (home screen, graph, editor, etc.) is entered. Each mode
+installs its own key handler table via the `0x05D5C2` installer (syscall
+`0x021E78`). A full runtime dump requires deeper boot simulation with mode
+entry.
 
-The key dispatch at 0x05D58F reads the table base from RAM 0xD1441D,
-multiplies the key code by 4, and jumps to the 24-bit handler address
-at that offset. Different OS modes (home screen, graph, editor, etc.)
-install different tables by calling 0x05D5C2 with BC = table base.
+## Architecture Summary
 
-This means each mode has its own key handler table, and mode switches
-are accompanied by a table swap.
+```
+Key press -> _GetCSC -> key code stored at D141B5
+                            |
+                            v
+              0x05D58F: key_dispatch_lookup(key_code, dest_buf)
+                reads table base from D1441D
+                copies 4-byte handler from table[key * 4] to D141B3
+                            |
+                            v
+              0x02B373: post_dispatch_notification_init
+                sets up notification structure at D143E7-D14420
+                queues handler for execution
+                            |
+                            v
+              handler function called via notification system
+```
+
+Key insight: the handler table is MODE-SPECIFIC. Different OS modes install
+different tables, enabling each mode to respond differently to the same key.
+Three code sites explicitly clear D1441D to 0 (disable key handling), and
+one site saves/restores it across temporary mode switches.
