@@ -22480,6 +22480,17 @@ function walkBlocks() {
     { pc: 0x071366, mode: 'adl' },  // 0xCD... uncovered IX-frame helper
     { pc: 0x073216, mode: 'adl' },  // 0x21... uncovered state/dispatch helper
     { pc: 0x0BC4E8, mode: 'adl' },  // 0xC3... uncovered flash/app helper entry
+    // Session 399 follow-up: 10 CODE? gap seeds from audit-true-uncovered pass (2026-05-21).
+    { pc: 0x03525D, mode: 'adl' },  // LD BC,0; PUSH BC; ED 65 — stack-frame helper
+    { pc: 0x036249, mode: 'adl' },  // DD 07 FD ED 55 80 — IX/IY register exchange helper
+    { pc: 0x049C56, mode: 'adl' },  // LD A,(IX+6); OR A; SBC HL,HL — IX-frame signed extend
+    { pc: 0x05A0BD, mode: 'adl' },  // LD B,0x24; JR -99; LD B,0x2E — format dispatch arm
+    { pc: 0x0087BE, mode: 'adl' },  // LD A,(IX+6); OR A; SBC HL,HL — IX-frame helper
+    { pc: 0x0106D2, mode: 'adl' },  // DD 07 09 ED 43 — IX-prefix register store helper
+    { pc: 0x02E52B, mode: 'adl' },  // LD HL,0xD17726; LD (HL),0xCD — state-byte writer
+    { pc: 0x03060B, mode: 'adl' },  // DD 07 FD DD 27 06 09 — IX/IY frame manip helper
+    { pc: 0x030DE0, mode: 'adl' },  // DD 07 FD DD 27 06 09 — IX/IY frame manip helper
+    { pc: 0x042809, mode: 'adl' },  // LD BC,0; ED 43 F2 76 D1 — register store helper
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
