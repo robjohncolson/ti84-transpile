@@ -22599,6 +22599,27 @@ function walkBlocks() {
     { pc: 0x0BC704, mode: 'adl' },  // PUSH DE; CALL 0x0BADC3 — region 0x0BC dispatch
     { pc: 0x0BC717, mode: 'adl' },  // PUSH AF; BIT 0,(IY+0x02) — region 0x0BC flag check
     { pc: 0x0BCFFA, mode: 'adl' },  // PUSH AF; PUSH BC; PUSH DE; PUSH HL — region 0x0BC full-save prologue
+    // Session 406 P4: 20 validated uncovered code-entry seeds — all decode 4-8 valid eZ80 insns and connect to known code.
+    { pc: 0x0211A9, mode: 'adl' },  // LD HL,nn — 8 valid insns, 27 uncovered bytes
+    { pc: 0x021489, mode: 'adl' },  // XOR A — 8 valid insns, 27 uncovered bytes
+    { pc: 0x0219A9, mode: 'adl' },  // LD A,n — 8 valid insns, 27 uncovered bytes
+    { pc: 0x0220D1, mode: 'adl' },  // LD A,n — 8 valid insns, 27 uncovered bytes
+    { pc: 0x009EDE, mode: 'adl' },  // LD HL,nn — 8 valid insns, 25 uncovered bytes
+    { pc: 0x011A97, mode: 'adl' },  // LD HL,nn — 8 valid insns, 25 uncovered bytes
+    { pc: 0x06A60A, mode: 'adl' },  // LD HL,nn — 8 valid insns, 25 uncovered bytes
+    { pc: 0x072654, mode: 'adl' },  // LD HL,nn — 8 valid insns, 25 uncovered bytes
+    { pc: 0x079902, mode: 'adl' },  // LD HL,nn — 8 valid insns, 24 uncovered bytes
+    { pc: 0x07CD24, mode: 'adl' },  // LD HL,nn — 7 valid insns, 24 uncovered bytes
+    { pc: 0x043387, mode: 'adl' },  // XOR A — 8 valid insns, 23 uncovered bytes
+    { pc: 0x059403, mode: 'adl' },  // LD A,n — 7 valid insns, 23 uncovered bytes
+    { pc: 0x00AF99, mode: 'adl' },  // PUSH BC — 7 valid insns, 22 uncovered bytes
+    { pc: 0x00B139, mode: 'adl' },  // LD HL,nn — 7 valid insns, 22 uncovered bytes
+    { pc: 0x014CC1, mode: 'adl' },  // LD HL,nn — 7 valid insns, 22 uncovered bytes
+    { pc: 0x03E29B, mode: 'adl' },  // DI — 8 valid insns, 22 uncovered bytes
+    { pc: 0x0431FF, mode: 'adl' },  // XOR A — 7 valid insns, 22 uncovered bytes
+    { pc: 0x0593A2, mode: 'adl' },  // LD A,n — 7 valid insns, 22 uncovered bytes
+    { pc: 0x07A64D, mode: 'adl' },  // LD HL,nn — 8 valid insns, 22 uncovered bytes
+    { pc: 0x08AB36, mode: 'adl' },  // LD HL,nn — 6 valid insns, 22 uncovered bytes
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
