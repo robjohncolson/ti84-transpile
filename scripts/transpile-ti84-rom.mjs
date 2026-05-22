@@ -22620,6 +22620,27 @@ function walkBlocks() {
     { pc: 0x0593A2, mode: 'adl' },  // LD A,n — 7 valid insns, 22 uncovered bytes
     { pc: 0x07A64D, mode: 'adl' },  // LD HL,nn — 8 valid insns, 22 uncovered bytes
     { pc: 0x08AB36, mode: 'adl' },  // LD HL,nn — 6 valid insns, 22 uncovered bytes
+    // Auto-session 408: 20 additional uncovered code-entry seeds from the 2026-05-22 audit pass.
+    { pc: 0x008901, mode: 'adl' },  // IX-indexed state writer branch arm with repeated JR-to-join structure
+    { pc: 0x00A021, mode: 'adl' },  // CALL 0x0075D7 wrapper that sets state then tail-jumps into 0x00A0E8
+    { pc: 0x03E128, mode: 'adl' },  // XOR/store helper entry immediately after RET with short loopback path
+    { pc: 0x04836C, mode: 'adl' },  // CALL-driven state/reset helper in mid-ROM OS control flow
+    { pc: 0x04AD27, mode: 'adl' },  // CALL/JR wrapper selecting either stack helper or direct port input path
+    { pc: 0x0579C6, mode: 'adl' },  // IX-frame helper that calls 0x07FA0D before restoring IX and returning
+    { pc: 0x059976, mode: 'adl' },  // CALL + conditional JP branch arm feeding the 0x061D2C path
+    { pc: 0x05B18A, mode: 'adl' },  // CALL/JP compare helper that dispatches into the 0x061DB6 chain
+    { pc: 0x05B5C6, mode: 'adl' },  // CALL/push helper entry that rejoins the 0x061D46 validation path
+    { pc: 0x05D5C2, mode: 'adl' },  // CALL 0x000130 wrapper that stores state then unwinds an IX frame
+    { pc: 0x05F76B, mode: 'adl' },  // CALL wrapper with nested 0x0005DC helper and IX-frame teardown
+    { pc: 0x06324B, mode: 'adl' },  // POP/clear/call sequence that ends in a jump to 0x06829E
+    { pc: 0x068587, mode: 'adl' },  // Small immediate-load branch fan-out built from repeated JR entries
+    { pc: 0x072736, mode: 'adl' },  // IX-indexed arithmetic/state helper around CALL 0x000290
+    { pc: 0x08F955, mode: 'adl' },  // CALL-heavy pointer/offset helper leading into the 0x08F9xx path
+    { pc: 0x0941A7, mode: 'adl' },  // Dense call-chain entry in the 0x094xxx OS/stat pipeline region
+    { pc: 0x096599, mode: 'adl' },  // Dense call-chain entry in the 0x096xxx OS/stat pipeline region
+    { pc: 0x09B933, mode: 'adl' },  // CALL/compare branch helper in the 0x09B9xx control path
+    { pc: 0x09C34C, mode: 'adl' },  // Post-RET bit/set stub chain that gates a nearby CALL helper
+    { pc: 0x0BC8D7, mode: 'adl' },  // High-ROM CALL/return stub cluster inside the 0x0BCxxx app/flash region
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
