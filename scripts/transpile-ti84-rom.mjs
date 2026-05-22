@@ -22524,6 +22524,17 @@ function walkBlocks() {
     { pc: 0x09C4CE, mode: 'adl' },
     { pc: 0x0A29C9, mode: 'adl' },
     { pc: 0x0BC8AE, mode: 'adl' },
+    // auto-session 402
+    { pc: 0x0C07C2, mode: 'adl' },
+    { pc: 0x0C27C2, mode: 'adl' },
+    { pc: 0x0DCDC7, mode: 'adl' },
+    { pc: 0x03FC42, mode: 'adl' },
+    { pc: 0x08AC60, mode: 'adl' },
+    { pc: 0x09EBBE, mode: 'adl' },
+    { pc: 0x0A7E9F, mode: 'adl' },
+    { pc: 0x0B16B3, mode: 'adl' },
+    { pc: 0x051C52, mode: 'adl' },
+    { pc: 0x003F48, mode: 'adl' },
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
