@@ -22662,6 +22662,27 @@ function walkBlocks() {
     { pc: 0x08FA6E, mode: 'adl' },  // PUSH DE; LD DE,2; CALL pointer/offset helper
     { pc: 0x09C3CE, mode: 'adl' },  // PUSH AF; SET bit0/1,(IY+0x0A); RET flag-stub entry
     { pc: 0x0B330B, mode: 'adl' },  // CALL; POP HL; .SIS store; CALL high-ROM flash/app helper
+    // Auto-session ace7485d0780: 20 additional unseeded CODE? gap starts from the 2026-05-22 audit pass.
+    { pc: 0x00A2F6, mode: 'adl' },  // XOR A + JR ladder at a low-ROM uncovered branch island
+    { pc: 0x00A664, mode: 'adl' },  // ED-prefixed state/load helper with XOR A fallback branches
+    { pc: 0x00B3D7, mode: 'adl' },  // ED load + PUSH/CALL argument marshaling wrapper
+    { pc: 0x028B59, mode: 'adl' },  // LD HL,nn; CP 0x20; RET NZ style small parser/helper entry
+    { pc: 0x02C3C1, mode: 'adl' },  // CALL prologue with IX/IY-frame setup and follow-up CALL
+    { pc: 0x02D2C4, mode: 'adl' },  // CALL + stacked immediates into a deeper dispatch helper
+    { pc: 0x03D8C2, mode: 'adl' },  // CALL + compare ladder gating a nearby HL-load branch
+    { pc: 0x04315C, mode: 'adl' },  // LD HL,nn; LD (HL),imm scratch/state write branch arm
+    { pc: 0x0432A0, mode: 'adl' },  // LD HL,nn; JP + compare ladder in the 0x0432xx control path
+    { pc: 0x04350A, mode: 'adl' },  // ED load; XOR A; CALL state-reset helper
+    { pc: 0x04ADC7, mode: 'adl' },  // ED/CB flag test with PUSH HL + CALL helper branch
+    { pc: 0x059516, mode: 'adl' },  // CALL/CALL compare wrapper in the 0x0595xx helper chain
+    { pc: 0x059E94, mode: 'adl' },  // LD A,n + JR dispatch ladder in a compact uncovered selector
+    { pc: 0x059F79, mode: 'adl' },  // LD A,n + JR dispatch ladder in the neighboring selector table
+    { pc: 0x064205, mode: 'adl' },  // CALL prologue with IX-frame scratch-state initialization
+    { pc: 0x064A9C, mode: 'adl' },  // LD HL,nn scratch-state write with IX arithmetic follow-up
+    { pc: 0x06858B, mode: 'adl' },  // LD A,n + JR ladder feeding the 0x0685xx branch fan-out
+    { pc: 0x072377, mode: 'adl' },  // CALL + indexed load/call sequence in the 0x0723xx helper path
+    { pc: 0x07A824, mode: 'adl' },  // LD A,n; SBC/EX; CALL branch entry in the 0x07A8xx chain
+    { pc: 0x09C3EE, mode: 'adl' },  // CALL + RET-separated FD/CB bit-stub chain in the 0x09C3xx region
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {

@@ -11786,15 +11786,247 @@
         "scripts/transpile-ti84-rom.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "45fb2796c3a1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 405 P3: Investigate Slot 6 at 0xD0063A\n\n## Context\nThe TI-84 CE OS action pipeline li",
+      "status": "completed",
+      "duration_seconds": 851.376,
+      "timestamp": "2026-05-22T12:16:56Z",
+      "files_changed": [
+        "CONTINUATION_PROMPT_CODEX.md",
+        "TI-84_Plus_CE/ROM.transpiled.js",
+        "TI-84_Plus_CE/ROM.transpiled.report.json",
+        "TI-84_Plus_CE/phase405-action-dispatch-report.md",
+        "TI-84_Plus_CE/phase405-notification-payloads-report.md",
+        "TI-84_Plus_CE/phase405-slot6-report.md",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase405-action-dispatch.mjs",
+        "TI-84_Plus_CE/probe-phase405-notification-payloads.mjs",
+        "TI-84_Plus_CE/probe-phase405-slot6.mjs",
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "f9e75f4f4799",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 405 P1: Trace Action Code Dispatch at 137 Caller Sites\n\n## Context\nThe TI-84 CE OS ha",
+      "status": "timeout",
+      "duration_seconds": 900.039,
+      "timestamp": "2026-05-22T12:17:41Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3c7cbe194a00",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 405 P2: Map Notification Payload Semantics\n\n## Context\nThe TI-84 CE OS notification s",
+      "status": "timeout",
+      "duration_seconds": 900.05,
+      "timestamp": "2026-05-22T12:17:42Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c7ab4950677d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add 20 New Seeds to Transpiler\n\n## Context\nThis is a TI-84 Plus CE ROM transpilation project",
+      "status": "completed",
+      "duration_seconds": 367.831,
+      "timestamp": "2026-05-22T14:08:17Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c811bf776c90",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace Into Top Action Dispatch Subroutines\n\n## Context\nThis is a TI-84 Plus CE ROM transpila",
+      "status": "completed",
+      "duration_seconds": 525.417,
+      "timestamp": "2026-05-22T14:10:50Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "87e3787c69bc",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x049DF9 Notification Common Tail\n\n## Context\nThis is a TI-84 Plus CE ROM transpilatio",
+      "status": "completed",
+      "duration_seconds": 575.745,
+      "timestamp": "2026-05-22T14:11:42Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "75ae0289d928",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map 0xD177B8 and 0xD177B9 Consumers\n\n## Context\nThis is a TI-84 Plus CE ROM transpilation pr",
+      "status": "completed",
+      "duration_seconds": 809.018,
+      "timestamp": "2026-05-22T14:15:37Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c2aa054dd6d1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add 20 New Transpiler Seeds for Coverage Push\n\n## Context\nYou are working on a TI-84 Plus CE",
+      "status": "completed",
+      "duration_seconds": 201.317,
+      "timestamp": "2026-05-22T16:05:57Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "bb30d97d0d89",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x07C74F Dispatch Logic Deeper\n\n## Context\nYou are working on a TI-84 Plus CE ROM tran",
+      "status": "completed",
+      "duration_seconds": 672.095,
+      "timestamp": "2026-05-22T16:13:42Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase407-07C74F-dispatch.mjs",
+        "TI-84_Plus_CE/phase407-07C74F-dispatch-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "f94c1a9c070a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate 0x008879-0x00893A Second Notification Region\n\n## Context\nYou are working on a TI",
+      "status": "completed",
+      "duration_seconds": 841.336,
+      "timestamp": "2026-05-22T16:16:33Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ea31e0950b27",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace Top 10 D177B8/D177B9 Reader Clusters\n\n## Context\nYou are working on a TI-84 Plus CE RO",
+      "status": "timeout",
+      "duration_seconds": 900.043,
+      "timestamp": "2026-05-22T16:17:33Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c51ae38a9ed1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map OS Syscall/Jump Table Entries at 0x020104\n\n## Context\nThis is a TI-84 Plus CE ROM (eZ80)",
+      "status": "completed",
+      "duration_seconds": 433.687,
+      "timestamp": "2026-05-22T18:09:16Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase408-syscall-table-report.md",
+        "TI-84_Plus_CE/probe-phase408-syscall-table.mjs",
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "60e958c30c59",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add 20 Coverage Seeds to the Transpiler\n\n## Context\nThis is a TI-84 Plus CE ROM (eZ80) trans",
+      "status": "completed",
+      "duration_seconds": 433.925,
+      "timestamp": "2026-05-22T18:09:18Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "4d7345b4fef9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace Notification Payload CP Cascade at Page 0x012xxx\n\n## Context\nThis is a TI-84 Plus CE R",
+      "status": "completed",
+      "duration_seconds": 770.481,
+      "timestamp": "2026-05-22T18:14:52Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "fb04c1b3e908",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0xD141B5 Consumers \u2014 Find the Real Key\u2192Action Dispatch Mechanism\n\n## Context\nThis is a",
+      "status": "timeout",
+      "duration_seconds": 900.054,
+      "timestamp": "2026-05-22T18:17:00Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ace7485d0780",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add 20 new transpiler seeds for coverage push\n\n## Context\n\nThe TI-84 Plus CE ROM transpiler ",
+      "status": "completed",
+      "duration_seconds": 324.557,
+      "timestamp": "2026-05-22T20:08:20Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "15048deefd71",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace inside 0x05D58F (Key Action Dispatcher) \u2014 What happens AFTER the key code arrives?\n\n##",
+      "status": "completed",
+      "duration_seconds": 524.052,
+      "timestamp": "2026-05-22T20:11:33Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase409-trace-05D58F.mjs",
+        "TI-84_Plus_CE/phase409-trace-05D58F-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "5faf903fcfb4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x02B373 (Secondary Key Handler)\n\n## Context\n\nThe TI-84 Plus CE ROM at `TI-84_Plus_CE/",
+      "status": "completed",
+      "duration_seconds": 587.077,
+      "timestamp": "2026-05-22T20:12:39Z",
+      "files_changed": [
+        "CONTINUATION_PROMPT_CODEX.md",
+        "TI-84_Plus_CE/ROM.transpiled.js",
+        "TI-84_Plus_CE/ROM.transpiled.js.gz",
+        "TI-84_Plus_CE/ROM.transpiled.report.json",
+        "TI-84_Plus_CE/phase409-trace-02B373-report.md",
+        "TI-84_Plus_CE/phase409-trace-05D58F-report.md",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase409-notification-dispatch.mjs",
+        "TI-84_Plus_CE/probe-phase409-trace-02B373.mjs",
+        "TI-84_Plus_CE/probe-phase409-trace-05D58F.mjs",
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 964,
-    "cc_to_codex": 964,
+    "total_calls": 982,
+    "cc_to_codex": 982,
     "codex_to_cc": 0,
-    "completed": 732,
-    "failed": 216,
+    "completed": 746,
+    "failed": 220,
     "refused": 0,
-    "avg_duration_seconds": 601.175
+    "avg_duration_seconds": 601.884
   }
 }
