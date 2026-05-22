@@ -11464,15 +11464,221 @@
       "timestamp": "2026-05-21T22:06:21Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "f0c8f8990205",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Model Ports 0x24/0x25/0x26 in peripherals.js\n\n## Context\nYou are working on `C:/Users/rober/",
+      "status": "completed",
+      "duration_seconds": 139.088,
+      "timestamp": "2026-05-22T00:05:26Z",
+      "files_changed": [
+        "TI-84_Plus_CE/peripherals.js"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "92b433d6dbca",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add 10 Coverage Seeds from Uncovered CODE? Regions\n\n## Context\nYou are working on `C:/Users/",
+      "status": "completed",
+      "duration_seconds": 257.391,
+      "timestamp": "2026-05-22T00:07:26Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "59b19d81f37f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0xD141B5 Consumers \u2014 Who Reads the Final Key Output Buffer?\n\n## Context\nYou are worki",
+      "status": "completed",
+      "duration_seconds": 480.654,
+      "timestamp": "2026-05-22T00:11:06Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "32b43a87211e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x03F9FA Key Result Producer \u2014 Who Calls It?\n\n## Context\nYou are working on `C:/Users/",
+      "status": "completed",
+      "duration_seconds": 609.462,
+      "timestamp": "2026-05-22T00:13:13Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "4d996afba2c7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate 0x0562D5 Programmatic Key Injection\n\n## Context\nYou are working on the TI-84 Plu",
+      "status": "completed",
+      "duration_seconds": 381.018,
+      "timestamp": "2026-05-22T02:08:53Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase400-investigate-0562D5.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "f32cb761802f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Coverage Push \u2014 Add 10 New Seeds from Uncovered Gaps\n\n## Context\nYou are working on the TI-8",
+      "status": "completed",
+      "duration_seconds": 387.861,
+      "timestamp": "2026-05-22T02:09:02Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8d7c4ae7d9c2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x05D58F Key Action Dispatcher\n\n## Context\nYou are working on the TI-84 Plus CE ROM t",
+      "status": "completed",
+      "duration_seconds": 410.932,
+      "timestamp": "2026-05-22T02:09:20Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase400-decode-05D58F.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "bd028385bfeb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x03F9AD\u20130x03F9F9 Key Validation Logic\n\n## Context\nYou are working on the TI-84 Plus C",
+      "status": "completed",
+      "duration_seconds": 554.779,
+      "timestamp": "2026-05-22T02:11:46Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase400-key-validation-03F9AD.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "4f0bda247a26",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: ADD 10 NEW TRANSPILER SEEDS\n\n## Context\nYou are working on a TI-84 Plus CE ROM transpilation",
+      "status": "completed",
+      "duration_seconds": 313.44,
+      "timestamp": "2026-05-22T04:07:33Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase401-05D5C2-callers.mjs",
+        "TI-84_Plus_CE/probe-phase401-decode-02D267.mjs",
+        "TI-84_Plus_CE/probe-phase401-trace-0027E8.mjs",
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "b1d02bce7b36",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: TRACE 0x0027E8 INDIRECT TABLE DISPATCHER\n\n## Context\nYou are working on a TI-84 Plus CE ROM ",
+      "status": "completed",
+      "duration_seconds": 415.494,
+      "timestamp": "2026-05-22T04:09:09Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "38fc7b9fad85",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: INVESTIGATE 0x05D5C2 TABLE INITIALIZER CALLERS\n\n## Context\nYou are working on a TI-84 Plus C",
+      "status": "completed",
+      "duration_seconds": 523.298,
+      "timestamp": "2026-05-22T04:11:01Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase401-05D5C2-callers.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "bb36dffa770c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: DECODE 0x02D267 MACRO REPLAY MECHANISM\n\n## Context\nYou are working on a TI-84 Plus CE ROM tr",
+      "status": "timeout",
+      "duration_seconds": 900.052,
+      "timestamp": "2026-05-22T04:17:16Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6157ee65d1f5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 402 P4 \u2014 Coverage Push: 10 New Seeds\n\n## Context\n\nYou are working on a TI-84 Plus CE ",
+      "status": "completed",
+      "duration_seconds": 127.309,
+      "timestamp": "2026-05-22T06:03:51Z",
+      "files_changed": [
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "fcd06570dcc1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 402 P2 \u2014 Decode Jump Table Dispatcher at 0x021E58\n\n## Context\n\nYou are working on a T",
+      "status": "completed",
+      "duration_seconds": 678.461,
+      "timestamp": "2026-05-22T06:12:59Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase402-decode-021E58.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "818361ebf573",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 402 P3 \u2014 Trace 0x049CCA OS Notification Dispatcher\n\n## Context\n\nYou are working on a ",
+      "status": "completed",
+      "duration_seconds": 821.286,
+      "timestamp": "2026-05-22T06:15:23Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "0857dbb40186",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 402 P1 \u2014 Trace Key\u2192Action Dispatch in 0x05D5D8+\n\n## Context\n\nYou are working on a TI-",
+      "status": "completed",
+      "duration_seconds": 894.294,
+      "timestamp": "2026-05-22T06:16:33Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5bd50b6d4fa3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 403 P4 \u2014 Coverage Push: 10 New Seeds\n\n## Context\n\nYou are working on a TI-84 Plus CE ",
+      "status": "completed",
+      "duration_seconds": 340.235,
+      "timestamp": "2026-05-22T08:08:55Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 939,
-    "cc_to_codex": 939,
+    "total_calls": 956,
+    "cc_to_codex": 956,
     "codex_to_cc": 0,
-    "completed": 710,
-    "failed": 213,
+    "completed": 726,
+    "failed": 214,
     "refused": 0,
-    "avg_duration_seconds": 602.457
+    "avg_duration_seconds": 600.358
   }
 }
