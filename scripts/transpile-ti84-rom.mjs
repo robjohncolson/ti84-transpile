@@ -22683,6 +22683,27 @@ function walkBlocks() {
     { pc: 0x072377, mode: 'adl' },  // CALL + indexed load/call sequence in the 0x0723xx helper path
     { pc: 0x07A824, mode: 'adl' },  // LD A,n; SBC/EX; CALL branch entry in the 0x07A8xx chain
     { pc: 0x09C3EE, mode: 'adl' },  // CALL + RET-separated FD/CB bit-stub chain in the 0x09C3xx region
+    // Auto-session f690aae57072: 20 additional uncovered post-RET call/prologue seeds from the 2026-05-22 audit pass.
+    { pc: 0x010AEB, mode: 'adl' },  // XOR/store state-clear helper that immediately rejoins a known call path
+    { pc: 0x02391E, mode: 'adl' },  // LD HL,nn + CALL wrapper in the mid-ROM state/FD-CB helper cluster
+    { pc: 0x03EF18, mode: 'adl' },  // CALL-heavy uncovered stub between 0x08xx and 0x06xx helper chains
+    { pc: 0x044E7D, mode: 'adl' },  // CALL wrapper that tail-jumps into the shared 0x061DB6 join point
+    { pc: 0x045404, mode: 'adl' },  // FD-CB bit-test stub with direct jump into the common 0x061DB6 path
+    { pc: 0x05BF33, mode: 'adl' },  // state-pointer load + JP dispatch arm in the 0x05BFxx uncovered island
+    { pc: 0x05FE08, mode: 'adl' },  // small flag-setting stub just ahead of an uncovered FD-CB branch helper
+    { pc: 0x069AE0, mode: 'adl' },  // post-RET CALL wrapper feeding the 0x082Bxx helper chain
+    { pc: 0x07D1A8, mode: 'adl' },  // CALL/CALL/JP helper entry in the 0x07D1xx uncovered branch cluster
+    { pc: 0x07D608, mode: 'adl' },  // CALL + state-write stub that rejoins the shared 0x061DB6 trampoline
+    { pc: 0x07DBD3, mode: 'adl' },  // dense uncovered CALL fan-out into nearby 0x07F8xx/0x07FAxx helpers
+    { pc: 0x08CAAB, mode: 'adl' },  // CALL wrapper in the 0x08CAxx control path with a branch back into 0x091978
+    { pc: 0x09746E, mode: 'adl' },  // PUSH AF + CALL + JP helper in the 0x0974xx control-flow cluster
+    { pc: 0x0979F3, mode: 'adl' },  // CALL/push conditional-call stub in the 0x0979xx uncovered helper path
+    { pc: 0x098D70, mode: 'adl' },  // state-pointer load + CALL + IX-frame setup entry in the 0x098Dxx path
+    { pc: 0x09D101, mode: 'adl' },  // FD-CB flag-test stub that stores state before rejoining covered code
+    { pc: 0x0A9225, mode: 'adl' },  // CALL/CALL/JP wrapper in the 0x0A92xx high-ROM control path
+    { pc: 0x0AA868, mode: 'adl' },  // CALL + JP branch stub that bridges 0x0AA8xx to 0x0A97xx helpers
+    { pc: 0x0B2B98, mode: 'adl' },  // FD-CB high-ROM flag helper that stores state and calls back into 0x05xx code
+    { pc: 0x0B53A3, mode: 'adl' },  // FD-CB flash/app helper stub with a direct JP into the 0x0B3BFF region
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
