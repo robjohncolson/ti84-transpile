@@ -22502,6 +22502,17 @@ function walkBlocks() {
     { pc: 0x06B4E8, mode: 'adl' },  // CP 0x27/0x17/0x19/0x15 with JP arms — dispatch chain
     { pc: 0x07E587, mode: 'adl' },  // FD CB bit op; CALL; JR; CALL — branch helper
     { pc: 0x09050A, mode: 'adl' },  // LD A,E; CP 0x01; CALL ...; PUSH/LD DE ... — mode helper
+    // Session 400 follow-up: 10 JP-table seeds targeting uncovered handler code (2026-05-21 audit).
+    { pc: 0x000358, mode: 'adl' },  // JP 0x000D62 — compare-loop handler (1A BE C0 13 23...)
+    { pc: 0x0213F8, mode: 'adl' },  // JP 0x023B5E — OS JT: state store + flag set (22 0E 26 D0 FD CB...)
+    { pc: 0x00024C, mode: 'adl' },  // JP 0x00271B — RST vector: PUSH BC; LD C,A; CALL; RET
+    { pc: 0x022214, mode: 'adl' },  // JP 0x03FF50 — OS JT: LD (nn),HL state save chain
+    { pc: 0x021CA8, mode: 'adl' },  // JP 0x057A04 — OS JT: LD HL,nn dispatch arm (graph/table)
+    { pc: 0x021CE4, mode: 'adl' },  // JP 0x057A62 — OS JT: LD HL,nn dispatch arm (mode select)
+    { pc: 0x0220A0, mode: 'adl' },  // JP 0x055BB8 — OS JT: LD HL,(nn); LD B,H state reader
+    { pc: 0x0220C8, mode: 'adl' },  // JP 0x0713F6 — OS JT: CALL 0x0130; DD 7E 06 mask check
+    { pc: 0x000534, mode: 'adl' },  // JP 0x0070E5 — RST vector: PUSH BC; port I/O handler
+    { pc: 0x021548, mode: 'adl' },  // JP 0x023B2C — OS JT: FD CB bit-reset + state store chain
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
