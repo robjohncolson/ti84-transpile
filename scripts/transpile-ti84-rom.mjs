@@ -22878,6 +22878,91 @@ function walkBlocks() {
     { pc: 0x020F20, mode: 'adl' },  // JP 0x09A39F — OS JT: stat dispatch export
     { pc: 0x020F24, mode: 'adl' },  // JP 0x09A3A5 — OS JT: stat dispatch export
     { pc: 0x020F28, mode: 'adl' },  // JP 0x09A3D0 — OS JT: stat dispatch export
+    // Auto-session 416: 40 new seeds — OS export JP table targets spread across the full ROM address range
+    { pc: 0x023717, mode: 'adl' },  // JP target from 0x021DC4 — OS export helper
+    { pc: 0x0239C8, mode: 'adl' },  // JP target from 0x021414 — OS export helper
+    { pc: 0x023B4C, mode: 'adl' },  // JP target from 0x0213C4 — OS export helper
+    { pc: 0x023C8F, mode: 'adl' },  // JP target from 0x02209C — OS export helper
+    { pc: 0x025A9F, mode: 'adl' },  // JP target from 0x02117C — OS export helper
+    { pc: 0x02631E, mode: 'adl' },  // JP target from 0x0211D0 — OS export helper
+    { pc: 0x026872, mode: 'adl' },  // JP target from 0x0212D4 — OS export helper
+    { pc: 0x026ADC, mode: 'adl' },  // JP target from 0x0212C0 — OS export helper
+    { pc: 0x026C5F, mode: 'adl' },  // JP target from 0x021230 — OS export helper
+    { pc: 0x033339, mode: 'adl' },  // JP target from 0x0221B4 — OS export helper
+    { pc: 0x047C80, mode: 'adl' },  // JP target from 0x021C70 — OS export helper
+    { pc: 0x04BBDA, mode: 'adl' },  // JP target from 0x0222BC — OS export helper
+    { pc: 0x04BDDE, mode: 'adl' },  // JP target from 0x0222F0 — OS export helper
+    { pc: 0x04E9B2, mode: 'adl' },  // JP target from 0x021B10 — OS export helper
+    { pc: 0x056AB4, mode: 'adl' },  // JP target from 0x021268 — OS export helper
+    { pc: 0x057982, mode: 'adl' },  // JP target from 0x021CA0 — OS export helper
+    { pc: 0x057A62, mode: 'adl' },  // JP target from 0x021CE4 — OS export helper
+    { pc: 0x05BC15, mode: 'adl' },  // JP target from 0x021F9C — OS export helper
+    { pc: 0x05E193, mode: 'adl' },  // JP target from 0x021474 — OS export helper
+    { pc: 0x0689D0, mode: 'adl' },  // JP target from 0x0215AC — OS export helper
+    { pc: 0x06C608, mode: 'adl' },  // JP target from 0x021744 — OS export helper
+    { pc: 0x07143E, mode: 'adl' },  // JP target from 0x0220D0 — OS export helper
+    { pc: 0x07B449, mode: 'adl' },  // JP target from 0x021A14 — OS export helper
+    { pc: 0x07D51F, mode: 'adl' },  // JP target from 0x021614 — OS export helper
+    { pc: 0x0802B6, mode: 'adl' },  // JP target from 0x021AE4 — OS export helper
+    { pc: 0x084161, mode: 'adl' },  // JP target from 0x022180 — OS export helper
+    { pc: 0x0878A0, mode: 'adl' },  // JP target from 0x021AD8 — OS export helper
+    { pc: 0x08D0B5, mode: 'adl' },  // JP target from 0x0218B4 — OS export helper
+    { pc: 0x091D82, mode: 'adl' },  // JP target from 0x021870 — OS export helper
+    { pc: 0x0972FE, mode: 'adl' },  // JP target from 0x021F00 — OS export helper
+    { pc: 0x09A554, mode: 'adl' },  // JP target from 0x020F34 — OS export helper
+    { pc: 0x09BAC9, mode: 'adl' },  // JP target from 0x020FC0 — OS export helper
+    { pc: 0x09CEFA, mode: 'adl' },  // JP target from 0x021328 — OS export helper
+    { pc: 0x0A284E, mode: 'adl' },  // JP target from 0x021808 — OS export helper
+    { pc: 0x0A81AC, mode: 'adl' },  // JP target from 0x021A60 — OS export helper
+    { pc: 0x0AB319, mode: 'adl' },  // JP target from 0x021930 — OS export helper
+    { pc: 0x0ACBDB, mode: 'adl' },  // JP target from 0x021AA4 — OS export helper
+    { pc: 0x0AF175, mode: 'adl' },  // JP target from 0x021954 — OS export helper
+    { pc: 0x0B2538, mode: 'adl' },  // JP target from 0x021690 — OS export helper
+    { pc: 0x0B578A, mode: 'adl' },  // JP target from 0x021718 — OS export helper
+    // Auto-session 20d390ce5878: 40 new coverage-push seeds.
+    // OS export JP table stubs from 0x020f2c+ (unseeded C3 entries in the export table).
+    { pc: 0x020f2c, mode: 'adl' },  // JP 0x09a515
+    { pc: 0x020f30, mode: 'adl' },  // JP 0x09a546
+    { pc: 0x020f34, mode: 'adl' },  // JP 0x09a554
+    { pc: 0x020f3c, mode: 'adl' },  // JP 0x09a568
+    { pc: 0x020f40, mode: 'adl' },  // JP 0x09a572
+    { pc: 0x020f44, mode: 'adl' },  // JP 0x09a5a3
+    { pc: 0x020f48, mode: 'adl' },  // JP 0x09a5ad
+    { pc: 0x020f4c, mode: 'adl' },  // JP 0x09a5b5
+    { pc: 0x020f50, mode: 'adl' },  // JP 0x09ac5e
+    { pc: 0x020f54, mode: 'adl' },  // JP 0x09ac64
+    { pc: 0x020f5c, mode: 'adl' },  // JP 0x09ac73
+    { pc: 0x020f60, mode: 'adl' },  // JP 0x09ac77
+    { pc: 0x020f64, mode: 'adl' },  // JP 0x09ad2e
+    { pc: 0x020f68, mode: 'adl' },  // JP 0x09b276
+    { pc: 0x020f6c, mode: 'adl' },  // JP 0x09b280
+    { pc: 0x020f70, mode: 'adl' },  // JP 0x09bd45
+    { pc: 0x020f74, mode: 'adl' },  // JP 0x09bfa3
+    { pc: 0x020f7c, mode: 'adl' },  // JP 0x099eb2
+    { pc: 0x020f80, mode: 'adl' },  // JP 0x099fe5
+    { pc: 0x020f84, mode: 'adl' },  // JP 0x09a01d
+    // Uncovered CODE? gap starts from the current true-uncovered audit, filtered to code-like decode sequences.
+    { pc: 0x03646f, mode: 'adl' },  // LD A,(IX-30); CP 0x08; CALL 0x052013 branch arm
+    { pc: 0x049d9b, mode: 'adl' },  // LD A,(IX+6); LD (0xd177b8),A; JR repeated state-writer arm
+    { pc: 0x05aef5, mode: 'adl' },  // CP 0x01 / CP 0x04 dispatch chain with CALL 0x07f7bd
+    { pc: 0x05bc7c, mode: 'adl' },  // token compare / RET branch arm
+    { pc: 0x063d05, mode: 'adl' },  // uncovered state-check branch writing IX locals
+    { pc: 0x065809, mode: 'adl' },  // LD C,(IX-4); PUSH BC; CALL 0x000450 helper arm
+    { pc: 0x066189, mode: 'adl' },  // LD C,(IX+9); PUSH BC; CALL 0x066040 helper arm
+    { pc: 0x06b406, mode: 'adl' },  // CP 0x09/0x10/0x11 dispatch arm with CALL 0x03f1db
+    { pc: 0x080fb7, mode: 'adl' },  // CP token sequence with CALL 0x05e3e8
+    { pc: 0x090387, mode: 'adl' },  // E-register dispatch arm with JP/CALL fan-out
+    // Uncovered function prologues / wrappers in the 0x050000-0x05ffff region.
+    { pc: 0x056254, mode: 'adl' },  // LD IY,0xd00080; CALL 0x02fcb3 wrapper
+    { pc: 0x056895, mode: 'adl' },  // PUSH HL; CALL 0x08dd64 guard wrapper
+    { pc: 0x056e1f, mode: 'adl' },  // PUSH HL; CALL 0x080182 / 0x09bd45 wrapper
+    { pc: 0x0575c5, mode: 'adl' },  // PUSH DE; PUSH IY; CALL 0x05f834
+    { pc: 0x0578ba, mode: 'adl' },  // PUSH HL; CALL 0x025790; CALL 0x096e22
+    { pc: 0x05859c, mode: 'adl' },  // PUSH HL; CALL 0x0800b8 / 0x091beb
+    { pc: 0x058e3c, mode: 'adl' },  // PUSH AF; CALL 0x05e630; RET wrapper
+    { pc: 0x0590b9, mode: 'adl' },  // PUSH DE; PUSH BC; CALL 0x058fec
+    { pc: 0x05c706, mode: 'adl' },  // PUSH AF; RAM flag check; CALL 0x0af877
+    { pc: 0x05cf0c, mode: 'adl' },  // PUSH AF; CALL 0x03e039 / 0x07f7bd dispatch wrapper
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {

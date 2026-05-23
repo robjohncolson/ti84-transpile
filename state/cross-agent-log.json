@@ -12018,15 +12018,323 @@
         "scripts/transpile-ti84-rom.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "447fecd1e7ca",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode the 6-Entry Dispatch Table Inside 0x0120AA (Notification Sub-Handlers)\n\n## Context\n\nT",
+      "status": "timeout",
+      "duration_seconds": 900.077,
+      "timestamp": "2026-05-22T20:17:54Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f690aae57072",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add 20 Seeds to the Transpiler\n\n## Context\nEvery auto-session adds seeds to increase ROM cov",
+      "status": "completed",
+      "duration_seconds": 351.3,
+      "timestamp": "2026-05-22T22:08:06Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5946b4b990cc",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map D141B3/D141BA/D14091 Key State Registers\n\n## Context\nThe key dispatch system uses severa",
+      "status": "completed",
+      "duration_seconds": 673.724,
+      "timestamp": "2026-05-22T22:13:27Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6220449f9d9e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Dump the Key Handler Table at RAM 0xD1441D\n\n## Context\nSession 409 decoded the key dispatch ",
+      "status": "timeout",
+      "duration_seconds": 900.039,
+      "timestamp": "2026-05-22T22:17:08Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e572c32ce6f2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace Syscall 0x0004A0 \u2192 0x00F5B0 (Notification Delivery)\n\n## Context\nSession 409 confirmed ",
+      "status": "timeout",
+      "duration_seconds": 900.037,
+      "timestamp": "2026-05-22T22:17:11Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7c50701808e7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add 20 New Transpiler Seeds for Coverage Push\n\n## Context\nYou are working on the TI-84 Plus ",
+      "status": "completed",
+      "duration_seconds": 399.689,
+      "timestamp": "2026-05-23T00:08:58Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b8c7041c285b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Re-investigate Key Handler Table Format at 0x07DD00\n\n## Context\nYou are working on the TI-84",
+      "status": "timeout",
+      "duration_seconds": 900.042,
+      "timestamp": "2026-05-23T00:17:13Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5defe9b5d032",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace USB Receive Workers (0x013250, 0x013377, 0x0135CF)\n\n## Context\nYou are working on the ",
+      "status": "timeout",
+      "duration_seconds": 900.049,
+      "timestamp": "2026-05-23T00:17:15Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "cdc365c7eacc",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x014E3F (Notification State Installer)\n\n## Context\nYou are working on the TI-84 Plus ",
+      "status": "timeout",
+      "duration_seconds": 900.034,
+      "timestamp": "2026-05-23T00:17:17Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "77dc02eedcb1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add 20 New Seeds to the Transpiler\n\n## Context\nYou are working on a TI-84 Plus CE ROM transp",
+      "status": "completed",
+      "duration_seconds": 251.804,
+      "timestamp": "2026-05-23T02:06:08Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f6f46131db22",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map 0x01567C (Notification Delivery Wrapper)\n\n## Context\nYou are working on a TI-84 Plus CE ",
+      "status": "completed",
+      "duration_seconds": 607.264,
+      "timestamp": "2026-05-23T02:12:03Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e275a28763f8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x014EF8 (Notification Teardown Function)\n\n## Context\nYou are working on a TI-84 Plus ",
+      "status": "completed",
+      "duration_seconds": 752.117,
+      "timestamp": "2026-05-23T02:14:20Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1b4783f25e8a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode D176F8 Protocol Type Semantics\n\n## Context\nYou are working on a TI-84 Plus CE ROM (eZ",
+      "status": "completed",
+      "duration_seconds": 821.124,
+      "timestamp": "2026-05-23T02:15:31Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3207969e80e7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add 20 New Transpiler Seeds for Coverage Push\n\n## Context\nYou are working on a TI-84 Plus CE",
+      "status": "completed",
+      "duration_seconds": 124.132,
+      "timestamp": "2026-05-23T04:04:09Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "306e62bc792a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x0151FE Pre-Delivery Setup Function\n\n## Context\nYou are working on a TI-84 Plus CE RO",
+      "status": "completed",
+      "duration_seconds": 412.611,
+      "timestamp": "2026-05-23T04:08:56Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "24682d029cfb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace All D17795 Protocol State Transitions\n\n## Context\nYou are working on a TI-84 Plus CE R",
+      "status": "completed",
+      "duration_seconds": 476.517,
+      "timestamp": "2026-05-23T04:09:58Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase413-D17795-states.mjs",
+        "TI-84_Plus_CE/phase413-D17795-states-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "cb68857c6e32",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x014E81 Teardown Function in Detail\n\n## Context\nYou are working on a TI-84 Plus CE R",
+      "status": "completed",
+      "duration_seconds": 536.994,
+      "timestamp": "2026-05-23T04:10:57Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "214135165652",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x015185 Notification Completion Callback\n\n## Context\nYou are working on a TI-84 Plus ",
+      "status": "completed",
+      "duration_seconds": 351.123,
+      "timestamp": "2026-05-23T06:08:27Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase414-trace-015185.mjs",
+        "TI-84_Plus_CE/phase414-trace-015185-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "1dfe0ea85e60",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add 20 New Transpiler Seeds for Coverage Push\n\n## Context\nYou are working on a TI-84 Plus CE",
+      "status": "completed",
+      "duration_seconds": 490.62,
+      "timestamp": "2026-05-23T06:10:52Z",
+      "files_changed": [
+        "TI-84_Plus_CE/ROM.transpiled.js",
+        "TI-84_Plus_CE/ROM.transpiled.report.json",
+        "TI-84_Plus_CE/phase414-D176F8-values-report.md",
+        "TI-84_Plus_CE/phase414-channel3-D176C9-report.md",
+        "TI-84_Plus_CE/phase414-trace-015185-report.md",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase414-D176F8-values.mjs",
+        "TI-84_Plus_CE/probe-phase414-channel3-D176C9.mjs",
+        "TI-84_Plus_CE/probe-phase414-trace-015185.mjs",
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "dda0733b22ca",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map D176F8 Write Value Semantics\n\n## Context\nYou are working on a TI-84 Plus CE ROM transpil",
+      "status": "completed",
+      "duration_seconds": 581.592,
+      "timestamp": "2026-05-23T06:12:19Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d50c48ea9e32",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map D176C9/D176CA Channel 3 Notification\n\n## Context\nYou are working on a TI-84 Plus CE ROM ",
+      "status": "completed",
+      "duration_seconds": 649.558,
+      "timestamp": "2026-05-23T06:13:29Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3b7685871ede",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add 20 Transpiler Seeds (Coverage Push)\n\nYou are working on a TI-84 Plus CE ROM transpilatio",
+      "status": "completed",
+      "duration_seconds": 235.74,
+      "timestamp": "2026-05-23T08:06:36Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1694dbfdb7e2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x002288 Completion Dispatcher\n\nYou are working on a TI-84 Plus CE ROM transpilation p",
+      "status": "completed",
+      "duration_seconds": 318.498,
+      "timestamp": "2026-05-23T08:07:53Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase415-trace-002288.mjs",
+        "TI-84_Plus_CE/phase415-trace-002288-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "80d2251eb140",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x0150C2 Channel 3 Completion Dispatcher\n\nYou are working on a TI-84 Plus CE ROM trans",
+      "status": "completed",
+      "duration_seconds": 371.683,
+      "timestamp": "2026-05-23T08:08:49Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "cb701a262b46",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map D177BB Transfer Latch \u2014 All Writers and Readers\n\nYou are working on a TI-84 Plus CE ROM ",
+      "status": "blocked",
+      "duration_seconds": 403.601,
+      "timestamp": "2026-05-23T08:09:23Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "20d390ce5878",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: COVERAGE PUSH \u2014 40 NEW SEEDS\n\n## Context\nYou are working on a TI-84 Plus CE ROM transpilatio",
+      "status": "completed",
+      "duration_seconds": 592.204,
+      "timestamp": "2026-05-23T10:12:38Z",
+      "files_changed": [
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 982,
-    "cc_to_codex": 982,
+    "total_calls": 1008,
+    "cc_to_codex": 1008,
     "codex_to_cc": 0,
-    "completed": 746,
-    "failed": 220,
+    "completed": 765,
+    "failed": 226,
     "refused": 0,
-    "avg_duration_seconds": 601.884
+    "avg_duration_seconds": 601.044
   }
 }
