@@ -23182,6 +23182,92 @@ function walkBlocks() {
     { pc: 0x0074bd, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
     { pc: 0x0074e0, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
     { pc: 0x0075f7, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    // Auto-session 422: 40 new seeds for coverage push.
+    // 20 OS export JP-target seeds from unseeded 0x020160..0x0201bc table entries.
+    { pc: 0x08c630, mode: 'adl' },  // JP target from 0x020160
+    { pc: 0x08c79f, mode: 'adl' },  // JP target from 0x02016c
+    { pc: 0x08c67c, mode: 'adl' },  // JP target from 0x020174
+    { pc: 0x08c689, mode: 'adl' },  // JP target from 0x020178
+    { pc: 0x08c69e, mode: 'adl' },  // JP target from 0x02017c
+    { pc: 0x08c708, mode: 'adl' },  // JP target from 0x020180
+    { pc: 0x08c721, mode: 'adl' },  // JP target from 0x020184
+    { pc: 0x08c72f, mode: 'adl' },  // JP target from 0x020188
+    { pc: 0x08c782, mode: 'adl' },  // JP target from 0x020190
+    { pc: 0x040b34, mode: 'adl' },  // JP target from 0x020194
+    { pc: 0x07c705, mode: 'adl' },  // JP target from 0x020198
+    { pc: 0x07c711, mode: 'adl' },  // JP target from 0x02019c
+    { pc: 0x07c723, mode: 'adl' },  // JP target from 0x0201a0
+    { pc: 0x07c72d, mode: 'adl' },  // JP target from 0x0201a4
+    { pc: 0x07c747, mode: 'adl' },  // JP target from 0x0201a8
+    { pc: 0x07c74f, mode: 'adl' },  // JP target from 0x0201ac
+    { pc: 0x07c755, mode: 'adl' },  // JP target from 0x0201b0
+    { pc: 0x07c75b, mode: 'adl' },  // JP target from 0x0201b4
+    { pc: 0x07c76d, mode: 'adl' },  // JP target from 0x0201b8
+    { pc: 0x07c771, mode: 'adl' },  // JP target from 0x0201bc
+    // 20 prologue seeds from the 0x007687..0x007bab helper region.
+    { pc: 0x007687, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x0076ad, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x0076cd, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x0076ed, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x007734, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x007758, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x00777c, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x0077d9, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x0077f8, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x00782a, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x00784a, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x007915, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x007957, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x007991, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x0079b9, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x0079e5, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x007a05, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x007a25, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x007b8b, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x007bab, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    // Auto-session 423: 40 new seeds for coverage push.
+    // 20 OS export JP-target seeds from unseeded 0x0201c0..0x02020c table entries.
+    { pc: 0x07c77f, mode: 'adl' },  // JP target from 0x0201c0
+    { pc: 0x07c88b, mode: 'adl' },  // JP target from 0x0201c4
+    { pc: 0x07c897, mode: 'adl' },  // JP target from 0x0201c8
+    { pc: 0x07c8a3, mode: 'adl' },  // JP target from 0x0201cc
+    { pc: 0x07c8a9, mode: 'adl' },  // JP target from 0x0201d0
+    { pc: 0x07c8b3, mode: 'adl' },  // JP target from 0x0201d4
+    { pc: 0x07c8b7, mode: 'adl' },  // JP target from 0x0201d8
+    { pc: 0x07c9af, mode: 'adl' },  // JP target from 0x0201dc
+    { pc: 0x07ca02, mode: 'adl' },  // JP target from 0x0201e0
+    { pc: 0x07ca06, mode: 'adl' },  // JP target from 0x0201e4
+    { pc: 0x07ca27, mode: 'adl' },  // JP target from 0x0201e8
+    { pc: 0x07ca48, mode: 'adl' },  // JP target from 0x0201ec
+    { pc: 0x07cab1, mode: 'adl' },  // JP target from 0x0201f0
+    { pc: 0x07cab9, mode: 'adl' },  // JP target from 0x0201f4
+    { pc: 0x07df66, mode: 'adl' },  // JP target from 0x0201f8
+    { pc: 0x0685df, mode: 'adl' },  // JP target from 0x0201fc
+    { pc: 0x0685fe, mode: 'adl' },  // JP target from 0x020200
+    { pc: 0x07cbb3, mode: 'adl' },  // JP target from 0x020204
+    { pc: 0x07cbb5, mode: 'adl' },  // JP target from 0x020208
+    { pc: 0x07e053, mode: 'adl' },  // JP target from 0x02020c
+    // 20 prologue seeds: 8 from 0x007cxx..0x0084xx, 12 from 0x0222xx..0x0228xx.
+    { pc: 0x007cad, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x007cf1, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x007ddb, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x007fe3, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x00822c, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x008294, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x008392, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x00840c, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x02230c, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x022359, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x022390, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x0223ce, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x022470, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x0224fa, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x02256a, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x02268a, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x0227b5, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x0227fc, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x022849, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    { pc: 0x0228a5, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {

@@ -12450,15 +12450,211 @@
       "timestamp": "2026-05-23T14:12:05Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "fde7a45f67ce",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Coverage Push \u2014 Add 40 New Seeds to the Transpiler\n\n## Context\nYou are working on the TI-84 ",
+      "status": "completed",
+      "duration_seconds": 628.356,
+      "timestamp": "2026-05-23T16:13:02Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2c1d64118de4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x0098D2 Deep USB Service Routine\n\n## Context\nYou are working on the TI-84 Plus CE ROM",
+      "status": "completed",
+      "duration_seconds": 675.344,
+      "timestamp": "2026-05-23T16:13:46Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d13a9d26eca4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x014D48 Shared Notification Channel Scanner\n\n## Context\nYou are working on the TI-84 ",
+      "status": "completed",
+      "duration_seconds": 773.618,
+      "timestamp": "2026-05-23T16:15:22Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase419-trace-014D48.mjs",
+        "TI-84_Plus_CE/phase419-trace-014D48-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "f34cf1e9823a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x010090 (Slot 3 Pre-Dispatch) + Map D000BF LCD/DMA Control Byte\n\n## Context\nYou are w",
+      "status": "timeout",
+      "duration_seconds": 900.078,
+      "timestamp": "2026-05-23T16:17:33Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c60629d3c9d7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x012456 (USB Endpoint Setup)\n\n## Context\nYou are working on a TI-84 Plus CE ROM rever",
+      "status": "completed",
+      "duration_seconds": 636.558,
+      "timestamp": "2026-05-23T18:15:43Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase420-trace-012456.mjs",
+        "TI-84_Plus_CE/phase420-endpoint-setup-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "ddc233d3f1de",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x00C9A0 (Hardware/State Reset)\n\n## Context\nYou are working on a TI-84 Plus CE ROM rev",
+      "status": "completed",
+      "duration_seconds": 699.679,
+      "timestamp": "2026-05-23T18:16:47Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase420-trace-00C9A0.mjs",
+        "TI-84_Plus_CE/phase420-hw-reset-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "a251c7214aa2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x0094C0 and 0x0096CB (Non-USB Link Port Handlers)\n\n## Context\nYou are working on a TI",
+      "status": "timeout",
+      "duration_seconds": 900.057,
+      "timestamp": "2026-05-23T18:20:05Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "faf380a7df09",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map D177DB/D177D8/D177DE/D177CC/D177CF (Frame Pacing State Variables)\n\n## Context\nYou are wo",
+      "status": "timeout",
+      "duration_seconds": 900.039,
+      "timestamp": "2026-05-23T18:20:07Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2bbba289c11d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x0075F7 (USB Init/Delay Helper) + Add 40 Seeds\n\n## Context\nYou are working on a TI-84",
+      "status": "completed",
+      "duration_seconds": 328.113,
+      "timestamp": "2026-05-23T20:08:04Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a9e79f5762bd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x0123AD (Endpoint Teardown/Setup)\n\n## Context\nYou are working on a TI-84 Plus CE OS R",
+      "status": "completed",
+      "duration_seconds": 469.139,
+      "timestamp": "2026-05-23T20:10:20Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase421-trace-0123AD.mjs",
+        "TI-84_Plus_CE/phase421-trace-0123AD-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "26540116d68e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x0103D7 (Frame State Snapshot)\n\n## Context\nYou are working on a TI-84 Plus CE OS ROM ",
+      "status": "completed",
+      "duration_seconds": 542.174,
+      "timestamp": "2026-05-23T20:11:34Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase421-trace-0103D7.mjs",
+        "TI-84_Plus_CE/phase421-trace-0103D7-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "b32868bc5216",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x00ED77 and 0x00FE10 (Link Protocol Handlers)\n\n## Context\nYou are working on a TI-84 ",
+      "status": "completed",
+      "duration_seconds": 629.112,
+      "timestamp": "2026-05-23T20:13:03Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7e35011ce2e8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Coverage Push \u2014 Add 40 New Seeds to Transpiler\n\n## Context\nYou are working on the TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 166.308,
+      "timestamp": "2026-05-23T22:05:21Z",
+      "files_changed": [
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "2333e33b3bd9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x00E1CC (Block Processor) \u2014 TI-Link Transfer Engine Inner Loop\n\n## Context\nYou are wo",
+      "status": "completed",
+      "duration_seconds": 597.386,
+      "timestamp": "2026-05-23T22:12:26Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "cc1164dbc5ec",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x00DA8C (Disconnect Handler) \u2014 TI-Link ISR Callee\n\n## Context\nYou are working on the ",
+      "status": "completed",
+      "duration_seconds": 674.503,
+      "timestamp": "2026-05-23T22:13:47Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase422-trace-00DA8C.mjs",
+        "TI-84_Plus_CE/phase422-trace-00DA8C-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "bc5a9219998e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x00E4E8 (Data Matcher) \u2014 Called by TI-Link Transfer Engine\n\n## Context\nYou are workin",
+      "status": "completed",
+      "duration_seconds": 759.219,
+      "timestamp": "2026-05-23T22:15:10Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1019,
-    "cc_to_codex": 1019,
+    "total_calls": 1035,
+    "cc_to_codex": 1035,
     "codex_to_cc": 0,
-    "completed": 772,
-    "failed": 230,
+    "completed": 785,
+    "failed": 233,
     "refused": 0,
-    "avg_duration_seconds": 601.535
+    "avg_duration_seconds": 602.168
   }
 }
