@@ -23095,6 +23095,50 @@ function walkBlocks() {
     { pc: 0x04cb8d, mode: 'adl' },  // PUSH AF / PUSH DE filesystem helper entry
     { pc: 0x08a850, mode: 'adl' },  // PUSH AF math helper entry
     { pc: 0x08aec6, mode: 'adl' },  // PUSH AF math helper entry
+
+    // Session 419: 20 JP stubs (0x021C18-0x022400) + 20 prologues (0x016xxx/0x04Dxxx/0x08Bxxx/0x0A0xxx)
+    // 20 JP stubs from OS export table 0x021c18-0x021c64
+    { pc: 0x021c18, mode: 'adl' },  // JP 0x0b61d0
+    { pc: 0x021c1c, mode: 'adl' },  // JP 0x0b61ec
+    { pc: 0x021c20, mode: 'adl' },  // JP 0x0b59ea
+    { pc: 0x021c24, mode: 'adl' },  // JP 0x0b5948
+    { pc: 0x021c28, mode: 'adl' },  // JP 0x0b5c31
+    { pc: 0x021c2c, mode: 'adl' },  // JP 0x0b5c47
+    { pc: 0x021c30, mode: 'adl' },  // JP 0x0b5bc6
+    { pc: 0x021c34, mode: 'adl' },  // JP 0x0b29cd
+    { pc: 0x021c38, mode: 'adl' },  // JP 0x0b6164
+    { pc: 0x021c3c, mode: 'adl' },  // JP 0x0b29b0
+    { pc: 0x021c40, mode: 'adl' },  // JP 0x0b28ff
+    { pc: 0x021c44, mode: 'adl' },  // JP 0x0916f1
+    { pc: 0x021c48, mode: 'adl' },  // JP 0x0916f7
+    { pc: 0x021c4c, mode: 'adl' },  // JP 0x0b5e4c
+    { pc: 0x021c50, mode: 'adl' },  // JP 0x055be1
+    { pc: 0x021c54, mode: 'adl' },  // JP 0x0302ff
+    { pc: 0x021c58, mode: 'adl' },  // JP 0x09f42c
+    { pc: 0x021c5c, mode: 'adl' },  // JP 0x090aef
+    { pc: 0x021c60, mode: 'adl' },  // JP 0x09f1e3
+    { pc: 0x021c64, mode: 'adl' },  // JP 0x0b37c6
+    // 20 prologue-aligned direct-call targets from link/math/high utility regions
+    { pc: 0x04d3b8, mode: 'adl' },  // link handler entry: ED57/F5/F3/FD E5/DD E5
+    { pc: 0x08bc91, mode: 'adl' },  // math helper entry: PUSH IX
+    { pc: 0x08bca1, mode: 'adl' },  // math helper entry: PUSH IX wrapper
+    { pc: 0x08bf22, mode: 'adl' },  // math utility entry: LD IY,0xd00080
+    { pc: 0x08bfec, mode: 'adl' },  // math utility entry: LD IY,0xd00080
+    { pc: 0x08c23c, mode: 'adl' },  // math helper entry: PUSH IX
+    { pc: 0x08c2ac, mode: 'adl' },  // math utility entry: LD IY,0xd00080
+    { pc: 0x08c60a, mode: 'adl' },  // math utility entry: LD IY,0xd00080
+    { pc: 0x08c631, mode: 'adl' },  // math utility entry: LD IY,0xd00080
+    { pc: 0x0a1799, mode: 'adl' },  // high utility entry: F3/F5/C5/D5/E5/DD E5
+    { pc: 0x0a1b5b, mode: 'adl' },  // high utility entry: PUSH AF/PUSH HL
+    { pc: 0x0a1cac, mode: 'adl' },  // high utility entry: PUSH BC/PUSH AF
+    { pc: 0x0a2032, mode: 'adl' },  // high utility entry: F5/C5/D5/E5/DD E5
+    { pc: 0x0a2106, mode: 'adl' },  // high utility entry: F5/C5/D5/E5/DD E5
+    { pc: 0x0a2330, mode: 'adl' },  // high utility entry: F5/C5/D5/E5
+    { pc: 0x0a237e, mode: 'adl' },  // high utility entry: F5/C5/D5
+    { pc: 0x0a26f5, mode: 'adl' },  // high utility entry: D5/DD E5
+    { pc: 0x0a2718, mode: 'adl' },  // high utility entry: F5/D5/DD E5
+    { pc: 0x0a2730, mode: 'adl' },  // high utility entry: SCF/F5/D5/DD E5
+    { pc: 0x0a2e37, mode: 'adl' },  // high utility entry: PUSH IX
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
