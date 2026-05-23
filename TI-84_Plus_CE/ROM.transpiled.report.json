@@ -1,12 +1,12 @@
 {
   "romPath": "TI-84_Plus_CE\\ROM.rom",
   "romSize": 4194304,
-  "generatedAt": "2026-05-23T12:08:16.411Z",
+  "generatedAt": "2026-05-23T14:07:36.201Z",
   "generator": "..\\..\\..\\..\\..\\..\\C:\\Users\\rober\\Downloads\\Projects\\school\\ti84-transpile\\scripts\\transpile-ti84-rom.mjs",
-  "blockCount": 145532,
-  "coveredBytes": 711403,
-  "coveragePercent": 16.9612,
-  "seedCount": 50998,
+  "blockCount": 145559,
+  "coveredBytes": 711483,
+  "coveragePercent": 16.9631,
+  "seedCount": 51038,
   "notes": [
     "This is a byte-lifted JavaScript representation of the TI-84 Plus CE ROM reset/startup control flow.",
     "The module embeds the full ROM image and pre-lifts reachable basic blocks from the vector table.",
