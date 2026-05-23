@@ -22788,6 +22788,52 @@ function walkBlocks() {
     { pc: 0x04af76, mode: 'adl' },  // LD IY,0xD00080; RES 0,(IY+0x58) — IY-frame flag-reset
     { pc: 0x05621f, mode: 'adl' },  // LD IY,0xD00080; CALL 0x03FA09 — IY-frame call wrapper
     { pc: 0x08c298, mode: 'adl' },  // LD IY,0xD00080; BIT 5,(IY+0x44) — IY-frame flag test
+    // Auto-session 414: 20 new seeds — 10 from gap analysis/prologues, 10 from JP table stubs
+    // Gap analysis / low-coverage prologue seeds (0x0BC region at 36%, 0x015 region at 49%)
+    { pc: 0x05D544, mode: 'adl' },  // CALL 0x05D45A; LD (IX-1),A; JR — uncovered helper in 0x05D region
+    { pc: 0x0BC232, mode: 'adl' },  // PUSH BC; CALL 0x0BC6F5 — flash app subroutine entry
+    { pc: 0x0BC340, mode: 'adl' },  // PUSH BC; CALL 0x0BC756 — flash app dispatch chain
+    { pc: 0x0BC568, mode: 'adl' },  // PUSH BC; CALL 0x0BC47C — flash app helper with JP tail
+    { pc: 0x0BC921, mode: 'adl' },  // PUSH BC; CALL 0x06A347 — flash-to-OS cross-call entry
+    { pc: 0x0BCC57, mode: 'adl' },  // PUSH BC; CALL 0x052013 — flash app DD-frame setup
+    { pc: 0x0BCE04, mode: 'adl' },  // PUSH HL; CALL 0x07FA03 — flash app state-reader wrapper
+    { pc: 0x0BCE93, mode: 'adl' },  // PUSH AF; CALL 0x07F95E — flash app flag-check helper
+    { pc: 0x0BCFD3, mode: 'adl' },  // PUSH HL; CALL 0x07FAC2; LD A,0x75 — flash app state-writer
+    { pc: 0x015961, mode: 'adl' },  // PUSH DE; PUSH HL; ED 73 — uncovered flash port handler prologue
+    // JP table stub seeds from 0x020000-0x023000 (OS jump table, each is C3 XX XX XX)
+    { pc: 0x020108, mode: 'adl' },  // JP 0x0401DF — OS JT: ED/port read helper
+    { pc: 0x020128, mode: 'adl' },  // JP 0x040E7E — OS JT: CALL 0x02507D helper chain
+    { pc: 0x020140, mode: 'adl' },  // JP 0x04C950 — OS JT: LD A,0x0A; shift helper
+    { pc: 0x020148, mode: 'adl' },  // JP 0x03F994 — OS JT: CALL 0x0003D4 port setup
+    { pc: 0x020150, mode: 'adl' },  // JP 0x08C331 — OS JT: FD CB flag-reset + CALL helper
+    { pc: 0x020160, mode: 'adl' },  // JP 0x08C630 — OS JT: XOR A; FD 21 IY-frame init
+    { pc: 0x020170, mode: 'adl' },  // JP 0x08C7AD — OS JT: PUSH AF; PUSH BC; LD HL,0xFFFFFF helper
+    { pc: 0x020180, mode: 'adl' },  // JP 0x08C708 — OS JT: FD CB bit-test flag stub
+    { pc: 0x020188, mode: 'adl' },  // JP 0x08C72F — OS JT: PUSH HL; CALL 0x056E2E helper
+    { pc: 0x0201A0, mode: 'adl' },  // JP 0x07C723 — OS JT: CALL 0x07FDD6 dispatch arm
+    // Auto-session 1dfe0ea85e60: 20 uncovered JP-stub seeds for coverage push.
+    // Low-ROM JP stub cluster (valid 24-bit JP entries, spread across the early export/vector area).
+    { pc: 0x000094, mode: 'adl' },  // low-ROM JP stub -> 0x00277A
+    { pc: 0x0000B4, mode: 'adl' },  // low-ROM JP stub -> 0x0028A5
+    { pc: 0x0000D8, mode: 'adl' },  // low-ROM JP stub -> 0x0029FE
+    { pc: 0x0000F4, mode: 'adl' },  // low-ROM JP stub -> 0x002B5C
+    { pc: 0x000110, mode: 'adl' },  // low-ROM JP stub -> 0x00200F
+    { pc: 0x000148, mode: 'adl' },  // low-ROM JP stub -> 0x002228
+    { pc: 0x00017C, mode: 'adl' },  // low-ROM JP stub -> 0x002313
+    { pc: 0x0001B4, mode: 'adl' },  // low-ROM JP stub -> 0x0023D7
+    { pc: 0x000208, mode: 'adl' },  // low-ROM JP stub -> 0x0025F5
+    { pc: 0x000348, mode: 'adl' },  // low-ROM JP stub -> 0x000CD6
+    // OS export jump-table continuation after the existing 0x020B1C batch.
+    { pc: 0x020B3C, mode: 'adl' },  // SPlotRight jump-table stub
+    { pc: 0x020B5C, mode: 'adl' },  // HeapSort jump-table stub
+    { pc: 0x020B7C, mode: 'adl' },  // IPoint jump-table stub
+    { pc: 0x020B9C, mode: 'adl' },  // VtoWHLDE jump-table stub
+    { pc: 0x020BBC, mode: 'adl' },  // LabCoor jump-table stub
+    { pc: 0x020BDC, mode: 'adl' },  // GrPutAway jump-table stub
+    { pc: 0x020C1C, mode: 'adl' },  // ZmFit jump-table stub
+    { pc: 0x020C3C, mode: 'adl' },  // unnamed graph helper jump-table stub
+    { pc: 0x020C5C, mode: 'adl' },  // Regraph jump-table stub
+    { pc: 0x020C7C, mode: 'adl' },  // HorizCmd jump-table stub
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
