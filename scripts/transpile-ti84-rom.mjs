@@ -22725,6 +22725,27 @@ function walkBlocks() {
     { pc: 0x094D3E, mode: 'adl' },
     { pc: 0x09EE4F, mode: 'adl' },
     { pc: 0x0A2706, mode: 'adl' },
+    // Auto-session 77dc02eedcb1: additional uncovered OS jump-table stub seeds from the 2026-05-22 true-uncovered audit.
+    { pc: 0x0205DC, mode: 'adl' },  // repeated JP dispatch slot start (c3 02 29 08 c3 06 29 08)
+    { pc: 0x0205FC, mode: 'adl' },  // repeated JP dispatch slot start (c3 34 29 08 c3 3f 29 08)
+    { pc: 0x02061C, mode: 'adl' },  // repeated JP dispatch slot start (c3 7e 29 08 c3 90 29 08)
+    { pc: 0x02063C, mode: 'adl' },  // repeated JP dispatch slot start (c3 f8 29 08 c3 06 2a 08)
+    { pc: 0x02065C, mode: 'adl' },  // repeated JP dispatch slot start (c3 46 2a 08 c3 52 2a 08)
+    { pc: 0x02067C, mode: 'adl' },  // repeated JP dispatch slot start (c3 8c 2a 08 c3 90 2a 08)
+    { pc: 0x02069C, mode: 'adl' },  // repeated JP dispatch slot start (c3 bc 2a 08 c3 c2 2a 08)
+    { pc: 0x0206BC, mode: 'adl' },  // repeated JP dispatch slot start (c3 f0 2a 08 c3 f6 2a 08)
+    { pc: 0x0206DC, mode: 'adl' },  // repeated JP dispatch slot start (c3 1e 2b 08 c3 2b 2b 08)
+    { pc: 0x0206FC, mode: 'adl' },  // repeated JP dispatch slot start (c3 55 2b 08 c3 5b 2b 08)
+    { pc: 0x02071C, mode: 'adl' },  // repeated JP dispatch slot start (c3 87 2b 08 c3 93 2b 08)
+    { pc: 0x02075C, mode: 'adl' },  // repeated JP dispatch slot start (c3 32 1d 06 c3 36 1d 06)
+    { pc: 0x02077C, mode: 'adl' },  // repeated JP dispatch slot start (c3 6a 1d 06 c3 6e 1d 06)
+    { pc: 0x02079C, mode: 'adl' },  // repeated JP dispatch slot start (c3 20 1e 06 c3 f9 73 04)
+    { pc: 0x0207FC, mode: 'adl' },  // repeated JP dispatch slot start (c3 5b 21 0a c3 72 21 0a)
+    { pc: 0x02081C, mode: 'adl' },  // repeated JP dispatch slot start (c3 3a 22 0a c3 b1 22 0a)
+    { pc: 0x02083C, mode: 'adl' },  // repeated JP dispatch slot start (c3 30 27 0a c3 a8 27 0a)
+    { pc: 0x02085C, mode: 'adl' },  // repeated JP dispatch slot start (c3 ec 29 0a c3 fe 29 0a)
+    { pc: 0x02087C, mode: 'adl' },  // repeated JP dispatch slot start (c3 6e 2b 0a c3 72 2b 0a)
+    { pc: 0x02089C, mode: 'adl' },  // repeated JP dispatch slot start (c3 6d 2d 0a c3 89 2d 0a)
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
