@@ -12326,15 +12326,117 @@
         "scripts/transpile-ti84-rom.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "8b417a5443a2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: MAP D177BD 5-ENTRY FUNCTION POINTER TABLE\n\n## Context\nYou are working on a TI-84 Plus CE ROM",
+      "status": "timeout",
+      "duration_seconds": 900.075,
+      "timestamp": "2026-05-23T10:17:40Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b6c0e3f16a97",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: TRACE 0x006EDA AND 0x0019B5 (CHANNEL 3 SPECIAL PATH)\n\n## Context\nYou are working on a TI-84 ",
+      "status": "timeout",
+      "duration_seconds": 900.03,
+      "timestamp": "2026-05-23T10:17:44Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "961b06f7e20e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: MAP D176BD/D176F2/D176FB/D176FC/D1772D (0x0150C2 STATE VARIABLES)\n\n## Context\nYou are workin",
+      "status": "timeout",
+      "duration_seconds": 900.04,
+      "timestamp": "2026-05-23T10:17:45Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "65d1796f7bd8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 417 P4: Coverage Push \u2014 40 Seeds\n\n## Background\nYou are working on the TI-84 Plus CE ROM t",
+      "status": "completed",
+      "duration_seconds": 348.841,
+      "timestamp": "2026-05-23T12:08:40Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b96a750d5945",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 417 P2: Decode 0x0106A0 Registrar Internals \u2014 Map All Callers\n\n## Background\nYou are worki",
+      "status": "completed",
+      "duration_seconds": 476.583,
+      "timestamp": "2026-05-23T12:10:44Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase417-registrar-callers.mjs",
+        "TI-84_Plus_CE/phase417-registrar-callers-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "56835ffcd479",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 417 P3: Trace 0x0019B5 Deeper + Map D177D6 Bitmask Writers\n\n## Background\nYou are working ",
+      "status": "completed",
+      "duration_seconds": 630.272,
+      "timestamp": "2026-05-23T12:13:20Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "fc62cb2f2b4e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 417 P1: Trace D17795 State Transitions in Context\n\n## Background\nYou are working on the TI",
+      "status": "timeout",
+      "duration_seconds": 900.051,
+      "timestamp": "2026-05-23T12:17:45Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "53eb86f4c356",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x007CAD Callback Armer\n\n## Context\nYou are working on a TI-84 Plus CE ROM transpilati",
+      "status": "completed",
+      "duration_seconds": 438.752,
+      "timestamp": "2026-05-23T14:09:25Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "364618ed4aa2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x010220 Display Callback Dispatcher\n\n## Context\nYou are working on a TI-84 Plus CE RO",
+      "status": "completed",
+      "duration_seconds": 467.671,
+      "timestamp": "2026-05-23T14:09:53Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1008,
-    "cc_to_codex": 1008,
+    "total_calls": 1017,
+    "cc_to_codex": 1017,
     "codex_to_cc": 0,
-    "completed": 765,
-    "failed": 226,
+    "completed": 770,
+    "failed": 230,
     "refused": 0,
-    "avg_duration_seconds": 601.044
+    "avg_duration_seconds": 601.588
   }
 }
