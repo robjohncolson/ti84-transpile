@@ -12428,15 +12428,37 @@
       "timestamp": "2026-05-23T14:09:53Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "a0032f2c8fc4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add 40 New Seeds to Transpiler\n\n## Context\nYou are working on a TI-84 Plus CE ROM transpilat",
+      "status": "completed",
+      "duration_seconds": 552.795,
+      "timestamp": "2026-05-23T14:11:23Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "979192f0f840",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x009B35 and 0x014DAB (Other USB ISR Handlers)\n\n## Context\nYou are working on a TI-84 ",
+      "status": "completed",
+      "duration_seconds": 596.198,
+      "timestamp": "2026-05-23T14:12:05Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1017,
-    "cc_to_codex": 1017,
+    "total_calls": 1019,
+    "cc_to_codex": 1019,
     "codex_to_cc": 0,
-    "completed": 770,
+    "completed": 772,
     "failed": 230,
     "refused": 0,
-    "avg_duration_seconds": 601.588
+    "avg_duration_seconds": 601.535
   }
 }

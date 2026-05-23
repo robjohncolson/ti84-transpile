@@ -23051,6 +23051,50 @@ function walkBlocks() {
     { pc: 0x04c20a, mode: 'adl' },  // PUSH IX — filesystem prologue
     { pc: 0x04c214, mode: 'adl' },  // LD IY,nn — filesystem prologue
     { pc: 0x04c260, mode: 'adl' },  // LD IY,nn — filesystem prologue
+    // Auto-session a0032f2c8fc4: 40 new seeds for coverage push.
+    // 20 consecutive unseeded OS export JP stubs from the 0x021bc8 run.
+    { pc: 0x021bc8, mode: 'adl' },  // JP 0x06c8ab
+    { pc: 0x021bcc, mode: 'adl' },  // JP 0x0a68df
+    { pc: 0x021bd0, mode: 'adl' },  // JP 0x0b5cf0
+    { pc: 0x021bd4, mode: 'adl' },  // JP 0x0b4e43
+    { pc: 0x021bd8, mode: 'adl' },  // JP 0x0613c6
+    { pc: 0x021bdc, mode: 'adl' },  // JP 0x0a2d30
+    { pc: 0x021be0, mode: 'adl' },  // JP 0x02672f
+    { pc: 0x021be4, mode: 'adl' },  // JP 0x060a4f
+    { pc: 0x021be8, mode: 'adl' },  // JP 0x061702
+    { pc: 0x021bec, mode: 'adl' },  // JP 0x0616bb
+    { pc: 0x021bf0, mode: 'adl' },  // JP 0x061a58
+    { pc: 0x021bf4, mode: 'adl' },  // JP 0x061738
+    { pc: 0x021bf8, mode: 'adl' },  // JP 0x0adb22
+    { pc: 0x021bfc, mode: 'adl' },  // JP 0x05cb4c
+    { pc: 0x021c00, mode: 'adl' },  // JP 0x09f1ab
+    { pc: 0x021c04, mode: 'adl' },  // JP 0x0b62d8
+    { pc: 0x021c08, mode: 'adl' },  // JP 0x0b5c9c
+    { pc: 0x021c0c, mode: 'adl' },  // JP 0x0b3839
+    { pc: 0x021c10, mode: 'adl' },  // JP 0x0b6059
+    { pc: 0x021c14, mode: 'adl' },  // JP 0x0b36e3
+
+    // 20 unseeded function entries from system/power, filesystem, and math prologue scans.
+    { pc: 0x009c1c, mode: 'adl' },  // CALL 0x002197 system/power entry
+    { pc: 0x009ee2, mode: 'adl' },  // CALL 0x002197 system/power entry
+    { pc: 0x04c33b, mode: 'adl' },  // PUSH HL filesystem helper entry
+    { pc: 0x04c3ee, mode: 'adl' },  // PUSH IX / frame setup filesystem entry
+    { pc: 0x04c463, mode: 'adl' },  // PUSH IX / frame setup filesystem entry
+    { pc: 0x04c4bc, mode: 'adl' },  // PUSH IX / frame setup filesystem entry
+    { pc: 0x04c50d, mode: 'adl' },  // PUSH IX / frame setup filesystem entry
+    { pc: 0x04c581, mode: 'adl' },  // PUSH IX entry with DI and local frame init
+    { pc: 0x04c62d, mode: 'adl' },  // PUSH IX / IY filesystem wrapper entry
+    { pc: 0x04c670, mode: 'adl' },  // PUSH IX / PUSH IY filesystem entry
+    { pc: 0x04c6a3, mode: 'adl' },  // PUSH IX filesystem helper entry
+    { pc: 0x04c8db, mode: 'adl' },  // PUSH AF filesystem state-save entry
+    { pc: 0x04c963, mode: 'adl' },  // PUSH BC filesystem helper entry
+    { pc: 0x04c99c, mode: 'adl' },  // PUSH HL filesystem helper entry
+    { pc: 0x04c9e1, mode: 'adl' },  // PUSH BC filesystem helper entry
+    { pc: 0x04ca1b, mode: 'adl' },  // PUSH AF filesystem helper entry
+    { pc: 0x04caee, mode: 'adl' },  // PUSH IY filesystem wrapper entry
+    { pc: 0x04cb8d, mode: 'adl' },  // PUSH AF / PUSH DE filesystem helper entry
+    { pc: 0x08a850, mode: 'adl' },  // PUSH AF math helper entry
+    { pc: 0x08aec6, mode: 'adl' },  // PUSH AF math helper entry
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
