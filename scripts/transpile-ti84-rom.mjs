@@ -22746,6 +22746,48 @@ function walkBlocks() {
     { pc: 0x02085C, mode: 'adl' },  // repeated JP dispatch slot start (c3 ec 29 0a c3 fe 29 0a)
     { pc: 0x02087C, mode: 'adl' },  // repeated JP dispatch slot start (c3 6e 2b 0a c3 72 2b 0a)
     { pc: 0x02089C, mode: 'adl' },  // repeated JP dispatch slot start (c3 6d 2d 0a c3 89 2d 0a)
+    // Auto-session 413 seeds: next uncovered OS jump-table stub entries after the 0x0205DC..0x02089C batch.
+    { pc: 0x0208BC, mode: 'adl' },  // repeated JP dispatch slot start (c3 89 49 08 c3 00 4a 08)
+    { pc: 0x0208DC, mode: 'adl' },  // repeated JP dispatch slot start (c3 78 5f 08 c3 38 64 08)
+    { pc: 0x0208FC, mode: 'adl' },  // repeated JP dispatch slot start (c3 9d 75 08 c3 ec 02 08)
+    { pc: 0x02091C, mode: 'adl' },  // repeated JP dispatch slot start (c3 65 03 08 c3 6a 03 08)
+    { pc: 0x02093C, mode: 'adl' },  // repeated JP dispatch slot start (c3 ae bf 07 c3 b3 bf 07)
+    { pc: 0x02095C, mode: 'adl' },  // repeated JP dispatch slot start (c3 a8 c4 07 c3 ca c4 07)
+    { pc: 0x02097C, mode: 'adl' },  // repeated JP dispatch slot start (c3 50 63 06 c3 ae 71 06)
+    { pc: 0x02099C, mode: 'adl' },  // repeated JP dispatch slot start (c3 7a 83 06 c3 16 85 06)
+    { pc: 0x0209BC, mode: 'adl' },  // repeated JP dispatch slot start (c3 f5 f4 05 c3 01 f5 05)
+    { pc: 0x0209DC, mode: 'adl' },  // repeated JP dispatch slot start (c3 35 f5 05 c3 3d f5 05)
+    { pc: 0x0209FC, mode: 'adl' },  // repeated JP dispatch slot start (c3 71 f5 05 c3 77 f5 05)
+    { pc: 0x020A1C, mode: 'adl' },  // repeated JP dispatch slot start (c3 ab f5 05 c3 b1 f5 05)
+    { pc: 0x020A3C, mode: 'adl' },  // repeated JP dispatch slot start (c3 e7 f5 05 c3 ef f5 05)
+    { pc: 0x020A5C, mode: 'adl' },  // repeated JP dispatch slot start (c3 33 f6 05 c3 37 f6 05)
+    { pc: 0x020A7C, mode: 'adl' },  // repeated JP dispatch slot start (c3 53 f6 05 c3 57 f6 05)
+    { pc: 0x020A9C, mode: 'adl' },  // repeated JP dispatch slot start (c3 73 f6 05 c3 77 f6 05)
+    { pc: 0x020ABC, mode: 'adl' },  // repeated JP dispatch slot start (c3 09 6e 09 c3 22 6e 09)
+    { pc: 0x020ADC, mode: 'adl' },  // repeated JP dispatch slot start (c3 5e 73 09 c3 ba 73 09)
+    { pc: 0x020AFC, mode: 'adl' },  // repeated JP dispatch slot start (c3 24 54 0a c3 ff 53 0a)
+    { pc: 0x020B1C, mode: 'adl' },  // repeated JP dispatch slot start (c3 74 f9 0a c3 2d fd 0a)
+    // session 413 seeds
+    { pc: 0x0010d5, mode: 'adl' },  // LD IY,0xD00080; JP 0x000DB6 — OS IY-frame setup dispatcher
+    { pc: 0x0011a5, mode: 'adl' },  // LD IY,0xD00080; JP 0x000DB6 — OS IY-frame setup dispatcher
+    { pc: 0x001250, mode: 'adl' },  // LD IY,0xD00080; JP 0x000DB6 — OS IY-frame setup dispatcher
+    { pc: 0x006fd3, mode: 'adl' },  // LD IY,0xD00080; LD A,I; PUSH AF; DI — interrupt-state helper
+    { pc: 0x008496, mode: 'adl' },  // PUSH BC; LD BC,0x00C4; PUSH BC; CALL 0x00883C — arg setup
+    { pc: 0x00853c, mode: 'adl' },  // PUSH BC; LD BC,0; PUSH BC; CALL 0x002456 — arg setup
+    { pc: 0x008d21, mode: 'adl' },  // PUSH BC; LD BC,1; PUSH BC; CALL 0x00883C — arg setup
+    { pc: 0x009022, mode: 'adl' },  // PUSH BC; LD BC,0x86; PUSH BC; CALL 0x00883C — arg setup
+    { pc: 0x009329, mode: 'adl' },  // PUSH BC; LD BC,0x20; PUSH BC; CALL 0x00883C — arg setup
+    { pc: 0x009907, mode: 'adl' },  // PUSH BC; LD BC,0; PUSH BC; CALL 0x002456 — arg setup
+    { pc: 0x00b4bc, mode: 'adl' },  // LD IY,0xD00080; LD A,(IY+0x0C) — IY-frame flag reader
+    { pc: 0x00b659, mode: 'adl' },  // PUSH BC; LD BC,1; PUSH BC; ED 4B — multi-arg setup
+    { pc: 0x01255b, mode: 'adl' },  // LD IY,0xD00080; BIT 6,(IY+0x1B) — IY-frame flag test
+    { pc: 0x012606, mode: 'adl' },  // LD IY,0xD00080; BIT 6,(IY+0x1B) — IY-frame flag test
+    { pc: 0x03e479, mode: 'adl' },  // LD IY,0xD00080; OR A; RET Z; SCF; RET — conditional helper
+    { pc: 0x040024, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP — IX stack-frame entry
+    { pc: 0x041132, mode: 'adl' },  // LD IY,0xD00080; BIT 6,(IY+0x1B) — IY-frame flag test
+    { pc: 0x04af76, mode: 'adl' },  // LD IY,0xD00080; RES 0,(IY+0x58) — IY-frame flag-reset
+    { pc: 0x05621f, mode: 'adl' },  // LD IY,0xD00080; CALL 0x03FA09 — IY-frame call wrapper
+    { pc: 0x08c298, mode: 'adl' },  // LD IY,0xD00080; BIT 5,(IY+0x44) — IY-frame flag test
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
