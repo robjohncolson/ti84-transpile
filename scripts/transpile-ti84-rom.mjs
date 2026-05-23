@@ -22834,6 +22834,50 @@ function walkBlocks() {
     { pc: 0x020C3C, mode: 'adl' },  // unnamed graph helper jump-table stub
     { pc: 0x020C5C, mode: 'adl' },  // Regraph jump-table stub
     { pc: 0x020C7C, mode: 'adl' },  // HorizCmd jump-table stub
+    // Auto-session 3b7685871ede: 20 additional uncovered OS export JP stubs from the low-coverage 0x020xxx jump-table span.
+    { pc: 0x020C9C, mode: 'adl' },  // JP stub: DrawCmdInit
+    { pc: 0x020CBC, mode: 'adl' },  // JP stub: ParseEditBuf
+    { pc: 0x020CDC, mode: 'adl' },  // JP stub: DispTblBody
+    { pc: 0x020CFC, mode: 'adl' },  // JP stub: BufRight
+    { pc: 0x020D1C, mode: 'adl' },  // JP stub: BufPeek3
+    { pc: 0x020D3C, mode: 'adl' },  // JP stub: BufClear
+    { pc: 0x020D5C, mode: 'adl' },  // JP stub: InsDisp
+    { pc: 0x020D7C, mode: 'adl' },  // JP stub: SetEmptyeditEqu
+    { pc: 0x020D9C, mode: 'adl' },  // JP stub: FormMatrix
+    { pc: 0x020DBC, mode: 'adl' },  // JP stub: FormReal
+    { pc: 0x020DDC, mode: 'adl' },  // JP stub: FormToTok
+    { pc: 0x020DFC, mode: 'adl' },  // JP stub: DispNumEOS
+    { pc: 0x020E1C, mode: 'adl' },  // JP stub: SaveScreen
+    { pc: 0x020E3C, mode: 'adl' },  // JP stub: SetYOffset
+    { pc: 0x020E5C, mode: 'adl' },  // JP stub: DelRes
+    { pc: 0x020E7C, mode: 'adl' },  // JP stub: ClrGraphRef
+    { pc: 0x020E9C, mode: 'adl' },  // JP stub: CleanAll
+    { pc: 0x020EBC, mode: 'adl' },  // JP stub: ZIfRclKApp
+    { pc: 0x020EDC, mode: 'adl' },  // JP stub: unnamed 0x04E958 export
+    { pc: 0x020EFC, mode: 'adl' },  // JP stub: PlotPars
+    // Auto-session 415: 20 new seeds — 10 function prologues from under-covered 0x014/0x015 region, 10 JP table stubs from 0x020Fxx
+    // Function prologues (CALL 0x002197 / CALL 0x00218A) in the 49%-covered 0x014000-0x017FFF region
+    { pc: 0x01403A, mode: 'adl' },  // CALL 0x002197 — flash controller stack-frame entry
+    { pc: 0x01428F, mode: 'adl' },  // CALL 0x002197 — flash controller stack-frame entry
+    { pc: 0x014374, mode: 'adl' },  // CALL 0x002197 — flash controller stack-frame entry
+    { pc: 0x014A74, mode: 'adl' },  // CALL 0x002197 — flash controller stack-frame entry
+    { pc: 0x014AA6, mode: 'adl' },  // CALL 0x002197 — flash controller stack-frame entry
+    { pc: 0x014AD8, mode: 'adl' },  // CALL 0x002197 — flash controller stack-frame entry
+    { pc: 0x014B38, mode: 'adl' },  // CALL 0x002197 — flash controller stack-frame entry
+    { pc: 0x014FA0, mode: 'adl' },  // CALL 0x00218A — flash controller stack-frame entry
+    { pc: 0x015018, mode: 'adl' },  // CALL 0x002197 — flash port handler stack-frame entry
+    { pc: 0x015093, mode: 'adl' },  // CALL 0x002197 — flash port handler stack-frame entry
+    // OS export JP table stubs from 0x020F00+ (each is C3 XX XX XX targeting OS code)
+    { pc: 0x020F00, mode: 'adl' },  // JP 0x099914 — OS JT: stat pipeline export
+    { pc: 0x020F04, mode: 'adl' },  // JP 0x099925 — OS JT: stat pipeline export
+    { pc: 0x020F08, mode: 'adl' },  // JP 0x099AA3 — OS JT: stat pipeline export
+    { pc: 0x020F0C, mode: 'adl' },  // JP 0x099AAF — OS JT: stat pipeline export
+    { pc: 0x020F10, mode: 'adl' },  // JP 0x099AF9 — OS JT: stat pipeline export
+    { pc: 0x020F14, mode: 'adl' },  // JP 0x099B81 — OS JT: stat pipeline export
+    { pc: 0x020F1C, mode: 'adl' },  // JP 0x099E72 — OS JT: stat dispatch export
+    { pc: 0x020F20, mode: 'adl' },  // JP 0x09A39F — OS JT: stat dispatch export
+    { pc: 0x020F24, mode: 'adl' },  // JP 0x09A3A5 — OS JT: stat dispatch export
+    { pc: 0x020F28, mode: 'adl' },  // JP 0x09A3D0 — OS JT: stat dispatch export
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
