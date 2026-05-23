@@ -22963,6 +22963,50 @@ function walkBlocks() {
     { pc: 0x0590b9, mode: 'adl' },  // PUSH DE; PUSH BC; CALL 0x058fec
     { pc: 0x05c706, mode: 'adl' },  // PUSH AF; RAM flag check; CALL 0x0af877
     { pc: 0x05cf0c, mode: 'adl' },  // PUSH AF; CALL 0x03e039 / 0x07f7bd dispatch wrapper
+
+    // === Session 417 Batch A: 20 OS export JP stubs (0x021008-0x02105c) ===
+    { pc: 0x021008, mode: 'adl' },  // OS export JP stub
+    { pc: 0x02100c, mode: 'adl' },  // OS export JP stub
+    { pc: 0x021010, mode: 'adl' },  // OS export JP stub
+    { pc: 0x021014, mode: 'adl' },  // OS export JP stub
+    { pc: 0x021018, mode: 'adl' },  // OS export JP stub
+    { pc: 0x02101c, mode: 'adl' },  // OS export JP stub
+    { pc: 0x021020, mode: 'adl' },  // OS export JP stub
+    { pc: 0x021028, mode: 'adl' },  // OS export JP stub
+    { pc: 0x02102c, mode: 'adl' },  // OS export JP stub
+    { pc: 0x021030, mode: 'adl' },  // OS export JP stub
+    { pc: 0x021034, mode: 'adl' },  // OS export JP stub
+    { pc: 0x021038, mode: 'adl' },  // OS export JP stub
+    { pc: 0x02103c, mode: 'adl' },  // OS export JP stub
+    { pc: 0x021040, mode: 'adl' },  // OS export JP stub
+    { pc: 0x021048, mode: 'adl' },  // OS export JP stub
+    { pc: 0x02104c, mode: 'adl' },  // OS export JP stub
+    { pc: 0x021050, mode: 'adl' },  // OS export JP stub
+    { pc: 0x021054, mode: 'adl' },  // OS export JP stub
+    { pc: 0x021058, mode: 'adl' },  // OS export JP stub
+    { pc: 0x02105c, mode: 'adl' },  // OS export JP stub
+
+    // === Session 417 Batch B: 20 function prologues from gap analysis ===
+    { pc: 0x01468f, mode: 'adl' },  // PUSH IX — USB subsystem prologue
+    { pc: 0x014b7a, mode: 'adl' },  // CALL 0x002197 — USB handler prologue
+    { pc: 0x014bbd, mode: 'adl' },  // CALL 0x002197 — USB handler prologue
+    { pc: 0x014c00, mode: 'adl' },  // CALL 0x002197 — USB handler prologue
+    { pc: 0x014c43, mode: 'adl' },  // CALL 0x002197 — USB handler prologue
+    { pc: 0x014cc5, mode: 'adl' },  // CALL 0x002197 — USB handler prologue
+    { pc: 0x014d0f, mode: 'adl' },  // CALL 0x002197 — USB handler prologue
+    { pc: 0x014d4c, mode: 'adl' },  // CALL 0x002197 — USB handler prologue
+    { pc: 0x0150c6, mode: 'adl' },  // CALL 0x002197 — USB completion prologue
+    { pc: 0x0152dc, mode: 'adl' },  // CALL 0x002197 — USB transfer prologue
+    { pc: 0x01534d, mode: 'adl' },  // CALL 0x002197 — USB transfer prologue
+    { pc: 0x015435, mode: 'adl' },  // CALL 0x002197 — USB transfer prologue
+    { pc: 0x08a727, mode: 'adl' },  // PUSH IX — math/FPU prologue
+    { pc: 0x08a89e, mode: 'adl' },  // PUSH IX — math/FPU prologue
+    { pc: 0x08ada9, mode: 'adl' },  // PUSH IX — math/FPU prologue
+    { pc: 0x08adfb, mode: 'adl' },  // PUSH IX — math/FPU prologue
+    { pc: 0x08aed4, mode: 'adl' },  // PUSH IX — math/FPU prologue
+    { pc: 0x08b18b, mode: 'adl' },  // PUSH IX — math/FPU prologue
+    { pc: 0x04c1a7, mode: 'adl' },  // PUSH IX — filesystem prologue
+    { pc: 0x04c3ca, mode: 'adl' },  // PUSH IX — filesystem prologue
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
