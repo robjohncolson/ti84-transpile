@@ -22704,6 +22704,27 @@ function walkBlocks() {
     { pc: 0x0AA868, mode: 'adl' },  // CALL + JP branch stub that bridges 0x0AA8xx to 0x0A97xx helpers
     { pc: 0x0B2B98, mode: 'adl' },  // FD-CB high-ROM flag helper that stores state and calls back into 0x05xx code
     { pc: 0x0B53A3, mode: 'adl' },  // FD-CB flash/app helper stub with a direct JP into the 0x0B3BFF region
+    // auto-session 411 seeds
+    { pc: 0x007D7F, mode: 'adl' },
+    { pc: 0x00A063, mode: 'adl' },
+    { pc: 0x00A2D8, mode: 'adl' },
+    { pc: 0x00A2F9, mode: 'adl' },
+    { pc: 0x01213A, mode: 'adl' },
+    { pc: 0x01559B, mode: 'adl' },
+    { pc: 0x02A23C, mode: 'adl' },
+    { pc: 0x02ABF7, mode: 'adl' },
+    { pc: 0x02D325, mode: 'adl' },
+    { pc: 0x02EE72, mode: 'adl' },
+    { pc: 0x043A82, mode: 'adl' },
+    { pc: 0x04DDF4, mode: 'adl' },
+    { pc: 0x04DFF5, mode: 'adl' },
+    { pc: 0x05A7AC, mode: 'adl' },
+    { pc: 0x05AA8C, mode: 'adl' },
+    { pc: 0x064469, mode: 'adl' },
+    { pc: 0x090257, mode: 'adl' },
+    { pc: 0x094D3E, mode: 'adl' },
+    { pc: 0x09EE4F, mode: 'adl' },
+    { pc: 0x0A2706, mode: 'adl' },
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
