@@ -12890,15 +12890,98 @@
         "TI-84_Plus_CE/phase427-002553-division-report.md"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "3f9d2902e759",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x008A52, 0x008EB5, 0x0126F5 (3 callers of 0x00CC71 descriptor wrapper)\n\n## Context\nYo",
+      "status": "completed",
+      "duration_seconds": 313.581,
+      "timestamp": "2026-05-24T10:08:23Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f7943c532d09",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x00CC71 descriptor subsystem init wrapper (266 bytes)\n\n## Context\nYou are working on",
+      "status": "completed",
+      "duration_seconds": 358.441,
+      "timestamp": "2026-05-24T10:09:06Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7822c309e5c4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x00DE8B (called by 0x00CC71 wrapper after descriptor bootstrap)\n\n## Context\nYou are ",
+      "status": "completed",
+      "duration_seconds": 508.355,
+      "timestamp": "2026-05-24T10:11:39Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase428-trace-00DE8B.mjs",
+        "TI-84_Plus_CE/phase428-00DE8B-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "7c2514759fac",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace the linked parameter list that 0x00DF73 walks via IX+0x06\n\n## Context\nYou are working ",
+      "status": "completed",
+      "duration_seconds": 518.046,
+      "timestamp": "2026-05-24T10:11:50Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f6a5dc9a5546",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace D141E6 Config/Mode Source \u2014 Who Writes This RAM Address?\n\n## Context\nYou are working o",
+      "status": "completed",
+      "duration_seconds": 387.434,
+      "timestamp": "2026-05-24T12:08:56Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "cbaafaa9c400",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x00DCB6 (Link-Ready Gate Function)\n\n## Context\nYou are working on the TI-84 Plus CE ",
+      "status": "completed",
+      "duration_seconds": 424.392,
+      "timestamp": "2026-05-24T12:09:31Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "cbb995fe6212",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x00CD7B (Descriptor Table Builder, ~1394 bytes)\n\n## Context\nYou are working on the T",
+      "status": "completed",
+      "duration_seconds": 593.176,
+      "timestamp": "2026-05-24T12:12:23Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase429-trace-00CD7B.mjs",
+        "TI-84_Plus_CE/phase429-00CD7B-report.md"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1055,
-    "cc_to_codex": 1055,
+    "total_calls": 1062,
+    "cc_to_codex": 1062,
     "codex_to_cc": 0,
-    "completed": 800,
+    "completed": 807,
     "failed": 237,
     "refused": 0,
-    "avg_duration_seconds": 602.765
+    "avg_duration_seconds": 601.714
   }
 }

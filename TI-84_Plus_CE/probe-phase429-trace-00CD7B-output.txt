@@ -1,0 +1,704 @@
+Phase 429 - Trace 0x00CD7B: Descriptor Table Builder
+ROM: C:\Users\rober\Downloads\Projects\school\ti84-transpile\TI-84_Plus_CE\ROM.rom
+
+=== DISASSEMBLY ===
+Function: 0x00CD7B..0x00D2EC (1394 bytes, 540 instructions)
+Complete (ended at RET): true
+
+0x00CD7B  21 FD FF FF          LD HL,0xFFFFFD                          
+0x00CD7F  CD 97 21 00          CALL 0x002197                            ; local-frame allocator
+0x00CD83  DD 36 FE 01          LD (IX-0x02),0x01                        ; local var (IX-2)
+0x00CD87  DD 36 FF 00          LD (IX-0x01),0x00                        ; local var (IX-1)
+0x00CD8B  DD 36 FF 00          LD (IX-0x01),0x00                        ; local var (IX-1)
+0x00CD8F  DD 31 09             LD IX,(IX+0x09)                          ; param2 byte (IX+9)
+0x00CD92  FD 7E 00             LD A,(IY+0x00)                           ; link ptr region (offset +0)
+0x00CD95  CB 3F                SRL A                                   
+0x00CD97  CB 3F                SRL A                                   
+0x00CD99  CB 3F                SRL A                                   
+0x00CD9B  CB 3F                SRL A                                   
+0x00CD9D  CB 3F                SRL A                                   
+0x00CD9F  E6 03                AND 0x03                                
+0x00CDA1  DD 77 FD             LD (IX-0x03),A                           ; local var (IX-3)
+0x00CDA4  DD 7E FD             LD A,(IX-0x03)                           ; local var (IX-3)
+0x00CDA7  B7                   OR A                                    
+0x00CDA8  ED 62                SBC HL,HL                               
+0x00CDAA  6F                   LD L,A                                  
+0x00CDAB  CD 23 26 00          CALL 0x002623                           
+0x00CDAF  03                   INC BC                                  
+0x00CDB0  00                   NOP                                     
+0x00CDB1  00                   NOP                                     
+0x00CDB2  00                   NOP                                     
+0x00CDB3  00                   NOP                                     
+0x00CDB4  C0                   RET NZ                                  
+0x00CDB5  CD 00 0C CE          CALL 0xCE0C00                           
+0x00CDB9  00                   NOP                                     
+0x00CDBA  49 CE 00             LIS ADC 0x00                            
+0x00CDBD  6B                   LD L,E                                  
+0x00CDBE  CE 00                ADC 0x00                                
+0x00CDC0  DD 31 09             LD IX,(IX+0x09)                          ; param2 byte (IX+9)
+0x00CDC3  FD 7E 01             LD A,(IY+0x01)                           ; link ptr region (offset +1)
+0x00CDC6  B7                   OR A                                    
+0x00CDC7  ED 62                SBC HL,HL                               
+0x00CDC9  6F                   LD L,A                                  
+0x00CDCA  CD 23 26 00          CALL 0x002623                           
+0x00CDCE  0C                   INC C                                   
+0x00CDCF  00                   NOP                                     
+0x00CDD0  00                   NOP                                     
+0x00CDD1  00                   NOP                                     
+0x00CDD2  00                   NOP                                     
+0x00CDD3  FA CD 00 00          JP M,0x0000CD                           
+0x00CDD7  CE 00                ADC 0x00                                
+0x00CDD9  6B                   LD L,E                                  
+0x00CDDA  CE 00                ADC 0x00                                
+0x00CDDC  00                   NOP                                     
+0x00CDDD  CE 00                ADC 0x00                                
+0x00CDDF  6B                   LD L,E                                  
+0x00CDE0  CE 00                ADC 0x00                                
+0x00CDE2  00                   NOP                                     
+0x00CDE3  CE 00                ADC 0x00                                
+0x00CDE5  FA CD 00 06          JP M,0x0600CD                           
+0x00CDE9  CE 00                ADC 0x00                                
+0x00CDEB  FA CD 00 00          JP M,0x0000CD                           
+0x00CDEF  CE 00                ADC 0x00                                
+0x00CDF1  FA CD 00 00          JP M,0x0000CD                           
+0x00CDF5  CE 00                ADC 0x00                                
+0x00CDF7  6B                   LD L,E                                  
+0x00CDF8  CE 00                ADC 0x00                                
+0x00CDFA  DD 36 FF 01          LD (IX-0x01),0x01                        ; local var (IX-1)
+0x00CDFE  18 6B                JR 0x00CE6B                             
+0x00CE00  DD 36 FF 02          LD (IX-0x01),0x02                        ; local var (IX-1)
+0x00CE04  18 65                JR 0x00CE6B                             
+0x00CE06  DD 36 FF 03          LD (IX-0x01),0x03                        ; local var (IX-1)
+0x00CE0A  18 5F                JR 0x00CE6B                             
+0x00CE0C  DD 31 09             LD IX,(IX+0x09)                          ; param2 byte (IX+9)
+0x00CE0F  FD 7E 01             LD A,(IY+0x01)                           ; link ptr region (offset +1)
+0x00CE12  B7                   OR A                                    
+0x00CE13  ED 62                SBC HL,HL                               
+0x00CE15  6F                   LD L,A                                  
+0x00CE16  CD 1B 21 00          CALL 0x00211B                           
+0x00CE1A  06 00                LD B,0x00                               
+0x00CE1C  01 37 CE 00          LD BC,0x00CE37                          
+0x00CE20  02                   LD (BC),A                               
+0x00CE21  37                   SCF                                     
+0x00CE22  CE 00                ADC 0x00                                
+0x00CE24  03                   INC BC                                  
+0x00CE25  37                   SCF                                     
+0x00CE26  CE 00                ADC 0x00                                
+0x00CE28  09                   ADD HL,BC                               
+0x00CE29  43                   LD B,E                                  
+0x00CE2A  CE 00                ADC 0x00                                
+0x00CE2C  0A                   LD A,(BC)                               
+0x00CE2D  3D                   DEC A                                   
+0x00CE2E  CE 00                ADC 0x00                                
+0x00CE30  0B                   DEC BC                                  
+0x00CE31  43                   LD B,E                                  
+0x00CE32  CE 00                ADC 0x00                                
+0x00CE34  6B                   LD L,E                                  
+0x00CE35  CE 00                ADC 0x00                                
+0x00CE37  DD 36 FF 01          LD (IX-0x01),0x01                        ; local var (IX-1)
+0x00CE3B  18 2E                JR 0x00CE6B                             
+0x00CE3D  DD 36 FF 02          LD (IX-0x01),0x02                        ; local var (IX-1)
+0x00CE41  18 28                JR 0x00CE6B                             
+0x00CE43  DD 36 FF 03          LD (IX-0x01),0x03                        ; local var (IX-1)
+0x00CE47  18 22                JR 0x00CE6B                             
+0x00CE49  DD 31 09             LD IX,(IX+0x09)                          ; param2 byte (IX+9)
+0x00CE4C  FD 7E 01             LD A,(IY+0x01)                           ; link ptr region (offset +1)
+0x00CE4F  FE FF                CP 0xFF                                 
+0x00CE51  28 14                JR Z,0x00CE67                           
+0x00CE53  DD 31 09             LD IX,(IX+0x09)                          ; param2 byte (IX+9)
+0x00CE56  FD 7E 01             LD A,(IY+0x01)                           ; link ptr region (offset +1)
+0x00CE59  FE F9                CP 0xF9                                 
+0x00CE5B  28 0A                JR Z,0x00CE67                           
+0x00CE5D  DD 31 09             LD IX,(IX+0x09)                          ; param2 byte (IX+9)
+0x00CE60  FD 7E 01             LD A,(IY+0x01)                           ; link ptr region (offset +1)
+0x00CE63  FE F8                CP 0xF8                                 
+0x00CE65  20 04                JR NZ,0x00CE6B                          
+0x00CE67  DD 36 FF 02          LD (IX-0x01),0x02                        ; local var (IX-1)
+0x00CE6B  DD 7E FF             LD A,(IX-0x01)                           ; local var (IX-1)
+0x00CE6E  B7                   OR A                                    
+0x00CE6F  20 07                JR NZ,0x00CE78                          
+0x00CE71  DD 7E FE             LD A,(IX-0x02)                           ; local var (IX-2)
+0x00CE74  C3 E8 D2 00          JP 0x00D2E8                             
+0x00CE78  01 00 00 00          LD BC,0x000000                          
+0x00CE7C  C5                   PUSH BC                                 
+0x00CE7D  CD 6D E0 00          CALL 0x00E06D                            ; slab alloc (351 bytes)
+0x00CE81  C1                   POP BC                                  
+0x00CE82  22 FC 3F D1          LD (0xD13FFC),HL                         ; conn +24
+0x00CE86  2A FC 3F D1          LD HL,(0xD13FFC)                         ; conn +24
+0x00CE8A  CD C2 21 00          CALL 0x0021C2                           
+0x00CE8E  20 07                JR NZ,0x00CE97                          
+0x00CE90  DD 7E FE             LD A,(IX-0x02)                           ; local var (IX-2)
+0x00CE93  C3 E8 D2 00          JP 0x00D2E8                             
+0x00CE97  01 00 00 00          LD BC,0x000000                          
+0x00CE9B  C5                   PUSH BC                                 
+0x00CE9C  CD 6D E0 00          CALL 0x00E06D                            ; slab alloc (351 bytes)
+0x00CEA0  C1                   POP BC                                  
+0x00CEA1  22 FF 3F D1          LD (0xD13FFF),HL                         ; conn +27
+0x00CEA5  2A FF 3F D1          LD HL,(0xD13FFF)                         ; conn +27
+0x00CEA9  CD C2 21 00          CALL 0x0021C2                           
+0x00CEAD  20 21                JR NZ,0x00CED0                          
+0x00CEAF  ED 4B FC 3F D1       LD BC,(0xD13FFC)                         ; conn +24
+0x00CEB4  C5                   PUSH BC                                 
+0x00CEB5  01 00 00 00          LD BC,0x000000                          
+0x00CEB9  C5                   PUSH BC                                 
+0x00CEBA  CD CC E1 00          CALL 0x00E1CC                            ; slab free (287 bytes)
+0x00CEBE  C1                   POP BC                                  
+0x00CEBF  C1                   POP BC                                  
+0x00CEC0  01 00 00 00          LD BC,0x000000                          
+0x00CEC4  ED 43 FC 3F D1       [ld-mem-pair] {"pc":52932,"length":5,"nextPc":52937,"tag":"ld-mem-pair","addr":13713404,"pair":"bc","mode":"adl","modePrefix":null} ; conn +24
+0x00CEC9  DD 7E FE             LD A,(IX-0x02)                           ; local var (IX-2)
+0x00CECC  C3 E8 D2 00          JP 0x00D2E8                             
+0x00CED0  DD 7E FF             LD A,(IX-0x01)                           ; local var (IX-1)
+0x00CED3  FE 02                CP 0x02                                 
+0x00CED5  28 4F                JR Z,0x00CF26                           
+0x00CED7  01 00 00 00          LD BC,0x000000                          
+0x00CEDB  C5                   PUSH BC                                 
+0x00CEDC  CD 6D E0 00          CALL 0x00E06D                            ; slab alloc (351 bytes)
+0x00CEE0  C1                   POP BC                                  
+0x00CEE1  22 02 40 D1          LD (0xD14002),HL                         ; conn +30
+0x00CEE5  2A 02 40 D1          LD HL,(0xD14002)                         ; conn +30
+0x00CEE9  CD C2 21 00          CALL 0x0021C2                           
+0x00CEED  20 37                JR NZ,0x00CF26                          
+0x00CEEF  ED 4B FC 3F D1       LD BC,(0xD13FFC)                         ; conn +24
+0x00CEF4  C5                   PUSH BC                                 
+0x00CEF5  01 00 00 00          LD BC,0x000000                          
+0x00CEF9  C5                   PUSH BC                                 
+0x00CEFA  CD CC E1 00          CALL 0x00E1CC                            ; slab free (287 bytes)
+0x00CEFE  C1                   POP BC                                  
+0x00CEFF  C1                   POP BC                                  
+0x00CF00  ED 4B FF 3F D1       LD BC,(0xD13FFF)                         ; conn +27
+0x00CF05  C5                   PUSH BC                                 
+0x00CF06  01 00 00 00          LD BC,0x000000                          
+0x00CF0A  C5                   PUSH BC                                 
+0x00CF0B  CD CC E1 00          CALL 0x00E1CC                            ; slab free (287 bytes)
+0x00CF0F  C1                   POP BC                                  
+0x00CF10  C1                   POP BC                                  
+0x00CF11  01 00 00 00          LD BC,0x000000                          
+0x00CF15  ED 43 FC 3F D1       [ld-mem-pair] {"pc":53013,"length":5,"nextPc":53018,"tag":"ld-mem-pair","addr":13713404,"pair":"bc","mode":"adl","modePrefix":null} ; conn +24
+0x00CF1A  ED 43 FF 3F D1       [ld-mem-pair] {"pc":53018,"length":5,"nextPc":53023,"tag":"ld-mem-pair","addr":13713407,"pair":"bc","mode":"adl","modePrefix":null} ; conn +27
+0x00CF1F  DD 7E FE             LD A,(IX-0x02)                           ; local var (IX-2)
+0x00CF22  C3 E8 D2 00          JP 0x00D2E8                             
+0x00CF26  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00CF2B  ED 23 08             LEA HL,IY+8                             
+0x00CF2E  23                   INC HL                                  
+0x00CF2F  7E                   LD A,(HL)                               
+0x00CF30  E6 FC                AND 0xFC                                
+0x00CF32  CB CF                SET 1,A                                 
+0x00CF34  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00CF39  ED 23 08             LEA HL,IY+8                             
+0x00CF3C  23                   INC HL                                  
+0x00CF3D  77                   LD (HL),A                               
+0x00CF3E  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00CF43  ED 23 0A             LEA HL,IY+10                            
+0x00CF46  36 08                LD (HL),0x08                            
+0x00CF48  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00CF4D  ED 23 0B             LEA HL,IY+11                            
+0x00CF50  36 00                LD (HL),0x00                            
+0x00CF52  ED 4B BE 41 D1       LD BC,(0xD141BE)                        
+0x00CF57  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00CF5C  FD 0F 0C             LD (IY+0x0C),BC                          ; secondary value (offset +12)
+0x00CF5F  FD 36 0F 00          LD (IY+0x0F),0x00                        ; reserved (offset +15)
+0x00CF63  01 08 00 00          LD BC,0x000008                          
+0x00CF67  C5                   PUSH BC                                 
+0x00CF68  DD 07 09             LD BC,(IX+0x09)                          ; param2 byte (IX+9)
+0x00CF6B  C5                   PUSH BC                                 
+0x00CF6C  ED 4B BE 41 D1       LD BC,(0xD141BE)                        
+0x00CF71  C5                   PUSH BC                                 
+0x00CF72  CD E8 27 00          CALL 0x0027E8                           
+0x00CF76  C1                   POP BC                                  
+0x00CF77  C1                   POP BC                                  
+0x00CF78  C1                   POP BC                                  
+0x00CF79  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00CF7E  ED 23 08             LEA HL,IY+8                             
+0x00CF81  23                   INC HL                                  
+0x00CF82  7E                   LD A,(HL)                               
+0x00CF83  E6 FC                AND 0xFC                                
+0x00CF85  CB C7                SET 0,A                                 
+0x00CF87  FD 2A FF 3F D1       LD IY,(0xD13FFF)                         ; conn +27
+0x00CF8C  ED 23 08             LEA HL,IY+8                             
+0x00CF8F  23                   INC HL                                  
+0x00CF90  77                   LD (HL),A                               
+0x00CF91  DD 7E FF             LD A,(IX-0x01)                           ; local var (IX-1)
+0x00CF94  FE 02                CP 0x02                                 
+0x00CF96  28 18                JR Z,0x00CFB0                           
+0x00CF98  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00CF9D  ED 23 08             LEA HL,IY+8                             
+0x00CFA0  23                   INC HL                                  
+0x00CFA1  7E                   LD A,(HL)                               
+0x00CFA2  E6 FC                AND 0xFC                                
+0x00CFA4  F6 00                OR 0x00                                 
+0x00CFA6  FD 2A 02 40 D1       LD IY,(0xD14002)                         ; conn +30
+0x00CFAB  ED 23 08             LEA HL,IY+8                             
+0x00CFAE  23                   INC HL                                  
+0x00CFAF  77                   LD (HL),A                               
+0x00CFB0  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00CFB5  ED 23 08             LEA HL,IY+8                             
+0x00CFB8  23                   INC HL                                  
+0x00CFB9  7E                   LD A,(HL)                               
+0x00CFBA  CB BF                RES 7,A                                 
+0x00CFBC  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00CFC1  ED 23 08             LEA HL,IY+8                             
+0x00CFC4  23                   INC HL                                  
+0x00CFC5  77                   LD (HL),A                               
+0x00CFC6  DD 7E FF             LD A,(IX-0x01)                           ; local var (IX-1)
+0x00CFC9  B7                   OR A                                    
+0x00CFCA  ED 62                SBC HL,HL                               
+0x00CFCC  6F                   LD L,A                                  
+0x00CFCD  CD 23 26 00          CALL 0x002623                           
+0x00CFD1  03                   INC BC                                  
+0x00CFD2  00                   NOP                                     
+0x00CFD3  01 00 00 E2          LD BC,0xE20000                          
+0x00CFD7  CF                   RST 0x08                                
+0x00CFD8  00                   NOP                                     
+0x00CFD9  D5                   PUSH DE                                 
+0x00CFDA  D0                   RET NC                                  
+0x00CFDB  00                   NOP                                     
+0x00CFDC  4E                   LD C,(HL)                               
+0x00CFDD  D1                   POP DE                                  
+0x00CFDE  00                   NOP                                     
+0x00CFDF  6B                   LD L,E                                  
+0x00CFE0  D2 00 ED 4B          JP NC,0x4BED00                          
+0x00CFE4  BE                   CP (HL)                                 
+0x00CFE5  41                   LD B,C                                  
+0x00CFE6  D1                   POP DE                                  
+0x00CFE7  C5                   PUSH BC                                 
+0x00CFE8  DD 07 0C             LD BC,(IX+0x0C)                          ; param3 byte (IX+12)
+0x00CFEB  C5                   PUSH BC                                 
+0x00CFEC  ED 4B FF 3F D1       LD BC,(0xD13FFF)                         ; conn +27
+0x00CFF1  C5                   PUSH BC                                 
+0x00CFF2  CD 7B CB 00          CALL 0x00CB7B                            ; node body init (110 bytes)
+0x00CFF6  C1                   POP BC                                  
+0x00CFF7  C1                   POP BC                                  
+0x00CFF8  C1                   POP BC                                  
+0x00CFF9  01 00 01 00          LD BC,0x000100                          
+0x00CFFD  2A BE 41 D1          LD HL,(0xD141BE)                        
+0x00D001  09                   ADD HL,BC                               
+0x00D002  E5                   PUSH HL                                 
+0x00D003  01 00 00 00          LD BC,0x000000                          
+0x00D007  C5                   PUSH BC                                 
+0x00D008  ED 4B 02 40 D1       LD BC,(0xD14002)                         ; conn +30
+0x00D00D  C5                   PUSH BC                                 
+0x00D00E  CD 7B CB 00          CALL 0x00CB7B                            ; node body init (110 bytes)
+0x00D012  C1                   POP BC                                  
+0x00D013  C1                   POP BC                                  
+0x00D014  C1                   POP BC                                  
+0x00D015  ED 4B FF 3F D1       LD BC,(0xD13FFF)                         ; conn +27
+0x00D01A  C5                   PUSH BC                                 
+0x00D01B  ED 4B FC 3F D1       LD BC,(0xD13FFC)                         ; conn +24
+0x00D020  C5                   PUSH BC                                 
+0x00D021  CD E9 CB 00          CALL 0x00CBE9                            ; node header/link init (136 bytes)
+0x00D025  C1                   POP BC                                  
+0x00D026  C1                   POP BC                                  
+0x00D027  ED 4B 02 40 D1       LD BC,(0xD14002)                         ; conn +30
+0x00D02C  C5                   PUSH BC                                 
+0x00D02D  ED 4B FF 3F D1       LD BC,(0xD13FFF)                         ; conn +27
+0x00D032  C5                   PUSH BC                                 
+0x00D033  CD E9 CB 00          CALL 0x00CBE9                            ; node header/link init (136 bytes)
+0x00D037  C1                   POP BC                                  
+0x00D038  C1                   POP BC                                  
+0x00D039  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00D03E  FD 7E 00             LD A,(IY+0x00)                           ; link ptr region (offset +0)
+0x00D041  CB 87                RES 0,A                                 
+0x00D043  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00D048  FD 77 00             LD (IY+0x00),A                           ; link ptr region (offset +0)
+0x00D04B  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00D050  FD 7E 04             LD A,(IY+0x04)                           ; link ptr region (offset +4)
+0x00D053  CB 87                RES 0,A                                 
+0x00D055  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00D05A  FD 77 04             LD (IY+0x04),A                           ; link ptr region (offset +4)
+0x00D05D  FD 2A FF 3F D1       LD IY,(0xD13FFF)                         ; conn +27
+0x00D062  FD 7E 00             LD A,(IY+0x00)                           ; link ptr region (offset +0)
+0x00D065  CB 87                RES 0,A                                 
+0x00D067  FD 2A FF 3F D1       LD IY,(0xD13FFF)                         ; conn +27
+0x00D06C  FD 77 00             LD (IY+0x00),A                           ; link ptr region (offset +0)
+0x00D06F  FD 2A FF 3F D1       LD IY,(0xD13FFF)                         ; conn +27
+0x00D074  FD 7E 04             LD A,(IY+0x04)                           ; link ptr region (offset +4)
+0x00D077  CB 87                RES 0,A                                 
+0x00D079  FD 2A FF 3F D1       LD IY,(0xD13FFF)                         ; conn +27
+0x00D07E  FD 77 04             LD (IY+0x04),A                           ; link ptr region (offset +4)
+0x00D081  FD 2A FF 3F D1       LD IY,(0xD13FFF)                         ; conn +27
+0x00D086  ED 23 08             LEA HL,IY+8                             
+0x00D089  23                   INC HL                                  
+0x00D08A  7E                   LD A,(HL)                               
+0x00D08B  CB BF                RES 7,A                                 
+0x00D08D  FD 2A FF 3F D1       LD IY,(0xD13FFF)                         ; conn +27
+0x00D092  ED 23 08             LEA HL,IY+8                             
+0x00D095  23                   INC HL                                  
+0x00D096  77                   LD (HL),A                               
+0x00D097  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00D09C  FD 7E 08             LD A,(IY+0x08)                           ; flags (offset +8)
+0x00D09F  CB BF                RES 7,A                                 
+0x00D0A1  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00D0A6  FD 77 08             LD (IY+0x08),A                           ; flags (offset +8)
+0x00D0A9  FD 2A FF 3F D1       LD IY,(0xD13FFF)                         ; conn +27
+0x00D0AE  FD 7E 08             LD A,(IY+0x08)                           ; flags (offset +8)
+0x00D0B1  CB FF                SET 7,A                                 
+0x00D0B3  FD 2A FF 3F D1       LD IY,(0xD13FFF)                         ; conn +27
+0x00D0B8  FD 77 08             LD (IY+0x08),A                           ; flags (offset +8)
+0x00D0BB  FD 2A 02 40 D1       LD IY,(0xD14002)                         ; conn +30
+0x00D0C0  FD 7E 08             LD A,(IY+0x08)                           ; flags (offset +8)
+0x00D0C3  CB FF                SET 7,A                                 
+0x00D0C5  FD 2A 02 40 D1       LD IY,(0xD14002)                         ; conn +30
+0x00D0CA  FD 77 08             LD (IY+0x08),A                           ; flags (offset +8)
+0x00D0CD  DD 36 FE 00          LD (IX-0x02),0x00                        ; local var (IX-2)
+0x00D0D1  C3 6B D2 00          JP 0x00D26B                             
+0x00D0D5  ED 4B BE 41 D1       LD BC,(0xD141BE)                        
+0x00D0DA  C5                   PUSH BC                                 
+0x00D0DB  DD 07 0C             LD BC,(IX+0x0C)                          ; param3 byte (IX+12)
+0x00D0DE  C5                   PUSH BC                                 
+0x00D0DF  ED 4B FF 3F D1       LD BC,(0xD13FFF)                         ; conn +27
+0x00D0E4  C5                   PUSH BC                                 
+0x00D0E5  CD 7B CB 00          CALL 0x00CB7B                            ; node body init (110 bytes)
+0x00D0E9  C1                   POP BC                                  
+0x00D0EA  C1                   POP BC                                  
+0x00D0EB  C1                   POP BC                                  
+0x00D0EC  ED 4B FF 3F D1       LD BC,(0xD13FFF)                         ; conn +27
+0x00D0F1  C5                   PUSH BC                                 
+0x00D0F2  ED 4B FC 3F D1       LD BC,(0xD13FFC)                         ; conn +24
+0x00D0F7  C5                   PUSH BC                                 
+0x00D0F8  CD E9 CB 00          CALL 0x00CBE9                            ; node header/link init (136 bytes)
+0x00D0FC  C1                   POP BC                                  
+0x00D0FD  C1                   POP BC                                  
+0x00D0FE  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00D103  FD 7E 00             LD A,(IY+0x00)                           ; link ptr region (offset +0)
+0x00D106  CB 87                RES 0,A                                 
+0x00D108  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00D10D  FD 77 00             LD (IY+0x00),A                           ; link ptr region (offset +0)
+0x00D110  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00D115  FD 7E 04             LD A,(IY+0x04)                           ; link ptr region (offset +4)
+0x00D118  CB 87                RES 0,A                                 
+0x00D11A  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00D11F  FD 77 04             LD (IY+0x04),A                           ; link ptr region (offset +4)
+0x00D122  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00D127  FD 7E 08             LD A,(IY+0x08)                           ; flags (offset +8)
+0x00D12A  CB BF                RES 7,A                                 
+0x00D12C  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00D131  FD 77 08             LD (IY+0x08),A                           ; flags (offset +8)
+0x00D134  FD 2A FF 3F D1       LD IY,(0xD13FFF)                         ; conn +27
+0x00D139  FD 7E 08             LD A,(IY+0x08)                           ; flags (offset +8)
+0x00D13C  CB FF                SET 7,A                                 
+0x00D13E  FD 2A FF 3F D1       LD IY,(0xD13FFF)                         ; conn +27
+0x00D143  FD 77 08             LD (IY+0x08),A                           ; flags (offset +8)
+0x00D146  DD 36 FE 00          LD (IX-0x02),0x00                        ; local var (IX-2)
+0x00D14A  C3 6B D2 00          JP 0x00D26B                             
+0x00D14E  01 00 01 00          LD BC,0x000100                          
+0x00D152  2A BE 41 D1          LD HL,(0xD141BE)                        
+0x00D156  09                   ADD HL,BC                               
+0x00D157  E5                   PUSH HL                                 
+0x00D158  DD 07 0C             LD BC,(IX+0x0C)                          ; param3 byte (IX+12)
+0x00D15B  C5                   PUSH BC                                 
+0x00D15C  ED 4B 02 40 D1       LD BC,(0xD14002)                         ; conn +30
+0x00D161  C5                   PUSH BC                                 
+0x00D162  CD 7B CB 00          CALL 0x00CB7B                            ; node body init (110 bytes)
+0x00D166  C1                   POP BC                                  
+0x00D167  C1                   POP BC                                  
+0x00D168  C1                   POP BC                                  
+0x00D169  01 00 01 00          LD BC,0x000100                          
+0x00D16D  2A BE 41 D1          LD HL,(0xD141BE)                        
+0x00D171  09                   ADD HL,BC                               
+0x00D172  B7                   OR A                                    
+0x00D173  DD 07 0F             LD BC,(IX+0x0F)                         
+0x00D176  ED 42                SBC HL,BC                               
+0x00D178  28 1D                JR Z,0x00D197                           
+0x00D17A  DD 07 0C             LD BC,(IX+0x0C)                          ; param3 byte (IX+12)
+0x00D17D  CD 6B 27 00          CALL 0x00276B                            ; zero-extend BC->HL
+0x00D181  E5                   PUSH HL                                 
+0x00D182  DD 07 0F             LD BC,(IX+0x0F)                         
+0x00D185  C5                   PUSH BC                                 
+0x00D186  2A BE 41 D1          LD HL,(0xD141BE)                        
+0x00D18A  01 00 01 00          LD BC,0x000100                          
+0x00D18E  09                   ADD HL,BC                               
+0x00D18F  E5                   PUSH HL                                 
+0x00D190  CD E8 27 00          CALL 0x0027E8                           
+0x00D194  C1                   POP BC                                  
+0x00D195  C1                   POP BC                                  
+0x00D196  C1                   POP BC                                  
+0x00D197  ED 4B BE 41 D1       LD BC,(0xD141BE)                        
+0x00D19C  C5                   PUSH BC                                 
+0x00D19D  01 00 00 00          LD BC,0x000000                          
+0x00D1A1  C5                   PUSH BC                                 
+0x00D1A2  ED 4B FF 3F D1       LD BC,(0xD13FFF)                         ; conn +27
+0x00D1A7  C5                   PUSH BC                                 
+0x00D1A8  CD 7B CB 00          CALL 0x00CB7B                            ; node body init (110 bytes)
+0x00D1AC  C1                   POP BC                                  
+0x00D1AD  C1                   POP BC                                  
+0x00D1AE  C1                   POP BC                                  
+0x00D1AF  ED 4B 02 40 D1       LD BC,(0xD14002)                         ; conn +30
+0x00D1B4  C5                   PUSH BC                                 
+0x00D1B5  ED 4B FC 3F D1       LD BC,(0xD13FFC)                         ; conn +24
+0x00D1BA  C5                   PUSH BC                                 
+0x00D1BB  CD E9 CB 00          CALL 0x00CBE9                            ; node header/link init (136 bytes)
+0x00D1BF  C1                   POP BC                                  
+0x00D1C0  C1                   POP BC                                  
+0x00D1C1  ED 4B FF 3F D1       LD BC,(0xD13FFF)                         ; conn +27
+0x00D1C6  C5                   PUSH BC                                 
+0x00D1C7  ED 4B 02 40 D1       LD BC,(0xD14002)                         ; conn +30
+0x00D1CC  C5                   PUSH BC                                 
+0x00D1CD  CD E9 CB 00          CALL 0x00CBE9                            ; node header/link init (136 bytes)
+0x00D1D1  C1                   POP BC                                  
+0x00D1D2  C1                   POP BC                                  
+0x00D1D3  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00D1D8  FD 7E 00             LD A,(IY+0x00)                           ; link ptr region (offset +0)
+0x00D1DB  CB 87                RES 0,A                                 
+0x00D1DD  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00D1E2  FD 77 00             LD (IY+0x00),A                           ; link ptr region (offset +0)
+0x00D1E5  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00D1EA  FD 7E 04             LD A,(IY+0x04)                           ; link ptr region (offset +4)
+0x00D1ED  CB 87                RES 0,A                                 
+0x00D1EF  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00D1F4  FD 77 04             LD (IY+0x04),A                           ; link ptr region (offset +4)
+0x00D1F7  FD 2A 02 40 D1       LD IY,(0xD14002)                         ; conn +30
+0x00D1FC  FD 7E 00             LD A,(IY+0x00)                           ; link ptr region (offset +0)
+0x00D1FF  CB 87                RES 0,A                                 
+0x00D201  FD 2A 02 40 D1       LD IY,(0xD14002)                         ; conn +30
+0x00D206  FD 77 00             LD (IY+0x00),A                           ; link ptr region (offset +0)
+0x00D209  FD 2A 02 40 D1       LD IY,(0xD14002)                         ; conn +30
+0x00D20E  FD 7E 04             LD A,(IY+0x04)                           ; link ptr region (offset +4)
+0x00D211  CB 87                RES 0,A                                 
+0x00D213  FD 2A 02 40 D1       LD IY,(0xD14002)                         ; conn +30
+0x00D218  FD 77 04             LD (IY+0x04),A                           ; link ptr region (offset +4)
+0x00D21B  FD 2A 02 40 D1       LD IY,(0xD14002)                         ; conn +30
+0x00D220  ED 23 08             LEA HL,IY+8                             
+0x00D223  23                   INC HL                                  
+0x00D224  7E                   LD A,(HL)                               
+0x00D225  CB BF                RES 7,A                                 
+0x00D227  FD 2A 02 40 D1       LD IY,(0xD14002)                         ; conn +30
+0x00D22C  ED 23 08             LEA HL,IY+8                             
+0x00D22F  23                   INC HL                                  
+0x00D230  77                   LD (HL),A                               
+0x00D231  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00D236  FD 7E 08             LD A,(IY+0x08)                           ; flags (offset +8)
+0x00D239  CB BF                RES 7,A                                 
+0x00D23B  FD 2A FC 3F D1       LD IY,(0xD13FFC)                         ; conn +24
+0x00D240  FD 77 08             LD (IY+0x08),A                           ; flags (offset +8)
+0x00D243  FD 2A 02 40 D1       LD IY,(0xD14002)                         ; conn +30
+0x00D248  FD 7E 08             LD A,(IY+0x08)                           ; flags (offset +8)
+0x00D24B  CB FF                SET 7,A                                 
+0x00D24D  FD 2A 02 40 D1       LD IY,(0xD14002)                         ; conn +30
+0x00D252  FD 77 08             LD (IY+0x08),A                           ; flags (offset +8)
+0x00D255  FD 2A FF 3F D1       LD IY,(0xD13FFF)                         ; conn +27
+0x00D25A  FD 7E 08             LD A,(IY+0x08)                           ; flags (offset +8)
+0x00D25D  CB FF                SET 7,A                                 
+0x00D25F  FD 2A FF 3F D1       LD IY,(0xD13FFF)                         ; conn +27
+0x00D264  FD 77 08             LD (IY+0x08),A                           ; flags (offset +8)
+0x00D267  DD 36 FE 00          LD (IX-0x02),0x00                        ; local var (IX-2)
+0x00D26B  DD 7E FE             LD A,(IX-0x02)                           ; local var (IX-2)
+0x00D26E  B7                   OR A                                    
+0x00D26F  20 74                JR NZ,0x00D2E5                          
+0x00D271  01 00 00 00          LD BC,0x000000                          
+0x00D275  C5                   PUSH BC                                 
+0x00D276  C5                   PUSH BC                                 
+0x00D277  01 88 13 00          LD BC,0x001388                          
+0x00D27B  C5                   PUSH BC                                 
+0x00D27C  DD 7E 06             LD A,(IX+0x06)                           ; param1 byte (IX+6)
+0x00D27F  B7                   OR A                                    
+0x00D280  ED 62                SBC HL,HL                               
+0x00D282  6F                   LD L,A                                  
+0x00D283  E5                   PUSH HL                                 
+0x00D284  C1                   POP BC                                  
+0x00D285  29                   ADD HL,HL                               
+0x00D286  09                   ADD HL,BC                               
+0x00D287  01 D8 3F D1          LD BC,0xD13FD8                           ; descriptor base A
+0x00D28B  09                   ADD HL,BC                               
+0x00D28C  ED 07                [ld-pair-ind] {"pc":53900,"length":2,"nextPc":53902,"tag":"ld-pair-ind","pair":"bc","src":"hl","mode":"adl","modePrefix":null}
+0x00D28E  C5                   PUSH BC                                 
+0x00D28F  ED 4B FC 3F D1       LD BC,(0xD13FFC)                         ; conn +24
+0x00D294  C5                   PUSH BC                                 
+0x00D295  CD 83 E5 00          CALL 0x00E583                           
+0x00D299  C1                   POP BC                                  
+0x00D29A  C1                   POP BC                                  
+0x00D29B  C1                   POP BC                                  
+0x00D29C  C1                   POP BC                                  
+0x00D29D  C1                   POP BC                                  
+0x00D29E  DD 77 FE             LD (IX-0x02),A                           ; local var (IX-2)
+0x00D2A1  DD 7E FE             LD A,(IX-0x02)                           ; local var (IX-2)
+0x00D2A4  B7                   OR A                                    
+0x00D2A5  20 3E                JR NZ,0x00D2E5                          
+0x00D2A7  DD 7E FF             LD A,(IX-0x01)                           ; local var (IX-1)
+0x00D2AA  B7                   OR A                                    
+0x00D2AB  ED 62                SBC HL,HL                               
+0x00D2AD  6F                   LD L,A                                  
+0x00D2AE  CD 23 26 00          CALL 0x002623                           
+0x00D2B2  03                   INC BC                                  
+0x00D2B3  00                   NOP                                     
+0x00D2B4  01 00 00 C3          LD BC,0xC30000                          
+0x00D2B8  D2 00 C3 D2          JP NC,0xD2C300                          
+0x00D2BC  00                   NOP                                     
+0x00D2BD  E5                   PUSH HL                                 
+0x00D2BE  D2 00 E5 D2          JP NC,0xD2E500                          
+0x00D2C2  00                   NOP                                     
+0x00D2C3  DD 27 0C             LD HL,(IX+0x0C)                          ; param3 byte (IX+12)
+0x00D2C6  CD E8 25 00          CALL 0x0025E8                           
+0x00D2CA  28 19                JR Z,0x00D2E5                           
+0x00D2CC  DD 07 0C             LD BC,(IX+0x0C)                          ; param3 byte (IX+12)
+0x00D2CF  CD 6B 27 00          CALL 0x00276B                            ; zero-extend BC->HL
+0x00D2D3  E5                   PUSH HL                                 
+0x00D2D4  ED 4B BE 41 D1       LD BC,(0xD141BE)                        
+0x00D2D9  C5                   PUSH BC                                 
+0x00D2DA  DD 07 0F             LD BC,(IX+0x0F)                         
+0x00D2DD  C5                   PUSH BC                                 
+0x00D2DE  CD E8 27 00          CALL 0x0027E8                           
+0x00D2E2  C1                   POP BC                                  
+0x00D2E3  C1                   POP BC                                  
+0x00D2E4  C1                   POP BC                                  
+0x00D2E5  DD 7E FE             LD A,(IX-0x02)                           ; local var (IX-2)
+0x00D2E8  DD F9                LD SP,IX                                
+0x00D2EA  DD E1                POP IX                                  
+0x00D2EC  C9                   RET                                     
+
+=== CALL TARGETS (unique, with call counts) ===
+- 0x00211B: 1x [] from: 0x00CE16
+- 0x002197: 1x [local-frame allocator] from: 0x00CD7F
+- 0x0021C2: 3x [] from: 0x00CE8A, 0x00CEA9, 0x00CEE9
+- 0x0025E8: 1x [] from: 0x00D2C6
+- 0x002623: 4x [] from: 0x00CDAB, 0x00CDCA, 0x00CFCD, 0x00D2AE
+- 0x00276B: 2x [zero-extend BC->HL] from: 0x00D17D, 0x00D2CF
+- 0x0027E8: 3x [] from: 0x00CF72, 0x00D190, 0x00D2DE
+- 0x00CB7B: 5x [node body init (110 bytes)] from: 0x00CFF2, 0x00D00E, 0x00D0E5, 0x00D162, 0x00D1A8
+- 0x00CBE9: 5x [node header/link init (136 bytes)] from: 0x00D021, 0x00D033, 0x00D0F8, 0x00D1BB, 0x00D1CD
+- 0x00E06D: 3x [slab alloc (351 bytes)] from: 0x00CE7D, 0x00CE9C, 0x00CEDC
+- 0x00E1CC: 3x [slab free (287 bytes)] from: 0x00CEBA, 0x00CEFA, 0x00CF0B
+- 0x00E583: 1x [] from: 0x00D295
+- 0xCE0C00: 1x [] from: 0x00CDB5
+Total unique CALL targets: 13
+Total CALL instructions: 33
+
+=== ABSOLUTE RAM READS (D0xxxx-D1xxxx) ===
+- 0xD13FFC: 34x read at 0x00CE86, 0x00CEAF, 0x00CEEF, 0x00CF26, 0x00CF34, 0x00CF3E, 0x00CF48, 0x00CF57, 0x00CF79, 0x00CF98, 0x00CFB0, 0x00CFBC, 0x00D01B, 0x00D039, 0x00D043, 0x00D04B, 0x00D055, 0x00D097, 0x00D0A1, 0x00D0F2, 0x00D0FE, 0x00D108, 0x00D110, 0x00D11A, 0x00D122, 0x00D12C, 0x00D1B5, 0x00D1D3, 0x00D1DD, 0x00D1E5, 0x00D1EF, 0x00D231, 0x00D23B, 0x00D28F [conn +24]
+- 0xD13FFF: 22x read at 0x00CEA5, 0x00CF00, 0x00CF87, 0x00CFEC, 0x00D015, 0x00D02D, 0x00D05D, 0x00D067, 0x00D06F, 0x00D079, 0x00D081, 0x00D08D, 0x00D0A9, 0x00D0B3, 0x00D0DF, 0x00D0EC, 0x00D134, 0x00D13E, 0x00D1A2, 0x00D1C1, 0x00D255, 0x00D25F [conn +27]
+- 0xD14002: 17x read at 0x00CEE5, 0x00CFA6, 0x00D008, 0x00D027, 0x00D0BB, 0x00D0C5, 0x00D15C, 0x00D1AF, 0x00D1C7, 0x00D1F7, 0x00D201, 0x00D209, 0x00D213, 0x00D21B, 0x00D227, 0x00D243, 0x00D24D [conn +30]
+- 0xD141BE: 9x read at 0x00CF52, 0x00CF6C, 0x00CFFD, 0x00D0D5, 0x00D152, 0x00D16D, 0x00D186, 0x00D197, 0x00D2D4
+
+=== ABSOLUTE RAM WRITES (D0xxxx-D1xxxx) ===
+- 0xD13FFC: 1x write at 0x00CE82 [conn +24]
+- 0xD13FFF: 1x write at 0x00CEA1 [conn +27]
+- 0xD14002: 1x write at 0x00CEE1 [conn +30]
+
+=== PORT I/O ===
+- none
+
+=== LOOPS (backward branches) ===
+- 0x00CDD3 -> 0x0000CD (52486 bytes back, conditional)
+- 0x00CDEB -> 0x0000CD (52510 bytes back, conditional)
+- 0x00CDF1 -> 0x0000CD (52516 bytes back, conditional)
+
+=== FORWARD JUMPS ===
+- 0x00CDE5 -> 0x0600CD (340712 bytes forward, conditional)
+- 0x00CDFE -> 0x00CE6B (109 bytes forward, unconditional)
+- 0x00CE04 -> 0x00CE6B (103 bytes forward, unconditional)
+- 0x00CE0A -> 0x00CE6B (97 bytes forward, unconditional)
+- 0x00CE3B -> 0x00CE6B (48 bytes forward, unconditional)
+- 0x00CE41 -> 0x00CE6B (42 bytes forward, unconditional)
+- 0x00CE47 -> 0x00CE6B (36 bytes forward, unconditional)
+- 0x00CE51 -> 0x00CE67 (22 bytes forward, conditional)
+- 0x00CE5B -> 0x00CE67 (12 bytes forward, conditional)
+- 0x00CE65 -> 0x00CE6B (6 bytes forward, conditional)
+- 0x00CE6F -> 0x00CE78 (9 bytes forward, conditional)
+- 0x00CE74 -> 0x00D2E8 (1140 bytes forward, unconditional)
+- 0x00CE8E -> 0x00CE97 (9 bytes forward, conditional)
+- 0x00CE93 -> 0x00D2E8 (1109 bytes forward, unconditional)
+- 0x00CEAD -> 0x00CED0 (35 bytes forward, conditional)
+- 0x00CECC -> 0x00D2E8 (1052 bytes forward, unconditional)
+- 0x00CED5 -> 0x00CF26 (81 bytes forward, conditional)
+- 0x00CEED -> 0x00CF26 (57 bytes forward, conditional)
+- 0x00CF22 -> 0x00D2E8 (966 bytes forward, unconditional)
+- 0x00CF96 -> 0x00CFB0 (26 bytes forward, conditional)
+- 0x00CFE0 -> 0x4BED00 (4922656 bytes forward, conditional)
+- 0x00D0D1 -> 0x00D26B (410 bytes forward, unconditional)
+- 0x00D14A -> 0x00D26B (289 bytes forward, unconditional)
+- 0x00D178 -> 0x00D197 (31 bytes forward, conditional)
+- 0x00D26F -> 0x00D2E5 (118 bytes forward, conditional)
+- 0x00D2A5 -> 0x00D2E5 (64 bytes forward, conditional)
+- 0x00D2B8 -> 0xD2C300 (13758536 bytes forward, conditional)
+- 0x00D2BE -> 0xD2E500 (13767234 bytes forward, conditional)
+- 0x00D2CA -> 0x00D2E5 (27 bytes forward, conditional)
+
+=== IX-RELATIVE ACCESS ===
+- IX+-3: 1 read(s), 1 write(s) (2 total)
+- IX+-2: 7 read(s), 5 write(s) (12 total)
+- IX+-1: 5 read(s), 9 write(s) (14 total)
+- IX+6: 1 read(s) (1 total)
+- IX+9: 7 read(s) (7 total)
+- IX+12: 6 read(s) (6 total)
+- IX+15: 3 read(s) (3 total)
+
+=== IY-RELATIVE ACCESS ===
+- IY+0: 6 read(s), 5 write(s) (11 total)
+- IY+1: 5 read(s) (5 total)
+- IY+4: 5 read(s), 5 write(s) (10 total)
+- IY+8: 8 read(s), 8 write(s) (16 total)
+- IY+12: 1 write(s) (1 total)
+- IY+15: 1 write(s) (1 total)
+
+=== RET INSTRUCTIONS ===
+- 0x00D2EC
+
+=== STRUCTURAL ANALYSIS ===
+CALL instruction blocks (clusters within 40 bytes):
+  Block 0: 0x00CD7F..0x00CD7F
+    0x00CD7F: CALL 0x002197 [local-frame allocator]
+  Block 1: 0x00CDAB..0x00CDCA
+    0x00CDAB: CALL 0x002623 [0x002623]
+    0x00CDB5: CALL 0xCE0C00 [0xCE0C00]
+    0x00CDCA: CALL 0x002623 [0x002623]
+  Block 2: 0x00CE16..0x00CE16
+    0x00CE16: CALL 0x00211B [0x00211B]
+  Block 3: 0x00CE7D..0x00CF0B
+    0x00CE7D: CALL 0x00E06D [slab alloc (351 bytes)]
+    0x00CE8A: CALL 0x0021C2 [0x0021C2]
+    0x00CE9C: CALL 0x00E06D [slab alloc (351 bytes)]
+    0x00CEA9: CALL 0x0021C2 [0x0021C2]
+    0x00CEBA: CALL 0x00E1CC [slab free (287 bytes)]
+    0x00CEDC: CALL 0x00E06D [slab alloc (351 bytes)]
+    0x00CEE9: CALL 0x0021C2 [0x0021C2]
+    0x00CEFA: CALL 0x00E1CC [slab free (287 bytes)]
+    0x00CF0B: CALL 0x00E1CC [slab free (287 bytes)]
+  Block 4: 0x00CF72..0x00CF72
+    0x00CF72: CALL 0x0027E8 [0x0027E8]
+  Block 5: 0x00CFCD..0x00D033
+    0x00CFCD: CALL 0x002623 [0x002623]
+    0x00CFF2: CALL 0x00CB7B [node body init (110 bytes)]
+    0x00D00E: CALL 0x00CB7B [node body init (110 bytes)]
+    0x00D021: CALL 0x00CBE9 [node header/link init (136 bytes)]
+    0x00D033: CALL 0x00CBE9 [node header/link init (136 bytes)]
+  Block 6: 0x00D0E5..0x00D0F8
+    0x00D0E5: CALL 0x00CB7B [node body init (110 bytes)]
+    0x00D0F8: CALL 0x00CBE9 [node header/link init (136 bytes)]
+  Block 7: 0x00D162..0x00D1CD
+    0x00D162: CALL 0x00CB7B [node body init (110 bytes)]
+    0x00D17D: CALL 0x00276B [zero-extend BC->HL]
+    0x00D190: CALL 0x0027E8 [0x0027E8]
+    0x00D1A8: CALL 0x00CB7B [node body init (110 bytes)]
+    0x00D1BB: CALL 0x00CBE9 [node header/link init (136 bytes)]
+    0x00D1CD: CALL 0x00CBE9 [node header/link init (136 bytes)]
+  Block 8: 0x00D295..0x00D2DE
+    0x00D295: CALL 0x00E583 [0x00E583]
+    0x00D2AE: CALL 0x002623 [0x002623]
+    0x00D2C6: CALL 0x0025E8 [0x0025E8]
+    0x00D2CF: CALL 0x00276B [zero-extend BC->HL]
+    0x00D2DE: CALL 0x0027E8 [0x0027E8]
+
+=== SECTION BOUNDARIES (major control flow) ===
+- 0x00CDD3 -> 0x0000CD (52486 bytes backward, cond)
+- 0x00CDE5 -> 0x0600CD (340712 bytes forward, cond)
+- 0x00CDEB -> 0x0000CD (52510 bytes backward, cond)
+- 0x00CDF1 -> 0x0000CD (52516 bytes backward, cond)
+- 0x00CDFE -> 0x00CE6B (109 bytes forward, uncond)
+- 0x00CE04 -> 0x00CE6B (103 bytes forward, uncond)
+- 0x00CE0A -> 0x00CE6B (97 bytes forward, uncond)
+- 0x00CE3B -> 0x00CE6B (48 bytes forward, uncond)
+- 0x00CE41 -> 0x00CE6B (42 bytes forward, uncond)
+- 0x00CE47 -> 0x00CE6B (36 bytes forward, uncond)
+- 0x00CE74 -> 0x00D2E8 (1140 bytes forward, uncond)
+- 0x00CE93 -> 0x00D2E8 (1109 bytes forward, uncond)
+- 0x00CECC -> 0x00D2E8 (1052 bytes forward, uncond)
+- 0x00CED5 -> 0x00CF26 (81 bytes forward, cond)
+- 0x00CEED -> 0x00CF26 (57 bytes forward, cond)
+- 0x00CF22 -> 0x00D2E8 (966 bytes forward, uncond)
+- 0x00CFE0 -> 0x4BED00 (4922656 bytes forward, cond)
+- 0x00D0D1 -> 0x00D26B (410 bytes forward, uncond)
+- 0x00D14A -> 0x00D26B (289 bytes forward, uncond)
+- 0x00D26F -> 0x00D2E5 (118 bytes forward, cond)
+- 0x00D2A5 -> 0x00D2E5 (64 bytes forward, cond)
+- 0x00D2B8 -> 0xD2C300 (13758536 bytes forward, cond)
+- 0x00D2BE -> 0xD2E500 (13767234 bytes forward, cond)
