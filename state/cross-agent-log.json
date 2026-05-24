@@ -12832,15 +12832,73 @@
       "timestamp": "2026-05-24T06:13:26Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "982afc2a57e0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x00E383 Descriptor Pool Initializer\n\n## Context\nIn the TI-84 CE ROM transpilation pr",
+      "status": "timeout",
+      "duration_seconds": 900.061,
+      "timestamp": "2026-05-24T06:18:07Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a83d3e1b7fab",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x00DF73 Descriptor Table Initializer\n\n## Context\nIn the TI-84 CE ROM transpilation p",
+      "status": "blocked",
+      "duration_seconds": 433.318,
+      "timestamp": "2026-05-24T08:09:40Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8f78b6abf39f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x00285F (Memset Called by Descriptor Init)\n\n## Context\nIn the TI-84 CE ROM transpila",
+      "status": "completed",
+      "duration_seconds": 511.626,
+      "timestamp": "2026-05-24T08:11:03Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ab48c5e70c07",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace BC Value at 0x00CB14 (Master Pool Base Address)\n\n## Context\nIn the TI-84 CE ROM transp",
+      "status": "completed",
+      "duration_seconds": 552.794,
+      "timestamp": "2026-05-24T08:11:42Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "0a22f6affe53",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x002553 Division Helper\n\n## Context\nIn the TI-84 CE ROM transpilation project at `C:/",
+      "status": "completed",
+      "duration_seconds": 637.49,
+      "timestamp": "2026-05-24T08:13:10Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase427-trace-002553.mjs",
+        "TI-84_Plus_CE/phase427-002553-division-report.md"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1050,
-    "cc_to_codex": 1050,
+    "total_calls": 1055,
+    "cc_to_codex": 1055,
     "codex_to_cc": 0,
-    "completed": 797,
-    "failed": 236,
+    "completed": 800,
+    "failed": 237,
     "refused": 0,
-    "avg_duration_seconds": 602.744
+    "avg_duration_seconds": 602.765
   }
 }
