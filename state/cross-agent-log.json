@@ -12737,15 +12737,110 @@
       "timestamp": "2026-05-24T02:17:11Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "f77771b8d112",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Coverage Push \u2014 40 New Seeds\n\n## Context\nYou are working on a TI-84 Plus CE ROM (eZ80) trans",
+      "status": "completed",
+      "duration_seconds": 262.479,
+      "timestamp": "2026-05-24T04:07:14Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "257f7094176a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map D13FD8/D13FDE Descriptor Table Bases\n\n## Context\nYou are working on a TI-84 Plus CE ROM ",
+      "status": "completed",
+      "duration_seconds": 478.822,
+      "timestamp": "2026-05-24T04:10:42Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7d97dc44eca1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x00CBE9 Secondary Descriptor Constructor\n\n## Context\nYou are working on a TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 780.142,
+      "timestamp": "2026-05-24T04:15:33Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase425-trace-00CBE9.mjs",
+        "TI-84_Plus_CE/phase425-trace-00CBE9-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "238050a0f19f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x00CB7B Descriptor Node Constructor\n\n## Context\nYou are working on a TI-84 Plus CE R",
+      "status": "completed",
+      "duration_seconds": 822.899,
+      "timestamp": "2026-05-24T04:16:15Z",
+      "files_changed": [
+        "CONTINUATION_PROMPT_CODEX.md",
+        "TI-84_Plus_CE/ROM.transpiled.js",
+        "TI-84_Plus_CE/ROM.transpiled.report.json",
+        "TI-84_Plus_CE/phase425-D13FD8-map-report.md",
+        "TI-84_Plus_CE/phase425-trace-00CB7B-report.md",
+        "TI-84_Plus_CE/phase425-trace-00CBE9-report.md",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase425-map-D13FD8.mjs",
+        "TI-84_Plus_CE/probe-phase425-trace-00CB7B.mjs",
+        "TI-84_Plus_CE/probe-phase425-trace-00CBE9.mjs",
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "45e1714ca829",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace Descriptor Node +8/+9 Gap\n\n## Context\nIn the TI-84 CE ROM transpilation project at `C:",
+      "status": "completed",
+      "duration_seconds": 570.406,
+      "timestamp": "2026-05-24T06:12:36Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3d9afb582e16",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace D14017 Master Pool Source\n\n## Context\nIn the TI-84 CE ROM transpilation project at `C:",
+      "status": "completed",
+      "duration_seconds": 602.023,
+      "timestamp": "2026-05-24T06:13:13Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase426-trace-D14017.mjs",
+        "TI-84_Plus_CE/phase426-D14017-trace-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "4827cbc014ed",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map Connection Struct Fields +0 Through +27\n\n## Context\nIn the TI-84 CE ROM transpilation pr",
+      "status": "completed",
+      "duration_seconds": 617.264,
+      "timestamp": "2026-05-24T06:13:26Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1043,
-    "cc_to_codex": 1043,
+    "total_calls": 1050,
+    "cc_to_codex": 1050,
     "codex_to_cc": 0,
-    "completed": 790,
+    "completed": 797,
     "failed": 236,
     "refused": 0,
-    "avg_duration_seconds": 602.826
+    "avg_duration_seconds": 602.744
   }
 }
