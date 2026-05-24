@@ -23268,6 +23268,49 @@ function walkBlocks() {
     { pc: 0x0227fc, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
     { pc: 0x022849, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
     { pc: 0x0228a5, mode: 'adl' },  // PUSH IX; LD IX,0; ADD IX,SP
+    // Auto-session 424: 40 new seeds for coverage push.
+    // 20 OS export JP-target seeds from unseeded 0x020210..0x02029c table entries.
+    { pc: 0x07e071, mode: 'adl' },  // JP target from 0x020210
+    { pc: 0x07cb98, mode: 'adl' },  // JP target from 0x020214
+    { pc: 0x07e20d, mode: 'adl' },  // JP target from 0x020218
+    { pc: 0x07e219, mode: 'adl' },  // JP target from 0x02021c
+    { pc: 0x07e543, mode: 'adl' },  // JP target from 0x020220
+    { pc: 0x07e57b, mode: 'adl' },  // JP target from 0x020224
+    { pc: 0x07e5b5, mode: 'adl' },  // JP target from 0x020228
+    { pc: 0x07e5d8, mode: 'adl' },  // JP target from 0x02022c
+    { pc: 0x07eb41, mode: 'adl' },  // JP target from 0x020230
+    { pc: 0x07eb45, mode: 'adl' },  // JP target from 0x020234
+    { pc: 0x07eb49, mode: 'adl' },  // JP target from 0x020238
+    { pc: 0x07eb4d, mode: 'adl' },  // JP target from 0x02023c
+    { pc: 0x07ec1e, mode: 'adl' },  // JP target from 0x020248
+    { pc: 0x07ec2f, mode: 'adl' },  // JP target from 0x020250
+    { pc: 0x07ec40, mode: 'adl' },  // JP target from 0x020254
+    { pc: 0x07ec4f, mode: 'adl' },  // JP target from 0x020258
+    { pc: 0x07ecbf, mode: 'adl' },  // JP target from 0x02025c
+    { pc: 0x07eed3, mode: 'adl' },  // JP target from 0x020260
+    { pc: 0x07ef5a, mode: 'adl' },  // JP target from 0x020264
+    { pc: 0x07ef6b, mode: 'adl' },  // JP target from 0x020268
+    // 20 function prologue seeds from under-covered 0x010xxx and 0x022xxx regions.
+    { pc: 0x010553, mode: 'adl' },  // CALL __frameset (prev=RET)
+    { pc: 0x01058b, mode: 'adl' },  // CALL __frameset (prev=RET)
+    { pc: 0x01061d, mode: 'adl' },  // CALL __frameset (prev=RET)
+    { pc: 0x01069c, mode: 'adl' },  // CALL __frameset (prev=RET)
+    { pc: 0x010948, mode: 'adl' },  // CALL __frameset (prev=RET)
+    { pc: 0x01095c, mode: 'adl' },  // CALL __frameset (prev=RET)
+    { pc: 0x0109a0, mode: 'adl' },  // CALL __frameset (prev=RET)
+    { pc: 0x0109b7, mode: 'adl' },  // CALL __frameset (prev=RET)
+    { pc: 0x0109dd, mode: 'adl' },  // CALL __frameset (prev=RET)
+    { pc: 0x010a3c, mode: 'adl' },  // CALL __frameset (prev=RET)
+    { pc: 0x0228f0, mode: 'adl' },  // PUSH IX (prev=RET)
+    { pc: 0x02291b, mode: 'adl' },  // PUSH IX (prev=RET)
+    { pc: 0x02296c, mode: 'adl' },  // PUSH IX (prev=RET)
+    { pc: 0x022b75, mode: 'adl' },  // PUSH IX (prev=RET)
+    { pc: 0x022ba7, mode: 'adl' },  // PUSH IX (prev=RET)
+    { pc: 0x022bf9, mode: 'adl' },  // PUSH IX (prev=RET)
+    { pc: 0x022d14, mode: 'adl' },  // PUSH IX (prev=RET)
+    { pc: 0x022d38, mode: 'adl' },  // PUSH IX (prev=RET)
+    { pc: 0x022f2a, mode: 'adl' },  // PUSH IX (prev=RET)
+    { pc: 0x022fcf, mode: 'adl' },  // PUSH IX (prev=RET)
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
