@@ -12646,15 +12646,106 @@
       "timestamp": "2026-05-23T22:15:10Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "993e1fc95462",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x00DB66 (TX send-byte) + 0x00DC0E (RX receive-byte) \u2014 TI-Link serial I/O drain primit",
+      "status": "completed",
+      "duration_seconds": 501.879,
+      "timestamp": "2026-05-24T00:10:47Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase423-trace-link-io.mjs",
+        "TI-84_Plus_CE/phase423-link-io-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "fa40c50ad224",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x00E583 (sibling list walker) \u2014 what list does it walk?\n\n## Context\n\nYou are working ",
+      "status": "completed",
+      "duration_seconds": 689.256,
+      "timestamp": "2026-05-24T00:13:56Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1ea5c43f9cc6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map D13FED connection table structure \u2014 who populates it, full struct fields\n\n## Context\n\nYo",
+      "status": "timeout",
+      "duration_seconds": 900.061,
+      "timestamp": "2026-05-24T00:17:29Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e5701c7e7c0c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map slab pool metadata (D1401A/D1401D/D14020/D1406C) + add 40 seeds\n\n## Context\n\nYou are wor",
+      "status": "timeout",
+      "duration_seconds": 900.058,
+      "timestamp": "2026-05-24T00:17:30Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8eb4fb6b50f1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 424 P1 \u2014 Decode 0x00E06D Slab Alloc Function\n\n## Context\n\nYou are working on a TI-84 ",
+      "status": "completed",
+      "duration_seconds": 487.625,
+      "timestamp": "2026-05-24T02:10:17Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b1115a42f2f1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 424 P4 \u2014 Coverage Push: 40 Seeds\n\n## Context\n\nYou are working on a TI-84 Plus CE ROM ",
+      "status": "completed",
+      "duration_seconds": 504.642,
+      "timestamp": "2026-05-24T02:10:39Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "cb77a9752c4f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 424 P3 \u2014 Trace Actual Byte-Level TI-Link I/O\n\n## Context\n\nYou are working on a TI-84 ",
+      "status": "completed",
+      "duration_seconds": 620.531,
+      "timestamp": "2026-05-24T02:12:33Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c7a13b6fc6cf",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 424 P2 \u2014 Trace 0x00D295 and 0x00ED10 (Sibling Walker Callers)\n\n## Context\n\nYou are wo",
+      "status": "timeout",
+      "duration_seconds": 900.045,
+      "timestamp": "2026-05-24T02:17:11Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1035,
-    "cc_to_codex": 1035,
+    "total_calls": 1043,
+    "cc_to_codex": 1043,
     "codex_to_cc": 0,
-    "completed": 785,
-    "failed": 233,
+    "completed": 790,
+    "failed": 236,
     "refused": 0,
-    "avg_duration_seconds": 602.168
+    "avg_duration_seconds": 602.826
   }
 }

@@ -23311,6 +23311,50 @@ function walkBlocks() {
     { pc: 0x022d38, mode: 'adl' },  // PUSH IX (prev=RET)
     { pc: 0x022f2a, mode: 'adl' },  // PUSH IX (prev=RET)
     { pc: 0x022fcf, mode: 'adl' },  // PUSH IX (prev=RET)
+    // Auto-session 424 P4: coverage push - export JP targets plus 0x00A0xx wrapper entries.
+    // 20 OS export JP-target seeds from 0x020260..0x0202bc, plus contiguous 0x0202c0 because
+    // five targets in the requested window were already present in knownEntryAnchors.
+    { pc: 0x07dad0, mode: 'adl' },  // JP target from 0x02026c
+    { pc: 0x07daf8, mode: 'adl' },  // JP target from 0x020270
+    { pc: 0x07f796, mode: 'adl' },  // JP target from 0x020274
+    { pc: 0x07f7a4, mode: 'adl' },  // JP target from 0x020278
+    { pc: 0x07f7bd, mode: 'adl' },  // JP target from 0x02027c
+    { pc: 0x0685aa, mode: 'adl' },  // JP target from 0x020280
+    { pc: 0x07f7f2, mode: 'adl' },  // JP target from 0x020284
+    { pc: 0x07f81d, mode: 'adl' },  // JP target from 0x02028c
+    { pc: 0x07f829, mode: 'adl' },  // JP target from 0x020290
+    { pc: 0x07f831, mode: 'adl' },  // JP target from 0x020294
+    { pc: 0x07f898, mode: 'adl' },  // JP target from 0x020298
+    { pc: 0x07f8a2, mode: 'adl' },  // JP target from 0x02029c
+    { pc: 0x07f8ac, mode: 'adl' },  // JP target from 0x0202a0
+    { pc: 0x07f8b6, mode: 'adl' },  // JP target from 0x0202a4
+    { pc: 0x07f8c0, mode: 'adl' },  // JP target from 0x0202a8
+    { pc: 0x07f8cc, mode: 'adl' },  // JP target from 0x0202ac
+    { pc: 0x07f8d8, mode: 'adl' },  // JP target from 0x0202b0
+    { pc: 0x07f8f0, mode: 'adl' },  // JP target from 0x0202b8
+    { pc: 0x07f8fa, mode: 'adl' },  // JP target from 0x0202bc
+    { pc: 0x07f904, mode: 'adl' },  // JP target from 0x0202c0
+    // 20 unseeded 0x00A0xx code-entry seeds from the ROM's actual helper/wrapper patterns.
+    { pc: 0x00a011, mode: 'adl' },  // PUSH BC; CALL 0x0075d7 wrapper
+    { pc: 0x00a025, mode: 'adl' },  // PUSH BC; CALL 0x0075d7 wrapper
+    { pc: 0x00a039, mode: 'adl' },  // PUSH BC; CALL 0x0075d7 wrapper
+    { pc: 0x00a10b, mode: 'adl' },  // PUSH AF; DI port-setup prologue
+    { pc: 0x00a127, mode: 'adl' },  // PUSH BC; CALL 0x00756c wrapper
+    { pc: 0x00a47b, mode: 'adl' },  // LD BC,1; PUSH BC; CALL 0x00c320 wrapper
+    { pc: 0x00a492, mode: 'adl' },  // CALL 0x002197 frame-helper entry
+    { pc: 0x00a49e, mode: 'adl' },  // PUSH BC; CALL 0x00883c wrapper
+    { pc: 0x00a4d4, mode: 'adl' },  // PUSH BC; CALL 0x00bc77 wrapper
+    { pc: 0x00a510, mode: 'adl' },  // PUSH BC; CALL 0x00bc77 wrapper
+    { pc: 0x00a56b, mode: 'adl' },  // PUSH BC; CALL 0x006f4d wrapper
+    { pc: 0x00a58c, mode: 'adl' },  // PUSH BC; CALL 0x01322d wrapper
+    { pc: 0x00a59d, mode: 'adl' },  // CALL 0x002197 frame-helper entry
+    { pc: 0x00a690, mode: 'adl' },  // CALL 0x002197 frame-helper entry
+    { pc: 0x00a752, mode: 'adl' },  // CALL 0x002197 frame-helper entry
+    { pc: 0x00a8ba, mode: 'adl' },  // LD BC,0x10; PUSH BC; CALL 0x00782a wrapper
+    { pc: 0x00aa10, mode: 'adl' },  // CALL 0x002197 frame-helper entry
+    { pc: 0x00abee, mode: 'adl' },  // CALL 0x002197 frame-helper entry
+    { pc: 0x00ac58, mode: 'adl' },  // CALL 0x002197 frame-helper entry
+    { pc: 0x00ad66, mode: 'adl' },  // CALL 0x002197 frame-helper entry
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
