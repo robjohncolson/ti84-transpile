@@ -23355,6 +23355,91 @@ function walkBlocks() {
     { pc: 0x00abee, mode: 'adl' },  // CALL 0x002197 frame-helper entry
     { pc: 0x00ac58, mode: 'adl' },  // CALL 0x002197 frame-helper entry
     { pc: 0x00ad66, mode: 'adl' },  // CALL 0x002197 frame-helper entry
+    // Auto-session f77771b8d112: coverage push - 20 JP-table targets and 20 function prologues.
+    // 20 OS export JP-target seeds from the 0x0202c4..0x020400 table window, skipping already-seeded stubs.
+    { pc: 0x07f90e, mode: 'adl' },  // JP target from 0x0202c4
+    { pc: 0x07f914, mode: 'adl' },  // JP target from 0x0202c8
+    { pc: 0x07f91a, mode: 'adl' },  // JP target from 0x0202cc
+    { pc: 0x07f920, mode: 'adl' },  // JP target from 0x0202d0
+    { pc: 0x07f92c, mode: 'adl' },  // JP target from 0x0202d8
+    { pc: 0x07f936, mode: 'adl' },  // JP target from 0x0202dc
+    { pc: 0x07f940, mode: 'adl' },  // JP target from 0x0202e0
+    { pc: 0x07f94a, mode: 'adl' },  // JP target from 0x0202e4
+    { pc: 0x07f954, mode: 'adl' },  // JP target from 0x0202e8
+    { pc: 0x07f95e, mode: 'adl' },  // JP target from 0x0202ec
+    { pc: 0x07f968, mode: 'adl' },  // JP target from 0x0202f0
+    { pc: 0x07f974, mode: 'adl' },  // JP target from 0x0202f4
+    { pc: 0x07f976, mode: 'adl' },  // JP target from 0x0202f8
+    { pc: 0x07f978, mode: 'adl' },  // JP target from 0x0202fc
+    { pc: 0x07f97a, mode: 'adl' },  // JP target from 0x020304
+    { pc: 0x07f97c, mode: 'adl' },  // JP target from 0x020308
+    { pc: 0x07f9d9, mode: 'adl' },  // JP target from 0x020310
+    { pc: 0x07f9ef, mode: 'adl' },  // JP target from 0x02031c
+    { pc: 0x07fa03, mode: 'adl' },  // JP target from 0x020324
+    { pc: 0x07fa07, mode: 'adl' },  // JP target from 0x020328
+    // 20 unseeded CALL-prologue seeds from the requested 0x00A/0x00B/0x010 regions.
+    { pc: 0x00a0f3, mode: 'adl' },  // CALL 0x002197 frame-helper prologue
+    { pc: 0x00a694, mode: 'adl' },  // CALL 0x002197 frame-helper prologue
+    { pc: 0x00a756, mode: 'adl' },  // CALL 0x002197 frame-helper prologue
+    { pc: 0x00abf2, mode: 'adl' },  // CALL 0x002197 frame-helper prologue
+    { pc: 0x00ac5c, mode: 'adl' },  // CALL 0x002197 frame-helper prologue
+    { pc: 0x00ad6a, mode: 'adl' },  // CALL 0x002197 frame-helper prologue
+    { pc: 0x00b688, mode: 'adl' },  // CALL 0x00218a frame-helper prologue
+    { pc: 0x00b6a2, mode: 'adl' },  // CALL 0x002197 frame-helper prologue
+    { pc: 0x00b8bc, mode: 'adl' },  // CALL 0x00218a frame-helper prologue
+    { pc: 0x00b918, mode: 'adl' },  // CALL 0x002197 frame-helper prologue
+    { pc: 0x00b9ec, mode: 'adl' },  // CALL 0x002197 frame-helper prologue
+    { pc: 0x00bc77, mode: 'adl' },  // CALL 0x00218a frame-helper prologue
+    { pc: 0x00be81, mode: 'adl' },  // CALL 0x00218a frame-helper prologue
+    { pc: 0x00bef2, mode: 'adl' },  // CALL 0x002197 frame-helper prologue
+    { pc: 0x010224, mode: 'adl' },  // CALL 0x002197 frame-helper prologue
+    { pc: 0x01046a, mode: 'adl' },  // CALL 0x002197 frame-helper prologue
+    { pc: 0x010705, mode: 'adl' },  // CALL 0x002197 frame-helper prologue
+    { pc: 0x010786, mode: 'adl' },  // CALL 0x002197 frame-helper prologue
+    { pc: 0x0107b0, mode: 'adl' },  // CALL 0x002197 frame-helper prologue
+    { pc: 0x0109f1, mode: 'adl' },  // CALL 0x002197 frame-helper prologue
+    // Session 425: 20 OS export JP-target seeds from 0x0202C4..0x020400 table (novel targets only).
+    { pc: 0x07fa0d, mode: 'adl' },  // JP target from 0x02032C
+    { pc: 0x07fa19, mode: 'adl' },  // JP target from 0x020330
+    { pc: 0x07fa1f, mode: 'adl' },  // JP target from 0x020334
+    { pc: 0x07fa25, mode: 'adl' },  // JP target from 0x020338
+    { pc: 0x07fa2d, mode: 'adl' },  // JP target from 0x02033C
+    { pc: 0x07fa2f, mode: 'adl' },  // JP target from 0x020340
+    { pc: 0x07fa35, mode: 'adl' },  // JP target from 0x020344
+    { pc: 0x07fa3d, mode: 'adl' },  // JP target from 0x020348
+    { pc: 0x07fa46, mode: 'adl' },  // JP target from 0x02034C
+    { pc: 0x07fa54, mode: 'adl' },  // JP target from 0x020354
+    { pc: 0x07fa62, mode: 'adl' },  // JP target from 0x02035C
+    { pc: 0x07fa68, mode: 'adl' },  // JP target from 0x020360
+    { pc: 0x07fa74, mode: 'adl' },  // JP target from 0x020364
+    { pc: 0x07fa84, mode: 'adl' },  // JP target from 0x020368
+    { pc: 0x07fa95, mode: 'adl' },  // JP target from 0x02036C
+    { pc: 0x07fa9b, mode: 'adl' },  // JP target from 0x020370
+    { pc: 0x07faa1, mode: 'adl' },  // JP target from 0x020374
+    { pc: 0x07faaf, mode: 'adl' },  // JP target from 0x020378
+    { pc: 0x07fac2, mode: 'adl' },  // JP target from 0x02037C
+    { pc: 0x07fac6, mode: 'adl' },  // JP target from 0x020380
+    // Session 425: 20 function prologue seeds from 0x012000-0x016000 region (CALL 0x218A/0x2197 entries).
+    { pc: 0x0121f3, mode: 'adl' },  // CALL 0x002197 prologue
+    { pc: 0x012340, mode: 'adl' },  // CALL 0x002197 prologue
+    { pc: 0x012543, mode: 'adl' },  // CALL 0x002197 prologue
+    { pc: 0x0125ee, mode: 'adl' },  // CALL 0x002197 prologue
+    { pc: 0x0126ad, mode: 'adl' },  // CALL 0x002197 prologue
+    { pc: 0x01276a, mode: 'adl' },  // CALL 0x002197 prologue
+    { pc: 0x0127ed, mode: 'adl' },  // CALL 0x002197 prologue
+    { pc: 0x012962, mode: 'adl' },  // CALL 0x002197 prologue
+    { pc: 0x012ac6, mode: 'adl' },  // CALL 0x002197 prologue
+    { pc: 0x012c4c, mode: 'adl' },  // CALL 0x002197 prologue
+    { pc: 0x012d17, mode: 'adl' },  // CALL 0x002197 prologue
+    { pc: 0x012e51, mode: 'adl' },  // CALL 0x002197 prologue
+    { pc: 0x01322d, mode: 'adl' },  // CALL 0x00218A prologue
+    { pc: 0x013254, mode: 'adl' },  // CALL 0x002197 prologue
+    { pc: 0x013413, mode: 'adl' },  // CALL 0x002197 prologue
+    { pc: 0x0135d3, mode: 'adl' },  // CALL 0x002197 prologue
+    { pc: 0x0136bf, mode: 'adl' },  // CALL 0x00218A prologue
+    { pc: 0x013700, mode: 'adl' },  // CALL 0x002197 prologue
+    { pc: 0x0137e9, mode: 'adl' },  // CALL 0x002197 prologue
+    { pc: 0x0138f5, mode: 'adl' },  // CALL 0x002197 prologue
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
