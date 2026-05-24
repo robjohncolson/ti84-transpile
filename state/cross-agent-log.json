@@ -12973,15 +12973,209 @@
         "TI-84_Plus_CE/phase429-00CD7B-report.md"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "ee91506474d5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map the Event Dispatcher Jump Tables for USB/Link Init\n\n## Context\nYou are working on the TI",
+      "status": "timeout",
+      "duration_seconds": 900.067,
+      "timestamp": "2026-05-24T12:17:32Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3899cc105610",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x009118 Sequential Priority Init Chain\n\n## Context\nYou are working on a TI-84 Plus C",
+      "status": "completed",
+      "duration_seconds": 433.217,
+      "timestamp": "2026-05-24T14:09:27Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase430-trace-009118.mjs",
+        "TI-84_Plus_CE/phase430-009118-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "671b5d610019",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x00211B Inline Case Dispatcher\n\n## Context\nYou are working on a TI-84 Plus CE ROM tr",
+      "status": "completed",
+      "duration_seconds": 472.374,
+      "timestamp": "2026-05-24T14:10:08Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase430-trace-00211B.mjs",
+        "TI-84_Plus_CE/phase430-00211B-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "09e06daad651",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x0089F8 USB Init Handler\n\n## Context\nYou are working on a TI-84 Plus CE ROM transpila",
+      "status": "completed",
+      "duration_seconds": 784.552,
+      "timestamp": "2026-05-24T14:15:23Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase430-trace-0089F8.mjs",
+        "TI-84_Plus_CE/phase430-0089F8-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "5d7ff9a8877f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace D141BE Data Source Buffer\n\n## Context\nYou are working on a TI-84 Plus CE ROM transpila",
+      "status": "timeout",
+      "duration_seconds": 900.054,
+      "timestamp": "2026-05-24T14:17:20Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "61e1a90a0757",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode Init Priority 7 Fallback (0x009087)\n\n## Context\n\nThe TI-84 Plus CE OS has a sequentia",
+      "status": "completed",
+      "duration_seconds": 788.201,
+      "timestamp": "2026-05-24T16:15:15Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase431-trace-009087.mjs",
+        "TI-84_Plus_CE/phase431-009087-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "2f24e0f74a70",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode Init Priorities 2/4/5/6 (0x008BE9, 0x008F16, 0x008FC3, 0x00904C)\n\n## Context\n\nThe TI-",
+      "status": "timeout",
+      "duration_seconds": 900.043,
+      "timestamp": "2026-05-24T16:17:05Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "54c1c8b9ab21",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace USB Handler Call Targets (0x00D681, 0x00D9EE, 0x00B8BC, 0x0125EA, 0x012933)\n\n## Contex",
+      "status": "timeout",
+      "duration_seconds": 907.429,
+      "timestamp": "2026-05-24T16:17:17Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "80d38eb88171",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x0079E5 (Endpoint Configurator)\n\n## Context\nYou are working on the TI-84 Plus CE ROM ",
+      "status": "completed",
+      "duration_seconds": 445.387,
+      "timestamp": "2026-05-24T18:10:19Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1ce10d00b4ac",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x01579B (Timer ARM Function)\n\n## Context\nYou are working on the TI-84 Plus CE ROM tra",
+      "status": "completed",
+      "duration_seconds": 457.764,
+      "timestamp": "2026-05-24T18:10:30Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c9e5490ee288",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x008527 (Deeper USB/Controller Helper)\n\n## Context\nYou are working on the TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 492.779,
+      "timestamp": "2026-05-24T18:11:02Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase432-trace-008527.mjs",
+        "TI-84_Plus_CE/phase432-008527-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "c407891f9226",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0391DC Parallel Descriptor Builder (1494 bytes)\n\n## Context\nYou are working on the ",
+      "status": "completed",
+      "duration_seconds": 669.728,
+      "timestamp": "2026-05-24T18:13:58Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d6c2ff6b6e00",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x01322D (Indirect Callback Dispatcher)\n\n## Context\nYou are working on a TI-84 Plus CE",
+      "status": "completed",
+      "duration_seconds": 424.629,
+      "timestamp": "2026-05-24T20:09:49Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7fca3a73904b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x03xxxx Low-ROM Wrappers\n\n## Context\nYou are working on a TI-84 Plus CE ROM transpil",
+      "status": "completed",
+      "duration_seconds": 466.976,
+      "timestamp": "2026-05-24T20:10:33Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7f13fbc7f639",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x00E91E (Pre-Enumerate Setup)\n\n## Context\nYou are working on a TI-84 Plus CE ROM tran",
+      "status": "completed",
+      "duration_seconds": 496.31,
+      "timestamp": "2026-05-24T20:10:58Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase433-trace-00E91E.mjs",
+        "TI-84_Plus_CE/phase433-00E91E-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "ccfeee838d00",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x01253F (Short Status-Submit Gate)\n\n## Context\nYou are working on a TI-84 Plus CE ROM",
+      "status": "completed",
+      "duration_seconds": 497.612,
+      "timestamp": "2026-05-24T20:11:05Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1062,
-    "cc_to_codex": 1062,
+    "total_calls": 1078,
+    "cc_to_codex": 1078,
     "codex_to_cc": 0,
-    "completed": 807,
-    "failed": 237,
+    "completed": 819,
+    "failed": 241,
     "refused": 0,
-    "avg_duration_seconds": 601.714
+    "avg_duration_seconds": 602.094
   }
 }
