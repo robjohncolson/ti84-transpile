@@ -13167,15 +13167,150 @@
       "timestamp": "2026-05-24T20:11:05Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "74615393c046",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x00FBD1 \u2014 Universal USB Event Callback\n\n## Context\nIn the TI-84 Plus CE ROM (eZ80, fi",
+      "status": "completed",
+      "duration_seconds": 364.097,
+      "timestamp": "2026-05-24T22:08:33Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "32df6b4206c5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0025E8 \u2014 Unidentified Low-ROM Target\n\n## Context\nIn the TI-84 Plus CE ROM (eZ80, fi",
+      "status": "completed",
+      "duration_seconds": 524.983,
+      "timestamp": "2026-05-24T22:11:16Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9aa1e2188783",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x012456 \u2014 Controller Re-Arm / OTG Transition\n\n## Context\nIn the TI-84 Plus CE ROM (eZ",
+      "status": "completed",
+      "duration_seconds": 637.605,
+      "timestamp": "2026-05-24T22:13:10Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "adccd46716eb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map the Full OS API Jump Table (374 JP Thunks at 0x000080-0x000654)\n\n## Context\nIn the TI-84",
+      "status": "completed",
+      "duration_seconds": 674.836,
+      "timestamp": "2026-05-24T22:13:49Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase434-os-api-table.mjs",
+        "TI-84_Plus_CE/phase434-os-api-table-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "756d21a93dfb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 435 \u2014 Priority 1: Decode 0x00883C Dispatch Targets\n\n## Context\nYou are working on the",
+      "status": "completed",
+      "duration_seconds": 557.638,
+      "timestamp": "2026-05-25T00:11:23Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "0b0df5c89713",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 435 \u2014 Priority 3: Trace D14074 (USB Active Flag)\n\n## Context\nYou are working on the T",
+      "status": "completed",
+      "duration_seconds": 557.413,
+      "timestamp": "2026-05-25T00:11:27Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d52658922fe0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 435 \u2014 Priority 2: Name OS API Slots via SDK Cross-Reference\n\n## Context\nYou are worki",
+      "status": "completed",
+      "duration_seconds": 856.016,
+      "timestamp": "2026-05-25T00:16:24Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6eecc0b5ce7d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0085E3 \u2014 USB State Validator\n\n## Context\nYou are working on TI-84 Plus CE ROM (eZ80",
+      "status": "completed",
+      "duration_seconds": 461.45,
+      "timestamp": "2026-05-25T02:09:21Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "13cdaa2c8f49",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x00863A \u2014 Event Code Preprocessor\n\n## Context\nYou are working on TI-84 Plus CE ROM (",
+      "status": "completed",
+      "duration_seconds": 459.717,
+      "timestamp": "2026-05-25T02:09:22Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ce2e02dd813d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace D14073 \u2014 USB Mode/Phase Indicator\n\n## Context\nYou are working on TI-84 Plus CE ROM (eZ",
+      "status": "timeout",
+      "duration_seconds": 900.064,
+      "timestamp": "2026-05-25T02:16:44Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2678c3a6903f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: IDENTIFY 4 UNIDENTIFIED OS API TARGETS\n\nYou are working on the TI-84 Plus CE ROM transpilati",
+      "status": "completed",
+      "duration_seconds": 724.557,
+      "timestamp": "2026-05-25T04:15:15Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "4811c9c49f63",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: DECODE D14073 WRITE SITES + MAP D14070-D1407F USB STATE BLOCK\n\nYou are working on the TI-84 ",
+      "status": "completed",
+      "duration_seconds": 740.264,
+      "timestamp": "2026-05-25T04:15:33Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1078,
-    "cc_to_codex": 1078,
+    "total_calls": 1090,
+    "cc_to_codex": 1090,
     "codex_to_cc": 0,
-    "completed": 819,
-    "failed": 241,
+    "completed": 830,
+    "failed": 242,
     "refused": 0,
-    "avg_duration_seconds": 602.094
+    "avg_duration_seconds": 602.308
   }
 }
