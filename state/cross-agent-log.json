@@ -13302,15 +13302,37 @@
       "timestamp": "2026-05-25T04:15:33Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "56fe2bf9821c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: MAP PORT 0x3080 BIT ASSIGNMENTS\n\nYou are working on the TI-84 Plus CE ROM transpilation proj",
+      "status": "timeout",
+      "duration_seconds": 900.077,
+      "timestamp": "2026-05-25T04:18:09Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1b669ee79d34",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode D14072 (USB Speed/Mode Flag)\n\n## Context\nThis is part of the TI-84 Plus CE ROM transp",
+      "status": "blocked",
+      "duration_seconds": 379.222,
+      "timestamp": "2026-05-25T06:31:35Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1090,
-    "cc_to_codex": 1090,
+    "total_calls": 1092,
+    "cc_to_codex": 1092,
     "codex_to_cc": 0,
     "completed": 830,
-    "failed": 242,
+    "failed": 243,
     "refused": 0,
-    "avg_duration_seconds": 602.308
+    "avg_duration_seconds": 602.377
   }
 }
