@@ -13478,15 +13478,95 @@
       "timestamp": "2026-05-25T14:05:51Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "1019029014ed",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace D14079 and D1407A \u2014 Last 2 Unmapped Bytes in USB State Block D14070-D1407F\n\n## Context",
+      "status": "timeout",
+      "duration_seconds": 900.049,
+      "timestamp": "2026-05-25T14:19:28Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "dc94194ed6ec",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map D14085-D14089 \u2014 Callback State Group Co-Accessed with D14075\n\n## Context\nThe TI-84 Plus ",
+      "status": "timeout",
+      "duration_seconds": 900.051,
+      "timestamp": "2026-05-25T14:19:30Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3893f5fa2124",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map D17792 (Read by D1407A Consume Site)\n\n## Context\nYou are working on a TI-84 Plus CE ROM ",
+      "status": "completed",
+      "duration_seconds": 714.924,
+      "timestamp": "2026-05-25T16:13:46Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase443-trace-D17792-report.md",
+        "TI-84_Plus_CE/probe-phase443-trace-D17792.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "6ebec96ab250",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x001937 ISR Dispatch Context\n\n## Context\nYou are working on a TI-84 Plus CE ROM trans",
+      "status": "completed",
+      "duration_seconds": 834.674,
+      "timestamp": "2026-05-25T16:15:42Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9228cba325ac",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map D176FB (Written by D14078/D14079 Consume Sites)\n\n## Context\nYou are working on a TI-84 P",
+      "status": "timeout",
+      "duration_seconds": 900.078,
+      "timestamp": "2026-05-25T16:16:50Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b2cb9da0fee8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map D17792 (Read by D1407A Consume Site)\n\n## Context\nYou are working on a TI-84 Plus CE ROM ",
+      "status": "completed",
+      "duration_seconds": 151.315,
+      "timestamp": "2026-05-25T18:03:59Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ad119b36209b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x001937 ISR Dispatch Context\n\n## Context\nYou are working on a TI-84 Plus CE ROM trans",
+      "status": "completed",
+      "duration_seconds": 451.61,
+      "timestamp": "2026-05-25T18:08:55Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1104,
-    "cc_to_codex": 1104,
+    "total_calls": 1111,
+    "cc_to_codex": 1111,
     "codex_to_cc": 0,
-    "completed": 839,
-    "failed": 246,
+    "completed": 843,
+    "failed": 249,
     "refused": 0,
-    "avg_duration_seconds": 603.479
+    "avg_duration_seconds": 604.045
   }
 }
