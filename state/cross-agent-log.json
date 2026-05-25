@@ -13324,15 +13324,169 @@
       "timestamp": "2026-05-25T06:31:35Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "595bd3af93aa",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace D1407E (USB Pipe/Buffer State Byte)\n\n## Context\nThis is part of the TI-84 Plus CE ROM ",
+      "status": "completed",
+      "duration_seconds": 877.229,
+      "timestamp": "2026-05-25T06:39:51Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "4394dd158e4e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map Port 0x3082 Complete Bit Assignments\n\n## Context\nThis is part of the TI-84 Plus CE ROM t",
+      "status": "timeout",
+      "duration_seconds": 900.07,
+      "timestamp": "2026-05-25T06:40:17Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1b33fc75b6b5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: TRACE D1407C (USB PIPE STATE COMPANION)\n\n## Context\nYou are working on a TI-84 Plus CE ROM t",
+      "status": "completed",
+      "duration_seconds": 782.047,
+      "timestamp": "2026-05-25T08:15:51Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase439-trace-D1407C.mjs",
+        "TI-84_Plus_CE/phase439-trace-D1407C-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "018a1eb9d197",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: DECODE PORT 0x3082 BIT 3 SPEED CLASSIFICATION PATTERN\n\n## Context\nYou are working on a TI-84",
+      "status": "completed",
+      "duration_seconds": 831.668,
+      "timestamp": "2026-05-25T08:16:43Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase439-speed-decode.mjs",
+        "TI-84_Plus_CE/phase439-speed-decode-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "535da57801b4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: TRACE D14080 AND D140B2 (USB PIPE STATE GROUP)\n\n## Context\nYou are working on a TI-84 Plus C",
+      "status": "completed",
+      "duration_seconds": 847.279,
+      "timestamp": "2026-05-25T08:17:00Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase439-trace-D14080-D140B2.mjs",
+        "TI-84_Plus_CE/phase439-trace-D14080-D140B2-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "abda66f53f03",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace D1407F (pipe state group \u2014 last unmapped byte in D1407C-D1407F block)\n\n## Context\nYou ",
+      "status": "completed",
+      "duration_seconds": 314.292,
+      "timestamp": "2026-05-25T10:07:38Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase440-trace-D1407B-report.md",
+        "TI-84_Plus_CE/phase440-trace-D1407D-report.md",
+        "TI-84_Plus_CE/phase440-trace-D1407F-report.md",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase440-trace-D1407B.mjs",
+        "TI-84_Plus_CE/probe-phase440-trace-D1407D.mjs",
+        "TI-84_Plus_CE/probe-phase440-trace-D1407F.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "091663dcee48",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace D1407B (most co-accessed USB state byte)\n\n## Context\nYou are working on a TI-84 Plus C",
+      "status": "completed",
+      "duration_seconds": 527.012,
+      "timestamp": "2026-05-25T10:11:13Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3b3721f040c0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace D1407D (co-written with D1407C at pipe-initiation sites)\n\n## Context\nYou are working o",
+      "status": "completed",
+      "duration_seconds": 642.972,
+      "timestamp": "2026-05-25T10:13:10Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "83c3c107b41c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace D14077 and D14078 (USB state block \u2014 remaining unmapped bytes)\n\n## Context\nYou are wor",
+      "status": "completed",
+      "duration_seconds": 843.55,
+      "timestamp": "2026-05-25T12:15:58Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase441-trace-D14077.mjs",
+        "TI-84_Plus_CE/phase441-trace-D14077-report.md",
+        "TI-84_Plus_CE/probe-phase441-trace-D14078.mjs",
+        "TI-84_Plus_CE/phase441-trace-D14078-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "9c74a2cef79f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace D14075 and D14076 (USB state block \u2014 remaining unmapped bytes)\n\n## Context\nYou are wor",
+      "status": "timeout",
+      "duration_seconds": 900.035,
+      "timestamp": "2026-05-25T12:16:52Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "91e164880ec4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map D14038 (co-accessed with D1407B SOF flag and D1407C pipe-pending)\n\n## Context\nYou are wo",
+      "status": "timeout",
+      "duration_seconds": 900.044,
+      "timestamp": "2026-05-25T12:16:55Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2f529adee943",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Wire Event Loop Entry into Workflow Arithmetic Probe\n\n## Context\nThe TI-84 Plus CE ROM trans",
+      "status": "completed",
+      "duration_seconds": 79.363,
+      "timestamp": "2026-05-25T14:05:51Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1092,
-    "cc_to_codex": 1092,
+    "total_calls": 1104,
+    "cc_to_codex": 1104,
     "codex_to_cc": 0,
-    "completed": 830,
-    "failed": 243,
+    "completed": 839,
+    "failed": 246,
     "refused": 0,
-    "avg_duration_seconds": 602.377
+    "avg_duration_seconds": 603.479
   }
 }

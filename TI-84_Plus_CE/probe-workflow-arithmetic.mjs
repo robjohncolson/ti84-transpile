@@ -29,6 +29,7 @@ const BOOT_ENTRY = 0x000000;
 const KERNEL_INIT_ENTRY = 0x08C331;
 const POST_INIT_ENTRY = 0x0802B2;
 const STAGE_ENTRIES = [0x0A2B72, 0x0A3301, 0x0A29EC, 0x0A2854];
+const EVENT_LOOP_ENTRY = 0x003A73;
 
 // Per keyboard-matrix.md: scan code = (idx << 4) | bit; clear that bit in keyMatrix[idx] to press.
 const KEY_ONE   = { idx: 4, bit: 1, label: '1',     scan: 0x41 };
@@ -87,7 +88,16 @@ function bootToHomeScreen(executor, cpu, mem) {
     console.log(`  stage${i + 1}: entry=${hex(entry)} steps=${lastResult.steps} term=${lastResult.termination} lastPc=${hex(lastResult.lastPc)}`);
   }
 
-  return { lastPc: lastResult.lastPc, lastMode: lastResult.lastMode };
+  cpu.halted = false;
+  cpu.iff1 = 0;
+  cpu.iff2 = 0;
+  cpu.f = 0x40;
+  cpu._ix = 0xD1A860;
+  cpu._iy = 0xD00080;
+  cpu.sp = STACK_RESET_TOP - 12;
+  mem.fill(0xFF, cpu.sp, cpu.sp + 12);
+
+  return { lastPc: EVENT_LOOP_ENTRY, lastMode: 'adl' };
 }
 
 function main() {
