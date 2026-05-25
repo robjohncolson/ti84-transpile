@@ -106,7 +106,12 @@ function main() {
   mem.fill(0xAA, VRAM_BASE, VRAM_BASE + VRAM_BYTE_SIZE);
 
   const peripherals = createPeripheralBus({ pllDelay: 2, timerInterrupt: false });
-  const executor = createExecutor(BLOCKS, mem, { peripherals });
+  const executor = createExecutor(BLOCKS, mem, {
+    peripherals,
+    onWake: (haltPc, newPc, newMode) => {
+      console.log(`    HALT-wake: haltPc=${hex(haltPc)} -> newPc=${hex(newPc)} mode=${newMode}`);
+    },
+  });
   const cpu = executor.cpu;
 
   console.log('--- workflow probe: 1 + 1 ENTER → expect "2" ---');
@@ -130,13 +135,14 @@ function main() {
       pressResult = executor.runFrom(currentPc, currentMode, {
         maxSteps: STEPS_PER_PRESS,
         maxLoopIterations: MAX_LOOPS,
+        diHaltBypass: true,
       });
     } catch (err) {
       pressResult = { error: err.message, steps: 0, termination: 'throw', lastPc: currentPc, lastMode: currentMode };
     }
     releaseKey(peripherals, key);
 
-    // Keep the next injected press anchored to the press-phase resume state.
+    // Resume the release phase from wherever the press phase left the CPU.
     currentPc = pressResult.lastPc ?? currentPc;
     currentMode = pressResult.lastMode ?? currentMode;
 
@@ -145,9 +151,19 @@ function main() {
       releaseResult = executor.runFrom(currentPc, currentMode, {
         maxSteps: STEPS_AFTER_RELEASE,
         maxLoopIterations: MAX_LOOPS,
+        diHaltBypass: true,
       });
     } catch (err) {
       releaseResult = { error: err.message, steps: 0, termination: 'throw', lastPc: currentPc, lastMode: currentMode };
+    }
+
+    // If we ended up at the HALT barrier again, reset to event loop entry.
+    if (releaseResult.lastPc >= 0x001933 && releaseResult.lastPc <= 0x001942) {
+      currentPc = EVENT_LOOP_ENTRY;
+      currentMode = 'adl';
+    } else {
+      currentPc = releaseResult.lastPc ?? currentPc;
+      currentMode = releaseResult.lastMode ?? currentMode;
     }
 
     const afterHash = vramHash(mem);

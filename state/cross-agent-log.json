@@ -13558,15 +13558,59 @@
       "timestamp": "2026-05-25T18:08:55Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "46e5fff0991d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map D176FB (Written by D14078/D14079 Consume Sites)\n\n## Context\nYou are working on a TI-84 P",
+      "status": "completed",
+      "duration_seconds": 844.317,
+      "timestamp": "2026-05-25T18:15:30Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "922dee92e57a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Implement HALT-Wake in Workflow Probe\n\n## Context\nThe file `TI-84_Plus_CE/probe-workflow-ari",
+      "status": "completed",
+      "duration_seconds": 82.616,
+      "timestamp": "2026-05-25T20:05:55Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "97c49fea50f0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace the Event Loop Outer Caller (Who Calls 0x003A73?)\n\n## Context\nThe TI-84 Plus CE OS eve",
+      "status": "timeout",
+      "duration_seconds": 900.045,
+      "timestamp": "2026-05-25T20:19:40Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "bb944505a676",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map D02658 and D02651 (Timer ISR Countdown Targets)\n\n## Context\nThe timer ISR at 0x001ACF de",
+      "status": "timeout",
+      "duration_seconds": 900.045,
+      "timestamp": "2026-05-25T20:19:50Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1111,
-    "cc_to_codex": 1111,
+    "total_calls": 1115,
+    "cc_to_codex": 1115,
     "codex_to_cc": 0,
-    "completed": 843,
-    "failed": 249,
+    "completed": 845,
+    "failed": 251,
     "refused": 0,
-    "avg_duration_seconds": 604.045
+    "avg_duration_seconds": 604.324
   }
 }
