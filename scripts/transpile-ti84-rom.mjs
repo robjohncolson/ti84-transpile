@@ -116,8 +116,8 @@ const BLOCK_OVERRIDES = new Map([
 ]);
 
 function getWordByteWidth(instruction) {
-  if (instruction.prefix === 'SIS' || instruction.prefix === 'LIS') return 2;
-  if (instruction.prefix === 'SIL' || instruction.prefix === 'LIL') return 3;
+  if (instruction.prefix === 'SIS' || instruction.prefix === 'SIL') return 2;
+  if (instruction.prefix === 'LIS' || instruction.prefix === 'LIL') return 3;
   return instruction.mode === 'adl' ? 3 : 2;
 }
 
@@ -130,8 +130,8 @@ function getWordWriteAccessor(instruction) {
 }
 
 function getWordForceShortArg(instruction) {
-  if (instruction.prefix === 'SIS' || instruction.prefix === 'LIS') return ', true';
-  if (instruction.prefix === 'SIL' || instruction.prefix === 'LIL') return ', false';
+  if (instruction.prefix === 'SIS' || instruction.prefix === 'SIL') return ', true';
+  if (instruction.prefix === 'LIS' || instruction.prefix === 'LIL') return ', false';
   return '';
 }
 

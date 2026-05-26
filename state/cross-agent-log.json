@@ -13774,15 +13774,64 @@
         "TI-84_Plus_CE/phase448-trace-0x03FC1C-key-caller-report.md"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "a7ff7e294318",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 449 P4: Make Workflow Probe Inject Per-Iteration\n\n## Context\nYou are working on a TI-",
+      "status": "completed",
+      "duration_seconds": 345.237,
+      "timestamp": "2026-05-26T08:09:25Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase449-per-iteration-inject.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "c54c9c3fc120",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 449 P2: Fix Scan Code Values \u2014 Map OS Scan Codes vs Probe Scan Codes\n\n## Context\nYou ",
+      "status": "completed",
+      "duration_seconds": 520.377,
+      "timestamp": "2026-05-26T08:12:17Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "76e79ad8b492",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 449 P3: Trace 0x001713\u21920x0008BB\u2192Return Path\n\n## Context\nYou are working on a TI-84 Pl",
+      "status": "completed",
+      "duration_seconds": 579.876,
+      "timestamp": "2026-05-26T08:13:19Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase449-001713-return-path.mjs",
+        "TI-84_Plus_CE/phase449-001713-return-path-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "5122ef8b2e39",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 449 P1: Trace 0x0008BB (Home Screen Key Handler)\n\n## Context\nYou are working on a TI-",
+      "status": "completed",
+      "duration_seconds": 809.114,
+      "timestamp": "2026-05-26T08:17:04Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1130,
-    "cc_to_codex": 1130,
+    "total_calls": 1134,
+    "cc_to_codex": 1134,
     "codex_to_cc": 0,
-    "completed": 855,
+    "completed": 859,
     "failed": 256,
     "refused": 0,
-    "avg_duration_seconds": 604.523
+    "avg_duration_seconds": 604.379
   }
 }
