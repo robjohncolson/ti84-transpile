@@ -1,129 +1,240 @@
-# Phase 443: Trace D176FB — USB Transfer-Ready Gate Flag
+# Phase 443 - Trace D176FB Report
 
-## Summary
+## Key Findings
 
-D176FB is a **boolean flag** (values 0x00 and 0x01 only) with **34 references** (4 reads, 30 writes) across the USB subsystem. It signals "a transfer is ready for processing" — set to 0x01 when a deferred event (D14078 endpoint-configured, D14079 deferred-transfer-pending, D1407A deferred-dispatch) is consumed, and cleared to 0x00 when the transfer completes or is aborted. Readers use it as a gate: if D176FB is nonzero, skip idle-state processing and stay in the active-transfer path.
+- There are `34` literal `D176FB` hits in the 4 MB ROM: `30` writes and `4` reads.
+- `D176FB` behaves as a 1-byte boolean side-flag, not a counter or enum.
+- Write values are only `0x00` and `0x01`.
+  - `18` sites clear it to `0x00`.
+  - `11` sites force `0x01`.
+  - `1` site (`0x03CD68`) stores a computed boolean, but the computed value is still only `0x00` or `0x01`.
+- The four readers never do arithmetic or range tests on `D176FB`; they only do `OR A` and branch away when the byte is nonzero.
+- `0x011576` does **not** read `D176FB` directly. Callers set `D176FB = 1` before entering the `0x011576` worker family, and the actual gating shows up later in the four external reader sites.
 
-**Characterization**: Boolean (0/1). Not a counter, not a pointer. 30 write sites, 4 read sites. All writes are either `LD A,0x01 / LD (D176FB),A` or `XOR A / LD (D176FB),A`.
+## Full Reference Inventory
 
-## Adjacent Addresses
+### Reads (4)
 
-| Address | Hits | Type | Notes |
-|---------|------|------|-------|
-| D176FB | 34 | Boolean (0/1) | Transfer-ready gate — this report |
-| D176FC | 8 | Boolean (0/1) | Separately addressed, boot/init related (written by 0x0BCD26 with value 0x01, cleared by 0x00B738/0x048C3C reset helpers, read by 0x0150E9/0x012149/0x0157A1) |
-| D176FD | 49 | Multi-value enum (0-3+) | Transfer phase/stage counter — uses `CP 0x02`, `CP 0x03` comparisons, DEC A patterns. NOT boolean. |
+- `0x009434` - `LD A,(0xD176FB)` then `OR A ; JR NZ`
+- `0x00F274` - `LD A,(0xD176FB)` then `OR A ; JP NZ`
+- `0x02BF29` - `LD A,(0xD176FB)` then `OR A ; JP NZ`
+- `0x042999` - `LD A,(0xD176FB)` then `OR A ; JR NZ`
 
-D176FB is a **single-byte independent flag** — D176FC and D176FD are separate variables with distinct semantics.
+### Writes that force `0x01` (11)
 
-## Reference Table (D176FB)
+- `0x00E726`
+- `0x00F481`
+- `0x00FB93`
+- `0x00FEC1`
+- `0x013753`
+- `0x0137B5`
+- `0x0137D0`
+- `0x0138B6`
+- `0x0138D1`
+- `0x03B970`
+- `0x048590`
 
-### Writes (30 sites)
+### Computed boolean write (1)
 
-| Address | Value | Context | Co-accessed D1xxxx |
-|---------|-------|---------|-------------------|
-| 0x00AA46 | 0x00 | Transfer null-pointer cleanup — clears D176A8, D176F5, then D176FB | D176A8, D176F5 |
-| 0x00B8B7 | 0x00 | Reset helper — bulk-clears D176F8 (×2) then D176FB, returns | D176F8, D177BB |
-| 0x00E726 | 0x01 | IY+16 bit-clear handler, sets transfer-ready after endpoint config | D14008, D14011, D14076, D141BB |
-| 0x00F164 | 0x00 | Port 0x3114 init path — clears D14046 bit, sets D1408A, clears D14074 + D176FB | D14046, D14072, D14074, D1408A |
-| 0x00F2F0 | 0x00 | Transfer teardown — clears D1776D, D176A8, D14074, D176FB | D14074, D176A8, D176F8 |
-| 0x00F481 | 0x01 | Port 0x3138 check — sets D176FB after port validation (CP 0x38 / CP 0x31) | D1407F, D1408B |
-| 0x00FB93 | 0x01 | Null-check gate — sets D176FB when pointer comparison succeeds (CALL 0x0021C2 returns NZ) | — |
-| 0x00FBF2 | 0x00 | Transfer-active path — sets D14074=1, clears D1772D, clears D176FB | D14074, D1772D, D177B8 |
-| 0x00FEC1 | 0x01 | IY+8 handler — sets D176FB, then checks port 0x3030 bit 0 | D13FE7, D141EA, D177B7 |
-| 0x013753 | 0x01 | D14073-gated path — sets D176FB when D176F2 pointer is null | D14073, D1407A, D176F2, D17792 |
-| **0x0137B5** | **0x01** | **D14078 consumer — clears D14078, sets D176FB=1, calls 0x011576** | **D14078, D14079, D17792** |
-| **0x0137D0** | **0x01** | **D14079 consumer — sets D176FB=1, clears D14079** | **D14078, D14079, D17787** |
-| **0x0138B6** | **0x01** | **D14078 consumer (path B) — sets D176FB=1, clears D14078** | **D14078, D14079, D17792** |
-| **0x0138D1** | **0x01** | **D14079 consumer (path B) — clears D14079, sets D176FB=1, calls 0x01106A** | **D14078, D14079, D17787** |
-| 0x0150E5 | 0x00 | Completion handler — updates D176F2, clears D176FB, then checks D176FC | D176BD, D176F2, D176FC |
-| 0x02BCCF | 0x00 | Mirror of 0x00F164 — same D14046/D1408A/D14074/D176FB clear pattern | D14046, D14072, D14074, D1408A |
-| 0x02BFAA | 0x00 | D177B8==0x01 path — clears D14074 + D176FB + D176F8 after CALL 0x000420 | D14074, D176F8, D177B8 |
-| 0x02C0D9 | 0x00 | Mirror of 0x00FBF2 — same D14074=1, D1772D=0, D176FB=0 pattern | D14074, D1772D, D177B8 |
-| 0x03B970 | 0x01 | Mirror of 0x00E726 — same IY+16 bit-clear, same endpoint config path | D14008, D14011, D14076, D141BB |
-| 0x03CD68 | dynamic | Writes A from IX-19 (computed value, but only 0x00/0x01 based on CP 0x80 branch) | D13FE7, D141EA, D177B7 |
-| 0x047EEA | 0x00 | Transfer cleanup — calls CALL 0x000264, stores D176F2, clears D176FB | D14089, D176F2 |
-| 0x048450 | 0x00 | Bulk-clear — clears D176EC, D176B1, D176E9, D176FB | D176B1, D176E9, D176F2 |
-| 0x048590 | 0x01 | Null-pointer confirmed — sets D176FB=1, writes D1771A=0x000B | D176AB, D1771A |
-| 0x049746 | 0x00 | D14046 reset + D14074 clear + D176FB clear path | D14046, D14074, D177B8 |
-| 0x04D574 | 0x00 | Cleanup — clears D176F8 + D176FB, then loads D17726 | D176F8, D17726 |
-| 0x04DC2C | 0x00 | Mirror of 0x00AA46 — clears D176A8, D176F5, D176FB | D176A8, D176F5, D176F2 |
-| 0x04DFB3 | 0x00 | Final cleanup — clears D176F9, D176F8, D176FB, returns | D176F8, D176F9 |
-| 0x04E00E | 0x00 | Post-CALL 0x049CCA (arg 0x11) cleanup — clears D176FB | D176F8, D177B8 |
-| 0x04E025 | 0x00 | Post-CALL 0x049CCA (arg 0x09) cleanup — clears D176FB + D176F8 | D176F2, D176F8, D177B8 |
-| 0x064AFE | 0x00 | Mirror of 0x04E025 — post-0x049CCA cleanup, clears D176FB | D176A8, D176FD, D17726 |
+- `0x03CD68`
+  - The surrounding code first stores either `BC = 1` or `BC = 0` into `(IX-19)`, then does `LD A,(IX-19)` and `LD (0xD176FB),A`.
+  - So this site still writes only a boolean `0` or `1`.
 
-### Reads (4 sites)
+### Writes that clear to `0x00` (18)
 
-| Address | Pattern | What it gates |
-|---------|---------|---------------|
-| 0x009434 | `LD A,(D176FB) / OR A / JR NZ,+0x7A` | If D176FB set → skip idle polling at 0x009394, jump to active-transfer handler at 0x0094B5 |
-| 0x00F274 | `LD A,(D176FB) / OR A / JP NZ,0x00EF8E` | Part of 5-flag idle-guard chain: D17768, D177BA bit 7, **D176FB**, D140B2, D140AF — if ANY nonzero → jump to 0x00EF8E (back to main loop) |
-| 0x02BF29 | `LD A,(D176FB) / OR A / JP NZ,0x02B9CC` | Mirror of 0x00F274 — same 5-flag idle-guard chain, same order |
-| 0x042999 | `LD A,(D176FB) / OR A / JR NZ,+0x7A` | Mirror of 0x009434 — same idle-skip pattern |
+- `0x00AA46`
+- `0x00B8B7`
+- `0x00F164`
+- `0x00F2F0`
+- `0x00FBF2`
+- `0x0150E5`
+- `0x02BCCF`
+- `0x02BFAA`
+- `0x02C0D9`
+- `0x047EEA`
+- `0x048450`
+- `0x049746`
+- `0x04D574`
+- `0x04DC2C`
+- `0x04DFB3`
+- `0x04E00E`
+- `0x04E025`
+- `0x064AFE`
 
-## Idle-Guard Chain (Read Sites at 0x00F274 / 0x02BF29)
+## Value Characterization
 
-The reads at 0x00F274 and 0x02BF29 are part of an identical 5-flag guard chain that prevents the USB subsystem from entering idle/completion processing while any work is pending:
+`D176FB` is a boolean side-flag.
 
+Evidence:
+
+- Every direct reader is `LD A,(D176FB)` followed by `OR A` and a zero/nonzero branch.
+- No reader compares it against values other than zero.
+- No site uses `INC`, `DEC`, `ADD`, `CP n`, table indexing, or multi-byte transfers on `D176FB`.
+- The only non-constant writer (`0x03CD68`) still writes a computed `0` or `1`.
+
+The correct model is:
+
+- `0x00` = clear / inactive / no deferred side condition armed
+- `0x01` = side condition armed, acknowledged, or deferred follow-up pending
+
+## What It Gates
+
+### Reader behavior
+
+| Read site | Branch on nonzero | Observed effect |
+| --- | --- | --- |
+| `0x009434` | `JR NZ,0x0094B5` | The helper returns its pre-zeroed local `(IX-3)` value immediately instead of calling `0x009394` / `0x0093D3`. This is a null-return short circuit. |
+| `0x042999` | `JR NZ,0x042A1A` | Mirror of `0x009434`: it returns the pre-zeroed local immediately and skips `0x0428D5` / `0x042914`. |
+| `0x00F274` | `JP NZ,0x00EF8E` | Aborts the protocol helper before later checks on `D140B2`, `D140AF`, and `D177B8`, and before the deeper cleanup / delivery continuation. |
+| `0x02BF29` | `JP NZ,0x02B9CC` | Mirror of `0x00F274`: same early-exit role in the banked link/USB path. |
+
+### Behavioral interpretation
+
+When `D176FB` is `1`:
+
+1. Two query-style helpers (`0x009434`, `0x042999`) return a null/zero result immediately.
+2. Two protocol/link helpers (`0x00F274`, `0x02BF29`) exit early before continuing normal transport-side work.
+
+So the practical effect is:
+
+- `D176FB = 1` suppresses normal query / poll / cleanup behavior in several surrounding helper families.
+- It marks that the USB/link pipeline is in a deferred or acknowledged side-path where those helpers should stand down.
+
+## Same-Function D17xxx Co-Access Map
+
+The most informative same-function D17xxx companions are:
+
+| Function family | D176FB site(s) | Other D17xxx addresses accessed in the same function |
+| --- | --- | --- |
+| `0x00AA14` boot/init cluster | `0x00AA46` | `D176A8`, `D176C9`, `D176CB`, `D176CE`, `D176F2`, `D176F5`, `D176F8`, `D1771A`, `D17726`, `D17779` |
+| `0x00E587` producer | `0x00E726` | `D177B7` |
+| `0x00F023` protocol gate / cleanup | `0x00F164`, `0x00F274`, `0x00F2F0` | `D177B7`, `D177B8`, `D177BA` |
+| `0x00FBD1` connect/reset helper | `0x00FBF2` | `D1772D`, `D177B8` |
+| `0x00FE14` deferred descriptor-dispatch family | `0x00FEC1` | `D177B7` |
+| `0x013700` sibling helper A | `0x013753`, `0x0137B5`, `0x0137D0` | `D176F2`, `D17787`, `D1778A`, `D17792`, `D17795` |
+| `0x0137E9` sibling helper B | `0x0138B6`, `0x0138D1` | `D176DD`, `D176F2`, `D17783`, `D17786`, `D17787`, `D1778A`, `D17792` |
+| `0x0150C2` completion dispatcher | `0x0150E5` | `D176BD`, `D176F2`, `D176FC`, `D1772D` |
+| `0x02BD52` mirrored protocol gate | `0x02BF29`, `0x02BFAA` | `D176F8`, `D17768`, `D17769`, `D177B7`, `D177B8`, `D177BA`, `D177BB` |
+| `0x02C0B8` connect/reset mirror | `0x02C0D9` | `D1772D`, `D177B8` |
+| `0x03CC6A` computed boolean writer | `0x03CD68` | `D177B7` |
+| `0x047FB8` sequencer family | `0x048450`, `0x048590` | `D176FA`, `D17726`, `D177B8` |
+| `0x049701` reset/setup helper | `0x049746` | `D1778F`, `D17792`, `D17796`, `D177B8` |
+| `0x04D4EF` cleanup family | `0x04D574` | `D176F8`, `D1770A`, `D17726`, `D17731`, `D177BB` |
+| `0x04DBBF` cleanup sibling | `0x04DC2C` | `D17726`, `D17731` |
+| `0x04DC36` state-`0x10` cleanup family | `0x04DFB3`, `0x04E00E`, `0x04E025` | `D176A8`, `D176CB`, `D176CE`, `D176F2`, `D176F8`, `D1771A`, `D17725`, `D17726`, `D177BB` |
+| `0x06449F` late cleanup family | `0x064AFE` | `D176EF`, `D17700`, `D1770A`, `D17725`, `D17726`, `D17797` |
+
+The densest clusters are the `D176F2` / `D176F8` / `D17795` protocol state family and the `D17792` staged-argument family. That is the strongest evidence that `D176FB` is a side-flag in the same USB event-processing cluster, not an unrelated global.
+
+## When It Is Set
+
+The `0x01` writers fall into a few clear buckets:
+
+- `0x00E726` and `0x03B970`
+  - After clearing bit 7 in `(IY+0x10)`, these routines set `D176FB = 1`.
+- `0x00F481`
+  - Related syscall / acknowledgment path. Phase 410 already tied this family to notification response/completion.
+- `0x00FB93`
+  - Sets `D176FB = 1` when a local `(IX-3)` pointer is null.
+- `0x00FEC1`
+  - The deferred descriptor-dispatch path from the `0x00FE14` family sets `D176FB = 1` before classifying transfer disposition.
+- `0x013753`
+  - Immediate worker-A path: if `D14073 != 0` and `D176F2` is null, set `D176FB = 1` and jump into the READY-promotion continuation.
+- `0x0137B5`
+  - `D14078` consume path A: clear `D14078`, set `D176FB = 1`, call `0x011576`.
+- `0x0137D0`
+  - `D14079` consume path A: set `D176FB = 1`, clear `D14079`, then rejoin the same worker family through `0x01372B`.
+- `0x0138B6`
+  - `D14078` consume path B: set `D176FB = 1`, clear `D14078`, then jump into the shared `0x01381D -> 0x011576` path.
+- `0x0138D1`
+  - `D14079` consume path B: clear `D14079`, set `D176FB = 1`, then call `0x01106A` in the same worker family.
+- `0x048590`
+  - Sequencer promotion path: after a `D176F2` null-check, it sets `D176FB = 1` and seeds `D1771A = 0x00000B`.
+- `0x03CD68`
+  - Computed boolean writer: stores a derived `0` or `1` before continuing a `0x3030`-observing path.
+
+## When It Is Cleared
+
+Clear sites cluster just as strongly:
+
+- Boot / init
+  - `0x00AA46`
+- Completion dispatcher
+  - `0x0150E5` unconditionally clears `D176FB` on every `0x0150C2` dispatch
+- Connect / reset / setup helpers
+  - `0x00FBF2`, `0x02C0D9`, `0x047EEA`, `0x048450`, `0x049746`
+- Protocol / transport cleanup
+  - `0x00F164`, `0x00F2F0`, `0x02BCCF`, `0x02BFAA`, `0x04D574`, `0x04DC2C`, `0x064AFE`
+- State-`0x10` cleanup family
+  - `0x00B8B7`, `0x04DFB3`, `0x04E00E`, `0x04E025`
+
+This gives the lifecycle:
+
+1. A producer or deferred worker sets `D176FB = 1`.
+2. Query / protocol helpers treat the flag as "do not continue normal path".
+3. Completion / connect / teardown helpers clear it back to `0`.
+
+## `0x011576`: What The Worker Actually Does
+
+### First ~80 bytes
+
+```text
+0x011576  LD HL,0xFFFFF5
+0x01157A  CALL 0x002197
+0x01157E  LD (IX-2),0x00
+0x011582  LD (IX-1),0xF0
+0x011586  LD BC,0x000000
+0x01158A  LD (IX-8),BC
+0x01158D  LD HL,(0xD1776D)
+0x011591  CALL 0x0021C2
+0x011595  JR NZ,0x0115A1
+0x011597  PUSH BC
+0x011598  CALL 0x010F8C
+0x01159C  POP BC
+0x01159D  LD (0xD1776D),HL
+0x0115A1  LD BC,(0xD1776D)
+0x0115A6  LD (IX-8),BC
+0x0115A9  LD HL,(IX-8)
+0x0115AC  CALL 0x0021C2
+0x0115B0  JP Z,0x011674
+0x0115B4  LD HL,(0xD17792)
+0x0115B8  CALL 0x0021C2
+0x0115BC  JR Z,0x0115C8
+0x0115BE  LD HL,(0xD1778F)
+0x0115C2  CALL 0x0021C2
+0x0115C6  JR NZ,0x0115CC
+0x0115C8  CALL 0x011017
+0x0115CC  LD A,0x04
 ```
-LD A,(D17768)    ; check 1: pending interrupt notification
-OR A
-JP NZ, exit
 
-LD A,(D177BA)    ; check 2: high bit of status register
-AND 0x80
-JP NZ, exit
+### Role of `0x011576`
 
-LD A,(D176FB)    ; check 3: transfer-ready gate  ← THIS FLAG
-OR A
-JP NZ, exit
+The larger function continues past the 80-byte window and does the important state promotion work:
 
-LD A,(D140B2)    ; check 4: completion status enum (0/1/2/4)
-OR A
-JP NZ, exit
+- Writes `D17795 = 0x04`
+- Clears / scrubs:
+  - `D17787`
+  - `D1778A`
+  - `D1778B`
+  - `D1778E`
+  - `D1777F`
+  - `D17782`
+  - `D1777B`
+  - `D1777E`
+- Special-cases `D176F2` states `0x000003`, `0x00CCCC`, and `0x00CCCD`, and clears `D176F2` to `0` for those cases
+- Compares `D17792` against `D176CB`
+- Chooses the larger of the two
+- Pushes that chosen 24-bit value into `0x0155BC`
 
-LD HL,(D140AF)   ; check 5: pending callback pointer
-CALL null_check
-```
+So `0x011576` is best described as a READY-promotion / staged-argument validation worker in the USB/link event pipeline.
 
-D176FB is the **third of five** conditions that must all be zero for the USB subsystem to proceed to idle/sleep state.
+## Final Interpretation
 
-## Co-Access Map (Top Frequencies)
+`D176FB` is best modeled as a boolean "acknowledged / deferred follow-up armed" side-flag in the `D176F2` / `D176F8` / `D17795` USB state cluster.
 
-| Address | Freq (of 34) | Known Identity |
-|---------|-------------|----------------|
-| D177B8 | 9 | USB state/mode byte |
-| D176F2 | 8 | Transfer pointer / descriptor |
-| D176F8 | 7 | Transfer sub-state flag |
-| D14074 | 7 | Transfer-active flag |
-| D176A8 | 6 | Transfer buffer base |
-| D17726 | 6 | Command/status word |
-| D17792 | 5 | Staged argument for 0x0155BC |
-| D1772D | 5 | Transfer counter/offset |
-| D17787 | 5 | Pipe descriptor field |
-| D1778A | 5 | Pipe descriptor field |
-| D14078 | 4 | Endpoint-configured flag |
-| D14079 | 4 | Deferred-transfer-pending flag |
-| D1408A | 4 | Port init complete flag |
+The important nuance is:
 
-## Key Functions
+- Setting `D176FB = 1` before `0x011576` does **not** change `0x011576` internally.
+- Instead, it marks the surrounding infrastructure so that the four external reader families short-circuit normal query / protocol behavior until the dispatcher or teardown helpers clear the flag again.
 
-| Function | Role |
-|----------|------|
-| 0x013700 (path A) / 0x0137E9 (path B) | **Deferred-work consumer loop** — checks D14073→D14078→D14079→D1407A in sequence, sets D176FB=1 for D14078/D14079 before calling 0x011576 or 0x01106A |
-| 0x011576 | **READY-promoter** — called after D176FB=1, uses D17792 as staged argument, dispatches via 0x0155BC |
-| 0x01106A | **Transfer initiator** — called after D176FB=1 on D14079 consume path |
-| 0x00F023 (~0x00EF8E loop) | **Main USB processing loop** — reads D176FB as part of 5-flag idle guard |
-| 0x00B8B7 | **Reset helper** — bulk-clears D176F8 and D176FB |
-| 0x0150C2 | **Completion handler** — clears D176FB after updating D176F2 |
-
-## Conclusion
-
-**D176FB = USB transfer-ready gate flag (boolean)**
-
-- **Set to 1** when a deferred event (D14078/D14079/D1407A consume, endpoint config, port validation) triggers a transfer that needs processing
-- **Cleared to 0** when the transfer completes, is cleaned up, or the subsystem resets
-- **Read as gate** in 4 sites: prevents idle-state entry while a transfer is active
-- Tightly coupled with D14074 (transfer-active), D176F8 (transfer sub-state), and D176F2 (transfer descriptor pointer) — these four are typically cleared together on completion paths
-- Part of the 5-flag idle-guard chain alongside D17768, D177BA, D140B2, and D140AF
+That makes `D176FB` a software gate around the USB event-processing chain, not the main state byte itself.

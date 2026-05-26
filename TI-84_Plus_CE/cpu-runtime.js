@@ -1174,7 +1174,7 @@ export function createExecutor(blocks, memory, options = {}) {
           if (pc >= 0xD00000) {
             const trampolineFn = (cpu) => {
               const sp = cpu.sp & 0xFFFFFF;
-              const retAddr = cpu.mem[sp] | (cpu.mem[sp + 1] << 8) | (cpu.mem[sp + 2] << 16);
+              const retAddr = memory[sp] | (memory[sp + 1] << 8) | (memory[sp + 2] << 16);
               cpu.sp = (sp + 3) & 0xFFFFFF;
               return retAddr;
             };

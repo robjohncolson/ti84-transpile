@@ -31,10 +31,10 @@ const POST_INIT_ENTRY = 0x0802B2;
 const STAGE_ENTRIES = [0x0A2B72, 0x0A3301, 0x0A29EC, 0x0A2854];
 const EVENT_LOOP_ENTRY = 0x003A73;
 
-// Per keyboard-matrix.md: scan code = (idx << 4) | bit; clear that bit in keyMatrix[idx] to press.
-const KEY_ONE   = { idx: 4, bit: 1, label: '1',     scan: 0x41 };
-const KEY_PLUS  = { idx: 1, bit: 1, label: '+',     scan: 0x11 };
-const KEY_ENTER = { idx: 1, bit: 0, label: 'ENTER', scan: 0x10 };
+// OS scan code formula: ((7 - idx) - 1) * 8 + bit + 1. Clear keyMatrix[idx] bit to press.
+const KEY_ONE   = { idx: 4, bit: 1, label: '1',     scan: 0x12 };
+const KEY_PLUS  = { idx: 1, bit: 1, label: '+',     scan: 0x2A };
+const KEY_ENTER = { idx: 1, bit: 0, label: 'ENTER', scan: 0x29 };
 const SEQUENCE = [KEY_ONE, KEY_PLUS, KEY_ONE, KEY_ENTER];
 
 const STEPS_PER_PRESS = 200000;
@@ -119,8 +119,10 @@ function main() {
   const bootState = bootToHomeScreen(executor, cpu, mem);
   mem[0xD14091] = 1;
   mem[0xD177B7] = 0x55;
+  mem[0xD177BA] = 0;
   console.log(`  D14091=${hex(mem[0xD14091], 2)} (key processing enabled)`);
   console.log(`  D177B7=${hex(mem[0xD177B7], 2)} (display refresh mode)`);
+  console.log(`  D177BA=${hex(mem[0xD177BA], 2)} (per-event gate cleared)`);
   console.log(`  D141B5=${hex(mem[0xD141B5], 2)} (key buffer, should be 0x00)`);
 
   const baselineHash = vramHash(mem);

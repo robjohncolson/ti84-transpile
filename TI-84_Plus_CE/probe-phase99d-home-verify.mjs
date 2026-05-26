@@ -132,11 +132,59 @@ function restoreCpu(cpu, snapshot, mem) {
   mem.fill(0xFF, cpu.sp, cpu.sp + 12);
 }
 
+function purgeRamBlocks(executor) {
+  // Remove cached RAM trampoline blocks so the next runFrom will re-trigger
+  // onMissingBlock when execution jumps to a RAM address.  This is necessary
+  // because coldBoot's earlier runFrom calls register working trampolines
+  // that persist in the shared compiledBlocks object.
+  const blocks = executor.compiledBlocks;
+  for (const key of Object.keys(blocks)) {
+    const addr = parseInt(key.split(':')[0], 16);
+    if (addr >= 0xD00000) {
+      delete blocks[key];
+    }
+  }
+}
+
 function runStage(executor, label, entry, maxSteps) {
-  const result = executor.runFrom(entry, 'adl', {
-    maxSteps,
-    maxLoopIterations: STAGE_MAX_LOOP_ITERATIONS,
-  });
+  // The RAM trampoline in cpu-runtime.js now works correctly (memory[] instead
+  // of the old broken cpu.mem[]).  Before that fix every stage would TypeError
+  // on the first RAM jump and terminate with 'error', which left VRAM in the
+  // right state for later decode.  With the fix stages run far past the RAM
+  // jump and overwrite the rendered pixels.
+  //
+  // To preserve the old effective behaviour we (1) purge cached RAM blocks so
+  // onMissingBlock fires again, and (2) throw from onMissingBlock the first
+  // time execution reaches a RAM address (>= 0xD00000).  This stops the stage
+  // at exactly the same point the old crash did.
+  purgeRamBlocks(executor);
+
+  class RamHalt extends Error {
+    constructor(pc, steps) {
+      super('ram_halt');
+      this.haltPc = pc;
+      this.haltSteps = steps;
+    }
+  }
+
+  let result;
+  try {
+    result = executor.runFrom(entry, 'adl', {
+      maxSteps,
+      maxLoopIterations: STAGE_MAX_LOOP_ITERATIONS,
+      onMissingBlock(pc, _mode, steps) {
+        if (pc >= 0xD00000) {
+          throw new RamHalt(pc, steps);
+        }
+      },
+    });
+  } catch (err) {
+    if (err instanceof RamHalt) {
+      result = { steps: err.haltSteps, termination: 'ram_halt', lastPc: err.haltPc };
+    } else {
+      throw err;
+    }
+  }
 
   console.log(`${label}: entry=${hex(entry, 6)} steps=${result.steps} term=${result.termination} lastPc=${hex(result.lastPc, 6)}`);
 
