@@ -117,6 +117,11 @@ function main() {
   console.log('--- workflow probe: 1 + 1 ENTER → expect "2" ---');
   console.log('phase 1: boot to home screen');
   const bootState = bootToHomeScreen(executor, cpu, mem);
+  mem[0xD14091] = 1;
+  mem[0xD177B7] = 0x55;
+  console.log(`  D14091=${hex(mem[0xD14091], 2)} (key processing enabled)`);
+  console.log(`  D177B7=${hex(mem[0xD177B7], 2)} (display refresh mode)`);
+  console.log(`  D141B5=${hex(mem[0xD141B5], 2)} (key buffer, should be 0x00)`);
 
   const baselineHash = vramHash(mem);
   const baselinePixels = vramNonWhitePixelCount(mem);
@@ -165,6 +170,8 @@ function main() {
       currentPc = releaseResult.lastPc ?? currentPc;
       currentMode = releaseResult.lastMode ?? currentMode;
     }
+
+    console.log(`    D141B5=${hex(mem[0xD141B5], 2)} D14091=${hex(mem[0xD14091], 2)} D177B7=${hex(mem[0xD177B7], 2)} D00587=${hex(mem[0xD00587], 2)} D1441D=${hex(mem[0xD1441D] | (mem[0xD1441E] << 8) | (mem[0xD1441F] << 16), 6)}`);
 
     const afterHash = vramHash(mem);
     log.push({
