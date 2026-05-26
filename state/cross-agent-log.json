@@ -13823,15 +13823,74 @@
       "timestamp": "2026-05-26T08:17:04Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "fa72198b1445",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Fix Scan Codes + D177BA=0 in Workflow Probe\n\n## Context\nFile: `TI-84_Plus_CE/probe-workflow-",
+      "status": "completed",
+      "duration_seconds": 72.078,
+      "timestamp": "2026-05-26T10:03:55Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-workflow-arithmetic.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "55bbb8d8944f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x0067F8 Execution \u2014 Map Call Tree to Crash at 0xD18C22\n\n## Context\nWhen the TI-84 OS ",
+      "status": "completed",
+      "duration_seconds": 613.081,
+      "timestamp": "2026-05-26T10:12:59Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase450-0x0067F8-calltree.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "1a4386696fa9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate Crash at 0xD18C22 (RAM-space function pointer)\n\n## Context\nWhen the TI-84 OS eve",
+      "status": "completed",
+      "duration_seconds": 638.392,
+      "timestamp": "2026-05-26T10:13:23Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8da534ec7bce",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Enhanced Workflow Probe (Phase 451)\n\nCreate `TI-84_Plus_CE/probe-phase451-enhanced-workflow.",
+      "status": "completed",
+      "duration_seconds": 220.175,
+      "timestamp": "2026-05-26T12:08:11Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3411a541382e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Coverage Push \u2014 Seed Discovery from Execution Traces (Phase 451)\n\nAnalyze the execution trac",
+      "status": "completed",
+      "duration_seconds": 296.182,
+      "timestamp": "2026-05-26T12:09:30Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1134,
-    "cc_to_codex": 1134,
+    "total_calls": 1139,
+    "cc_to_codex": 1139,
     "codex_to_cc": 0,
-    "completed": 859,
+    "completed": 864,
     "failed": 256,
     "refused": 0,
-    "avg_duration_seconds": 604.379
+    "avg_duration_seconds": 603.341
   }
 }
