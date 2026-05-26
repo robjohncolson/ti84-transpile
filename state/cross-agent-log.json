@@ -13602,15 +13602,187 @@
       "timestamp": "2026-05-25T20:19:50Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "7d9eaea5a9b3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace the real OS scheduler at 0x001612\n\n## Context\nThis is a TI-84 Plus CE ROM transpilatio",
+      "status": "timeout",
+      "duration_seconds": 900.039,
+      "timestamp": "2026-05-25T22:17:14Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "da83d912d7f7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x003D5A (_GetCSC keyboard scan function)\n\n## Context\nThis is a TI-84 Plus CE ROM tran",
+      "status": "timeout",
+      "duration_seconds": 900.055,
+      "timestamp": "2026-05-25T22:17:16Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5b11d1cf7c76",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace token dispatch and display refresh paths\n\n## Context\nThis is a TI-84 Plus CE ROM trans",
+      "status": "timeout",
+      "duration_seconds": 900.059,
+      "timestamp": "2026-05-25T22:17:18Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9fa16033529e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x03FA09 (Key Processor Function)\n\n## Context\nYou are working on a TI-84 Plus CE ROM t",
+      "status": "completed",
+      "duration_seconds": 597.516,
+      "timestamp": "2026-05-26T02:12:14Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase446-trace-03FA09-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "bc6f1b4dc3d0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x00B69E (Display Refresh Function)\n\n## Context\nYou are working on a TI-84 Plus CE ROM",
+      "status": "completed",
+      "duration_seconds": 620.266,
+      "timestamp": "2026-05-26T02:12:32Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "141ae463078c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x00846E (Main OS Dispatch Function)\n\n## Context\nYou are working on a TI-84 Plus CE RO",
+      "status": "timeout",
+      "duration_seconds": 900.075,
+      "timestamp": "2026-05-26T02:17:14Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a72501a03059",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Find Home Screen Mode Table Installer (who writes D1441D)\n\n## Context\nYou are working on a T",
+      "status": "timeout",
+      "duration_seconds": 900.094,
+      "timestamp": "2026-05-26T02:17:18Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7e7876634cb2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Update Workflow Probe \u2014 Set D14091=1 + D177B7=0x55 After Boot\n\n## Context\nThe TI-84 CE ROM t",
+      "status": "completed",
+      "duration_seconds": 100.094,
+      "timestamp": "2026-05-26T04:04:31Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-workflow-arithmetic.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "c66b269b1c55",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x049087 (Display Refresh Function)\n\n## Context\nThis is the TI-84 Plus CE ROM transpil",
+      "status": "completed",
+      "duration_seconds": 353.632,
+      "timestamp": "2026-05-26T04:08:47Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f47f6250c139",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x049E07 (Token Dispatch Function)\n\n## Context\nThis is the TI-84 Plus CE ROM transpila",
+      "status": "completed",
+      "duration_seconds": 610.054,
+      "timestamp": "2026-05-26T04:13:05Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5c0099881407",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Find All D14091 Write Sites and Determine When It Becomes Non-Zero\n\n## Context\nThis is the T",
+      "status": "completed",
+      "duration_seconds": 721.823,
+      "timestamp": "2026-05-26T04:14:58Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e0b5f53e13a0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 448 P1: Inject Scan Code Directly to D00587 in Workflow Probe\n\n## Context\nThe workflo",
+      "status": "completed",
+      "duration_seconds": 63.223,
+      "timestamp": "2026-05-26T06:03:49Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6060b60b3923",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 448 P2: Trace the Keyboard ISR Scan-Code Writer\n\n## Context\nThe TI-84 Plus CE home sc",
+      "status": "completed",
+      "duration_seconds": 498.68,
+      "timestamp": "2026-05-26T06:11:07Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "325e1cd6e34e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 448 P3: Trace 0x04929D (Real Display Update Dispatcher, 649B)\n\n## Context\nSession 447",
+      "status": "completed",
+      "duration_seconds": 499.531,
+      "timestamp": "2026-05-26T06:11:09Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "4cd9aeaf36a7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 448 P4: Trace 0x03FC1C (Key Processor Caller with Scan-to-Key Table)\n\n## Context\nSess",
+      "status": "completed",
+      "duration_seconds": 724.903,
+      "timestamp": "2026-05-26T06:14:56Z",
+      "files_changed": [
+        "TI-84_Plus_CE/phase448-trace-0x03FC1C-key-caller-report.md"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1115,
-    "cc_to_codex": 1115,
+    "total_calls": 1130,
+    "cc_to_codex": 1130,
     "codex_to_cc": 0,
-    "completed": 845,
-    "failed": 251,
+    "completed": 855,
+    "failed": 256,
     "refused": 0,
-    "avg_duration_seconds": 604.324
+    "avg_duration_seconds": 604.523
   }
 }
