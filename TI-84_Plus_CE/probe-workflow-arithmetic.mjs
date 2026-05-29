@@ -139,6 +139,7 @@ function main() {
 
     pressKey(peripherals, key);
     mem[0xD00587] = key.scan;
+    mem[0xD0058D] = key.scan;
     mem[0xD00080] |= 0x08;  // Set bit 3 of (IY+0) — signals _GetCSC that D00587 has a scan code ready
     let pressResult;
     try {
@@ -176,8 +177,8 @@ function main() {
       currentMode = releaseResult.lastMode ?? currentMode;
     }
 
-    console.log(`    [D00587-inject] key=${key.label} scan=${hex(key.scan, 2)} -> D141B5=${hex(mem[0xD141B5], 2)} D00587=${hex(mem[0xD00587], 2)}`);
-    console.log(`    D141B5=${hex(mem[0xD141B5], 2)} D14091=${hex(mem[0xD14091], 2)} D177B7=${hex(mem[0xD177B7], 2)} D00587=${hex(mem[0xD00587], 2)} D1441D=${hex(mem[0xD1441D] | (mem[0xD1441E] << 8) | (mem[0xD1441F] << 16), 6)}`);
+    console.log(`    [dual-inject] key=${key.label} scan=${hex(key.scan, 2)} -> D141B5=${hex(mem[0xD141B5], 2)} D00587=${hex(mem[0xD00587], 2)} D0058D=${hex(mem[0xD0058D], 2)}`);
+    console.log(`    D141B5=${hex(mem[0xD141B5], 2)} D14091=${hex(mem[0xD14091], 2)} D177B7=${hex(mem[0xD177B7], 2)} D00587=${hex(mem[0xD00587], 2)} D0058D=${hex(mem[0xD0058D], 2)} D1441D=${hex(mem[0xD1441D] | (mem[0xD1441E] << 8) | (mem[0xD1441F] << 16), 6)}`);
 
     const afterHash = vramHash(mem);
     log.push({

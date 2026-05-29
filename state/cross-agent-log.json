@@ -14172,15 +14172,67 @@
       "timestamp": "2026-05-29T12:17:41Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "4e8238662bcd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 458 P1: Fix Workflow Probe \u2014 Dual D00587 + D0058D Injection\n\n## Context\nYou are worki",
+      "status": "completed",
+      "duration_seconds": 82.072,
+      "timestamp": "2026-05-29T14:04:09Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-workflow-arithmetic.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "ce8831c59ea5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 458 P2: Trace 0x0008BB Key Processing Path via ROM Disassembly\n\n## Context\nYou are wo",
+      "status": "completed",
+      "duration_seconds": 323.902,
+      "timestamp": "2026-05-29T14:08:12Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase458-trace-0008BB.mjs",
+        "TI-84_Plus_CE/phase458-0008BB-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "48ff7cc511f3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 458 P4: Decode 0x0067F8 Timer Check Function\n\n## Context\nYou are working on a TI-84 P",
+      "status": "completed",
+      "duration_seconds": 518.585,
+      "timestamp": "2026-05-29T14:11:30Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase458-trace-0067F8.mjs",
+        "TI-84_Plus_CE/phase458-0067F8-report.md"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "cf73fc7cd2c2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 458 P3: Trace 0x03CF7D Event Loop Dispatch via ROM Disassembly\n\n## Context\nYou are wo",
+      "status": "ok",
+      "duration_seconds": 764.513,
+      "timestamp": "2026-05-29T14:15:35Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1162,
-    "cc_to_codex": 1162,
+    "total_calls": 1166,
+    "cc_to_codex": 1166,
     "codex_to_cc": 0,
-    "completed": 887,
+    "completed": 890,
     "failed": 256,
     "refused": 0,
-    "avg_duration_seconds": 600.797
+    "avg_duration_seconds": 600.184
   }
 }
