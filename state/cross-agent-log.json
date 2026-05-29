@@ -13882,15 +13882,41 @@
       "timestamp": "2026-05-26T12:09:30Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "9decae11d6b7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Headless Coldboot End-to-End Test (Phase 451)\n\nCreate `TI-84_Plus_CE/probe-phase451-coldboot",
+      "status": "completed",
+      "duration_seconds": 664.176,
+      "timestamp": "2026-05-26T12:15:37Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase451-coldboot-e2e.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "1a89fce44e99",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate why only first key renders VRAM\n\n## Context\nIn the TI-84 Plus CE ROM transpilati",
+      "status": "completed",
+      "duration_seconds": 346.358,
+      "timestamp": "2026-05-29T02:08:08Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase452-flag-dump.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1139,
-    "cc_to_codex": 1139,
+    "total_calls": 1141,
+    "cc_to_codex": 1141,
     "codex_to_cc": 0,
-    "completed": 864,
+    "completed": 866,
     "failed": 256,
     "refused": 0,
-    "avg_duration_seconds": 603.341
+    "avg_duration_seconds": 603.169
   }
 }
