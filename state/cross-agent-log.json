@@ -14008,15 +14008,179 @@
         "TI-84_Plus_CE/probe-phase454-1200k-budget.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "e2675a327af1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x00B74C and 0x048C50 \u2014 The Two D177B7=0x55 Writer Sites\n\n## Context\nIn auto-session 4",
+      "status": "completed",
+      "duration_seconds": 629.285,
+      "timestamp": "2026-05-29T06:13:23Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase454-d177b7-arm-sites.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "8052980e1448",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate 0x040852 \u2014 The D177B7=0x01 Outlier Writer\n\n## Context\nIn auto-session 453, we ma",
+      "status": "completed",
+      "duration_seconds": 729.766,
+      "timestamp": "2026-05-29T06:15:05Z",
+      "files_changed": [
+        "CONTINUATION_PROMPT_CODEX.md",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase454-1200k-budget.mjs",
+        "TI-84_Plus_CE/probe-phase454-d177b7-arm-sites.mjs",
+        "TI-84_Plus_CE/probe-phase454-d177b7-outlier.mjs",
+        "TI-84_Plus_CE/probe-phase454-vram-write-intercept.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "8ee7dfc8087b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 455 P1: Enable Timer Interrupt for Polling Loop Exit\n\n## Context\nThe TI-84 Plus CE RO",
+      "status": "completed",
+      "duration_seconds": 183.883,
+      "timestamp": "2026-05-29T08:05:33Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2f5322c05f34",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 455 P2: Trace What the ~33K Changed VRAM Bytes Represent\n\n## Context\nThe TI-84 Plus C",
+      "status": "completed",
+      "duration_seconds": 191.378,
+      "timestamp": "2026-05-29T08:05:42Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase455-vram-changed-map.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "23604b9ff1e4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 455 P3: Trace 0x048AC4 Callers in Key Processor Path\n\n## Context\nThe TI-84 Plus CE RO",
+      "status": "completed",
+      "duration_seconds": 507.759,
+      "timestamp": "2026-05-29T08:11:00Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase455-048ac4-trace.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "ef543d09375d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 455 P4: Map the Two CP 0x01 Sites Checking D177B7\n\n## Context\nThe TI-84 Plus CE ROM t",
+      "status": "completed",
+      "duration_seconds": 516.761,
+      "timestamp": "2026-05-29T08:11:11Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase455-d177b7-cp01-sites.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "8db3e662a284",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 456 \u2014 P3: Re-arm D177B7=0x55 Between Keys in VRAM Probe\n\n## Context\n\nThis is a TI-84 ",
+      "status": "completed",
+      "duration_seconds": 303.377,
+      "timestamp": "2026-05-29T10:07:59Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase456-vram-rearm.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "8f68495e357a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 456 \u2014 P1: Trace IRQ Front-End Dispatch at 0x0006F3\n\n## Context\n\nThis is a TI-84 Plus ",
+      "status": "completed",
+      "duration_seconds": 339.148,
+      "timestamp": "2026-05-29T10:08:32Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a0b3f9333603",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 456 \u2014 P2: Investigate D141B5=0x60 Key Code Mapping\n\n## Context\n\nThis is a TI-84 Plus ",
+      "status": "completed",
+      "duration_seconds": 401.259,
+      "timestamp": "2026-05-29T10:09:36Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b1b52925158d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 456 \u2014 P4: Trace 0x03F26D (Called from 0x048AC4 Display State Prologue)\n\n## Context\n\nT",
+      "status": "completed",
+      "duration_seconds": 479.231,
+      "timestamp": "2026-05-29T10:10:57Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase456-03f26d-trace.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "1e105a5fc832",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 457 P1: Fix Key Injection \u2014 Write to D0058D Instead of D00587\n\n## Context\nYou are working ",
+      "status": "completed",
+      "duration_seconds": 213.361,
+      "timestamp": "2026-05-29T12:07:21Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase457-d0058d-inject.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "34dabf78d9da",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 457 P2: Trace What Populates D0058D in Normal Operation\n\n## Context\nYou are working on a T",
+      "status": "completed",
+      "duration_seconds": 710.566,
+      "timestamp": "2026-05-29T12:15:40Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1a479d0729b9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 457 P3: Investigate Why Timer Service 0x001ACF Gets 0 Visits\n\n## Context\nYou are working o",
+      "status": "completed",
+      "duration_seconds": 830.043,
+      "timestamp": "2026-05-29T12:17:41Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1149,
-    "cc_to_codex": 1149,
+    "total_calls": 1162,
+    "cc_to_codex": 1162,
     "codex_to_cc": 0,
-    "completed": 874,
+    "completed": 887,
     "failed": 256,
     "refused": 0,
-    "avg_duration_seconds": 602.341
+    "avg_duration_seconds": 600.797
   }
 }
