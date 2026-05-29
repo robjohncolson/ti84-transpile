@@ -13908,15 +13908,115 @@
         "TI-84_Plus_CE/probe-phase452-flag-dump.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "f0d955244368",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode the 0x003D6B polling loop exit condition\n\n## Context\nIn the TI-84 Plus CE ROM transpi",
+      "status": "completed",
+      "duration_seconds": 671.777,
+      "timestamp": "2026-05-29T02:13:35Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase452-polling-loop.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "515f48dcaaac",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Analyze VRAM diff pixel pattern from key \"1\"\n\n## Context\nIn the TI-84 Plus CE ROM transpilat",
+      "status": "completed",
+      "duration_seconds": 671.295,
+      "timestamp": "2026-05-29T02:13:37Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase452-vram-pattern.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "39f8fec6d540",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Re-arm D177B7=0x55 Between Keys and Test Multi-Key Rendering\n\n## Context\nIn the TI-84 Plus C",
+      "status": "completed",
+      "duration_seconds": 109.767,
+      "timestamp": "2026-05-29T04:04:37Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "50b01f9cb1e7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Increase Step Budget to 700K and Test Polling Loop Exit\n\n## Context\nIn the TI-84 Plus CE ROM",
+      "status": "completed",
+      "duration_seconds": 399.406,
+      "timestamp": "2026-05-29T04:09:31Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase453-700k-budget.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "ca90d31c9235",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace All D177B7 Write Sites in ROM\n\n## Context\nIn the TI-84 Plus CE ROM transpilation proje",
+      "status": "completed",
+      "duration_seconds": 478.39,
+      "timestamp": "2026-05-29T04:10:51Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase453-d177b7-write-sites.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "51072cbac654",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode Rendered Text from VRAM Diff\n\n## Context\nIn the TI-84 Plus CE ROM transpilation proje",
+      "status": "completed",
+      "duration_seconds": 840.362,
+      "timestamp": "2026-05-29T04:16:49Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "92d7e6da0f8b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: VRAM Write Intercept Probe \u2014 Determine If Subsequent Key Rendering Is Idempotent\n\n## Context",
+      "status": "completed",
+      "duration_seconds": 302.877,
+      "timestamp": "2026-05-29T06:07:53Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase454-vram-write-intercept.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "8d702ed51ba1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: 1.2M Step Budget Probe \u2014 Test Polling Loop Exit\n\n## Context\nIn auto-session 453, a 700K-step",
+      "status": "completed",
+      "duration_seconds": 400.467,
+      "timestamp": "2026-05-29T06:09:32Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase454-1200k-budget.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1141,
-    "cc_to_codex": 1141,
+    "total_calls": 1149,
+    "cc_to_codex": 1149,
     "codex_to_cc": 0,
-    "completed": 866,
+    "completed": 874,
     "failed": 256,
     "refused": 0,
-    "avg_duration_seconds": 603.169
+    "avg_duration_seconds": 602.341
   }
 }
