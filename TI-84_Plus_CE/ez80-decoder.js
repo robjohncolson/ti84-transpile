@@ -757,11 +757,11 @@ function decodeED(romBytes, startPc, edPc, mode, modePrefix, immW) {
   // interrupts/exceptions execute in ADL or z80 mode. Does NOT change the
   // CPU's current execution mode, so these are simple instructions that
   // do not terminate blocks.
-  if (op === 0x6d) return emit(0, { tag: 'stmix' });
-  if (op === 0x6e) return emit(0, { tag: 'rsmix' });
+  if (op === 0x6d) return emit(0, { tag: 'ld-mb-a' });
+  if (op === 0x6e) return emit(0, { tag: 'ld-a-mb' });
   // LD MB, A / LD A, MB — eZ80 MBASE register access
-  if (op === 0x7d) return emit(0, { tag: 'ld-mb-a' });
-  if (op === 0x7e) return emit(0, { tag: 'ld-a-mb' });
+  if (op === 0x7d) return emit(0, { tag: 'rsmix' });
+  if (op === 0x7e) return emit(0, { tag: 'stmix' });
   // SLP
   if (op === 0x76) return emit(0, { tag: 'slp', terminates: true });
   // OTIMR
