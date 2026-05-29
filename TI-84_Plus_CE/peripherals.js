@@ -569,6 +569,11 @@ export function createPeripheralBus(options = {}) {
 
   function triggerIRQ() {
     interruptState.irqPending = true;
+    // Set timer interrupt bit in FTINTC raw status so the ISR handler
+    // sees a pending interrupt when it reads port 0x5014
+    if (state.intc) {
+      state.intc.rawStatus |= (1 << 4);
+    }
   }
 
   // Interrupt status/acknowledge registers (ports 0x3D-0x3E)
@@ -924,6 +929,9 @@ export function createPeripheralBus(options = {}) {
       } else {
         keyboardState.keyMatrix[group] |= (1 << bit);
       }
+    },
+    setTimerEnabled(enabled) {
+      interruptState.timerEnabled = enabled;
     },
   };
 }
