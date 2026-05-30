@@ -14370,15 +14370,103 @@
         "TI-84_Plus_CE/probe-phase464-bypass-0066ff.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "9faced09b780",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Fix Port 0x0F in peripherals.js\n\n## Problem\nIn `TI-84_Plus_CE/peripherals.js`, port 0x0F is ",
+      "status": "success",
+      "duration_seconds": 76.933,
+      "timestamp": "2026-05-30T04:04:27Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d5a0adfc7e50",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function at 0x0017CE\n\n## Context\nThis is a TI-84 Plus CE ROM transpilation projec",
+      "status": "completed",
+      "duration_seconds": 77.057,
+      "timestamp": "2026-05-30T04:04:31Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "87d474fa3692",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function at 0x001296\n\n## Context\nThis is a TI-84 Plus CE ROM transpilation projec",
+      "status": "success",
+      "duration_seconds": 112.011,
+      "timestamp": "2026-05-30T04:05:04Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6761187292a4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Fix EI+HALT in cpu-runtime.js\n\n## Problem\nIn `TI-84_Plus_CE/cpu-runtime.js`, when the CPU ex",
+      "status": "success",
+      "duration_seconds": 185.157,
+      "timestamp": "2026-05-30T04:06:09Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6d30135efa6d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: TRACE 0x001296 \u2014 What happens when interrupt status check returns Z\n\n## Context\nIn the TI-84",
+      "status": "success",
+      "duration_seconds": 257.856,
+      "timestamp": "2026-05-30T06:07:24Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5659fe3e07a8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: TEST COMBINED EI+HALT + PORT 0x0F FIX \u2014 End-to-End Event Handler Probe\n\n## Context\nSession 4",
+      "status": "success",
+      "duration_seconds": 339.601,
+      "timestamp": "2026-05-30T06:08:44Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "45c922dfff62",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: DECODE 0x003D5A \u2014 Function called 100 times in 0x003A0F loop\n\n## Context\nIn the TI-84 CE ROM",
+      "status": "success",
+      "duration_seconds": 382.291,
+      "timestamp": "2026-05-30T06:09:30Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "809626f59454",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: MAP D17744 \u2014 Display Phase Counter\n\n## Context\nIn the TI-84 CE ROM, session 465 decoded 0x00",
+      "status": "success",
+      "duration_seconds": 417.044,
+      "timestamp": "2026-05-30T06:10:07Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1178,
-    "cc_to_codex": 1178,
+    "total_calls": 1186,
+    "cc_to_codex": 1186,
     "codex_to_cc": 0,
-    "completed": 899,
+    "completed": 900,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 598.383
+    "avg_duration_seconds": 595.905
   }
 }
