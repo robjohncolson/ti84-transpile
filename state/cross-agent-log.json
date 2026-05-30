@@ -14298,15 +14298,87 @@
         "TI-84_Plus_CE/probe-phase462-key-chain.mjs"
       ],
       "depth": 0
+    },
+    {
+      "call_id": "713ad09f271a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 463 P1: Test key dispatch with D177BA=0x00\n\n## Context\nYou are working on a TI-84 Plu",
+      "status": "completed",
+      "duration_seconds": 342.29,
+      "timestamp": "2026-05-30T00:13:23Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase463-d177ba-clear.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "820dc346048a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 463 P3: Trace D177BA lifecycle \u2014 who clears it to 0x00?\n\n## Context\nYou are working o",
+      "status": "completed",
+      "duration_seconds": 393.8,
+      "timestamp": "2026-05-30T00:14:20Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5d00a4b9aa25",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 463 P2: Decode 0x0067F8 port 0x03 check function\n\n## Context\nYou are working on a TI-",
+      "status": "timeout",
+      "duration_seconds": 900.051,
+      "timestamp": "2026-05-30T00:22:45Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a360021e0564",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 464 P1: Read and Decode ROM Table at 0x3B0001 Used by 0x0066FF\n\n## Context\n\nThe function a",
+      "status": "completed",
+      "duration_seconds": 258.141,
+      "timestamp": "2026-05-30T02:06:54Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase464-rom-table-decode.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "4a6bc1aa3228",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 464 P2: Trace D00085 Bit 3 Chain + Decode 0x0059C6\n\n## Context\n\nThe TI-84 CE OS scheduler ",
+      "status": "completed",
+      "duration_seconds": 264.892,
+      "timestamp": "2026-05-30T02:07:02Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ffaa1937eb75",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 464 P3: Bypass 0x0066FF Probe \u2014 Force NZ Return in Scheduler\n\n## Context\n\nThe TI-84 CE OS ",
+      "status": "completed",
+      "duration_seconds": 501.474,
+      "timestamp": "2026-05-30T02:11:00Z",
+      "files_changed": [
+        "TI-84_Plus_CE/probe-phase464-bypass-0066ff.mjs"
+      ],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1172,
-    "cc_to_codex": 1172,
+    "total_calls": 1178,
+    "cc_to_codex": 1178,
     "codex_to_cc": 0,
-    "completed": 894,
-    "failed": 258,
+    "completed": 899,
+    "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 599.177
+    "avg_duration_seconds": 598.383
   }
 }
