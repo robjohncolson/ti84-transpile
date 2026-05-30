@@ -1317,6 +1317,47 @@ export function createExecutor(blocks, memory, options = {}) {
               steps++;
               continue;
             }
+
+            // EI+HALT keeps ticking hardware until an interrupt wakes the CPU.
+            if (cpu.iff1) {
+              const maxTicks = (options.peripherals.getTimerInterval ? options.peripherals.getTimerInterval() : 200) * 2;
+              for (let t = 0; t < maxTicks; t++) {
+                options.peripherals.tick();
+                if (options.peripherals.hasPendingNMI()) {
+                  cpu.halted = false;
+                  const haltReturnPc = pc + 1;
+                  cpu.push(haltReturnPc);
+                  cpu.iff2 = cpu.iff1;
+                  cpu.iff1 = 0;
+                  pc = 0x000066;
+                  options.peripherals.acknowledgeNMI();
+                  if (opts.onInterrupt) {
+                    opts.onInterrupt('nmi', haltReturnPc, 0x000066, steps);
+                  }
+                  break;
+                }
+                if (options.peripherals.hasPendingIRQ()) {
+                  cpu.halted = false;
+                  const haltReturnPc = pc + 1;
+                  cpu.push(haltReturnPc);
+                  cpu.iff1 = 0;
+                  cpu.iff2 = 0;
+                  const vector = cpu.im === 2
+                    ? cpu.read16((cpu.i << 8) | 0xff)
+                    : 0x000038;
+                  pc = vector;
+                  options.peripherals.acknowledgeIRQ();
+                  if (opts.onInterrupt) {
+                    opts.onInterrupt('irq', haltReturnPc, vector, steps);
+                  }
+                  break;
+                }
+              }
+              if (!cpu.halted) {
+                steps++;
+                continue;
+              }
+            }
           }
 
           // Coldboot sleep path: DI + HALT disables IRQ wake, so re-enter the

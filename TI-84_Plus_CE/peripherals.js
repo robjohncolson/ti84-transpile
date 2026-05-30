@@ -883,7 +883,14 @@ export function createPeripheralBus(options = {}) {
 
   // USB controller ports - values chosen for the shortest success path through the 0x006EDA health check.
   register(0x0f, {
-    read() { return 0x80; }, // bit 7 = USB power present
+    read() {
+      for (let g = 0; g < keyboardState.keyMatrix.length; g++) {
+        if (keyboardState.keyMatrix[g] !== 0xFF) {
+          return 0x40; // bit 6 = keyboard event pending
+        }
+      }
+      return 0x00;
+    },
     write() {},
   });
   register(0x3030, {
@@ -911,6 +918,7 @@ export function createPeripheralBus(options = {}) {
     register,
     getState,
     tick,
+    getTimerInterval() { return interruptState.timerInterval; },
     hasPendingIRQ,
     hasPendingNMI,
     acknowledgeIRQ,
