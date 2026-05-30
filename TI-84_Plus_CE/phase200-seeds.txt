@@ -252,3 +252,7 @@
 0x008997
 0x0089E8
 0x0089EF
+# Session 467: post-EI+HALT continuation (NOP after HALT wakes) — hit 999× as missing_block
+0x001784
+# Session 467: post-EI+HALT wake point (NOP after HALT) — 0x001785 is the actual missing block, not 0x001784
+0x001785
