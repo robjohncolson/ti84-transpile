@@ -248,3 +248,7 @@
 0x08DDD0
 0x0BA10C
 0x0BC4EC
+# Session 462: USB state handler blocks reached via scheduler 0x0015F7 → 0x00846E path
+0x008997
+0x0089E8
+0x0089EF
