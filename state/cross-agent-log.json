@@ -14458,15 +14458,180 @@
       "timestamp": "2026-05-30T06:10:07Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "68ac35971cd7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 467 P3: Add Transpiler Seed at 0x001784 + Regenerate\n\n## Context\nSession 466 found that ad",
+      "status": "partial",
+      "duration_seconds": 53.076,
+      "timestamp": "2026-05-30T08:03:45Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "fc42da8f8e1b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 467 P1: Run Combined Fix Probe with 5M Steps\n\n## Context\nSession 466 created `TI-84_Plus_C",
+      "status": "success",
+      "duration_seconds": 200.959,
+      "timestamp": "2026-05-30T08:06:04Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e3ee479a9ad5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 467 P2: Trace 0x003A0F Key-Found Path (ROM Disassembly)\n\n## Context\nSession 466 decoded 0x",
+      "status": "success",
+      "duration_seconds": 275.339,
+      "timestamp": "2026-05-30T08:07:26Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "275d172eee44",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add transpiler seed at 0x00EF8B and regenerate\n\n## Context\nYou are working on the TI-84 Plus",
+      "status": "partial",
+      "duration_seconds": 167.249,
+      "timestamp": "2026-05-30T10:05:50Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c1eb2ec7c778",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Find the real key processing path \u2014 investigate D00595 and event handler routing\n\n## Context",
+      "status": "completed",
+      "duration_seconds": 225.534,
+      "timestamp": "2026-05-30T10:06:47Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "cf71240722d9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Enter at 0x003A0F directly to test key consumption path\n\n## Context\nYou are working on the T",
+      "status": "success",
+      "duration_seconds": 240.722,
+      "timestamp": "2026-05-30T10:07:00Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d56158f1723e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace mode entry from boot to home screen\n\n## Context\nThis is a TI-84 Plus CE ROM transpilat",
+      "status": "success",
+      "duration_seconds": 211.73,
+      "timestamp": "2026-05-30T12:06:11Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "0fd65efc6fd8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Find who calls the jump table at 0x021AB8\n\n## Context\nThis is a TI-84 Plus CE ROM transpilat",
+      "status": "success",
+      "duration_seconds": 281.494,
+      "timestamp": "2026-05-30T12:07:19Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a8779d505294",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x030078 fully + test it directly with key injection\n\n## Context\nThis is a TI-84 Plus",
+      "status": "success",
+      "duration_seconds": 416.735,
+      "timestamp": "2026-05-30T12:09:38Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8b72cce1071a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Find who calls the jump table at 0x021AB8\n\n## Context\nThis is a TI-84 Plus CE ROM transpilat",
+      "status": "success",
+      "duration_seconds": 91.753,
+      "timestamp": "2026-05-30T14:05:04Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7c755cdcfac1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x030078 fully \u2014 the real key wait loop\n\n## Context\nThis is a TI-84 Plus CE ROM trans",
+      "status": "success",
+      "duration_seconds": 221.805,
+      "timestamp": "2026-05-30T14:07:16Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9637b568b104",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Test 0x030078 directly \u2014 enter the real key wait loop with a key injected\n\n## Context\nThis i",
+      "status": "success",
+      "duration_seconds": 249.614,
+      "timestamp": "2026-05-30T14:07:45Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "cb99af35ae77",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 470 \u2014 Priority 2: Trace 0x02FDD8 Main Handler After Key\n\n## Context\n\nThis is the TI-8",
+      "status": "success",
+      "duration_seconds": 173.01,
+      "timestamp": "2026-05-30T16:04:57Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a6bbd652839d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 470 \u2014 Priority 3: Test Full Key-to-Display Chain (5M Steps)\n\n## Context\n\nThis is the ",
+      "status": "completed",
+      "duration_seconds": 249.227,
+      "timestamp": "2026-05-30T16:06:15Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "71a52a3c9bac",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 470 \u2014 Priority 1: Trace 0x03FA09 Key Processor Internal Behavior\n\n## Context\n\nThis is",
+      "status": "complete",
+      "duration_seconds": 390.499,
+      "timestamp": "2026-05-30T16:08:33Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1186,
-    "cc_to_codex": 1186,
+    "total_calls": 1201,
+    "cc_to_codex": 1201,
     "codex_to_cc": 0,
-    "completed": 900,
+    "completed": 902,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 595.905
+    "avg_duration_seconds": 591.334
   }
 }
