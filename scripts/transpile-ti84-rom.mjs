@@ -1273,6 +1273,7 @@ function walkBlocks() {
     { pc: 0x008381, mode: 'adl' },
     { pc: 0x00b4ba, mode: 'adl' },
     { pc: 0x00b586, mode: 'adl' },
+    { pc: 0x00ef8b, mode: 'adl' },
     { pc: 0x00fbc2, mode: 'adl' },
     { pc: 0x010d23, mode: 'adl' },
     { pc: 0x013b94, mode: 'adl' },
