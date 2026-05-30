@@ -14623,15 +14623,81 @@
       "timestamp": "2026-05-30T16:08:33Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "9350d8ed848e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Looping Event Loop Probe at 0x02FDBE\n\n## Goal\nCreate a probe `TI-84_Plus_CE/probe-phase471-l",
+      "status": "success",
+      "duration_seconds": 204.044,
+      "timestamp": "2026-05-30T18:06:24Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6ccc1ccabab9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace Key Code Processing at 0x02FFAE\n\n## Goal\nCreate a probe `TI-84_Plus_CE/probe-phase471-",
+      "status": "success",
+      "duration_seconds": 234.456,
+      "timestamp": "2026-05-30T18:06:56Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "79f87bbaacfe",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Find the Jump Table Dispatcher for Syscall Table at 0x020104\n\n## Goal\nCreate a probe `TI-84_",
+      "status": "completed",
+      "duration_seconds": 450.818,
+      "timestamp": "2026-05-30T18:10:34Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "cb1a6bb6dbd9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Find Who Writes D00824 in the TI-84 CE ROM\n\n## Context\n\nYou are working on a TI-84 Plus CE R",
+      "status": "success",
+      "duration_seconds": 162.45,
+      "timestamp": "2026-05-30T20:05:34Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1724a85d7db8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Fix Looping Event Loop \u2014 Persistent Return Address + Display State Flags\n\n## Context\n\nYou ar",
+      "status": "success",
+      "duration_seconds": 191.153,
+      "timestamp": "2026-05-30T20:06:00Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2a02bed7aef3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace Home Screen Mode Init at 0x08BF22\n\n## Context\n\nYou are working on a TI-84 Plus CE ROM ",
+      "status": "completed",
+      "duration_seconds": 298.971,
+      "timestamp": "2026-05-30T20:07:52Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1201,
-    "cc_to_codex": 1201,
+    "total_calls": 1207,
+    "cc_to_codex": 1207,
     "codex_to_cc": 0,
-    "completed": 902,
+    "completed": 904,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 591.334
+    "avg_duration_seconds": 589.672
   }
 }
