@@ -14942,15 +14942,147 @@
       "timestamp": "2026-05-31T08:06:42Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "320fdcd8a801",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: TRACE 0x08B0CC MODE DISPATCH CHAIN \u2014 FIND CALLERS\n\n## Context\nSession 478 found that 0x09E30",
+      "status": "success",
+      "duration_seconds": 209.101,
+      "timestamp": "2026-05-31T10:06:42Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "cf61a6663d9a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: RENDER A FULL LINE (26 CHARS) \u2014 TEST LINE-WRAP BEHAVIOR\n\n## Context\nSession 478 proved chara",
+      "status": "success",
+      "duration_seconds": 212.615,
+      "timestamp": "2026-05-31T10:06:47Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ed3d2364bb00",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: REFRESH D00092 BIT 4 IN EVENT LOOP \u2014 CONTINUOUS CURSOR RENDERING\n\n## Context\nSession 478's p",
+      "status": "success",
+      "duration_seconds": 245.919,
+      "timestamp": "2026-05-31T10:07:17Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1189cb3a4d6a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: SET D00595=0 + RENDER MULTI-CHAR STRING \"HOME\" AT TOP OF SCREEN\n\n## Context\nSession 478 prov",
+      "status": "success",
+      "duration_seconds": 280.496,
+      "timestamp": "2026-05-31T10:07:50Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8347905c66a4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: FIND VRAM ROW BASE VARIABLE\n\n## Context\nThis is a TI-84 Plus CE ROM transpilation project. R",
+      "status": "success",
+      "duration_seconds": 141.342,
+      "timestamp": "2026-05-31T12:05:37Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ceaf5ee64b56",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: TEST IDLE CURSOR PATH (D00000=0) WITH D00092 BIT 4\n\n## Context\nThis is a TI-84 Plus CE ROM t",
+      "status": "success",
+      "duration_seconds": 192.287,
+      "timestamp": "2026-05-31T12:06:24Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "75dab789bafb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: DECODE 0x005A75 VRAM ADDRESS COMPUTATION (instruction-by-instruction)\n\n## Context\nThis is a ",
+      "status": "completed_with_notes",
+      "duration_seconds": 297.17,
+      "timestamp": "2026-05-31T12:08:08Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6bfbde259c94",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: TRACE 0x08A7BE AND 0x08A6F0 \u2014 HIGHER-LEVEL MODE DISPATCH\n\n## Context\nThis is a TI-84 Plus CE",
+      "status": "completed",
+      "duration_seconds": 297.3,
+      "timestamp": "2026-05-31T12:08:11Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "fd30a9103551",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Test Combined Idle+Display Paths (D00000 alternation)\n\n## Context\nWe're transpiling the TI-8",
+      "status": "complete",
+      "duration_seconds": 119.907,
+      "timestamp": "2026-05-31T14:05:20Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "00389b1bbfaf",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Render Multi-Char String \"HOME\" Using Correct VRAM Formula\n\n## Context\nWe're transpiling the",
+      "status": "success",
+      "duration_seconds": 129.065,
+      "timestamp": "2026-05-31T14:05:26Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "0e0875e25909",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x08A6F0 Internal Logic (cxMain Handler)\n\n## Context\nWe're transpiling the TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 134.912,
+      "timestamp": "2026-05-31T14:05:37Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "47a257d8f23b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode Idle Cursor Pixel Write Mechanism\n\n## Context\nWe're transpiling the TI-84 Plus CE ROM",
+      "status": "success",
+      "duration_seconds": 168.398,
+      "timestamp": "2026-05-31T14:06:07Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1230,
-    "cc_to_codex": 1230,
+    "total_calls": 1242,
+    "cc_to_codex": 1242,
     "codex_to_cc": 0,
-    "completed": 911,
+    "completed": 913,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 582.111
+    "avg_duration_seconds": 578.442
   }
 }
