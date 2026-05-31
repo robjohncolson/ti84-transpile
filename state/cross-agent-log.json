@@ -14898,15 +14898,59 @@
       "timestamp": "2026-05-31T06:05:48Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "262250b3ad2b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Find Home Mode Entry Callers (Who Calls 0x09E30C?)\n\n## Context\nYou are working on a TI-84 Pl",
+      "status": "completed",
+      "duration_seconds": 60.363,
+      "timestamp": "2026-05-31T08:04:13Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "caa259fa5686",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x005A75 Font Rendering \u2014 Full VRAM Write Logic\n\n## Context\nYou are working on a TI-84",
+      "status": "success",
+      "duration_seconds": 129.08,
+      "timestamp": "2026-05-31T08:05:24Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ccb11910d2d2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Fix SP Drift + Extend VRAM Test (Continuous VRAM Writes)\n\n## Context\nYou are working on a TI",
+      "status": "success",
+      "duration_seconds": 145.941,
+      "timestamp": "2026-05-31T08:05:36Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f220621206ab",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Test with D000C6 Refresh + Character Output Setup\n\n## Context\nYou are working on a TI-84 Plu",
+      "status": "success",
+      "duration_seconds": 208.465,
+      "timestamp": "2026-05-31T08:06:42Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1226,
-    "cc_to_codex": 1226,
+    "total_calls": 1230,
+    "cc_to_codex": 1230,
     "codex_to_cc": 0,
-    "completed": 910,
+    "completed": 911,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 583.566
+    "avg_duration_seconds": 582.111
   }
 }
