@@ -14854,15 +14854,59 @@
       "timestamp": "2026-05-31T04:07:06Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "711f34e5a870",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x09E307 (D007E0='H' setter) and 0x04EA44 (first D00824 write site)\n\n## Context\nIn th",
+      "status": "success",
+      "duration_seconds": 69.201,
+      "timestamp": "2026-05-31T06:04:45Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b66e53e0f36b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace Mode Entry Path to 0x030018 (Cursor Activation)\n\n## Context\nIn the TI-84 Plus CE OS RO",
+      "status": "completed",
+      "duration_seconds": 80.789,
+      "timestamp": "2026-05-31T06:04:55Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b9d79850e1b3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0059C6\u21920x005A75 Display Output Chain\n\n## Context\nIn the TI-84 Plus CE OS ROM transp",
+      "status": "completed",
+      "duration_seconds": 81.967,
+      "timestamp": "2026-05-31T06:05:02Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "aaa28a75a300",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Test with Full Mode Setup \u2014 Enter at 0x03002E\n\n## Context\nIn the TI-84 Plus CE OS ROM transp",
+      "status": "completed",
+      "duration_seconds": 129.788,
+      "timestamp": "2026-05-31T06:05:48Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1222,
-    "cc_to_codex": 1222,
+    "total_calls": 1226,
+    "cc_to_codex": 1226,
     "codex_to_cc": 0,
-    "completed": 907,
+    "completed": 910,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 585.18
+    "avg_duration_seconds": 583.566
   }
 }

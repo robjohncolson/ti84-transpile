@@ -1,0 +1,80 @@
+#!/usr/bin/env node
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const rom = fs.readFileSync(path.join(__dirname, 'ROM.rom'));
+
+function hex(v, w = 2) { return '0x' + (v >>> 0).toString(16).toUpperCase().padStart(w, '0'); }
+
+function hexDump(label, start, end) {
+  console.log(`\n=== ${label} ===`);
+  for (let addr = start; addr < end; addr += 16) {
+    const bytes = [];
+    for (let i = 0; i < 16 && addr + i < end; i++) {
+      bytes.push(rom[addr + i].toString(16).padStart(2, '0'));
+    }
+    console.log(hex(addr, 6) + ': ' + bytes.join(' '));
+  }
+}
+
+function findAllRefs(targetAddr, label) {
+  console.log(`\n=== All references to ${hex(targetAddr, 6)} (${label}) ===`);
+  let count = 0;
+  for (let addr = 0; addr < rom.length - 3; addr++) {
+    const b = rom[addr];
+    let target = null;
+    let type = '';
+    if (b === 0xCD) { target = rom[addr+1] | (rom[addr+2] << 8) | (rom[addr+3] << 16); type = 'CALL'; }
+    else if (b === 0xC3) { target = rom[addr+1] | (rom[addr+2] << 8) | (rom[addr+3] << 16); type = 'JP'; }
+    else if ((b & 0xC7) === 0xC2) { target = rom[addr+1] | (rom[addr+2] << 8) | (rom[addr+3] << 16); const cc = ['NZ','Z','NC','C','PO','PE','P','M'][(b>>3)&7]; type = `JP ${cc}`; }
+    else if ((b & 0xC7) === 0xC4) { target = rom[addr+1] | (rom[addr+2] << 8) | (rom[addr+3] << 16); const cc = ['NZ','Z','NC','C','PO','PE','P','M'][(b>>3)&7]; type = `CALL ${cc}`; }
+    if (target === targetAddr) {
+      console.log(`  ${type} at ${hex(addr, 6)}`);
+      // Show context around caller
+      const ctxStart = Math.max(0, addr - 4);
+      const ctxEnd = Math.min(rom.length, addr + 8);
+      const ctxBytes = [];
+      for (let i = ctxStart; i < ctxEnd; i++) ctxBytes.push(rom[i].toString(16).padStart(2, '0'));
+      console.log(`    context ${hex(ctxStart, 6)}: ${ctxBytes.join(' ')}`);
+      count++;
+    }
+  }
+  console.log(`  Total: ${count} references`);
+}
+
+// ── 1. Full hex dump of display output chain ──
+hexDump('0x0059C6 display output function', 0x0059A0, 0x005AE0);
+
+// ── 2. Extended helper area ──
+hexDump('0x005A00-0x005B00 helpers', 0x005A00, 0x005B00);
+
+// ── 3. Find all callers ──
+findAllRefs(0x0059C6, 'display output main');
+findAllRefs(0x005A75, 'display output helper');
+findAllRefs(0x005A20, 'inner call from 0x0059C6');
+findAllRefs(0x005A02, 'inner call from 0x0059C6');
+
+// ── 4. Also check 0x09EF44 (heavy loop from screen fill) ──
+findAllRefs(0x09EF44, 'screen fill heavy loop');
+
+// ── 5. Decode D0059C (VRAM address variable) read sites ──
+// LD HL,(D0059C) = ED 6F 9C 05 D0 (SIS prefix) or 2A 9C 05 D0 00
+console.log('\n=== LD HL,(D0059C) pattern search ===');
+// ADL mode: LD HL,(nn) = 2A xx xx xx (4 bytes)
+for (let addr = 0; addr < rom.length - 3; addr++) {
+  if (rom[addr] === 0x2A && rom[addr+1] === 0x9C && rom[addr+2] === 0x05 && rom[addr+3] === 0xD0) {
+    console.log(`  LD HL,(D0059C) at ${hex(addr, 6)}`);
+  }
+}
+// Also check LD A,(D0059C) = 3A 9C 05 D0
+for (let addr = 0; addr < rom.length - 3; addr++) {
+  if (rom[addr] === 0x3A && rom[addr+1] === 0x9C && rom[addr+2] === 0x05 && rom[addr+3] === 0xD0) {
+    console.log(`  LD A,(D0059C) at ${hex(addr, 6)}`);
+  }
+}
+
+console.log('\nDone.');
