@@ -22131,6 +22131,7 @@ function walkBlocks() {
     { pc: 0x022336, mode: 'adl' },
     { pc: 0x02fdac, mode: 'adl' },
     { pc: 0x02fdb6, mode: 'adl' },
+    { pc: 0x02fdbe, mode: 'adl' },
     { pc: 0x03fac1, mode: 'adl' },
     { pc: 0x03fac5, mode: 'adl' },
     { pc: 0x048acc, mode: 'adl' },
