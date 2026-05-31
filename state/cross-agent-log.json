@@ -14689,15 +14689,136 @@
       "timestamp": "2026-05-30T20:07:52Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "a3070fce4aac",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Enhanced Persistent Loop with D00824=0x48 + D007E0=0x48 + Multiple Keys\n\n## Context\nWe're in",
+      "status": "success",
+      "duration_seconds": 267.885,
+      "timestamp": "2026-05-30T22:07:02Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "93fd7856644b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode the Tight Loop Path at 0x02FDD8\n\n## Context\nWe're investigating the TI-84 Plus CE OS ",
+      "status": "ok",
+      "duration_seconds": 379.346,
+      "timestamp": "2026-05-30T22:08:51Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6c1741b3f99c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode Mode-Specific Dispatch at 0x02FFED through 0x030010\n\n## Context\nWe're investigating t",
+      "status": "completed",
+      "duration_seconds": 410.151,
+      "timestamp": "2026-05-30T22:09:26Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "4a3ecbc34497",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Add Seed at 0x02FDBE + Retranspile\n\n## Context\nYou are working on a TI-84 Plus CE ROM transp",
+      "status": "partial",
+      "duration_seconds": 161.29,
+      "timestamp": "2026-05-31T00:05:39Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f22e83c8ada8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Test D00080 Bit 4 Fix \u2014 Display Update Unlock\n\n## Context\nYou are working on a TI-84 Plus CE",
+      "status": "success",
+      "duration_seconds": 230.854,
+      "timestamp": "2026-05-31T00:06:43Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "db010b5a76ea",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x03013A \u2014 Idle Loop Function Decode\n\n## Context\nYou are working on a TI-84 Plus CE RO",
+      "status": "completed",
+      "duration_seconds": 253.231,
+      "timestamp": "2026-05-31T00:07:08Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ebaf29b58c4b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x04C979 \u2014 Cursor Management Function\n\n## Context\nYou are working on a TI-84 Plus CE R",
+      "status": "success",
+      "duration_seconds": 369.897,
+      "timestamp": "2026-05-31T00:09:06Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b4d8c501253a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Test Display Output with D00000 + D00092 Force-Set\n\nYou are working on the TI-84 Plus CE ROM",
+      "status": "completed",
+      "duration_seconds": 109.163,
+      "timestamp": "2026-05-31T02:04:52Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c44ae6a1187c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x040D11 Cursor Timing Function Internals\n\nYou are working on the TI-84 Plus CE ROM tr",
+      "status": "success",
+      "duration_seconds": 145.523,
+      "timestamp": "2026-05-31T02:05:30Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ce0dfd640576",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace Home Screen Mode Init at 0x08BF22\n\nYou are working on the TI-84 Plus CE ROM transpilat",
+      "status": "success",
+      "duration_seconds": 187.908,
+      "timestamp": "2026-05-31T02:06:08Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "31da5b0611ad",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x05C76C Pre-Loop Setup Function\n\nYou are working on the TI-84 Plus CE ROM transpilati",
+      "status": "complete",
+      "duration_seconds": 183.174,
+      "timestamp": "2026-05-31T02:06:09Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1207,
-    "cc_to_codex": 1207,
+    "total_calls": 1218,
+    "cc_to_codex": 1218,
     "codex_to_cc": 0,
-    "completed": 904,
+    "completed": 907,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 589.672
+    "avg_duration_seconds": 586.562
   }
 }
