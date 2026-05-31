@@ -14810,15 +14810,59 @@
       "timestamp": "2026-05-31T02:06:09Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "22edc8029b4b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Find cursor VRAM address variable (D00591 is timer, not address)\n\n## Context\nYou are working",
+      "status": "success",
+      "duration_seconds": 78.747,
+      "timestamp": "2026-05-31T04:04:31Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "098be19ed0ad",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Find ROM sites that write D00824, D007E0, D14091, D00000, D00092\n\n## Context\nYou are working",
+      "status": "success",
+      "duration_seconds": 126.54,
+      "timestamp": "2026-05-31T04:05:16Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "704d432d1919",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x08BFA6 internals (heavy function called from home init)\n\n## Context\nYou are working ",
+      "status": "success",
+      "duration_seconds": 211.958,
+      "timestamp": "2026-05-31T04:06:43Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "44436219b96b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: RET POINT FIX + D00089 BIT 4 DISPLAY TEST\n\n## Context\nYou are working on the TI-84 Plus CE R",
+      "status": "success",
+      "duration_seconds": 240.322,
+      "timestamp": "2026-05-31T04:07:06Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1218,
-    "cc_to_codex": 1218,
+    "total_calls": 1222,
+    "cc_to_codex": 1222,
     "codex_to_cc": 0,
     "completed": 907,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 586.562
+    "avg_duration_seconds": 585.18
   }
 }
