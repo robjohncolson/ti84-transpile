@@ -34,13 +34,15 @@ A research project that lifts the TI-84 Plus CE OS ROM (eZ80 machine code) into 
 ```bash
 node scripts/transpile-ti84-rom.mjs                      # ~2s
 node TI-84_Plus_CE/test-harness.mjs                      # 25-test harness
-node TI-84_Plus_CE/probe-phase99d-home-verify.mjs        # golden regression
+node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-phase99d-home-verify.mjs  # golden regression (via watchdog)
 node TI-84_Plus_CE/audit-true-uncovered.mjs              # true-coverage audit
 node TI-84_Plus_CE/coverage-analyzer.mjs                 # gap analysis
 ( cd TI-84_Plus_CE && gzip -kf -9 ROM.transpiled.js )    # regenerate .gz
 ```
 
 `ROM.transpiled.js` is gitignored (~214 MB). The `.gz` is committed.
+
+**Probe execution**: any `probe-*.mjs` must be run through `scripts/run-probe.mjs` (see Important Constraints). `test-harness.mjs` and `frontier-runner.mjs` also step the CPU and can hang on a runaway lifted block — they carry their own `execSync` timeouts but are NOT yet routed through the watchdog (tracked follow-up).
 
 ## Continuation Workflow (Default Operating Mode)
 
@@ -71,6 +73,7 @@ python "C:/Users/rober/Downloads/Projects/Agent/runner/cross-agent.py" \
 
 ## Important Constraints
 
+- **Run every probe through the watchdog**: `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` (foreground, Bash `timeout: 300000`). NEVER run `node <probe>` bare and NEVER background a probe. A lifted block can infinite-loop inside a single `cpu.step()`, so the probe's own `maxSteps` can't fire — only the out-of-process watchdog tree-kills it (exit 124). Bare/backgrounded probes orphaned ~6h of CPU on 2026-05-31. Keep `--max-time` strictly below the Bash tool timeout so the watchdog reaps the child first.
 - **Don't revert dirty worktree files** without checking — many unrelated modifications sit in the tree intentionally.
 - **Stay with 1:1-ish bytecode lift** — widen decoder, improve CFG discovery, improve instruction semantics, add runtime helpers only to support lifted blocks. Do NOT rewrite as a high-level emulator.
 - **Disable timer IRQ for OS init probes**: `createPeripheralBus({ timerInterrupt: false })`. Default 200-tick IRQ hijacks init via 0x1713 → 0x67F8 → 0x1c33 infinite loop.
