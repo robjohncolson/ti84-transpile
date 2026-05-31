@@ -23518,6 +23518,9 @@ function walkBlocks() {
     { pc: 0x0158d2, mode: 'adl' },
     { pc: 0x0158ec, mode: 'adl' },
     { pc: 0x06743e, mode: 'adl' },
+    { pc: 0x0001f7, mode: 'adl' },
+    { pc: 0x001ce5, mode: 'adl' },
+    { pc: 0x006c67, mode: 'adl' },
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
