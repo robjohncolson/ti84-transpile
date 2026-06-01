@@ -15217,15 +15217,190 @@
       "timestamp": "2026-06-01T06:16:12Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "91ee5f3448ec",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Full 10-Row Screen Fill (260 Characters)\n\n## Context\n\nThe TI-84 Plus CE ROM transpilation pr",
+      "status": "success",
+      "duration_seconds": 251.737,
+      "timestamp": "2026-06-01T08:07:15Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "442f5119cb30",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Capture All 3 Cursor Glyph Pixel Shapes (0xE1, 0xE2, 0xE3)\n\n## Context\n\nThe TI-84 Plus CE RO",
+      "status": "success",
+      "duration_seconds": 303.626,
+      "timestamp": "2026-06-01T08:08:05Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6a8be65d1e18",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode D0059C Usage in Cursor Blink Event Loop Path\n\n## Context\n\nThe TI-84 Plus CE ROM trans",
+      "status": "success",
+      "duration_seconds": 349.092,
+      "timestamp": "2026-06-01T08:08:54Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5cc6c65d3a9e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 487 P3: Render All 256 Character Glyphs\n\n## Context\n\nThis is a TI-84 Plus CE ROM tran",
+      "status": "success",
+      "duration_seconds": 208.441,
+      "timestamp": "2026-06-01T10:05:56Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c07c934c9ff3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 487 P1: Identify the Real Text Cursor Position Source\n\n## Context\n\nThis is a TI-84 Pl",
+      "status": "completed",
+      "duration_seconds": 310.864,
+      "timestamp": "2026-06-01T10:07:35Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b6d5ed3ce40b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 487 P2: Decode Status Bar Indicator at Row 2 Col 289\n\n## Context\n\nThis is a TI-84 Plu",
+      "status": "success",
+      "duration_seconds": 323.644,
+      "timestamp": "2026-06-01T10:07:49Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d9eb9401f738",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 488 P3: Coverage Push \u2014 Add Seeds for Uncovered CODE? Ranges\n\n## Context\nYou are work",
+      "status": "blocked",
+      "duration_seconds": 55.92,
+      "timestamp": "2026-06-01T12:03:23Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "86fafeb83497",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 488 P1: Decode Real Text Cursor Blink at 0x05C780\n\n## Context\nYou are working on a TI",
+      "status": "success",
+      "duration_seconds": 381.616,
+      "timestamp": "2026-06-01T12:08:45Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "866cbd143352",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 488 P2: Decode Real Text Cursor Blink at 0x0817C0\n\n## Context\nYou are working on a TI",
+      "status": "success",
+      "duration_seconds": 503.575,
+      "timestamp": "2026-06-01T12:10:49Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3f82b99f4501",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Coverage Push \u2014 Add New Seeds from Uncovered CODE? Ranges\n\n## Context\nThe TI-84 Plus CE ROM ",
+      "status": "blocked",
+      "duration_seconds": 119.85,
+      "timestamp": "2026-06-01T14:04:19Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ce1a255246fd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Search for Alternative Text Cursor Blink Path\n\n## Context\nWe are reverse-engineering the TI-",
+      "status": "completed",
+      "duration_seconds": 368.317,
+      "timestamp": "2026-06-01T14:08:26Z",
+      "files_changed": [
+        "TI-84_Plus_CE/ROM.transpiled.js",
+        "TI-84_Plus_CE/ROM.transpiled.js.gz",
+        "TI-84_Plus_CE/ROM.transpiled.report.json",
+        "TI-84_Plus_CE/phase24b-seeds.txt",
+        "TI-84_Plus_CE/phase99d-report.md",
+        "TI-84_Plus_CE/probe-phase489-alt-cursor-search.mjs",
+        "TI-84_Plus_CE/probe-phase489-decode-05E400.mjs",
+        "logs/auto-session-20260601-1000.log",
+        "scripts/transpile-ti84-rom.mjs"
+      ],
+      "depth": 0
+    },
+    {
+      "call_id": "a4d8396aa6fc",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode Text Cursor Candidate at 0x05E400\n\n## Context\nWe are reverse-engineering the TI-84 Pl",
+      "status": "completed",
+      "duration_seconds": 421.581,
+      "timestamp": "2026-06-01T14:09:16Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b056f280aa76",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 490 P3 \u2014 Coverage Push\n\n## Context\n\nYou are working on the TI-84 Plus CE ROM transpil",
+      "status": "blocked",
+      "duration_seconds": 74.676,
+      "timestamp": "2026-06-01T16:03:14Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e104f2e14665",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 490 P1 \u2014 Investigate Top New Cursor Regions (Non-0x0A23C0 Path)\n\n## Context\n\nYou are ",
+      "status": "success",
+      "duration_seconds": 379.574,
+      "timestamp": "2026-06-01T16:08:15Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7b31396dfbec",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 490 P2 \u2014 Investigate Hardware Cursor Path (OUT Instructions)\n\n## Context\n\nYou are wor",
+      "status": "completed",
+      "duration_seconds": 598.678,
+      "timestamp": "2026-06-01T16:11:56Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1255,
-    "cc_to_codex": 1255,
+    "total_calls": 1270,
+    "cc_to_codex": 1270,
     "codex_to_cc": 0,
-    "completed": 915,
+    "completed": 919,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 576.237
+    "avg_duration_seconds": 573.094
   }
 }

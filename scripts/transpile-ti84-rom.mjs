@@ -23616,6 +23616,28 @@ function walkBlocks() {
     { pc: 0x05a0a3, mode: 'adl' },  // LD B,n; JR n key-dispatch chain (cont)
     { pc: 0x05aa94, mode: 'adl' },  // LD B,n; JR n dispatch with CALL interspersed
     { pc: 0x05aab2, mode: 'adl' },  // LD B,n; JR n dispatch after JP boundary
+    // Auto-session 490: coverage push — 21 verified CODE? seeds with valid control flow targets
+    { pc: 0x030909, mode: 'adl' },  // ADD HL,BC; INC BC; DJNZ tight loop
+    { pc: 0x03f66f, mode: 'adl' },  // JR NZ; NOP; JR NZ — conditional branch chain
+    { pc: 0x03f90f, mode: 'adl' },  // NOP; RET M; NOP; LD SP,HL; JP M — stack/flag ops
+    { pc: 0x04f2cc, mode: 'adl' },  // RET M; INC D; JP P — conditional dispatch
+    { pc: 0x04f5e4, mode: 'adl' },  // RET M; INC D; CALL PE; RLA; DEC D; DJNZ loop
+    { pc: 0x05a048, mode: 'adl' },  // LD B,n; JR dispatch entries (key-dispatch cont)
+    { pc: 0x05aab6, mode: 'adl' },  // LD B,n; JR dispatch entries (key-dispatch cont)
+    { pc: 0x068eb5, mode: 'adl' },  // month-table then LD/CALL code sequence
+    { pc: 0x06c7ef, mode: 'adl' },  // INC D; RET; LD B,n — function epilogue + entry
+    { pc: 0x086e40, mode: 'adl' },  // NOP; RET NC; NOP; POP; JP NC — flag dispatch
+    { pc: 0x087165, mode: 'adl' },  // EI; RET PO; EI; POP; EI; JP PO — interrupt return
+    { pc: 0x087a1b, mode: 'adl' },  // NOP; RET Z; EI; RST 0; CP chain — interrupt handler
+    { pc: 0x087a48, mode: 'adl' },  // AND L; JP M — flag-based dispatch
+    { pc: 0x089e83, mode: 'adl' },  // ADD HL,BC; ALU; RRA; JR back — loop body
+    { pc: 0x08b4c4, mode: 'adl' },  // LD BC,imm; LD E,0; NOP; RET — config return
+    { pc: 0x08b9f1, mode: 'adl' },  // RRCA; NOP; JP NZ — rotate and branch
+    { pc: 0x0aec07, mode: 'adl' },  // ALU; NOP; LD A,imm; ALU; NOP; INC D
+    { pc: 0x0aed09, mode: 'adl' },  // NOP; INC D; CP imm; LD A,D; CP imm
+    { pc: 0x0aea27, mode: 'adl' },  // NOP; NOP; NOP; CP imm; LD (HL); CP imm
+    { pc: 0x0af711, mode: 'adl' },  // LD (HL); ALU; EI; CP imm; LD (HL); ALU
+    { pc: 0x0af727, mode: 'adl' },  // CP imm; RST 30h; LD (HL); ALU; CALL M — math/FPU
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
