@@ -15392,15 +15392,114 @@
       "timestamp": "2026-06-01T16:11:56Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "2122c578c2e4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 491 \u2014 P2: Find the Cursor Draw Companion to 0x061000\n\n## Context\n\nSession 490 confirm",
+      "status": "completed",
+      "duration_seconds": 389.293,
+      "timestamp": "2026-06-01T18:08:49Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "26bcd1eb474a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 491 \u2014 P3: Coverage Push \u2014 Remaining CODE? Bytes\n\n## Context\n\nSession 490 left coverag",
+      "status": "partial",
+      "duration_seconds": 390.017,
+      "timestamp": "2026-06-01T18:08:52Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "83830c825a29",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 491 \u2014 P1: Full Decode of 0x061000 (Text Cursor Erase Function)\n\n## Context\n\nSession 4",
+      "status": "completed",
+      "duration_seconds": 511.724,
+      "timestamp": "2026-06-01T18:10:49Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "4d278b33150e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x06029D \u2014 Cursor Draw Candidate\n\n## Context\nThis is the TI-84 Plus CE ROM transpilat",
+      "status": "success",
+      "duration_seconds": 296.301,
+      "timestamp": "2026-06-01T20:07:19Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c4a2147f4a67",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x06023E \u2014 Screen Region Fill\n\n## Context\nThis is the TI-84 Plus CE ROM transpilation",
+      "status": "success",
+      "duration_seconds": 389.15,
+      "timestamp": "2026-06-01T20:08:54Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8e3e2e392e8b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace Cursor Blink End-to-End in OS Event Loop\n\n## Context\nThis is the TI-84 Plus CE ROM tra",
+      "status": "success",
+      "duration_seconds": 517.818,
+      "timestamp": "2026-06-01T20:11:04Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "820ed5c8be53",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 493 P3: Search for Indirect Dispatch Tables Containing 0x061000/0x061003\n\n## Context\n",
+      "status": "completed",
+      "duration_seconds": 250.18,
+      "timestamp": "2026-06-01T22:06:27Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "017b4d532e40",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 493 P1: Decode Callers of 0x061003 (Cursor Erase Function)\n\n## Context\nWe are reverse",
+      "status": "completed",
+      "duration_seconds": 303.339,
+      "timestamp": "2026-06-01T22:07:17Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "fb69ea9d1415",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 493 P2: Timer IRQ Cursor Trace\n\n## Context\nWe are reverse-engineering the TI-84 Plus ",
+      "status": "success",
+      "duration_seconds": 351.022,
+      "timestamp": "2026-06-01T22:08:07Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1270,
-    "cc_to_codex": 1270,
+    "total_calls": 1279,
+    "cc_to_codex": 1279,
     "codex_to_cc": 0,
-    "completed": 919,
+    "completed": 923,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 573.094
+    "avg_duration_seconds": 571.719
   }
 }
