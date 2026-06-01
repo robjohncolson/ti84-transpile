@@ -23603,6 +23603,19 @@ function walkBlocks() {
     { pc: 0x0b250c, mode: 'adl' },
     { pc: 0x0b6b08, mode: 'adl' },
     { pc: 0x0bce34, mode: 'adl' },
+    // Auto-session 489: coverage push — uncovered CODE? ranges verified as valid eZ80
+    { pc: 0x00a0a2, mode: 'adl' },  // port I/O: LD BC,0x313C; IN A,(C); SET 1,A; OUT (C),A
+    { pc: 0x02a67c, mode: 'adl' },  // XOR A; JR dispatch chain (alternate entry points)
+    { pc: 0x02e750, mode: 'adl' },  // memory write sequence: LD (BC),A; LD HL,...; LD (HL),n
+    { pc: 0x02ed2b, mode: 'adl' },  // LD (BC),A; INC H; SCF; ED prefix sequence
+    { pc: 0x02fcff, mode: 'adl' },  // CP n; JR Z dispatch (switch on key/token values)
+    { pc: 0x030e05, mode: 'adl' },  // IX/IY register ops: DD 07 FD; LD (HL),n
+    { pc: 0x0362ec, mode: 'adl' },  // IX/IY manipulation after JP boundary
+    { pc: 0x05a044, mode: 'adl' },  // LD B,n; JR n key-dispatch chain
+    { pc: 0x05a068, mode: 'adl' },  // LD B,n; JR n key-dispatch chain (cont)
+    { pc: 0x05a0a3, mode: 'adl' },  // LD B,n; JR n key-dispatch chain (cont)
+    { pc: 0x05aa94, mode: 'adl' },  // LD B,n; JR n dispatch with CALL interspersed
+    { pc: 0x05aab2, mode: 'adl' },  // LD B,n; JR n dispatch after JP boundary
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
