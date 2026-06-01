@@ -15151,15 +15151,81 @@
       "timestamp": "2026-06-01T02:10:14Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "e61693b85d36",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Render Full 26-Char Line + Line Wrap via 0x0059C6\n\n## Context\n\nYou are working on the TI-84 ",
+      "status": "success",
+      "duration_seconds": 296.025,
+      "timestamp": "2026-06-01T04:07:09Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d93e2941393f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Render \"Normal Float Radian\" Status Text at Row 0 via 0x0059C6\n\n## Context\n\nYou are working ",
+      "status": "success",
+      "duration_seconds": 305.931,
+      "timestamp": "2026-06-01T04:07:21Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "aca57561801f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode Cursor Glyphs 0xE2 and 0xE3 (Underline and Block Cursor)\n\n## Context\n\nYou are working",
+      "status": "success",
+      "duration_seconds": 314.917,
+      "timestamp": "2026-06-01T04:07:32Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "66275db13877",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Multi-Row Text Rendering (52+ chars across 2+ rows)\n\n## Context\nYou are working on the TI-84",
+      "status": "completed",
+      "duration_seconds": 199.313,
+      "timestamp": "2026-06-01T06:06:11Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2a25a927b942",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: VRAM Address Offset Investigation\n\n## Context\nYou are working on the TI-84 Plus CE ROM trans",
+      "status": "success",
+      "duration_seconds": 237.803,
+      "timestamp": "2026-06-01T06:06:51Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "be92d87c9030",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x030202 Cursor Glyph Selector Internals\n\n## Context\nYou are working on the TI-84 Plu",
+      "status": "success",
+      "duration_seconds": 802.707,
+      "timestamp": "2026-06-01T06:16:12Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1249,
-    "cc_to_codex": 1249,
+    "total_calls": 1255,
+    "cc_to_codex": 1255,
     "codex_to_cc": 0,
-    "completed": 914,
+    "completed": 915,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 577.279
+    "avg_duration_seconds": 576.237
   }
 }
