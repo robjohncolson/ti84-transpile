@@ -15074,15 +15074,92 @@
       "timestamp": "2026-05-31T14:06:07Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "81c79a04f344",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0A23C0 and 0x0A239E \u2014 cursor blink pixel rendering functions\n\n## Context\nYou are wo",
+      "status": "success",
+      "duration_seconds": 337.327,
+      "timestamp": "2026-05-31T16:09:12Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "49865260586a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x030173-0x0301F0 instruction-by-instruction (cursor rendering function)\n\n## Context\n",
+      "status": "success_with_notes",
+      "duration_seconds": 360.685,
+      "timestamp": "2026-05-31T16:09:41Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "927a5fd32543",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Call 0x005A75 (character renderer) DIRECTLY with proper register setup\n\n## Context\nYou are w",
+      "status": "success",
+      "duration_seconds": 396.43,
+      "timestamp": "2026-05-31T16:10:09Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "4807c66275f7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate why D00596 jumps to 0x13 (19) when calling 0x0059C6 with D00595=0\n\n## Context\nYo",
+      "status": "success",
+      "duration_seconds": 471.256,
+      "timestamp": "2026-05-31T16:11:32Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d12c9a63c9c6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Priority (f): MULTI-CHAR RENDERING VIA 0x0059C6 WITH CORRECT BOOT\n\n## Context\n\nThis is the TI-84 P",
+      "status": "completed",
+      "duration_seconds": 285.427,
+      "timestamp": "2026-06-01T02:07:51Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "94ec8e59358f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Priority (g): CONNECT CURSOR RENDER TO IDLE LOOP \u2014 TRACE 0x0A2400 INNER RENDERING\n\n## Context\n\nThi",
+      "status": "success",
+      "duration_seconds": 315.903,
+      "timestamp": "2026-06-01T02:08:23Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e9202655b5df",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Priority (e): DECODE 0x0A2400 PIXEL RENDERING INNER LOOP\n\n## Context\n\nThis is the TI-84 Plus CE RO",
+      "status": "success",
+      "duration_seconds": 429.804,
+      "timestamp": "2026-06-01T02:10:14Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1242,
-    "cc_to_codex": 1242,
+    "total_calls": 1249,
+    "cc_to_codex": 1249,
     "codex_to_cc": 0,
-    "completed": 913,
+    "completed": 914,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 578.442
+    "avg_duration_seconds": 577.279
   }
 }
