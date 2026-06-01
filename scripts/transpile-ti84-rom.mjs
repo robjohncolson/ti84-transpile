@@ -23638,6 +23638,33 @@ function walkBlocks() {
     { pc: 0x0aea27, mode: 'adl' },  // NOP; NOP; NOP; CP imm; LD (HL); CP imm
     { pc: 0x0af711, mode: 'adl' },  // LD (HL); ALU; EI; CP imm; LD (HL); ALU
     { pc: 0x0af727, mode: 'adl' },  // CP imm; RST 30h; LD (HL); ALU; CALL M — math/FPU
+    // Auto-session 491: coverage push — OS export JP-stub continuation after the 0x021c64 slot.
+    { pc: 0x021c68, mode: 'adl' },
+    { pc: 0x021c6c, mode: 'adl' },
+    { pc: 0x021c70, mode: 'adl' },
+    { pc: 0x021c74, mode: 'adl' },
+    { pc: 0x021c78, mode: 'adl' },
+    { pc: 0x021c7c, mode: 'adl' },
+    { pc: 0x021c80, mode: 'adl' },
+    { pc: 0x021c84, mode: 'adl' },
+    { pc: 0x021c88, mode: 'adl' },
+    { pc: 0x021c8c, mode: 'adl' },
+    { pc: 0x021c90, mode: 'adl' },
+    { pc: 0x021c94, mode: 'adl' },
+    { pc: 0x021c98, mode: 'adl' },
+    { pc: 0x021c9c, mode: 'adl' },
+    { pc: 0x021ca0, mode: 'adl' },
+    { pc: 0x021ca4, mode: 'adl' },
+    { pc: 0x021cac, mode: 'adl' },
+    { pc: 0x021cb0, mode: 'adl' },
+    { pc: 0x021cb4, mode: 'adl' },
+    { pc: 0x021cb8, mode: 'adl' },
+    // Coverage push — verified CODE? dispatch entries and function prologues
+    { pc: 0x02a67f, mode: 'adl' },  // XOR A; JR +5A dispatch entry (switch branch)
+    { pc: 0x02a682, mode: 'adl' },  // XOR A; JR +57 dispatch entry (switch branch)
+    { pc: 0x02a685, mode: 'adl' },  // LD A,(nn); OR A; SBC HL,HL; CALL 0x138 — real code block
+    { pc: 0x04e5f7, mode: 'adl' },  // PUSH HL; LD HL,0xD02602; JR — function prologue entry
+    { pc: 0x04e5fe, mode: 'adl' },  // PUSH HL; LD HL,0xD0260B — alternate function entry
   ];
 
   for (let offset = 0; offset <= 0x38; offset += 0x08) {
