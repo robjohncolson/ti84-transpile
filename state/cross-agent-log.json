@@ -15546,15 +15546,114 @@
       "timestamp": "2026-06-02T02:05:17Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "5c068614f199",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 496 P1 \u2014 Full BCALL Table Scan for Cursor Position References\n\n## Goal\nScan ALL 2,178",
+      "status": "success",
+      "duration_seconds": 59.729,
+      "timestamp": "2026-06-02T04:03:21Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "90017b564fd4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 496 P3 \u2014 Search Non-BCALL Cursor Functions (Full ROM Scan)\n\n## Goal\nSearch the ENTIRE",
+      "status": "completed",
+      "duration_seconds": 69.464,
+      "timestamp": "2026-06-02T04:03:35Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "317e590234c3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 496 P2 \u2014 Decode 0x061980 (Putchar Function)\n\n## Goal\nStatically disassemble and dynam",
+      "status": "success",
+      "duration_seconds": 97.345,
+      "timestamp": "2026-06-02T04:04:01Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "90412785faf6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace Cursor Blink Caller \u2014 Find Who Alternates putchar(0xE1) and 0x061003\n\n## Context\nThis ",
+      "status": "success",
+      "duration_seconds": 74.225,
+      "timestamp": "2026-06-02T06:03:38Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8ebcfea45371",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x061434 \u2014 Character Preprocessor\n\n## Context\nThis is the TI-84 Plus CE ROM transpila",
+      "status": "completed",
+      "duration_seconds": 89.444,
+      "timestamp": "2026-06-02T06:03:52Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a0fb8b972c0d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x06002D \u2014 Cursor-to-VRAM Address Calculator\n\n## Context\nThis is the TI-84 Plus CE RO",
+      "status": "completed",
+      "duration_seconds": 112.465,
+      "timestamp": "2026-06-02T06:04:13Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f6d2cbf6b437",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x061061 (Cursor Draw Function)\n\n## Context\nIn the TI-84 Plus CE OS ROM transpilation",
+      "status": "partial",
+      "duration_seconds": 79.913,
+      "timestamp": "2026-06-02T08:03:14Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e086cc02c750",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x096CCF (Cursor Show/Erase Subroutine)\n\n## Context\nIn the TI-84 Plus CE OS ROM trans",
+      "status": "blocked",
+      "duration_seconds": 95.744,
+      "timestamp": "2026-06-02T08:03:32Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ada2a2e94077",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Find Who Writes D008D2/D008D5 (VRAM Address Registers)\n\n## Context\nIn the TI-84 Plus CE OS R",
+      "status": "completed",
+      "duration_seconds": 138.091,
+      "timestamp": "2026-06-02T08:04:11Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1284,
-    "cc_to_codex": 1284,
+    "total_calls": 1293,
+    "cc_to_codex": 1293,
     "codex_to_cc": 0,
-    "completed": 927,
+    "completed": 931,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 569.9
+    "avg_duration_seconds": 566.565
   }
 }
