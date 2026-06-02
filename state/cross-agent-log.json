@@ -15678,15 +15678,48 @@
       "timestamp": "2026-06-02T10:04:47Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "1dcdb4bbbafd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x096F56 \u2014 The Actual Cursor Draw/Erase Dispatcher\n\n## Context\nYou are working on a T",
+      "status": "complete",
+      "duration_seconds": 74.314,
+      "timestamp": "2026-06-02T12:03:20Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ffe2f4d0973f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x09AD2E \u2014 Multi-line Cursor Setup Function\n\n## Context\nYou are working on a TI-84 Pl",
+      "status": "success",
+      "duration_seconds": 86.37,
+      "timestamp": "2026-06-02T12:03:34Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7b2866d8326c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Find Callers of 0x05E50C \u2014 Who Computes the VRAM Address\n\n## Context\nYou are working on a TI",
+      "status": "completed",
+      "duration_seconds": 112.793,
+      "timestamp": "2026-06-02T12:03:59Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1296,
-    "cc_to_codex": 1296,
+    "total_calls": 1299,
+    "cc_to_codex": 1299,
     "codex_to_cc": 0,
-    "completed": 932,
+    "completed": 933,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 565.477
+    "avg_duration_seconds": 564.382
   }
 }
