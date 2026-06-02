@@ -15711,15 +15711,114 @@
       "timestamp": "2026-06-02T12:03:59Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "1eee1cc90d4c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x09A3D0 \u2014 Main Setup in 0x09AD2E Chain\n\n## Context\nYou are working on a TI-84 Plus C",
+      "status": "success",
+      "duration_seconds": 101.72,
+      "timestamp": "2026-06-02T14:03:39Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "36892b0c9572",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0264B1 Call Chain \u2014 VRAM Address Computation\n\n## Context\nYou are working on a TI-84",
+      "status": "success",
+      "duration_seconds": 128.495,
+      "timestamp": "2026-06-02T14:04:04Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e117888436db",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x097955 \u2014 The Actual Cursor Draw Path\n\n## Context\nYou are working on a TI-84 Plus CE",
+      "status": "completed",
+      "duration_seconds": 160.491,
+      "timestamp": "2026-06-02T14:04:34Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "54d9fd022c7f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Re-examine 0x096CCF full flow \u2014 find where cursor pixel writes happen\n\n## Context\nYou are wo",
+      "status": "completed",
+      "duration_seconds": 113.263,
+      "timestamp": "2026-06-02T16:04:27Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d83ed0d9b165",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0994DC (mode setup called from 0x096CCF and 0x097955)\n\n## Context\nYou are working o",
+      "status": "completed",
+      "duration_seconds": 127.095,
+      "timestamp": "2026-06-02T16:04:43Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6765d46d6a7d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x026789 (LCD update dispatcher) and 0x09EF20 (full-width invalidation)\n\n## Context\nY",
+      "status": "success",
+      "duration_seconds": 138.66,
+      "timestamp": "2026-06-02T16:04:56Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "18ea9ed83f6a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Re-examine 0x096CCF Full Flow \u2014 Where Are the Draw/Erase Calls?\n\n## Context\n\nYou are working",
+      "status": "success",
+      "duration_seconds": 51.598,
+      "timestamp": "2026-06-02T18:04:39Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2e04081d7a6b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x026789 (LCD Update Dispatcher) and 0x09EF20\n\n## Context\n\nYou are working on the TI-",
+      "status": "completed",
+      "duration_seconds": 49.047,
+      "timestamp": "2026-06-02T18:04:40Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a8d6b11d5ba9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0994DC (Mode Setup Called From Both 0x096CCF and 0x097955)\n\n## Context\n\nYou are wor",
+      "status": "completed",
+      "duration_seconds": 54.556,
+      "timestamp": "2026-06-02T18:04:44Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1299,
-    "cc_to_codex": 1299,
+    "total_calls": 1308,
+    "cc_to_codex": 1308,
     "codex_to_cc": 0,
-    "completed": 933,
+    "completed": 938,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 564.382
+    "avg_duration_seconds": 561.206
   }
 }
