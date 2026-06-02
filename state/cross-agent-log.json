@@ -15645,15 +15645,48 @@
       "timestamp": "2026-06-02T08:04:11Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "68098541bad6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 499 / P3 \u2014 Decode 0x096CC8 (Short Helper Called from 0x096CCF)\n\n## Context\n\nRepo: `C:/User",
+      "status": "success",
+      "duration_seconds": 88.605,
+      "timestamp": "2026-06-02T10:04:34Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "fb20fa477636",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 499 / P2 \u2014 Decode 0x096F67 (Draw/Erase Dispatcher)\n\n## Context\n\nRepo: `C:/Users/rober/Down",
+      "status": "completed",
+      "duration_seconds": 97.517,
+      "timestamp": "2026-06-02T10:04:42Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6c55b4e874f2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 499 / P1 \u2014 Decode 0x05E50C (Cursor-to-VRAM Converter)\n\n## Context\n\nRepo: `C:/Users/rober/D",
+      "status": "complete",
+      "duration_seconds": 104.598,
+      "timestamp": "2026-06-02T10:04:47Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1293,
-    "cc_to_codex": 1293,
+    "total_calls": 1296,
+    "cc_to_codex": 1296,
     "codex_to_cc": 0,
-    "completed": 931,
+    "completed": 932,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 566.565
+    "avg_duration_seconds": 565.477
   }
 }
