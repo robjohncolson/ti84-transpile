@@ -15810,15 +15810,81 @@
       "timestamp": "2026-06-02T18:04:44Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "9103edcad129",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 503 \u2014 P1: Search for RST 28h (BCALL) in 0x096B00-0x096E00\n\n## Task\nSearch the TI-84 P",
+      "status": "completed",
+      "duration_seconds": 46.456,
+      "timestamp": "2026-06-02T20:02:48Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c2fd5abcb8b1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 503 \u2014 P2: Decode 0x096B65 Fully (137 bytes to 0x096BEE)\n\n## Task\nPerform a complete i",
+      "status": "completed",
+      "duration_seconds": 114.611,
+      "timestamp": "2026-06-02T20:03:59Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "035efbcabe99",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 503 \u2014 P3: Trace 0x0600D9 Caller Context\n\n## Task\nDecode ~100 bytes around 0x0600D9 in",
+      "status": "completed",
+      "duration_seconds": 118.62,
+      "timestamp": "2026-06-02T20:04:04Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "fbad2b6a910d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x060BA2 \u2014 The Missing Link Cursor Draw/Erase Dispatcher\n\n## Context\nYou are working ",
+      "status": "completed",
+      "duration_seconds": 105.141,
+      "timestamp": "2026-06-02T22:04:16Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "eaf5d9131b3e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0935BF \u2014 Value Check in Blink Sub-Function\n\n## Context\nYou are working on a TI-84 P",
+      "status": "success",
+      "duration_seconds": 105.624,
+      "timestamp": "2026-06-02T22:04:20Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "57948746d5da",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0979C6 and 0x0979E4 \u2014 Cursor Position Check + Character Output\n\n## Context\nYou are ",
+      "status": "success",
+      "duration_seconds": 128.576,
+      "timestamp": "2026-06-02T22:04:41Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1308,
-    "cc_to_codex": 1308,
+    "total_calls": 1314,
+    "cc_to_codex": 1314,
     "codex_to_cc": 0,
-    "completed": 938,
+    "completed": 942,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 561.206
+    "avg_duration_seconds": 559.114
   }
 }

@@ -1,1217 +1,1215 @@
 {
-  "generatedAt": "2026-04-12T12:02:12.963Z",
-  "passCount": 12,
-  "vramWriterCount": 81,
-  "deepExecutorCount": 436,
+  "generatedAt": "2026-05-31T20:54:32.525Z",
+  "passCount": 10,
+  "vramWriterCount": 768,
+  "deepExecutorCount": 851,
   "vramWriters": [
     {
-      "key": 621256,
-      "target": "0x097ac8",
-      "totalCalls": 12,
-      "vramHits": 12,
+      "key": 23446,
+      "target": "0x005b96",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
-        "missing_block"
+        "max_steps"
       ],
-      "maxBlocks": 117,
+      "maxBlocks": 2000,
       "maxVramWrites": 307200,
       "errors": 0
     },
     {
       "key": 285990,
       "target": "0x045d26",
-      "totalCalls": 12,
-      "vramHits": 12,
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 153816,
+      "maxVramWrites": 307200,
       "errors": 0
     },
     {
-      "key": 23446,
-      "target": "0x005b96",
-      "totalCalls": 12,
-      "vramHits": 12,
+      "key": 348674,
+      "target": "0x055202",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 307200,
+      "errors": 0
+    },
+    {
+      "key": 533053,
+      "target": "0x08223d",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 307200,
+      "errors": 0
+    },
+    {
+      "key": 533065,
+      "target": "0x082249",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 307200,
+      "errors": 0
+    },
+    {
+      "key": 533190,
+      "target": "0x0822c6",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps",
+        "halt",
         "missing_block"
       ],
-      "maxBlocks": 1,
+      "maxBlocks": 2000,
+      "maxVramWrites": 307200,
+      "errors": 0
+    },
+    {
+      "key": 533249,
+      "target": "0x082301",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 307200,
+      "errors": 0
+    },
+    {
+      "key": 533326,
+      "target": "0x08234e",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 307200,
+      "errors": 0
+    },
+    {
+      "key": 533995,
+      "target": "0x0825eb",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "missing_block",
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 307200,
+      "errors": 0
+    },
+    {
+      "key": 534141,
+      "target": "0x08267d",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps",
+        "missing_block"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 307200,
+      "errors": 0
+    },
+    {
+      "key": 534150,
+      "target": "0x082686",
+      "totalCalls": 10,
+      "vramHits": 9,
+      "terminations": [
+        "missing_block",
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 307200,
+      "errors": 0
+    },
+    {
+      "key": 534261,
+      "target": "0x0826f5",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "missing_block",
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 307200,
+      "errors": 0
+    },
+    {
+      "key": 536324,
+      "target": "0x082f04",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 307200,
+      "errors": 0
+    },
+    {
+      "key": 536947,
+      "target": "0x083173",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 307200,
+      "errors": 0
+    },
+    {
+      "key": 668966,
+      "target": "0x0a3526",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 241920,
+      "errors": 0
+    },
+    {
+      "key": 668851,
+      "target": "0x0a34b3",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 241280,
+      "errors": 0
+    },
+    {
+      "key": 667942,
+      "target": "0x0a3126",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 181120,
+      "errors": 0
+    },
+    {
+      "key": 664122,
+      "target": "0x0a223a",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 157440,
+      "errors": 0
+    },
+    {
+      "key": 662804,
+      "target": "0x0a1d14",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 156288,
+      "errors": 0
+    },
+    {
+      "key": 662805,
+      "target": "0x0a1d15",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 156288,
+      "errors": 0
+    },
+    {
+      "key": 663213,
+      "target": "0x0a1ead",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 156288,
+      "errors": 0
+    },
+    {
+      "key": 663243,
+      "target": "0x0a1ecb",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 156288,
+      "errors": 0
+    },
+    {
+      "key": 664241,
+      "target": "0x0a22b1",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 156288,
+      "errors": 0
+    },
+    {
+      "key": 666732,
+      "target": "0x0a2c6c",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 156288,
+      "errors": 0
+    },
+    {
+      "key": 666790,
+      "target": "0x0a2ca6",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 156288,
+      "errors": 0
+    },
+    {
+      "key": 551287,
+      "target": "0x086977",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 156288,
+      "errors": 0
+    },
+    {
+      "key": 554248,
+      "target": "0x087508",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 156288,
+      "errors": 0
+    },
+    {
+      "key": 617927,
+      "target": "0x096dc7",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 156288,
+      "errors": 0
+    },
+    {
+      "key": 727495,
+      "target": "0x0b19c7",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 156288,
+      "errors": 0
+    },
+    {
+      "key": 666470,
+      "target": "0x0a2b66",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 155904,
+      "errors": 0
+    },
+    {
+      "key": 666478,
+      "target": "0x0a2b6e",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 155904,
+      "errors": 0
+    },
+    {
+      "key": 666482,
+      "target": "0x0a2b72",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 155904,
+      "errors": 0
+    },
+    {
+      "key": 666666,
+      "target": "0x0a2c2a",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 155904,
+      "errors": 0
+    },
+    {
+      "key": 387043,
+      "target": "0x05e7e3",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 155904,
+      "errors": 0
+    },
+    {
+      "key": 662626,
+      "target": "0x0a1c62",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 155520,
+      "errors": 0
+    },
+    {
+      "key": 397315,
+      "target": "0x061003",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 155520,
+      "errors": 0
+    },
+    {
+      "key": 665684,
+      "target": "0x0a2854",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 155216,
+      "errors": 0
+    },
+    {
+      "key": 620269,
+      "target": "0x0976ed",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 155216,
+      "errors": 0
+    },
+    {
+      "key": 567376,
+      "target": "0x08a850",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 155216,
+      "errors": 0
+    },
+    {
+      "key": 617510,
+      "target": "0x096c26",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 154752,
+      "errors": 0
+    },
+    {
+      "key": 574257,
+      "target": "0x08c331",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 154440,
+      "errors": 0
+    },
+    {
+      "key": 574269,
+      "target": "0x08c33d",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 154440,
+      "errors": 0
+    },
+    {
+      "key": 644367,
+      "target": "0x09d50f",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 154368,
+      "errors": 0
+    },
+    {
+      "key": 665368,
+      "target": "0x0a2718",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 154224,
+      "errors": 0
+    },
+    {
+      "key": 708419,
+      "target": "0x0acf43",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 154224,
+      "errors": 0
+    },
+    {
+      "key": 665326,
+      "target": "0x0a26ee",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 154200,
+      "errors": 0
+    },
+    {
+      "key": 665392,
+      "target": "0x0a2730",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 154200,
+      "errors": 0
+    },
+    {
+      "key": 665512,
+      "target": "0x0a27a8",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 154200,
+      "errors": 0
+    },
+    {
+      "key": 22982,
+      "target": "0x0059c6",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 153984,
+      "errors": 0
+    },
+    {
+      "key": 23157,
+      "target": "0x005a75",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 153984,
+      "errors": 0
+    }
+  ],
+  "deepExecutors": [
+    {
+      "key": 23446,
+      "target": "0x005b96",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 307200,
+      "errors": 0
+    },
+    {
+      "key": 22982,
+      "target": "0x0059c6",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 153984,
+      "errors": 0
+    },
+    {
+      "key": 23157,
+      "target": "0x005a75",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 153984,
+      "errors": 0
+    },
+    {
+      "key": 285990,
+      "target": "0x045d26",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 307200,
+      "errors": 0
+    },
+    {
+      "key": 314253,
+      "target": "0x04cb8d",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
       "maxVramWrites": 153600,
       "errors": 0
     },
     {
       "key": 348674,
       "target": "0x055202",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "missing_block"
-      ],
-      "maxBlocks": 208,
-      "maxVramWrites": 153600,
-      "errors": 0
-    },
-    {
-      "key": 533053,
-      "target": "0x08223d",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "missing_block"
-      ],
-      "maxBlocks": 3,
-      "maxVramWrites": 153600,
-      "errors": 0
-    },
-    {
-      "key": 533065,
-      "target": "0x082249",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "missing_block"
-      ],
-      "maxBlocks": 2,
-      "maxVramWrites": 153600,
-      "errors": 0
-    },
-    {
-      "key": 533190,
-      "target": "0x0822c6",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "missing_block"
-      ],
-      "maxBlocks": 149,
-      "maxVramWrites": 153600,
-      "errors": 0
-    },
-    {
-      "key": 533249,
-      "target": "0x082301",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "missing_block"
-      ],
-      "maxBlocks": 148,
-      "maxVramWrites": 153600,
-      "errors": 0
-    },
-    {
-      "key": 533326,
-      "target": "0x08234e",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "missing_block"
-      ],
-      "maxBlocks": 148,
-      "maxVramWrites": 153600,
-      "errors": 0
-    },
-    {
-      "key": 533646,
-      "target": "0x08248e",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "missing_block"
-      ],
-      "maxBlocks": 33,
-      "maxVramWrites": 153600,
-      "errors": 0
-    },
-    {
-      "key": 533995,
-      "target": "0x0825eb",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "missing_block"
-      ],
-      "maxBlocks": 2,
-      "maxVramWrites": 153600,
-      "errors": 0
-    },
-    {
-      "key": 534141,
-      "target": "0x08267d",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "missing_block"
-      ],
-      "maxBlocks": 76,
-      "maxVramWrites": 153600,
-      "errors": 0
-    },
-    {
-      "key": 534150,
-      "target": "0x082686",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "missing_block"
-      ],
-      "maxBlocks": 76,
-      "maxVramWrites": 153600,
-      "errors": 0
-    },
-    {
-      "key": 534261,
-      "target": "0x0826f5",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "missing_block"
-      ],
-      "maxBlocks": 3,
-      "maxVramWrites": 153600,
-      "errors": 0
-    },
-    {
-      "key": 384004,
-      "target": "0x05dc04",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "missing_block"
-      ],
-      "maxBlocks": 83,
-      "maxVramWrites": 153600,
-      "errors": 0
-    },
-    {
-      "key": 385950,
-      "target": "0x05e39e",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "missing_block"
-      ],
-      "maxBlocks": 144,
-      "maxVramWrites": 153600,
-      "errors": 0
-    },
-    {
-      "key": 387145,
-      "target": "0x05e849",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "missing_block"
-      ],
-      "maxBlocks": 144,
-      "maxVramWrites": 153600,
-      "errors": 0
-    },
-    {
-      "key": 387149,
-      "target": "0x05e84d",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "missing_block"
-      ],
-      "maxBlocks": 130,
-      "maxVramWrites": 153600,
-      "errors": 0
-    },
-    {
-      "key": 627217,
-      "target": "0x099211",
-      "totalCalls": 11,
-      "vramHits": 11,
-      "terminations": [
-        "missing_block"
-      ],
-      "maxBlocks": 48,
-      "maxVramWrites": 153600,
-      "errors": 0
-    },
-    {
-      "key": 536324,
-      "target": "0x082f04",
-      "totalCalls": 11,
-      "vramHits": 1,
-      "terminations": [
-        "missing_block",
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 153600,
-      "errors": 0
-    },
-    {
-      "key": 536947,
-      "target": "0x083173",
-      "totalCalls": 11,
-      "vramHits": 11,
-      "terminations": [
-        "missing_block"
-      ],
-      "maxBlocks": 32,
-      "maxVramWrites": 153600,
-      "errors": 0
-    },
-    {
-      "key": 536996,
-      "target": "0x0831a4",
-      "totalCalls": 11,
-      "vramHits": 11,
-      "terminations": [
-        "missing_block"
-      ],
-      "maxBlocks": 128,
-      "maxVramWrites": 153600,
-      "errors": 0
-    },
-    {
-      "key": 537147,
-      "target": "0x08323b",
-      "totalCalls": 11,
-      "vramHits": 11,
-      "terminations": [
-        "missing_block"
-      ],
-      "maxBlocks": 129,
-      "maxVramWrites": 153600,
-      "errors": 0
-    },
-    {
-      "key": 663922,
-      "target": "0x0a2172",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 143360,
-      "errors": 0
-    },
-    {
-      "key": 668189,
-      "target": "0x0a321d",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 143360,
-      "errors": 0
-    },
-    {
-      "key": 663814,
-      "target": "0x0a2106",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 142720,
-      "errors": 0
-    },
-    {
-      "key": 667942,
-      "target": "0x0a3126",
-      "totalCalls": 11,
-      "vramHits": 11,
-      "terminations": [
-        "missing_block"
-      ],
-      "maxBlocks": 14,
-      "maxVramWrites": 142720,
-      "errors": 0
-    },
-    {
-      "key": 668966,
-      "target": "0x0a3526",
-      "totalCalls": 11,
-      "vramHits": 11,
-      "terminations": [
-        "missing_block"
-      ],
-      "maxBlocks": 12,
-      "maxVramWrites": 76800,
-      "errors": 0
-    },
-    {
-      "key": 668851,
-      "target": "0x0a34b3",
-      "totalCalls": 11,
-      "vramHits": 11,
-      "terminations": [
-        "missing_block"
-      ],
-      "maxBlocks": 12,
-      "maxVramWrites": 76160,
-      "errors": 0
-    },
-    {
-      "key": 455284,
-      "target": "0x06f274",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 1978,
-      "errors": 0
-    },
-    {
-      "key": 705227,
-      "target": "0x0ac2cb",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 1974,
-      "errors": 0
-    },
-    {
-      "key": 726149,
-      "target": "0x0b1485",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 1966,
-      "errors": 0
-    },
-    {
-      "key": 383569,
-      "target": "0x05da51",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 1966,
-      "errors": 0
-    },
-    {
-      "key": 383762,
-      "target": "0x05db12",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 1966,
-      "errors": 0
-    },
-    {
-      "key": 383790,
-      "target": "0x05db2e",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 1966,
-      "errors": 0
-    },
-    {
-      "key": 383909,
-      "target": "0x05dba5",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 1966,
-      "errors": 0
-    },
-    {
-      "key": 384406,
-      "target": "0x05dd96",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 1966,
-      "errors": 0
-    },
-    {
-      "key": 384471,
-      "target": "0x05ddd7",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 1966,
-      "errors": 0
-    },
-    {
-      "key": 676955,
-      "target": "0x0a545b",
-      "totalCalls": 12,
-      "vramHits": 11,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 1962,
-      "errors": 0
-    },
-    {
-      "key": 445567,
-      "target": "0x06cc7f",
-      "totalCalls": 12,
+      "totalCalls": 10,
       "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 1938,
+      "maxVramWrites": 307200,
       "errors": 0
     },
     {
-      "key": 548374,
-      "target": "0x085e16",
-      "totalCalls": 12,
-      "vramHits": 12,
+      "key": 88512,
+      "target": "0x0159c0",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 1688,
+      "maxVramWrites": 153600,
       "errors": 0
     },
     {
-      "key": 574310,
-      "target": "0x08c366",
-      "totalCalls": 12,
-      "vramHits": 6,
-      "terminations": [
-        "missing_block",
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 1652,
-      "errors": 0
-    },
-    {
-      "key": 543113,
-      "target": "0x084989",
-      "totalCalls": 12,
-      "vramHits": 6,
-      "terminations": [
-        "missing_block",
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 1652,
-      "errors": 0
-    },
-    {
-      "key": 546472,
-      "target": "0x0856a8",
-      "totalCalls": 12,
-      "vramHits": 3,
-      "terminations": [
-        "missing_block",
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 1652,
-      "errors": 0
-    },
-    {
-      "key": 548728,
-      "target": "0x085f78",
-      "totalCalls": 12,
-      "vramHits": 3,
-      "terminations": [
-        "missing_block",
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 1652,
-      "errors": 0
-    },
-    {
-      "key": 665684,
-      "target": "0x0a2854",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "missing_block"
-      ],
-      "maxBlocks": 215,
-      "maxVramWrites": 1616,
-      "errors": 0
-    },
-    {
-      "key": 620269,
-      "target": "0x0976ed",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "missing_block"
-      ],
-      "maxBlocks": 216,
-      "maxVramWrites": 1616,
-      "errors": 0
-    },
-    {
-      "key": 567376,
-      "target": "0x08a850",
-      "totalCalls": 11,
-      "vramHits": 11,
-      "terminations": [
-        "missing_block"
-      ],
-      "maxBlocks": 222,
-      "maxVramWrites": 1616,
-      "errors": 0
-    },
-    {
-      "key": 666110,
-      "target": "0x0a29fe",
-      "totalCalls": 12,
-      "vramHits": 12,
+      "key": 160457,
+      "target": "0x0272c9",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 1320,
+      "maxVramWrites": 153600,
       "errors": 0
     },
     {
-      "key": 662728,
-      "target": "0x0a1cc8",
-      "totalCalls": 12,
-      "vramHits": 9,
-      "terminations": [
-        "max_steps",
-        "missing_block"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 1306,
-      "errors": 0
-    }
-  ],
-  "deepExecutors": [
-    {
-      "key": 285990,
-      "target": "0x045d26",
-      "totalCalls": 12,
-      "vramHits": 12,
+      "key": 265854,
+      "target": "0x040e7e",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 153816,
+      "maxVramWrites": 153600,
+      "errors": 0
+    },
+    {
+      "key": 145948,
+      "target": "0x023a1c",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 153600,
+      "errors": 0
+    },
+    {
+      "key": 145806,
+      "target": "0x02398e",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 153600,
+      "errors": 0
+    },
+    {
+      "key": 313622,
+      "target": "0x04c916",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 153600,
+      "errors": 0
+    },
+    {
+      "key": 313715,
+      "target": "0x04c973",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 153600,
+      "errors": 0
+    },
+    {
+      "key": 313680,
+      "target": "0x04c950",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 153600,
+      "errors": 0
+    },
+    {
+      "key": 313682,
+      "target": "0x04c952",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 153600,
+      "errors": 0
+    },
+    {
+      "key": 260500,
+      "target": "0x03f994",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 153600,
+      "errors": 0
+    },
+    {
+      "key": 260617,
+      "target": "0x03fa09",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 153600,
       "errors": 0
     },
     {
       "key": 574257,
       "target": "0x08c331",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 154440,
+      "errors": 0
+    },
+    {
+      "key": 574269,
+      "target": "0x08c33d",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 154440,
       "errors": 0
     },
     {
       "key": 574310,
       "target": "0x08c366",
-      "totalCalls": 12,
-      "vramHits": 6,
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
-        "missing_block",
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 1652,
+      "maxVramWrites": 153672,
+      "errors": 0
+    },
+    {
+      "key": 574729,
+      "target": "0x08c509",
+      "totalCalls": 10,
+      "vramHits": 10,
+      "terminations": [
+        "max_steps"
+      ],
+      "maxBlocks": 2000,
+      "maxVramWrites": 153600,
       "errors": 0
     },
     {
       "key": 575024,
       "target": "0x08c630",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 7176,
       "errors": 0
     },
     {
       "key": 575025,
       "target": "0x08c631",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 7176,
       "errors": 0
     },
     {
-      "key": 509701,
-      "target": "0x07c705",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 575085,
+      "target": "0x08c66d",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 7176,
       "errors": 0
     },
     {
-      "key": 509713,
-      "target": "0x07c711",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 575391,
+      "target": "0x08c79f",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 7176,
       "errors": 0
     },
     {
-      "key": 514808,
-      "target": "0x07daf8",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 575405,
+      "target": "0x08c7ad",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 7176,
       "errors": 0
     },
     {
-      "key": 520661,
-      "target": "0x07f1d5",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 575100,
+      "target": "0x08c67c",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 153600,
       "errors": 0
     },
     {
-      "key": 602016,
-      "target": "0x092fa0",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 575113,
+      "target": "0x08c689",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 153600,
       "errors": 0
     },
     {
-      "key": 648716,
-      "target": "0x09e60c",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 575134,
+      "target": "0x08c69e",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 153600,
       "errors": 0
     },
     {
-      "key": 538703,
-      "target": "0x08384f",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 575240,
+      "target": "0x08c708",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 153600,
       "errors": 0
     },
     {
-      "key": 533094,
-      "target": "0x082266",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 575265,
+      "target": "0x08c721",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 153600,
       "errors": 0
     },
     {
-      "key": 533178,
-      "target": "0x0822ba",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 575279,
+      "target": "0x08c72f",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 153600,
       "errors": 0
     },
     {
-      "key": 533376,
-      "target": "0x082380",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 575316,
+      "target": "0x08c754",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 7176,
       "errors": 0
     },
     {
-      "key": 533386,
-      "target": "0x08238a",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 575362,
+      "target": "0x08c782",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 153600,
       "errors": 0
     },
     {
-      "key": 533393,
-      "target": "0x082391",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 509731,
+      "target": "0x07c723",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 153600,
       "errors": 0
     },
     {
-      "key": 533467,
-      "target": "0x0823db",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 509741,
+      "target": "0x07c72d",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 153600,
       "errors": 0
     },
     {
-      "key": 533480,
-      "target": "0x0823e8",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 509767,
+      "target": "0x07c747",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 153600,
       "errors": 0
     },
     {
-      "key": 533491,
-      "target": "0x0823f3",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 509775,
+      "target": "0x07c74f",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 153600,
       "errors": 0
     },
     {
-      "key": 533521,
-      "target": "0x082411",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 509781,
+      "target": "0x07c755",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 153600,
       "errors": 0
     },
     {
-      "key": 533528,
-      "target": "0x082418",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 509787,
+      "target": "0x07c75b",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 153600,
       "errors": 0
     },
     {
-      "key": 533547,
-      "target": "0x08242b",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 509805,
+      "target": "0x07c76d",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 153600,
       "errors": 0
     },
     {
-      "key": 533553,
-      "target": "0x082431",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 509809,
+      "target": "0x07c771",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 153600,
       "errors": 0
     },
     {
-      "key": 533560,
-      "target": "0x082438",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 509823,
+      "target": "0x07c77f",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 153600,
       "errors": 0
     },
     {
-      "key": 533564,
-      "target": "0x08243c",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 510091,
+      "target": "0x07c88b",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 153600,
       "errors": 0
     },
     {
-      "key": 533576,
-      "target": "0x082448",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 510103,
+      "target": "0x07c897",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 153600,
       "errors": 0
     },
     {
-      "key": 534832,
-      "target": "0x082930",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 510115,
+      "target": "0x07c8a3",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 153600,
       "errors": 0
     },
     {
-      "key": 534836,
-      "target": "0x082934",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 510121,
+      "target": "0x07c8a9",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 153600,
       "errors": 0
     },
     {
-      "key": 534847,
-      "target": "0x08293f",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 510131,
+      "target": "0x07c8b3",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 153600,
       "errors": 0
     },
     {
-      "key": 534853,
-      "target": "0x082945",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 510135,
+      "target": "0x07c8b7",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 153600,
       "errors": 0
     },
     {
-      "key": 534859,
-      "target": "0x08294b",
-      "totalCalls": 12,
-      "vramHits": 0,
+      "key": 510383,
+      "target": "0x07c9af",
+      "totalCalls": 10,
+      "vramHits": 10,
       "terminations": [
         "max_steps"
       ],
       "maxBlocks": 2000,
-      "maxVramWrites": 0,
-      "errors": 0
-    },
-    {
-      "key": 534865,
-      "target": "0x082951",
-      "totalCalls": 12,
-      "vramHits": 0,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 0,
-      "errors": 0
-    },
-    {
-      "key": 534871,
-      "target": "0x082957",
-      "totalCalls": 12,
-      "vramHits": 0,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 0,
-      "errors": 0
-    },
-    {
-      "key": 534881,
-      "target": "0x082961",
-      "totalCalls": 12,
-      "vramHits": 0,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 0,
-      "errors": 0
-    },
-    {
-      "key": 534885,
-      "target": "0x082965",
-      "totalCalls": 12,
-      "vramHits": 0,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 0,
-      "errors": 0
-    },
-    {
-      "key": 534910,
-      "target": "0x08297e",
-      "totalCalls": 12,
-      "vramHits": 0,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 0,
-      "errors": 0
-    },
-    {
-      "key": 534928,
-      "target": "0x082990",
-      "totalCalls": 12,
-      "vramHits": 0,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 0,
-      "errors": 0
-    },
-    {
-      "key": 534958,
-      "target": "0x0829ae",
-      "totalCalls": 12,
-      "vramHits": 0,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 0,
-      "errors": 0
-    },
-    {
-      "key": 534964,
-      "target": "0x0829b4",
-      "totalCalls": 12,
-      "vramHits": 0,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 0,
-      "errors": 0
-    },
-    {
-      "key": 534978,
-      "target": "0x0829c2",
-      "totalCalls": 12,
-      "vramHits": 0,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 0,
-      "errors": 0
-    },
-    {
-      "key": 534982,
-      "target": "0x0829c6",
-      "totalCalls": 12,
-      "vramHits": 0,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 0,
-      "errors": 0
-    },
-    {
-      "key": 535477,
-      "target": "0x082bb5",
-      "totalCalls": 12,
-      "vramHits": 0,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 0,
-      "errors": 0
-    },
-    {
-      "key": 662728,
-      "target": "0x0a1cc8",
-      "totalCalls": 12,
-      "vramHits": 9,
-      "terminations": [
-        "max_steps",
-        "missing_block"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 1306,
-      "errors": 0
-    },
-    {
-      "key": 663814,
-      "target": "0x0a2106",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 142720,
-      "errors": 0
-    },
-    {
-      "key": 663922,
-      "target": "0x0a2172",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 143360,
-      "errors": 0
-    },
-    {
-      "key": 668189,
-      "target": "0x0a321d",
-      "totalCalls": 12,
-      "vramHits": 12,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 143360,
-      "errors": 0
-    },
-    {
-      "key": 663995,
-      "target": "0x0a21bb",
-      "totalCalls": 12,
-      "vramHits": 0,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 0,
-      "errors": 0
-    },
-    {
-      "key": 664001,
-      "target": "0x0a21c1",
-      "totalCalls": 12,
-      "vramHits": 0,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 0,
-      "errors": 0
-    },
-    {
-      "key": 664044,
-      "target": "0x0a21ec",
-      "totalCalls": 12,
-      "vramHits": 0,
-      "terminations": [
-        "max_steps"
-      ],
-      "maxBlocks": 2000,
-      "maxVramWrites": 0,
+      "maxVramWrites": 153600,
       "errors": 0
     }
   ]
