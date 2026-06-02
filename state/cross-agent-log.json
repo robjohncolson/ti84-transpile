@@ -15491,15 +15491,70 @@
       "timestamp": "2026-06-01T22:08:07Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "292e1f5eba29",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Dynamic Test BCALL Table Neighbors of Cursor Erase (Entry 832)\n\n## Context\nWe are transpilin",
+      "status": "completed",
+      "duration_seconds": 72.027,
+      "timestamp": "2026-06-02T00:03:09Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b12eedffc7d9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map Full BCALL Jump Table (2,178 Entries)\n\n## Context\nWe are transpiling the TI-84 Plus CE O",
+      "status": "completed",
+      "duration_seconds": 77.529,
+      "timestamp": "2026-06-02T00:03:19Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1ff17dd7f73e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode BCALL Entry 831 (0x060FEA) \u2014 Strongest Cursor Draw Candidate\n\n## Context\nWe are trans",
+      "status": "completed",
+      "duration_seconds": 99.175,
+      "timestamp": "2026-06-02T00:03:38Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "66e8185313da",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 495 \u2014 P2: Search Text Editing Cluster (0x05F000 BCALL entries)\n\n## Context\n\nYou are w",
+      "status": "complete",
+      "duration_seconds": 106.755,
+      "timestamp": "2026-06-02T02:04:17Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "fb2023914767",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 495 \u2014 P1: Decode BCALL Entry 833 (0x06118A)\n\n## Context\n\nYou are working on a TI-84 P",
+      "status": "completed",
+      "duration_seconds": 168.104,
+      "timestamp": "2026-06-02T02:05:17Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1279,
-    "cc_to_codex": 1279,
+    "total_calls": 1284,
+    "cc_to_codex": 1284,
     "codex_to_cc": 0,
-    "completed": 923,
+    "completed": 927,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 571.719
+    "avg_duration_seconds": 569.9
   }
 }
