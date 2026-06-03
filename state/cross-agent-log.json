@@ -16041,15 +16041,147 @@
       "timestamp": "2026-06-03T10:03:52Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "0d18ff54b626",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map TRY-BLOCK Mechanism (0x061DEF, 0x061E20, 0x061DB6)\n\n## Context\n\nYou are working on a TI-",
+      "status": "completed",
+      "duration_seconds": 143.692,
+      "timestamp": "2026-06-03T12:04:51Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7a1fff7830e5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0B95E0, 0x0B968E, 0x0B96B3, 0x0B96E3 (Cursor Setup/Draw/Render/Erase)\n\n## Context\n\n",
+      "status": "success",
+      "duration_seconds": 166.271,
+      "timestamp": "2026-06-03T12:05:12Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6ff48abc6de8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0B9473, 0x0BAD56, and 0x0B84CA (callees of 0x0B83FD)\n\n## Context\n\nYou are working o",
+      "status": "success",
+      "duration_seconds": 170.982,
+      "timestamp": "2026-06-03T12:05:15Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "986e3458f6b2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 511 P1: Decode 0x0B9432 and 0x0B94FB (sub-calls of 0x0B9473)\n\n## Context\n\nYou are wor",
+      "status": "success",
+      "duration_seconds": 123.494,
+      "timestamp": "2026-06-03T14:07:50Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6c76e1031c6b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 511 P2: Decode 0x06868A (Shared Cursor Rendering Call)\n\n## Context\n\nYou are working o",
+      "status": "success",
+      "duration_seconds": 125.976,
+      "timestamp": "2026-06-03T14:07:55Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "86bbb0681fd7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 511 P3: Decode 0x0B95AC (Cursor Setup Helper)\n\n## Context\n\nYou are working on a TI-84",
+      "status": "completed",
+      "duration_seconds": 134.93,
+      "timestamp": "2026-06-03T14:08:06Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "44f5ed895ade",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x099874, 0x0801D3, 0x0B958D \u2014 Remaining 0x0B9473 Sub-calls\n\n## Context\nYou are worki",
+      "status": "completed",
+      "duration_seconds": 85.455,
+      "timestamp": "2026-06-03T16:03:17Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "cef620a7e95e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07C8B7 \u2014 Key Rendering Entry Point\n\n## Context\nYou are working on the TI-84 Plus CE",
+      "status": "success",
+      "duration_seconds": 108.8,
+      "timestamp": "2026-06-03T16:03:39Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d455ef119625",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0B8516/0x0B8525 Context \u2014 Direct Rasterizer Callers in Cursor Pair Iter\n\n## Context",
+      "status": "completed",
+      "duration_seconds": 127.734,
+      "timestamp": "2026-06-03T16:04:02Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ef99bc310f61",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode the 5 Populator Call Sites for 0x07D583\n\n## Context\nYou are working on the TI-84 Plus",
+      "status": "success",
+      "duration_seconds": 159.242,
+      "timestamp": "2026-06-03T18:04:21Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ea5a48c95a22",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0685DF + Extract Font Atlas from ROM 0x003D6E\n\n## Context\nYou are working on the TI",
+      "status": "success",
+      "duration_seconds": 160.118,
+      "timestamp": "2026-06-03T18:04:26Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1028ba8650f2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07D1B4 (Rendering Pipeline Function Inside TRY-BLOCK)\n\n## Context\nYou are working o",
+      "status": "success",
+      "duration_seconds": 172.583,
+      "timestamp": "2026-06-03T18:04:36Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1329,
-    "cc_to_codex": 1329,
+    "total_calls": 1341,
+    "cc_to_codex": 1341,
     "codex_to_cc": 0,
-    "completed": 948,
+    "completed": 952,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 554.063
+    "avg_duration_seconds": 550.357
   }
 }
