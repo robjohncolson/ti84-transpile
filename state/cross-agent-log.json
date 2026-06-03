@@ -15876,15 +15876,48 @@
       "timestamp": "2026-06-02T22:04:41Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "7838f8436dec",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x060B7A \u2014 Shared Cursor State Setup\n\n## Context\nYou are working on the TI-84 Plus CE",
+      "status": "success",
+      "duration_seconds": 132.641,
+      "timestamp": "2026-06-03T02:04:09Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "86e95cd57725",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0A1B5B \u2014 Status Area Writer\n\n## Context\nYou are working on the TI-84 Plus CE ROM tr",
+      "status": "success",
+      "duration_seconds": 140.782,
+      "timestamp": "2026-06-03T02:04:16Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "64ec431b25a9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x096C03 \u2014 Token/Expression State Checker\n\n## Context\nYou are working on the TI-84 Pl",
+      "status": "success",
+      "duration_seconds": 145.144,
+      "timestamp": "2026-06-03T02:04:18Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1314,
-    "cc_to_codex": 1314,
+    "total_calls": 1317,
+    "cc_to_codex": 1317,
     "codex_to_cc": 0,
     "completed": 942,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 559.114
+    "avg_duration_seconds": 558.158
   }
 }
