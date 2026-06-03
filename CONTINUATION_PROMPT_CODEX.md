@@ -8,9 +8,61 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-03 (auto-session 513 — **★★★★★ ALL 5 POPULATOR CALL SITES DECODED (0x044DB3=DISPLAY PREP WITH D02032 GATE + 4× SYSTEM LOCK, 0x0633F6=TRY-BLOCK RENDERING SETUP + 0x09AC6A/0x07C75B/0x09A572, 0x06DE0E=COMPLEX DISPLAY INIT WITH 0x099B81/0x028539, 0x06E168=SHORT PATH WITH 0x07C767/0x06FC03 + D01D49 WRITES, 0x0B3540=CURSOR BANK GUARDED BY IY+2 BIT 7 + TRY-BLOCK WITH CATCH AT 0x0B35DA). 0x07D1B4 FULLY DECODED (127B DESCRIPTOR LIST WALKER — READS (HL) AND 0x3F, TYPE DISPATCH VIA 0x08012D/0x0801E9, STRIDE +9 PER ENTRY, DELEGATES TO 0x07D233 SUB-RENDERER FOR MATCHING TYPES, LOOPS VIA BC COUNTER). 0x099921 DECODED AS OS EVENT LOOP COMMAND DISPATCHER (150B+ CASCADE OF CP/JP FOR KEY CODES 0x04/0x07/0x08/0x09/0x10/0x11/0x29 → DIFFERENT HANDLER ADDRESSES). 0x0685DF DECODED (31B SIGN/NEGATIVE INDICATOR — SAVES D005F9 GLYPH CODE, TEMP WRITES 0x80, CALLS 0x07CBB5, RESTORES ORIGINAL, JP 0x07FE1A IF CHANGED). FONT ATLAS AT 0x003D6E CONFIRMED (16×14 PIXELS, 2 BYTES/ROW MSB-FIRST, 28 BYTES/GLYPH — 'A'/'N'/'0' ALL RENDER CORRECTLY). GOLDEN REGRESSION PASS 26/26.**)
+**Last updated**: 2026-06-03 (auto-session 514 — **★★★★★ 0x07D233 FULLY DECODED (72B DESCRIPTOR FILTER/ROUTER — 4 ELIGIBILITY CHECKS THEN TAIL-CALL TO 0x07CFA7 STANDARD TEXT RENDERER, ALTERNATE PATHS TO 0x07FE9C AND 0x07DF6A). ★★★★★ 0x099921 FULLY MAPPED (281B, 38 ENTRIES: 19 EXACT KEY HANDLERS + 19 RANGE HANDLERS — 0x04=MUL, 0x07=CLEAR, 0x09=(-), 0x11=DECIMAL, 0x29=GRAPH, 0x2C=WINDOW, 0x2D=Y=, 0x3E=TABLESET, 0x40=QUIT, 0xAA=OFF, 0xB0=TOKEN_SEL, 0xBB=ANGLE, 0xE6=RESET, 0xEF=SELF_TEST, 0xFF=TEST_MODE + RANGE SUB-DISPATCHERS FOR GROUP5/GROUP4/2ND-FUNCTION/MENU/TOKEN KEYS). ★★★★★ 0x0B3540 GUARD CONDITIONS DECODED (D00082 BIT 7 = MATHPRINT MODE FLAG, SET AT 0x0BD0F2, RES AT 0x07408B/0x0BD0D3; D0008F BIT 0 = RUNTIME STATE VIA BYTE-LEVEL OPS ONLY, NEVER SET/RES VIA BIT INSTRUCTIONS; GUARD REQUIRES BIT7=SET + BIT0=CLEAR; 0x0B5394=CURSOR VISIBILITY TEST ON D000A7 BIT 4). ★★★★★ 0x044DB3 FULL FUNCTION DECODED (~330B HOME-SCREEN POPULATOR — TRUE ENTRY 0x044D3F VIA JUMP TABLE, IY+15 BITS 2/3/4 MODE SELECT INTO A=3/6/5 VIA ADD/DEC, D02032 GATE VERIFICATION (gate&mode)==mode, 4× SYSTEM LOCK, 3-PASS RENDERING LOOP B=1/2/4 WITH MODE-BIT BYPASS, 0x06E4BA=6B MODE-BIT READER, 0x044FC2=41B EVENT LOOP, TRY-BLOCK AROUND 0x07D5D3). GOLDEN REGRESSION PASS 26/26.**)
 
-> Previous: 2026-06-03 (auto-session 512 — see below)
+> Previous: 2026-06-03 (auto-session 513 — see below)
+
+**Session 514 findings (2026-06-03)**:
+
+(1) ★★★★★ 0x07D233 FULLY DECODED — PER-DESCRIPTOR SUB-RENDERER/FILTER (72B, probe-phase514-decode-07D233.mjs, Codex+Sonnet):
+- Entry: CALL 0x07F7A4 (type classifier). If Z (special case): CALL 0x07FE5A + CALL 0x07D245 + JP 0x07FE24.
+- Main path at 0x07D245: CALL 0x07F7BD (read D005F8 type) → CALL 0x0801E9 (type test) → RET NZ (bail if wrong type).
+- CALL 0x097A64 (validation) → if carry, JP 0x07CFA7 directly (fast path to standard text renderer).
+- Otherwise: CALL 0x07F7BD again → CALL 0x0801C6 (second type check) → RET NC.
+- CALL 0x07FD4A → if Z, JP 0x07FE9C (alternate rendering path).
+- CALL 0x07FD69 → if Z, reads D005F9, CP 0x8A, RET C.
+- **Falls through to JP 0x07CFA7** (standard text renderer) — the primary exit.
+- Alternate entry at 0x07D276: JP 0x07DF6A (unknown renderer).
+- **KEY INSIGHT**: This is a FILTER, not a renderer. It validates descriptor eligibility through 4 checks, then delegates to the existing rendering chain (0x07CFA7 → 0x07C8B7 → 0x0A1799). The path from descriptor walker to rasterizer is now COMPLETE: 0x07D1B4 (walker) → 0x07D233 (filter) → 0x07CFA7 (standard text) → 0x07C8B7 (BCD calc) → 0x0A1799 (rasterizer).
+
+(2) ★★★★★ 0x099921 FULLY MAPPED — OS EVENT LOOP COMMAND DISPATCHER (281B, 38 ENTRIES, probe-phase514-decode-099921-keycodes.mjs, Sonnet):
+- Structure: preamble calls (0x099921-0x099960), then CP/JP cascade at 0x099961.
+- Pattern: CALL 0x09BBAD (get keycode into A) → CP val / JP Z,handler (exact match) or CP val / JP C,handler (range check).
+- **19 EXACT KEY HANDLERS**: 0x04=MUL(→0x09AF17), 0x07=CLEAR(→0x099F49), 0x09=(-)(→0x099F68), 0x11=DECIMAL(→0x099A7E), 0x29=GRAPH(→0x09C70B), 0x2B=ZOOM(→0x099A7E), 0x2C=WINDOW(→0x099CBD), 0x2D=Y=(→0x09AEA6), 0x3E=TABLESET(→0x09AE25), 0x40=QUIT(→0x099A7E), 0x72=SOLVE(→0x09A01D), 0x73=SIMUL_EQ(→0x09B8F7), 0xAA=OFF(→0x09A01D), 0xB0=TOKEN_SEL(→0x099A82), 0xBB=ANGLE_CMD(→0x09B5EA), 0xE6=RESET(→0x09B5C1), 0xEF=SELF_TEST(→0x09B6FF), 0xFF=TEST_MODE(→0x09B680).
+- **19 RANGE HANDLERS**: <0x10 (Group5 keys→0x09AEA6), <0x30 (2ND+MODE/DEL→0x09B68A), <0x3C (2nd-function→0x099BB0), <0x64 (extended menu→0x09A01D), <0xCE (token/alpha→0x09AF4E), <0xFC (high codes→0x09B68C), plus sub-ranges.
+- **Default fallthrough**: JP 0x061D1A (unhandled keys).
+- **Common handler 0x099A7E**: JP 0x09AF27 = beep/ignore for unrecognized keys.
+- **KEY CORRECTION**: Session 513 listed only 7 codes. Full cascade has 38 dispatch points covering the entire key space including 2ND-function keys, system commands (OFF, RESET, SELF_TEST, TEST_MODE), and token selection.
+
+(3) ★★★★★ 0x0B3540 GUARD CONDITIONS DECODED (probe-phase514-decode-0B3540-guards.mjs, Sonnet):
+- **Function 0x0B3518** (full structure): CALL 0x099B81 (init) → .SIS LD (0x2324),HL (clear variable) → BIT 7,(IY+2) [GUARD 1] → JR Z,0x0B3572 (skip if clear) → BIT 0,(IY+15) [GUARD 2] → JR NZ,0x0B3572 (skip if set) → SET 2,(IY+31) (populator-active flag) → CALL 0x061E20 (try exit) → LD HL,0x0B35DA (catch) → CALL 0x061DEF (try enter) → **CALL 0x07D583** (populator) → RES 2,(IY+31) → CALL 0x0828FC → CALL 0x0B5394 → conditional paths based on cursor visibility → two more try blocks → CALL 0x0B3618/0x0B3376 → clear D022BE → CALL 0x07F8FA/0x044753 → RET.
+- **Guard logic**: D00082 bit 7 must be SET (=1) AND D0008F bit 0 must be CLEAR (=0). Both must pass for populator to fire.
+- **D00082 bit 7 = MATHPRINT MODE FLAG**: SET at only 1 site (0x0BD0F2, in mode-switching function 0x0BD0C7). RES at 2 sites (0x07408B, 0x0BD0D3 — both clear bits 5/6/7 together as mode reset). 25 BIT test sites ROM-wide — pervasively checked, consistent with a global display mode.
+- **D0008F bit 0 = RUNTIME STATE**: NO SET/RES sites found in the entire ROM via FD CB instructions. Must be written via byte-level operations (LD (IY+0F),A or direct memory writes). 22 BIT test sites ROM-wide.
+- **0x0B5394 = CURSOR VISIBILITY TEST**: BIT 4,(IY+27) [D000A7 bit 4]; RET. Adjacent stubs: 0x0B5399=SET visible, 0x0B539E=RES visible, 0x0B53A3=temp set D0009D bit 4 + call + clear, 0x0B53B3=if visible→clear+set D0009D bit 7.
+- **KEY INSIGHT**: The cursor-bank populator only runs in MathPrint mode. In Classic mode (bit 7 clear), it's skipped entirely. This explains why MathPrint and Classic modes have different screen refresh behavior.
+
+(4) ★★★★★ 0x044DB3 FULL FUNCTION DECODED — HOME-SCREEN POPULATOR (~330B, probe-phase514-decode-044DB3-gate.mjs, Codex+Sonnet):
+- **CORRECTION: True entry at 0x044D3F** (not 0x044D3C — that's inside a JP instruction). 0x044D3A=RET (previous function), 0x044D3B=JP 0x061D52 (error trampoline), 0x044D3F=LD HL,D01EA8 (real entry). Reached via indirect dispatch (jump table entry at ROM 0x044A6E), not direct CALL.
+- **Phase 1 — Setup (0x044D3F)**: LD HL,D01EA8; CALL 0x07F9FB (save cursor state). LD HL,D01EC3; CALL 0x07F81D (save display state). JR C,0x044D3B (error bail). CALL 0x0452F5 (init), CALL 0x08290E (init check).
+- **Phase 2 — Conditional Redraw (0x044D59)**: CALL 0x045357 (check if redraw needed). If NZ: D005F8=0xFF ("full redraw"), 4× CALL 0x082961 (system lock). CALL 0x028539; JR Z skips mode selection.
+- **Phase 3 — Mode Selection (0x044D7B)**: Priority-ordered bit checks with COMPUTED mode value: BIT 2,(IY+15) → mode=3 (graph). BIT 3,(IY+15) → mode=6 (table, via ADD A,A: 3×2=6). BIT 4,(IY+15) → mode=5 (other, via DEC A: 6-1=5). None set → falls through to D00603 check. **Gate verification**: LD HL,D02032; LD B,A; AND (HL); CP B — if (gate & mode) != mode → JP 0x061D46 (exit). The gate must CONTAIN all requested mode bits for rendering to proceed.
+- **Phase 4 — Early Exit (0x044D9E)**: No mode bits → reads D00603; if zero → JP 0x0446F2 (exit). BIT 0,(IY+0F): if D0008F bit 0 set → JP 0x044BD3 (alternate render, skips populator).
+- **Phase 5 — Populator**: CALL 0x06DB4E (pre-populator), **CALL 0x07D583** at 0x044DB3. SET 5,(IY+3) ("display list valid").
+- **Phase 6 — Post-Populator**: CALL 0x044FC2 (41B event loop — polls 0x03D1BE, handles key event 0x09 via 0x03FA09/0x09CECC).
+- **Phase 7 — Three-Pass Rendering Loop (0x044DBF-0x044E5C)**: Iterates bit=1→2→4 (terminates at 8). Each pass: CALL 0x06E4BA (6B: reads IY+0F AND 0x1C, returns mode bits 2-4). If mode bits set → FORCED RENDER (gate bypassed). If Z: test D02032 AND bit → skip if zero. Render body: get entry, get type, if type=0x0E set D005F8 bit 6, render, status check. **3 passes cover D02032 bits 0/1/2 = the three descriptor types.**
+- **Phase 8 — Cleanup**: RES 5,(IY+3); CALL 0x044E85 (63B, 11-sub-call cleanup chain). TRY-BLOCK around CALL 0x07D5D3. JP 0x044DBB (outer loop re-entry).
+- **KEY INSIGHTS**: (a) Mode values are 3/5/6 (not 1/2/3) — computed via ADD/DEC from base 3. (b) When IY+15 mode bits 2-4 are SET, the gate check is BYPASSED (forced render). (c) 0x06E4BA is just 6 bytes — reads mode bits and returns. (d) D0008F bit 0 = alternate render path that SKIPS the populator entirely.
+
+(5) CODEX: P1 exit 0 (created probe, didn't run — Opus ran it successfully). P2 exit 1 (failed). P3 exit 1 (failed). P4 exit 0 (created probe, didn't run — Opus ran it successfully). Codex 2/4 this session. All priorities verified via Sonnet fallback + Opus verification.
+
+(6) NEW RAM ADDRESSES: D022BE = cleared by 0x0B3540 post-populator (cursor redraw state). D0204D = decremented by catch handler at 0x0B35DA. D000A7 bit 4 = cursor visibility flag (tested by 0x0B5394). D0009F bit 2 = populator-active flag (SET before CALL 0x07D583, RES after). D0009D bit 4 = temporary cursor flag (0x0B53A3). D0009D bit 7 = cursor-hidden flag (0x0B53B3). D02575 = cursor position state (written by 0x0B53C1).
+
+PROBES: probe-phase514-decode-07D233.mjs (Codex+Sonnet), probe-phase514-decode-099921-keycodes.mjs (Sonnet), probe-phase514-decode-0B3540-guards.mjs (Sonnet), probe-phase514-decode-044DB3-gate.mjs (Codex). BOOT STATE: 51,622 seeds, 145,927 blocks, 713,624 covered bytes (unchanged — pure investigation). Golden regression PASS 26/26.
+
+NEXT: (a) ★★★★★ DECODE 0x099F49 (CLEAR KEY HANDLER) AND 0x099F68 ((-) KEY HANDLER) — Now that the key dispatch table is fully mapped, decode the individual handlers for the most common home-screen keys. CLEAR is critical for understanding screen reset flow. (b) ★★★★★ DECODE THE RANGE SUB-DISPATCHERS — Especially 0x099BB0 (2nd-function keys, codes 0x30-0x3B) and 0x09AF4E (token/alpha range, codes 0xB0-0xCD). These handle the bulk of character input. (c) ★★★★★ TRACE THE FULL RENDERING PATH END-TO-END — The chain is now complete: 0x07D1B4 (walker) → 0x07D233 (filter) → 0x07CFA7 (standard text) → 0x07C8B7 (BCD calc) → 0x0A1799 (rasterizer). Create a probe that runs this full chain with a test descriptor to verify it works. (d) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — Browser-bound, needs human. All rendering + key dispatch + cursor visibility + MathPrint mode now decoded. (e) ★★★★ DECODE 0x07DF6A (ALTERNATE RENDERER FROM 0x07D233) — The non-standard rendering path, reached via JP at 0x07D276. Understanding this reveals what descriptor types get special rendering treatment. --END SESSION 514--
+
+**Previous last updated**: 2026-06-03 (auto-session 513 — see below)
 
 **Session 513 findings (2026-06-03)**:
 

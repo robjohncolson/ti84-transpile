@@ -16173,15 +16173,59 @@
       "timestamp": "2026-06-03T18:04:36Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "71350c660db4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map 0x099921 Key-Code Values to _GetCSC Scan Codes\n\n## Context\n\nYou are working on the TI-84",
+      "status": "success",
+      "duration_seconds": 108.932,
+      "timestamp": "2026-06-03T20:04:42Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "837b8e6fb138",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07D233 \u2014 Per-Descriptor Sub-Renderer\n\n## Context\n\nYou are working on the TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 113.989,
+      "timestamp": "2026-06-03T20:04:45Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "010ef8c93e26",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x044DB3's D02032 Gate Logic\n\n## Context\n\nYou are working on the TI-84 Plus CE ROM tr",
+      "status": "completed",
+      "duration_seconds": 107.367,
+      "timestamp": "2026-06-03T20:04:45Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ca9c48729473",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0B3540 Guard Conditions (IY+2 bit 7, IY+15 bit 0)\n\n## Context\n\nYou are working on t",
+      "status": "success",
+      "duration_seconds": 117.482,
+      "timestamp": "2026-06-03T20:04:53Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1341,
-    "cc_to_codex": 1341,
+    "total_calls": 1345,
+    "cc_to_codex": 1345,
     "codex_to_cc": 0,
-    "completed": 952,
+    "completed": 954,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 550.357
+    "avg_duration_seconds": 549.053
   }
 }
