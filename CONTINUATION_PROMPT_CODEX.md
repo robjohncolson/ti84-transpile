@@ -8,9 +8,9 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-03 (auto-session 514 — **★★★★★ 0x07D233 FULLY DECODED (72B DESCRIPTOR FILTER/ROUTER — 4 ELIGIBILITY CHECKS THEN TAIL-CALL TO 0x07CFA7 STANDARD TEXT RENDERER, ALTERNATE PATHS TO 0x07FE9C AND 0x07DF6A). ★★★★★ 0x099921 FULLY MAPPED (281B, 38 ENTRIES: 19 EXACT KEY HANDLERS + 19 RANGE HANDLERS — 0x04=MUL, 0x07=CLEAR, 0x09=(-), 0x11=DECIMAL, 0x29=GRAPH, 0x2C=WINDOW, 0x2D=Y=, 0x3E=TABLESET, 0x40=QUIT, 0xAA=OFF, 0xB0=TOKEN_SEL, 0xBB=ANGLE, 0xE6=RESET, 0xEF=SELF_TEST, 0xFF=TEST_MODE + RANGE SUB-DISPATCHERS FOR GROUP5/GROUP4/2ND-FUNCTION/MENU/TOKEN KEYS). ★★★★★ 0x0B3540 GUARD CONDITIONS DECODED (D00082 BIT 7 = MATHPRINT MODE FLAG, SET AT 0x0BD0F2, RES AT 0x07408B/0x0BD0D3; D0008F BIT 0 = RUNTIME STATE VIA BYTE-LEVEL OPS ONLY, NEVER SET/RES VIA BIT INSTRUCTIONS; GUARD REQUIRES BIT7=SET + BIT0=CLEAR; 0x0B5394=CURSOR VISIBILITY TEST ON D000A7 BIT 4). ★★★★★ 0x044DB3 FULL FUNCTION DECODED (~330B HOME-SCREEN POPULATOR — TRUE ENTRY 0x044D3F VIA JUMP TABLE, IY+15 BITS 2/3/4 MODE SELECT INTO A=3/6/5 VIA ADD/DEC, D02032 GATE VERIFICATION (gate&mode)==mode, 4× SYSTEM LOCK, 3-PASS RENDERING LOOP B=1/2/4 WITH MODE-BIT BYPASS, 0x06E4BA=6B MODE-BIT READER, 0x044FC2=41B EVENT LOOP, TRY-BLOCK AROUND 0x07D5D3). GOLDEN REGRESSION PASS 26/26.**)
+**Last updated**: 2026-06-03 (auto-session 515 — **★★★★★ 0x099F49 CLEAR HANDLER DECODED (110B, IY+6 BIT 7 GUARD → 0x09AF27 OR 0x061D1A, SHARED TAIL AT 0x099F6E WITH D0231A BUFFER/D005F8 DESCRIPTOR OPS, DIGIT FILTER '0'-'9' VIA 0x09BEDA). ★★★★★ 0x099F68 (-) HANDLER DECODED (79B, SHARES TAIL WITH CLEAR, CHECKS IY+6 BIT 5). ★★★★★ 0x099BB0 2ND-FUNCTION RANGE DISPATCHER DECODED (301B, 96 INSTRUCTIONS, 15 CP CHECKS, LINEAR CASCADE, HEAVILY CALLS 0x09BAB8, ROUTES TO 0x061D1A/0x09995A/0x099D4E). ★★★★★ 0x09AF4E TOKEN/ALPHA RANGE DISPATCHER DECODED (301B, 147 INSTRUCTIONS, 32 CP CHECKS, CPIR TABLE LOOKUP AT 0x09AF5A WITH 15-BYTE TABLE AT 0x09AF6F, 0x09C4E0 STATE CHECKER). ★★★★★ RASTERIZER 0x0A1799 END-TO-END VERIFIED (668 STEPS, 312 NON-ZERO VRAM BYTES AT ROW 37 COL 2, GLYPH 'A' RENDERS WHITE-ON-BLACK, MATCHES PROBE-PHASE99D OFFSET EXACTLY). ★★★★★ 0x07DF6A ALTERNATE RENDERER DECODED (292B, 110 INSTRUCTIONS, BCD FORMATTING ENGINE — RLD INSTRUCTION, DIVISION LOOP VIA 0x07FBD9/0x07FC94 WITH C AS QUOTIENT, D00603=DIGIT COUNT CONTROL, D00605/D0060B/D00600 BCD WORKSPACE, EXITS VIA 0x07F7FA OR 0x07EFF0). ★★★★★ 0x07FE9C DECODED (26B TYPE REWRITER — STRIPS LOW 6 BITS OF D005F8, REMAPS TYPE 0x20→0x00, TYPE 0x21→0x18, RET NZ FOR OTHER TYPES). GOLDEN REGRESSION PASS 26/26.**)
 
-> Previous: 2026-06-03 (auto-session 513 — see below)
+> Previous: 2026-06-03 (auto-session 514 — see below)
 
 **Session 514 findings (2026-06-03)**:
 
@@ -61,6 +61,63 @@
 PROBES: probe-phase514-decode-07D233.mjs (Codex+Sonnet), probe-phase514-decode-099921-keycodes.mjs (Sonnet), probe-phase514-decode-0B3540-guards.mjs (Sonnet), probe-phase514-decode-044DB3-gate.mjs (Codex). BOOT STATE: 51,622 seeds, 145,927 blocks, 713,624 covered bytes (unchanged — pure investigation). Golden regression PASS 26/26.
 
 NEXT: (a) ★★★★★ DECODE 0x099F49 (CLEAR KEY HANDLER) AND 0x099F68 ((-) KEY HANDLER) — Now that the key dispatch table is fully mapped, decode the individual handlers for the most common home-screen keys. CLEAR is critical for understanding screen reset flow. (b) ★★★★★ DECODE THE RANGE SUB-DISPATCHERS — Especially 0x099BB0 (2nd-function keys, codes 0x30-0x3B) and 0x09AF4E (token/alpha range, codes 0xB0-0xCD). These handle the bulk of character input. (c) ★★★★★ TRACE THE FULL RENDERING PATH END-TO-END — The chain is now complete: 0x07D1B4 (walker) → 0x07D233 (filter) → 0x07CFA7 (standard text) → 0x07C8B7 (BCD calc) → 0x0A1799 (rasterizer). Create a probe that runs this full chain with a test descriptor to verify it works. (d) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — Browser-bound, needs human. All rendering + key dispatch + cursor visibility + MathPrint mode now decoded. (e) ★★★★ DECODE 0x07DF6A (ALTERNATE RENDERER FROM 0x07D233) — The non-standard rendering path, reached via JP at 0x07D276. Understanding this reveals what descriptor types get special rendering treatment. --END SESSION 514--
+
+**Session 515 findings (2026-06-03)**:
+
+(1) ★★★★★ 0x099F49 CLEAR KEY HANDLER DECODED (110B, 38 instructions, probe-phase515-decode-key-handlers.mjs, Sonnet):
+- Entry: checks IY+0x06 bit 7 — if set, JP NZ to 0x09AF27 (alternate clear path). Otherwise JP to 0x061D1A (main clear action).
+- Secondary path at 0x099F55: checks/clears IY+0x06 flags, sets bit 5, loads A=0x08, jumps to 0x099F39.
+- Shared tail at 0x099F6E: reads/writes D0231A (buffer length/position), references D005F8 (descriptor). Calls 0x07F980 (descriptor buffer op), 0x0828F6/0x082951 (system calls near lock/unlock), system_unlock (0x0828D1), 0x09AFC9 (post-key handler), tail-JP to 0x09AF34.
+- Digit filter at 0x099FA9-0x099FB6: calls 0x09BEDA (character classifier), checks '0'-'9' range, branches to 0x099F51 if digit.
+- **PURPOSE**: CLEAR handler has two modes (IY+6 bit 7): full clear (0x061D1A) vs partial clear (0x09AF27). Shared tail manages edit buffer state.
+
+(2) ★★★★★ 0x099F68 (-) KEY HANDLER DECODED (79B, 28 instructions):
+- Checks IY+0x06 bit 5, then jumps to CLEAR handler's conditional at 0x099F4D.
+- Very short unique body (6 bytes) — rest is shared tail at 0x099F6E.
+- **PURPOSE**: (-) key handler reuses CLEAR handler's digit/buffer infrastructure. The two handlers share ~80% of code.
+
+(3) ★★★★★ 0x099BB0 2ND-FUNCTION RANGE DISPATCHER DECODED (301B, 96 instructions, probe-phase515-decode-range-dispatchers.mjs, Sonnet):
+- Structure: linear CP/JP cascade, 15 CP comparison values.
+- Key boundaries: 0x0B, 0xAE, 0x2A, 0xEF, 0x2E, 0x2D, 0x94, 0x96, 0xF0, 0xF2.
+- Heavily calls 0x09BAB8 (get next key) and 0x09BECF between comparisons.
+- Routes to 0x061D1A on mismatch, 0x09995A/0x099D4E as event loop exit paths.
+- **PURPOSE**: Routes 2nd-function key codes to specific handlers. Linear cascade for ~15 distinct 2nd-function key groups.
+
+(4) ★★★★★ 0x09AF4E TOKEN/ALPHA RANGE DISPATCHER DECODED (301B, 147 instructions):
+- Structure: linear CP cascade, 32 comparison values.
+- Starts with CP 0xB5 (token boundary). Uses 0x09C4E0 repeatedly (mode/state checker).
+- **CPIR TABLE LOOKUP** at 0x09AF5A: BC=count, HL=0x09AF6F (15-byte table), searches for A in table. Fast rejection filter — matched codes take fast path, others fall through full cascade.
+- Compares against ranges: 0xF2-0xF4, 0x89-0x93, 0x2A-0x2B.
+- Routes mismatches to 0x061D1A, 0x09AFC9 as common fallthrough.
+- **PURPOSE**: Handles bulk character/token input (alpha keys, number tokens). CPIR table is a fast-match filter.
+
+(5) ★★★★★ RASTERIZER 0x0A1799 END-TO-END VERIFIED (probe-phase515-rendering-chain.mjs, Sonnet):
+- Boot → seed curRow=0, curCol=0, glyph=0x41 ('A') → CALL 0x0A1799 → **668 steps, returned cleanly**.
+- **312 non-zero VRAM bytes** at row 37, col 2 — all 0xFFFF (white on black).
+- Matches probe-phase99d text rendering offset exactly.
+- curRow/curCol NOT modified by rasterizer (cursor advancement is caller's job).
+- Font atlas for 'A' at ROM 0x00448A: 28/28 bytes non-zero, atlas valid.
+- **KEY INSIGHT**: Inverted rendering model — rasterizer writes BACKGROUND (white), foreground glyph pixels are 0x0000 (black, invisible on uninitialized VRAM). "Ink" = background color, "paper" = absence of writes.
+
+(6) ★★★★★ 0x07DF6A ALTERNATE RENDERER DECODED (292B, 110 instructions, probe-phase515-decode-07DF6A.mjs, Sonnet):
+- Entry: RES 6,(IY+0x0E), CALL 0x07CC36, CALL 0x07FD4A (RET Z if zero).
+- Reads D005F9, RRA to halve, stores D0060F. Conditionally CALL C,0x07FB48.
+- **BCD DIVISION/FORMATTING ENGINE**: LD A,0x10→D00603 (16 digits max). Loop: CALL 0x07FBD9 (B=1 multiply), CALL 0x07FC94 (compare), INC C (quotient). Second pass B=2. DEC D00603 (digit count). Stores quotient to (DE). Second arithmetic pass via 0x07FC0E/0x07FC14.
+- Exits via JP 0x07F7FA or JP 0x07EFF0 depending on IY+0x0E bit 6.
+- **PURPOSE**: BCD NUMERIC FORMATTING — converts binary/BCD values into displayable digit sequences with decimal positioning. Handles graph coordinates, table values, scientific notation. Fundamentally different from 0x07CFA7 (processes pre-formed glyph codes).
+
+(7) ★★★★★ 0x07FE9C DECODED — TYPE REWRITER/NORMALIZER (26B, 16 instructions):
+- Reads D005F8, AND 0xC0 (save high 2 bits), AND 0x3F (low 6 bits).
+- Type 0x20 → C=0x00, write B|C back. Type 0x21 → C=0x18, write back. Else RET NZ.
+- **PURPOSE**: Pre-rendering type normalization. Collapses descriptor types 0x20→0x00 (in low bits), 0x21→0x18.
+
+(8) CODEX: 4/4 agents created files but ALL had broken imports (createDecoder from ez80-decoder.js doesn't exist as named export). Sonnet fallback: 4/4 succeeded with correct import pattern (inline disassembler from readFileSync). All probes verified by Opus.
+
+(9) NEW RAM ADDRESSES: D0231A = edit buffer length/position. D11808, D1CD08 = CLEAR handler references. D009BE = digit filter reference. D0060F = glyph code halved (0x07DF6A). D00603 = digit count (starts 0x10, decremented). NEW FUNCTIONS: 0x09BEDA = character classifier ('0'-'9'). 0x07F980 = descriptor buffer op. 0x09AFC9 = post-key handler. 0x09AF27/0x09AF34 = event loop returns. 0x09C4E0 = mode/state checker. 0x07FBD9 = BCD multiply/shift. 0x07FC94 = BCD compare. 0x07FC0E/0x07FC14 = multi-byte arithmetic. 0x07FB48/0x07FAF5/0x07FAD5 = BCD init/adjust. 0x07C9AF = post-format handler. 0x07F7FA/0x07EFF0 = numeric renderer exits. 0x09BECF = key classification. 0x061D1A = main CLEAR action / unhandled key path.
+
+PROBES: probe-phase515-decode-key-handlers.mjs (Sonnet), probe-phase515-decode-range-dispatchers.mjs (Sonnet), probe-phase515-rendering-chain.mjs (Sonnet), probe-phase515-decode-07DF6A.mjs (Sonnet). BOOT STATE: 51,622 seeds, 145,927 blocks, 713,624 covered bytes (unchanged — pure investigation + rasterizer verification). Golden regression PASS 26/26.
+
+NEXT: (a) ★★★★★ TRACE HIGHER-LEVEL RENDERING PATH — Now that 0x0A1799 rasterizer is verified working, test 0x07CFA7 (standard text renderer) end-to-end by seeding a proper descriptor at D005F8 and calling it. This would confirm the full chain from descriptor → BCD calc → rasterizer. (b) ★★★★★ DECODE 0x061D1A (MAIN CLEAR ACTION) — Primary CLEAR key destination AND the unhandled-key-code path from both range dispatchers. Understanding it reveals the full screen-clear/reset flow. (c) ★★★★★ MAP THE CPIR TABLE AT 0x09AF6F — The 15-byte fast-match table in the token/alpha dispatcher determines which key codes get fast-path handling. Extract and cross-reference with keyboard-matrix.md. (d) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — Browser-bound, needs human. Rasterizer verified working; font atlas confirmed; rendering chain complete. (e) ★★★★ DECODE 0x07EFF0 AND 0x07F7FA (NUMERIC RENDERER EXIT PATHS) — Two exits from the BCD formatting engine at 0x07DF6A. Understanding them reveals how formatted numbers reach VRAM. --END SESSION 515--
 
 **Previous last updated**: 2026-06-03 (auto-session 513 — see below)
 
