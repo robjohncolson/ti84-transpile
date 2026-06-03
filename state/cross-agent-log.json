@@ -15909,15 +15909,48 @@
       "timestamp": "2026-06-03T02:04:18Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "1135814d2a61",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map D01EB1-D01EF9 Token Descriptor Block Contents at Boot\n\n## Context\nYou are working on a T",
+      "status": "completed",
+      "duration_seconds": 71.234,
+      "timestamp": "2026-06-03T04:03:16Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f758d6716ddd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x04C885 \u2014 Record Dispatch Function\n\n## Context\nYou are working on a TI-84 Plus CE RO",
+      "status": "success",
+      "duration_seconds": 111.318,
+      "timestamp": "2026-06-03T04:03:55Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "961a6584188c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0A1799 \u2014 Real Character Output Function\n\n## Context\nYou are working on a TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 140.935,
+      "timestamp": "2026-06-03T04:04:22Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1317,
-    "cc_to_codex": 1317,
+    "total_calls": 1320,
+    "cc_to_codex": 1320,
     "codex_to_cc": 0,
-    "completed": 942,
+    "completed": 944,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 558.158
+    "avg_duration_seconds": 557.135
   }
 }
