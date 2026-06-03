@@ -15942,15 +15942,114 @@
       "timestamp": "2026-06-03T04:04:22Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "b0e40e0b4c35",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace D01EB1 Write Sites \u2014 Who Populates the Cursor Descriptor Blocks?\n\n## Context\nYou are w",
+      "status": "success",
+      "duration_seconds": 86.987,
+      "timestamp": "2026-06-03T06:03:26Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c6bbaca3a9c6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0A2D4C \u2014 Row Index \u2192 Pixel Y Coordinate Mapper\n\n## Context\nYou are working on the T",
+      "status": "completed",
+      "duration_seconds": 128.338,
+      "timestamp": "2026-06-03T06:04:06Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6aaf2a5f082d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07BF3E \u2014 Font Table Resolver (char code \u2192 glyph bitmap pointer)\n\n## Context\nYou are",
+      "status": "success",
+      "duration_seconds": 141.65,
+      "timestamp": "2026-06-03T06:04:18Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f92d21d891c8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace D02032 Write Sites (What Activates Cursor Types?)\n\n## Context\nYou are working on the T",
+      "status": "success",
+      "duration_seconds": 80.9,
+      "timestamp": "2026-06-03T08:03:12Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "be93c8c521d2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0BD00D (Bulk Descriptor Initializer)\n\n## Context\nYou are working on the TI-84 Plus ",
+      "status": "success",
+      "duration_seconds": 110.528,
+      "timestamp": "2026-06-03T08:03:43Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6002f2b530b0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07D583 + 0x07D577 + 0x07D83B (Descriptor Populator Chain)\n\n## Context\nYou are worki",
+      "status": "completed",
+      "duration_seconds": 118.204,
+      "timestamp": "2026-06-03T08:03:47Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1c9ae9d1af26",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0B86AB (Primary Cursor Activator) \u2014 ~100 bytes\n\n## Context\nYou are working on the T",
+      "status": "success",
+      "duration_seconds": 58.105,
+      "timestamp": "2026-06-03T10:02:34Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f0bab2004222",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x09A572 (Called from 0x07D583 After Copy)\n\n## Context\nYou are working on the TI-84 P",
+      "status": "completed",
+      "duration_seconds": 72.428,
+      "timestamp": "2026-06-03T10:02:52Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a197bff6d066",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07D5D7 (Post-Populator Conditional Chain)\n\n## Context\nYou are working on the TI-84 ",
+      "status": "completed",
+      "duration_seconds": 134.216,
+      "timestamp": "2026-06-03T10:03:52Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1320,
-    "cc_to_codex": 1320,
+    "total_calls": 1329,
+    "cc_to_codex": 1329,
     "codex_to_cc": 0,
-    "completed": 944,
+    "completed": 948,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 557.135
+    "avg_duration_seconds": 554.063
   }
 }
