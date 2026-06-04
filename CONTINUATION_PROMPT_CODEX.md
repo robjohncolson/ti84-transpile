@@ -8,9 +8,57 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-03 (auto-session 516 — **★★★★★ 0x061D1A DECODED AS SYSTEM STATE RESET/LONGJMP (183B, LD A,0x88 → RST 0x18 → CALL 0x03E1B4 → CLEARS 4 FLAGS: IY+4B BIT 7, IY+12 BIT 2, IY+24 BIT 4, IY+49 BIT 1 → LD SP,(D008E0) → POP AF → RET — STACK-UNWINDING ABORT TO EVENT LOOP, NOT SCREEN CLEAR). ★★★★★ CPIR TABLE AT 0x09AF6F FULLY EXTRACTED (15 TOKEN CODES: 0x19,0x1A,0xB6,0xB7,0xE3,0xE4,0xB5,0x21,0x1F,0xCE,0xCF,0xDB,0xDC,0x8D,0x90 — FAST-MATCH FILTER, RET NZ ON NO MATCH, MATCH FALLS THROUGH). ★★★★★ 0x07F7FA EXIT PATH DECODED (25B, DESCRIPTOR CLEANUP: LD HL,D005F8 → CALL 0x07FE5E → CALL 0x07FE28 → RET). ★★★★★ 0x07EFF0 EXIT PATH DECODED (10B, XOR A → LD (D005F8),A → CALL 0x07C9AF → RET — CLEARS DESCRIPTOR TYPE TO 0). ★★★ 0x07CFA7 TRACED BUT BAILS EARLY (37 STEPS, 0 VRAM — DESCRIPTOR TYPE 0x00 TRIGGERS EARLY EXIT, NEED NON-ZERO TYPE TO REACH RENDERING PATH). GOLDEN REGRESSION PASS 26/26.**)
+**Last updated**: 2026-06-03 (auto-session 517 — **★★★★★ 0x0B8505 → 0x0A1799 RENDERING PIPELINE VERIFIED END-TO-END (1389 steps, 534 VRAM bytes, 267 pixels at rows 97-112, rasterizer hit at step 7). ★★★★★ 0x03E1B4 DECODED AS INTERRUPT-SAFE WRAPPER AROUND 0x03E187 (flash access + token processing), TOKEN PROCESSING BODY AT 0x03E230 (PUSH IX, LD IY=D00080, CALL 0x03E023/0x03E039 display state init, CALL 0x03E256 token insertion). ★★★★★ KEY-TO-TOKEN TABLE 0x061CFA-0x061DB1 FULLY EXTRACTED (45 ENTRIES: 43 standard LD A,token;JR + 2 fallthrough, ALL converging on 0x061DB2 common handler). ★★★★★ TYPE REMAPPING TABLES AT 0x07FE8A/0x07FE91 DECODED AS BIDIRECTIONAL CODEC (6+5 entries sharing 12-byte data region, each function's search table is the other's replacement table via CPIR BC residual). GOLDEN REGRESSION PASS 26/26.**)
 
-> Previous: 2026-06-03 (auto-session 515 — see below)
+> Previous: 2026-06-03 (auto-session 516 — ★★★★★ 0x061D1A DECODED AS LONGJMP/KEY-TO-TOKEN TABLE, CPIR TABLE 0x09AF6F FULLY EXTRACTED, 0x07F7FA/0x07EFF0 EXIT PATHS DECODED, 0x07CFA7 CONFIRMED AS COORDINATOR NOT RASTERIZER CALLER)
+
+**Session 517 findings (2026-06-03)**:
+
+(1) ★★★★★ 0x0B8505 → 0x0A1799 RENDERING PIPELINE VERIFIED END-TO-END (probe-phase517-trace-0B8505.mjs, Sonnet):
+- Boot → seed descriptor D005F8=0x01, D005F9=0x02, BCD data=0x42, VRAM ptr D008D2=0x5C80, D008D5=0x2C, curRow=3, curCol=0.
+- Set PC=0x0B8505, ran 1389 steps, returned cleanly to fake ret addr.
+- **RASTERIZER HIT AT STEP 7**: Call chain 0x0B8505 → 0x0B84F1 → 0x07FAED → 0x0B84F8 → 0x0B8501 → 0x0B8509 → 0x0B850F → 0x0A1799.
+- **534 non-zero VRAM bytes** (267 pixels), bounding box rows [97..112] cols [2..25] = 16×24 pixel region.
+- All pixels 0xFFFF (white foreground on black background).
+- Descriptor state UNCHANGED after execution — renderer reads but does not modify descriptor.
+- curCol advanced from 0 to 1 — column cursor incremented after rendering.
+- **CONFIRMS**: Session 512's decode of 0x0B8505 as BCD digit renderer calling 0x0A1799, and session 515's verification of 0x0A1799 standalone. Full pipeline from high-level BCD renderer to VRAM output now VERIFIED.
+
+(2) ★★★★★ 0x03E1B4 DECODED — INTERRUPT-SAFE WRAPPER + TOKEN PROCESSOR (162B static disassembly, probe-phase517-decode-03E1B4.mjs, Codex+Sonnet):
+- **0x03E1B4-0x03E1D8 (ENTRY)**: Interrupt-safe wrapper. Saves A to D00542, reads interrupt state via LD A,I + JP PE, DI, restores A, CALL 0x03E187 (the real processor), saves result, conditionally re-enables interrupts, RET.
+- **0x03E187 (CORE)**: Contains ED 39/ED 38/ED 7E opcodes — these are eZ80 OUT0 instructions for **flash unlock/page-select sequences**. Checks port values (CP 0x88, JP NZ 0x000066 = reset vector). Falls through to token processing on success.
+- **0x03E230-0x03E255 (TOKEN BODY)**: PUSH IX, LD IY=D00080 (set up IY base). CALL 0x03E023 (copies display state D00619 → D00813). CALL 0x03E039 (initializes display buffer pointers D005F8/D00601, zeros two bytes, loads D00813 → HL, JP 0x07F978). Reads D005F8 AND 0x3F, CP 0x24 — if equal stores 0x14 at D0081C. CALL 0x03E256, POP IX, RET.
+- **0x03E256 (TOKEN INSERTION)**: CALL 0x03E039 (buffer init). CALL 0x0801AF (token validator/classifier, carry result). If carry: CALL 0x0846EA (allocator, returns HL), LD (HL)=0x03, checks D00896 vs 0x15, conditionally SET 7,(HL). Stores HL→D02581, DE→D00687. LD H,A, CALL 0x097757.
+- **Always path**: LD HL=D00894, RES 1,(HL) (clear bit 1). Reads D00896, CP 0x15, CALL NZ 0x03EA5E (conditional post-processor when mode ≠ 0x15). RET.
+- **NEW RAM**: D00542 (temp A storage), D00894 (flags byte, bit 1 cleared), D00896 (mode indicator, compared vs 0x15), D02581 (allocation pointer), D00687 (token metadata DE), D0081C (stores 0x14 for mode 0x24), D00813 (display state mirror).
+- **NEW FUNCTIONS**: 0x03E187 (flash access wrapper), 0x03E023 (display state copy), 0x03E039 (buffer pointer init → 0x07F978), 0x03E256 (token insertion), 0x0801AF (token validator), 0x097757 (post-allocation handler), 0x03EA5E (conditional post-processor).
+
+(3) ★★★★★ KEY-TO-TOKEN TABLE 0x061CFA-0x061DB1 FULLY EXTRACTED (45 entries, probe-phase517-key-token-table.mjs, Sonnet):
+- **43 standard entries**: LD A,<token>; JR <offset> (4 bytes each).
+- **2 fallthrough entries**: 0x061D22 (token 0x89=DEL) and 0x061D2C (token 0x8A=INS) — 2-byte LD A,imm8 falling through into JP 0x061DB2.
+- **Two sub-tables**: First cluster (0x061CFA-0x061D22) uses JR to trampoline at 0x061D24 (JP 0x061DB2). Second cluster (0x061D32-0x061DAE) uses direct JR to 0x061DB2.
+- **Notable tokens**: 0x81-0x88 = control tokens (0x88=CLEAR confirmed), 0x89=DEL, 0x8A=INS, 0x8B-0x93 = TI-OS function/control tokens, 0x96/0x98-0x9F = advanced control, 0x2D='-', 0x2E='.', 0x2F='/', 0x28='(', 0x30='0', 0x31='1', 0x36='6', 0xAA-0xAF/0xB2-0xB5 = higher function tokens.
+- **ALL 45 entries converge** on the common handler at 0x061DB2 (→ store token → CALL 0x03E1B4 → clear 4 flags → longjmp).
+
+(4) ★★★★★ TYPE REMAPPING TABLES DECODED AS BIDIRECTIONAL CODEC (probe-phase517-type-remap-tables.mjs, Codex+Sonnet):
+- **Architecture**: Two functions share a single 12-byte data region (0x07FE8A-0x07FE95). Each function's search table is the other's replacement table, accessed via CPIR's residual BC counter.
+- **Function 1 (0x07FE28, 6-entry search at 0x07FE8A)**: ENCODE direction.
+  - 0x21→0x1F, 0x20→0x1E, 0x1C→0x1D, 0x18→0x1B, 0x00→0x0C, 0x19→0x1B.
+  - Default (miss): B=0x0C.
+  - Merges: AND 0xC0 | OR B (preserves top 2 flag bits).
+- **Function 2 (0x07FE5E, 5-entry search at 0x07FE91)**: DECODE direction (inverse).
+  - 0x0C→0x00, 0x1B→0x18, 0x1D→0x1C, 0x1E→0x20, 0x1F→0x21.
+  - Miss: returns original value unchanged.
+- **NEAR-PERFECT INVERSE**: 0x21↔0x1F, 0x20↔0x1E, 0x1C↔0x1D, 0x18↔0x1B, 0x00↔0x0C. One asymmetry: 0x19→0x1B in encode, but 0x1B→0x18 in decode (0x19 and 0x18 both map to 0x1B, only 0x18 round-trips).
+- **PURPOSE**: Pre/post-rendering type normalization. Function 1 (encode) is called by 0x07F7FA (BCD formatter exit) to normalize types before storage. Function 2 (decode) reverses the encoding when reading descriptors back.
+
+(5) CODEX: P1 exit 1. P2 exit 0 (static disassembly worked, dynamic failed — wrong boot pattern). P3 exit 1. P4 exit 0 (type remap tables extracted correctly). 2/4 Codex usable, 2/4 Codex failed. All 4 Sonnet fallbacks succeeded. Pattern continues sessions 483-517.
+
+(6) NEW FUNCTIONS: 0x03E187 (flash access + token processing core), 0x03E023 (display state copy D00619→D00813), 0x03E039 (buffer pointer init → 0x07F978), 0x03E256 (token insertion subroutine), 0x0801AF (token validator/classifier), 0x097757 (post-allocation handler), 0x03EA5E (conditional post-processor, mode ≠ 0x15). NEW RAM: D00542 (interrupt-safe temp A), D00894 (flags, bit 1 cleared after token insertion), D00896 (mode indicator, compared vs 0x15), D02581 (allocation pointer from 0x0846EA), D00687 (token metadata DE), D0081C (stores 0x14 for descriptor type 0x24), D00813 (display state mirror).
+
+PROBES: probe-phase517-trace-0B8505.mjs (Sonnet, Opus-verified), probe-phase517-decode-03E1B4.mjs (Codex+Sonnet, Opus-verified), probe-phase517-key-token-table.mjs (Sonnet, Opus-verified), probe-phase517-type-remap-tables.mjs (Codex, Opus-verified). BOOT STATE: 51,622 seeds, 145,927 blocks, 713,624 covered bytes (unchanged — pure investigation + rendering verification). Golden regression PASS 26/26.
+
+NEXT: (a) ★★★★★ DECODE 0x03E187 (THE REAL TOKEN PROCESSOR INSIDE FLASH UNLOCK) — 0x03E1B4 is just an interrupt-safe wrapper. 0x03E187 contains OUT0 flash unlock sequences then falls through to the token processing body. Decode 0x03E187 to understand the flash page-select mechanism and how it routes to the token body at 0x03E230. (b) ★★★★★ DECODE 0x097757 (POST-ALLOCATION HANDLER) — Called by 0x03E256 after storing token metadata to D02581/D00687. This is likely where the token gets integrated into the edit buffer or display list. (c) ★★★★★ CROSS-REFERENCE KEY-TO-TOKEN TABLE WITH _GetCSC SCAN CODES — The 45 entries in the 0x061CFA-0x061DB1 table map to OS token bytes, but the ENTRIES are reached via JP from the 0x099921 event loop dispatcher which receives _GetCSC scan codes. Trace which scan codes route to which table entries by decoding the intermediate handlers (0x099F49→0x061D1A is CLEAR=0x07→token 0x88). Build the complete scan-code→token map. (d) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — Browser-bound, needs human. Full rendering pipeline verified end-to-end (0x0B8505→0x0A1799→VRAM), key dispatch + token processing decoded, bidirectional type codec understood. (e) ★★★★ TEST 0x0B9032 (STRING RENDERER) END-TO-END — 0x0B8505 (BCD digit) is verified. Now test 0x0B9032 (string renderer with column wrapping) which is the other direct caller of 0x0A1799. --END SESSION 517--
 
 **Session 514 findings (2026-06-03)**:
 
