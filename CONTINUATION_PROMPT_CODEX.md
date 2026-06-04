@@ -8,9 +8,9 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-03 (auto-session 515 — **★★★★★ 0x099F49 CLEAR HANDLER DECODED (110B, IY+6 BIT 7 GUARD → 0x09AF27 OR 0x061D1A, SHARED TAIL AT 0x099F6E WITH D0231A BUFFER/D005F8 DESCRIPTOR OPS, DIGIT FILTER '0'-'9' VIA 0x09BEDA). ★★★★★ 0x099F68 (-) HANDLER DECODED (79B, SHARES TAIL WITH CLEAR, CHECKS IY+6 BIT 5). ★★★★★ 0x099BB0 2ND-FUNCTION RANGE DISPATCHER DECODED (301B, 96 INSTRUCTIONS, 15 CP CHECKS, LINEAR CASCADE, HEAVILY CALLS 0x09BAB8, ROUTES TO 0x061D1A/0x09995A/0x099D4E). ★★★★★ 0x09AF4E TOKEN/ALPHA RANGE DISPATCHER DECODED (301B, 147 INSTRUCTIONS, 32 CP CHECKS, CPIR TABLE LOOKUP AT 0x09AF5A WITH 15-BYTE TABLE AT 0x09AF6F, 0x09C4E0 STATE CHECKER). ★★★★★ RASTERIZER 0x0A1799 END-TO-END VERIFIED (668 STEPS, 312 NON-ZERO VRAM BYTES AT ROW 37 COL 2, GLYPH 'A' RENDERS WHITE-ON-BLACK, MATCHES PROBE-PHASE99D OFFSET EXACTLY). ★★★★★ 0x07DF6A ALTERNATE RENDERER DECODED (292B, 110 INSTRUCTIONS, BCD FORMATTING ENGINE — RLD INSTRUCTION, DIVISION LOOP VIA 0x07FBD9/0x07FC94 WITH C AS QUOTIENT, D00603=DIGIT COUNT CONTROL, D00605/D0060B/D00600 BCD WORKSPACE, EXITS VIA 0x07F7FA OR 0x07EFF0). ★★★★★ 0x07FE9C DECODED (26B TYPE REWRITER — STRIPS LOW 6 BITS OF D005F8, REMAPS TYPE 0x20→0x00, TYPE 0x21→0x18, RET NZ FOR OTHER TYPES). GOLDEN REGRESSION PASS 26/26.**)
+**Last updated**: 2026-06-03 (auto-session 516 — **★★★★★ 0x061D1A DECODED AS SYSTEM STATE RESET/LONGJMP (183B, LD A,0x88 → RST 0x18 → CALL 0x03E1B4 → CLEARS 4 FLAGS: IY+4B BIT 7, IY+12 BIT 2, IY+24 BIT 4, IY+49 BIT 1 → LD SP,(D008E0) → POP AF → RET — STACK-UNWINDING ABORT TO EVENT LOOP, NOT SCREEN CLEAR). ★★★★★ CPIR TABLE AT 0x09AF6F FULLY EXTRACTED (15 TOKEN CODES: 0x19,0x1A,0xB6,0xB7,0xE3,0xE4,0xB5,0x21,0x1F,0xCE,0xCF,0xDB,0xDC,0x8D,0x90 — FAST-MATCH FILTER, RET NZ ON NO MATCH, MATCH FALLS THROUGH). ★★★★★ 0x07F7FA EXIT PATH DECODED (25B, DESCRIPTOR CLEANUP: LD HL,D005F8 → CALL 0x07FE5E → CALL 0x07FE28 → RET). ★★★★★ 0x07EFF0 EXIT PATH DECODED (10B, XOR A → LD (D005F8),A → CALL 0x07C9AF → RET — CLEARS DESCRIPTOR TYPE TO 0). ★★★ 0x07CFA7 TRACED BUT BAILS EARLY (37 STEPS, 0 VRAM — DESCRIPTOR TYPE 0x00 TRIGGERS EARLY EXIT, NEED NON-ZERO TYPE TO REACH RENDERING PATH). GOLDEN REGRESSION PASS 26/26.**)
 
-> Previous: 2026-06-03 (auto-session 514 — see below)
+> Previous: 2026-06-03 (auto-session 515 — see below)
 
 **Session 514 findings (2026-06-03)**:
 
@@ -118,6 +118,57 @@ NEXT: (a) ★★★★★ DECODE 0x099F49 (CLEAR KEY HANDLER) AND 0x099F68 ((-) 
 PROBES: probe-phase515-decode-key-handlers.mjs (Sonnet), probe-phase515-decode-range-dispatchers.mjs (Sonnet), probe-phase515-rendering-chain.mjs (Sonnet), probe-phase515-decode-07DF6A.mjs (Sonnet). BOOT STATE: 51,622 seeds, 145,927 blocks, 713,624 covered bytes (unchanged — pure investigation + rasterizer verification). Golden regression PASS 26/26.
 
 NEXT: (a) ★★★★★ TRACE HIGHER-LEVEL RENDERING PATH — Now that 0x0A1799 rasterizer is verified working, test 0x07CFA7 (standard text renderer) end-to-end by seeding a proper descriptor at D005F8 and calling it. This would confirm the full chain from descriptor → BCD calc → rasterizer. (b) ★★★★★ DECODE 0x061D1A (MAIN CLEAR ACTION) — Primary CLEAR key destination AND the unhandled-key-code path from both range dispatchers. Understanding it reveals the full screen-clear/reset flow. (c) ★★★★★ MAP THE CPIR TABLE AT 0x09AF6F — The 15-byte fast-match table in the token/alpha dispatcher determines which key codes get fast-path handling. Extract and cross-reference with keyboard-matrix.md. (d) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — Browser-bound, needs human. Rasterizer verified working; font atlas confirmed; rendering chain complete. (e) ★★★★ DECODE 0x07EFF0 AND 0x07F7FA (NUMERIC RENDERER EXIT PATHS) — Two exits from the BCD formatting engine at 0x07DF6A. Understanding them reveals how formatted numbers reach VRAM. --END SESSION 515--
+
+**Session 516 findings (2026-06-03)**:
+
+(1) ★★★★★ 0x061D1A DECODED — SYSTEM STATE RESET / LONGJMP (183B, probe-phase516-decode-061D1A.mjs, Sonnet):
+- Entry: LD A,0x88 → JR +6 → JP 0x061DB2 (trampoline through skipped bytes at 0x061D1E-0x061D23).
+- 0x061DB2: LD (DE),A → RST 0x18 (system CALL to 0x000018) → RET NC (bail if no carry).
+- CALL 0x03E1B4 (system cleanup function).
+- **4 FLAG CLEARS**: RES 7,(IY+0x4B) [D00D1], RES 2,(IY+0x12) [D0009A], RES 4,(IY+0x24) [D000AC], RES 1,(IY+0x49) [D00CF9].
+- **STACK RESTORE**: LD SP,(D008E0) → POP AF → RET. Restores stack pointer from saved location.
+- **KEY CORRECTION**: 0x061D1A is NOT a screen-clear function. It's a KEY-TO-TOKEN JUMP TABLE + LONGJMP-style abort. The region 0x061CFA-0x061DB1 contains dozens of 4-byte entries: `LD A,<token>; JR 0x061DB2`. Each entry maps a key event to an OS token byte. 0x061D1A specifically loads A=0x88 (the CLEAR token).
+- **COMMON HANDLER at 0x061DB2**: LD (D008DF),A (stores token) → CALL 0x03E1B4 (process token) → clears 4 flags → LD SP,(D008E0) → POP AF → RET. This is a LONGJMP: unwinds stack to a checkpoint set by the SETJMP trampoline at 0x061DEF.
+- **SETJMP/LONGJMP PAIR**: 0x061DEF saves frame state (pointer offsets at D02590/D02593, D0258A/D0258D), pushes return to 0x061DD1, saves SP to D008E0, JP (HL). The longjmp at 0x061DB2 restores SP and returns to the continuation at 0x061DD1 which teardowns the frame.
+- **D008DF**: Stores the current token/command code. Read by various handlers to determine what operation was requested.
+
+(2) ★★★★★ CPIR TABLE AT 0x09AF6F FULLY EXTRACTED (15 bytes, probe-phase516-cpir-table.mjs, Codex):
+- **15 TOKEN CODES** (not scan codes): 0x19, 0x1A, 0xB6, 0xB7, 0xE3, 0xE4, 0xB5, 0x21, 0x1F, 0xCE, 0xCF, 0xDB, 0xDC, 0x8D, 0x90.
+- CPIR setup at 0x09AF5A: LD HL,0x09AF6F / LD BC,0x000F / CPIR (ED B1).
+- Post-CPIR at 0x09AF64: RET NZ (no match → return to caller). Match → falls through.
+- Post-match code (0x09AF65-0x09AF6E): register manipulation + RET.
+- Post-table handler at 0x09AF7E: PUSH AF → CALL 0x09AF8B → POP AF → CALL 0x09AF5A (re-enters CPIR search!) → JR 0x09AFD3.
+- 0x09AF8B: LD A,0x82 → CALL 0x09C4E0 (mode/state checker) → RET Z. Then BIT 6,(IY+0x1B) test.
+- **KEY INSIGHT**: Values ≥0xB5 are TI-OS token codes (math functions, special characters). Values 0x19/0x1A/0x21/0x1F are low-range token codes for digits/operators. This is a fast-rejection filter: if the incoming token matches any of these 15, it takes the fast path; non-matching tokens fall through to the full 32-comparison cascade.
+
+(3) ★★★★★ 0x07F7FA EXIT PATH DECODED — DUAL-BUFFER TYPE NORMALIZER (25B, probe-phase516-decode-exit-paths.mjs, Sonnet):
+- LD HL,D005F8 → CALL 0x07F806 (fall-through entry). Then LD HL,D00603 → CALL 0x07F806 again.
+- 0x07F806: PUSH BC/DE → CALL 0x07FE5E → CALL 0x07FE28 → POP DE/BC → RET.
+- 0x07FE5E→0x07FE65: Reads byte at (HL), masks low 6 bits (AND 0x3F), CPIR search in 5-entry table at 0x07FE91. If found, replaces low 6 bits with value from table at 0x07FE8A (preserves top 2 bits via AND 0xC0 | OR B). **Token/type remapping**.
+- 0x07FE28→0x07FE2F: Same pattern, 6-entry search in table 0x07FE8A. Default B=0x0C if not found.
+- **PURPOSE**: Dual-buffer type normalizer — rewrites BCD display type codes in BOTH D005F8 and D00603 using ROM lookup tables. Pure data transformation, no rendering. This is the "normal exit" from the BCD formatter.
+
+(4) ★★★★★ 0x07EFF0 EXIT PATH DECODED — BCD NORMALIZER + ROUNDER (10B entry + 83B at 0x07C9AF):
+- Entry: XOR A → LD (D005F8),A → CALL 0x07C9AF → RET.
+- 0x07C9AF (83B): Checks IY+0x48 bit 3 (mode flag) → RET NZ if clear. Reads BCD digits at D005FA, scans for leading zeros. Calls 0x07FB48 (BCD left-shift: 8× RLD on D005FA-D00601, shifts all digits left one nibble). Adjusts digit count at D005F9. If all zeros → JP 0x07FAC2 (writes canonical zero BCD: [0x00,0x80,0x00...]). Otherwise → CALL 0x07FBCA (BCD increment: 7-iteration ADC+DAA loop, multi-byte BCD add-with-carry). Stores 0x10 sentinel, falls through to 0x07FE1A.
+- 0x07FE1A: Increments digit count at D005F9, if nonzero → JP 0x061D02 → 0x061DB2 (the longjmp handler!).
+- **PURPOSE**: BCD normalization + rounding path. Strips leading zeros, increments BCD number (rounding), updates digit count. Only active when IY+0x48 bit 3 is set. The fallthrough to 0x061DB2 means this path can trigger a longjmp abort if the digit count overflows.
+- **KEY SUBROUTINES**: 0x07FB48 = BCD left-shift (30B). 0x07FBCA = BCD increment (15B). 0x07FAC2 = zero initializer (7B). 0x07FA7A = buffer zero-fill (21B).
+
+(5) ★★★★ 0x07CFA7 TRACED — COORDINATOR, NOT DIRECT RASTERIZER CALLER (246 steps with D005FA=1, 0 VRAM, probe-phase516-trace-07CFA7.mjs, Sonnet):
+- First run (D005FA=0): 37 steps, bailed at 0x07FD4A gate. Second run (D005FA=1): 246 steps, returned cleanly.
+- **0 VRAM bytes written**. Cursor unchanged. D02B39 backup region: 1 byte changed (LDIR at 0x07CF8E executed).
+- **KEY CORRECTION**: Session 511's hypothesis "0x07CFA7 → 0x07C8B7 → 0x0A1799" was WRONG. Session 512 corrected: 0x07C8B7 is a BCD position CALCULATOR, NOT a rasterizer caller. 0x07CFA7 is a COORDINATOR that sets up descriptor state and calls 0x07C8B7 for arithmetic, but does NOT directly reach 0x0A1799.
+- **ACTUAL RASTERIZER CALLERS**: 0x0B8505 (BCD digit renderer) and 0x0B9032 (string renderer) — these call 0x0A1799 directly. 0x07CFA7 prepares state that these functions later consume.
+- **D005FA GATE**: 0x07FD4A checks D005FA and returns Z if zero — this gates entry into the main body. With D005FA=1, the function proceeds to full setup + LDIR backup.
+
+(6) CODEX PERFORMANCE: P1 broken boot pattern (Sonnet fix). P2 exit 1 (Sonnet fallback). P3 success (CPIR table, ROM-read only). P4 created file (Sonnet also created, Sonnet version ran). Codex 1/4 usable this session.
+
+(7) NEW FUNCTIONS: 0x03E1B4 = token processor (called by 0x061DB2 common handler, receives token via D008DF). 0x061DB2 = common handler for key-to-token table (stores token, calls 0x03E1B4, longjmps). 0x061DEF = setjmp trampoline (saves frame state, stores SP to D008E0, JP (HL)). 0x061DD1 = longjmp continuation (teardown frame, restore pointers at D02590/D02593/D0258A/D0258D). 0x07F806 = descriptor cleanup entry (dual-buffer type normalizer via 0x07FE5E+0x07FE28). 0x07FE65 = type remapper (CPIR search in 5-entry table at 0x07FE91). 0x07FE2F = type remapper (CPIR search in 6-entry table at 0x07FE8A, default B=0x0C). 0x07C9AF = BCD normalizer (83B, leading-zero strip + round). 0x07FB48 = BCD left-shift (30B, 8× RLD on D005FA-D00601). 0x07FBCA = BCD increment (15B, 7-byte ADC+DAA loop). 0x07FAC2 = zero BCD initializer. 0x07FE1A = digit count incrementer (→ 0x061D02 on overflow). NEW RAM: D008E0 = saved stack pointer (longjmp target). D008DF = current token/command code (written by 0x061DB2, read by handlers). D02590/D02593 = frame pointer pair 1 (setjmp/longjmp). D0258A/D0258D = frame pointer pair 2. D00D1 = IY+4B (cleared by 0x061DB2). D0009A bit 2 = cleared by 0x061DB2. D000AC bit 4 = cleared by 0x061DB2. D00CF9 bit 1 = cleared by 0x061DB2.
+
+PROBES: probe-phase516-trace-07CFA7.mjs (Sonnet), probe-phase516-decode-061D1A.mjs (Sonnet), probe-phase516-cpir-table.mjs (Codex), probe-phase516-decode-exit-paths.mjs (Sonnet). BOOT STATE: 51,622 seeds, 145,927 blocks, 713,624 covered bytes (unchanged — pure investigation). Golden regression PASS 26/26.
+
+NEXT: (a) ★★★★★ TRACE 0x0B8505 OR 0x0B9032 END-TO-END — These are the ACTUAL rasterizer callers (call 0x0A1799 directly). 0x07CFA7 is a coordinator that doesn't reach 0x0A1799. Test 0x0B8505 (BCD digit renderer) or 0x0B9032 (string renderer) with seeded state to verify the full rendering pipeline from high-level call to VRAM output. (b) ★★★★★ DECODE 0x03E1B4 (TOKEN PROCESSOR) — Called by the 0x061DB2 longjmp handler with token code in D008DF. This is the function that ACTUALLY processes key events (screen clear for token 0x88, etc.). Understanding it reveals what each token does. (c) ★★★★★ MAP THE KEY-TO-TOKEN TABLE AT 0x061CFA-0x061DB1 — The jump table that 0x061D1A is part of. Extract all entries (LD A,<token>; JR 0x061DB2 pairs) to build a complete key→token mapping. Cross-reference with the 0x099921 event loop dispatch table. (d) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — Browser-bound, needs human. Rasterizer verified; font atlas confirmed; rendering chain complete; event loop fully mapped; setjmp/longjmp mechanism understood. (e) ★★★★ DECODE THE TYPE REMAPPING TABLES AT 0x07FE8A AND 0x07FE91 — The 5-entry and 6-entry CPIR lookup tables used by the dual-buffer type normalizer at 0x07F7FA. Extract and cross-reference to understand which descriptor types get remapped and to what values. --END SESSION 516--
 
 **Previous last updated**: 2026-06-03 (auto-session 513 — see below)
 

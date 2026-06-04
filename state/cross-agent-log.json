@@ -16217,15 +16217,103 @@
       "timestamp": "2026-06-03T20:04:53Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "83aa263f5be7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x099F49 (CLEAR key handler) and 0x099F68 ((-) key handler)\n\n## Context\nYou are worki",
+      "status": "complete",
+      "duration_seconds": 84.059,
+      "timestamp": "2026-06-03T22:03:37Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d2c8a36a9e4f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode range sub-dispatchers 0x099BB0 and 0x09AF4E\n\n## Context\nYou are working on the TI-84 ",
+      "status": "completed",
+      "duration_seconds": 93.533,
+      "timestamp": "2026-06-03T22:03:49Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "67d328909992",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace full rendering path end-to-end with test descriptor\n\n## Context\nYou are working on the",
+      "status": "success",
+      "duration_seconds": 92.842,
+      "timestamp": "2026-06-03T22:03:50Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "16a89d8b43ea",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07DF6A (alternate renderer from 0x07D233)\n\n## Context\nYou are working on the TI-84 ",
+      "status": "success",
+      "duration_seconds": 111.105,
+      "timestamp": "2026-06-03T22:04:11Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e2d7dc3bd88b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace 0x07CFA7 Standard Text Renderer End-to-End\n\n## Context\nThis is a TI-84 Plus CE ROM tra",
+      "status": "completed",
+      "duration_seconds": 109.67,
+      "timestamp": "2026-06-04T00:04:08Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "feec01ccd260",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map the CPIR Table at 0x09AF6F (15-byte Fast-Match Table)\n\n## Context\nThis is a TI-84 Plus C",
+      "status": "completed",
+      "duration_seconds": 117.261,
+      "timestamp": "2026-06-04T00:04:21Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "33c2988b01f1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07EFF0 and 0x07F7FA (Numeric Renderer Exit Paths)\n\n## Context\nThis is a TI-84 Plus ",
+      "status": "completed",
+      "duration_seconds": 157.827,
+      "timestamp": "2026-06-04T00:05:04Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3ce723c34a64",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x061D1A (Main CLEAR Action / Unhandled Key Path)\n\n## Context\nThis is a TI-84 Plus CE",
+      "status": "success",
+      "duration_seconds": 174.931,
+      "timestamp": "2026-06-04T00:05:15Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1345,
-    "cc_to_codex": 1345,
+    "total_calls": 1353,
+    "cc_to_codex": 1353,
     "codex_to_cc": 0,
-    "completed": 954,
+    "completed": 958,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 549.053
+    "avg_duration_seconds": 546.502
   }
 }
