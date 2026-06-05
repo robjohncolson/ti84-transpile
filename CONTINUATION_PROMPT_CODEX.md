@@ -8,7 +8,65 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-05 (auto-session 518 — **★★★★★ 0x0B9032 STRING RENDERER VERIFIED END-TO-END (1682 steps, 724 VRAM bytes, 362 pixels at rows 97-114, 2 char renderer hits for "Hi" test string, pipeline 0x0B9032→0x0A1B5B→0x0A1799→VRAM CONFIRMED). ★★★★★ 0x097757 POST-ALLOCATION HANDLER DECODED (200B, contains BUILT-IN STRING RENDERING LOOP at 0x0977D6 calling 0x0A1B5B char renderer, plus token metadata integration via 0x06C72D/0x06C73C/0x06C732/0x06C737 edit-buffer helpers). ★★★★★ 0x03E187 FLASH UNLOCK DECODED (44B, DI→IM1→OUT0 ports 0x28/0x06/0x24, flash validation CP 0x88/JP NZ 0x000066, adjacent function 0x03E1E6 writes 0x8C to port 0x24 + JP 0x03E187 loop). ★★★★ DISPATCHER FALLTHROUGH ANALYSIS: ONLY 3 SCAN CODES (0xFC/0xFD/0xFE) REACH 0x061D1A DIRECTLY — other token table entries reached via direct JPs from sub-handlers 0x09AF4E/0x099BB0/etc. GOLDEN REGRESSION PASS 26/26.**)
+**Last updated**: 2026-06-05 (auto-session 519 — **★★★★★ 0x0A1B5B DECODED AS CHAR RENDER WRAPPER (NOT font lookup — delegates directly to 0x0A1799 rasterizer with char code in A, handles special 0xD6→':' substitution, increments curCol at D00596, wraps at 26 columns via 0x0A2032). ★★★★★ 0x06C72D/0x06C73C/0x06C732/0x06C737 DECODED AS 5-BYTE PREDICATE FUNCTIONS (BIT test + RET — flag-to-flag remapping: D005FA bits 4-6 select which D00082 bit to test). ★★★★★ 0x09AF4E + 0x099BB0 FULL SCAN-CODE ROUTING EXTRACTED (64 CP/JP pairs total, only 3 route directly to token table at 0x061D1A — rest go through intermediate handlers 0x09BAB8/0x09BAD1/0x09BF58/etc). ★★★★ 0x09CE6B DECODED AS POST-RENDER STATE PUBLISHER (59B, sets D0008D bits 1-2, checks MathPrint mode, clears D0146D, calls 0x0A2802/0x0A2854, sets D0009D bits 6-7). ★★★★ 0x0A1F52 DECODED AS CURSOR/COLUMN STATE UPDATER (88B, reads D02685, computes row/column, writes D0059A/D00595, calls 0x0A2D4C). GOLDEN REGRESSION PASS 26/26.**)
+
+> Previous: 2026-06-05 (auto-session 518 — 0x0B9032 string renderer verified, 0x097757 decoded, 0x03E187 flash unlock decoded, dispatcher fallthrough analysis)
+
+**Session 519 findings (2026-06-05)**:
+
+(1) ★★★★★ 0x0A1B5B DECODED — CHAR RENDER WRAPPER, NOT FONT LOOKUP (probe-phase519-decode-0A1B5B.mjs, Sonnet, Opus-verified):
+- **Entry (0x0A1B5B)**: PUSH AF, PUSH HL — saves char code (A) and HL.
+- **Special char 0xD6 handling**: CP 0xD6 → if equal, calls 0x0A22B1 then 0x0A2032, reads D02505 (column limit), compares against D00595 (curCol), if curCol < limit replaces char with 0x3A (colon ':').
+- **Rasterizer call**: CALL 0x0A1799 at 0x0A1B77 — char code passed in A register directly. **No font table lookup in 0x0A1B5B** — the glyph atlas lookup happens INSIDE 0x0A1799 (the rasterizer).
+- **Post-render**: RES 0,(IY+8) clears D00088 bit 0. Increments curCol at **D00596** (note: D00596, not D00595 — likely high byte or separate counter). Checks curCol >= 0x1A (26 columns), calls 0x0A2032 (line wrap/scroll) if exceeded.
+- **Exit**: POP HL, POP AF, RET.
+- **Adjacent code at 0x0A1B8E**: Separate function — integer-to-decimal-ASCII converter (division by 10 loop, writes to D005F8-D00613 buffers, leading-zero suppression).
+- **ARCHITECTURAL CORRECTION**: 0x0A1B5B was previously called "char-to-glyph converter" but it's actually a **char render dispatch wrapper**. The actual font lookup happens in 0x0A1799. The rendering pipeline is: string renderer → 0x0A1B5B (special-char handling + cursor mgmt) → 0x0A1799 (font lookup + pixel raster).
+- **CALL targets**: 0x0A1799 (rasterizer), 0x0A22B1 (0xD6 handler), 0x0A2032 (line wrap), 0x0A1B5B (recursive self-call at 0x0A1C17 for space 0x20).
+- **NEW RAM**: D00596 (curCol write — incremented after render), D00088/IY+8 bit 0 (cleared after render).
+
+(2) ★★★★★ EDIT-BUFFER HANDLERS DECODED AS PREDICATE FUNCTIONS (probe-phase519-decode-edit-buffer.mjs, Sonnet, Opus-verified):
+- **0x06C72D** (5B): BIT 5,(IY+2) ; RET — tests D00082 bit 5
+- **0x06C732** (5B): BIT 7,(IY+2) ; RET — tests D00082 bit 7 (= MathPrint mode flag!)
+- **0x06C737** (5B): BIT 6,(IY+2) ; RET — tests D00082 bit 6
+- **0x06C73C** (5B): BIT 4,(IY+2) ; RET — tests D00082 bit 4
+- **KEY INSIGHT**: These are NOT edit-buffer handlers — they are **predicate functions**. Each is a single BIT test + RET, returning Z/NZ in flags. The caller (0x097757) dispatches based on D005FA bits 4-6 to select which D00082 bit to query. This is a **flag-to-flag remapping layer**: D005FA bits map to D00082 bits.
+- **Remapping**: D005FA bit 6 → D00082 bit 5, D005FA bit 5 → D00082 bit 6, D005FA bit 4 → D00082 bit 4, default → D00082 bit 7 (MathPrint).
+- **Adjacent code at 0x06C748**: Separate substantial routine with 13 CALL targets, CPIR table at 0x06C805, IY state manipulation (RES bits at IY+2/20/29/31), writes to D0146E/D01471/D01476. Not reached by the 4 predicate entry points.
+
+(3) ★★★★★ 0x09AF4E + 0x099BB0 FULL SCAN-CODE ROUTING EXTRACTED (probe-phase519-scancode-routing.mjs, Sonnet, Opus-verified):
+- **64 total CP/JP routing pairs** across both functions.
+- **ONLY 3 pairs route directly into token table (0x061CFA-0x061DB1)**:
+  - scan=0x01 → JP 0x061D1A → token 0x88 (from 0x09AF4E)
+  - scan=0x08 → JP NZ 0x061D2C → token 0x8A (from 0x09AF4E)
+  - scan=0xAE → JP NZ 0x061D1A → token 0x88 (from 0x099BB0)
+- **61 pairs route to internal handler addresses** — these are multi-level dispatchers with range checks (CP 0x89/0x93, CP 0xF0/0xF2, etc.) that filter through nested logic before reaching token insertion via indirect paths.
+- **0x09AF4E** (34 routing pairs): Complex multi-stage dispatcher with CPIR table lookup at 0x09AF6F, helper calls to 0x09C4E0/0x09BAD1/0x09BF58, JP 0x09B018 → JP 0x061D1A for some paths.
+- **0x099BB0** (30 routing pairs): Sequential check pattern (CP 0x0B, 0xAE, 0x2A, 0xEF, 0x2E, then range filters 0x0A-0x10, 0x94-0x96, 0xF0-0xF2).
+- **IMPLICATION**: The scan-code→token map cannot be built by static analysis of these two functions alone. The intermediate handlers (0x09BAB8, 0x09BAD1, 0x09BF58, etc.) perform additional transformations before reaching token table entries.
+
+(4) ★★★★ 0x09CE6B DECODED — POST-RENDER STATE PUBLISHER (59B, probe-phase519-decode-post-render.mjs, Codex, Opus-verified):
+- **Entry**: SET 1,(IY+0D) + SET 2,(IY+0D) — sets D0008D bits 1,2 (render-dirty flags).
+- **MathPrint gate**: BIT 2,(IY+2) — checks D00082 bit 2; RET Z if clear (early exit for non-MathPrint).
+- **State updates**: Reads D007E0, CP 0x44, calls 0x0B58EE conditionally. XOR A → LD (D0146D),A (clears D0146D). RES 2,(IY+4E) clears D000CE bit 2. RES 0,(IY+2) clears D00082 bit 0. RES 5,(IY+0D) clears D0008D bit 5.
+- **Display refresh**: CALL 0x0A2802, CALL 0x0A2854 (display list update pair).
+- **Exit**: SET 6,(IY+1D) + SET 7,(IY+1D) — sets D0009D bits 6,7 (cursor/display refresh flags). RET.
+- **Adjacent 0x09CEAF**: Composite post-render refresh — calls 0x09CE6B + 0x0A1F52 + 0x097AC8 + 0x0A1F80 + 0x0800B8 + clears IY+49 bit 6.
+
+(5) ★★★★ 0x0A1F52 DECODED — CURSOR/COLUMN STATE UPDATER (88B, probe-phase519-decode-post-render.mjs, Codex, Opus-verified):
+- **Entry**: CALL 0x0A1F48 (check helper), RET Z if check fails. SET 7,(IY+49) — D000C9 bit 7.
+- **Column state**: CALL 0x0800B8, RET Z. Reads D02685 (saved cursor column), SUB 0x25, computes row/column via division loop (DEC A, SUB 0x14, INC H, loop).
+- **Display update**: Writes to D0059A and D00595. Reads D00595 back, CALL 0x0A2D4C (column→pixel converter?), writes result to D02685/D02687.
+- **Flag gates**: Checks IY+15 bit 6 (D00095), IY+49 bit 3 (D000C9), IY+0D bit 1 (D0008D) before writing D02687.
+- **Adjacent 0x0A1FAB/0x0A1FB5**: LDIR-based memory copy (D031F6 ↔ D07396, 0x20D0 = 8400 bytes) with DI/EI interrupt-safe wrapper. This is a **display buffer swap** (~8KB, matches 320×26 pixels × 1 byte or similar screen-sized buffer).
+
+(6) CODEX: P1 exit 0 (probe created, disassembler broken — 2-byte CALL/JP instead of 4-byte eZ80, 0 token table hits). P2 exit 1 (no output). P3 exit 1 (no output). P4 exit 0 (good probe, verified). 1/4 Codex usable this session, 3/4 needed Sonnet fallback. Codex's disassembler consistently fails on eZ80's 4-byte instruction format.
+
+(7) NEW FUNCTIONS: 0x0A22B1 (0xD6 special char handler), 0x0A2032 (line wrap/scroll), 0x0A2D4C (column→pixel converter?), 0x0A1F48 (cursor state check), 0x0A1F80 (post-render helper B), 0x0A2802/0x0A2854 (display list update pair), 0x0B58EE (MathPrint-conditional helper), 0x097AC8 (from 0x09CEAF refresh chain). NEW RAM: D00596 (curCol write counter, incremented after render), D00088/IY+8 bit 0 (cleared after render), D007E0 (compared vs 0x44), D0146D (cleared by 0x09CE6B), D000CE/IY+4E bit 2 (cleared by 0x09CE6B), D02685/D02687 (saved cursor column state), D031F6/D07396 (8KB display buffer pair for swap), D0059A (written by 0x0A1F52).
+
+PROBES: probe-phase519-scancode-routing.mjs (Codex broken+Sonnet, Opus-verified), probe-phase519-decode-0A1B5B.mjs (Sonnet, Opus-verified), probe-phase519-decode-edit-buffer.mjs (Sonnet, Opus-verified), probe-phase519-decode-post-render.mjs (Codex, Opus-verified). BOOT STATE: 51,622 seeds, 145,927 blocks, 713,624 covered bytes (unchanged — pure investigation). Golden regression PASS 26/26.
+
+NEXT: (a) ★★★★★ DECODE THE INTERMEDIATE TOKEN HANDLERS (0x09BAB8, 0x09BAD1, 0x09BF58) — Session 519 confirmed the scan-code→token map requires decoding these intermediate helpers that 0x09AF4E/0x099BB0 dispatch to. They sit between the range dispatchers and the token table, performing the final scan-code-to-token translation. (b) ★★★★★ DECODE 0x0A1799 FONT LOOKUP INTERNALS — Session 519 proved the font atlas lookup happens INSIDE 0x0A1799, not in 0x0A1B5B. The rasterizer takes char code in A and does its own glyph bitmap lookup. Decode the first ~50 instructions of 0x0A1799 to find the font table base address and char_code*28 multiplication. (c) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — Browser-bound, needs human. Full rendering pipeline now fully decoded: string renderer → 0x0A1B5B (dispatch/cursor) → 0x0A1799 (font lookup + raster). (d) ★★★★ DECODE 0x0A2032 (LINE WRAP/SCROLL) — Called by 0x0A1B5B when curCol >= 26. Understanding this completes the cursor management picture. (e) ★★★★ DECODE 0x09CEAF COMPOSITE REFRESH — Calls 0x09CE6B + 0x0A1F52 + 0x097AC8 + 0x0A1F80 + 0x0800B8. Now that 0x09CE6B and 0x0A1F52 are decoded, the remaining unknowns are 0x097AC8 and 0x0A1F80. --END SESSION 519--
 
 > Previous: 2026-06-03 (auto-session 517 — 0x0B8505→0x0A1799 rendering pipeline verified, 0x03E1B4 decoded, key-to-token table extracted, type remapping tables decoded)
 
