@@ -8,9 +8,63 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-05 (auto-session 520 — **★★★★★ 0x09BAB8 TOKEN READER DECODED (11B, curPC from D0231A, reads byte at (curPC)). ★★★★★ 0x09BAD1 OPS STACK READER (7B, reads D02593). ★★★★★ 0x09BF58 TOKEN-TYPE RANGE DISPATCHER (9 CP gates, routes to 0x061D22/0x061D3E, 18 CALL targets). ★★★★★ 0x0A1799 FONT LOOKUP DECODED — MLT HL (eZ80 hardware multiply) char*28 for glyph offset, font base 0x003D6E via 0x07BF3E, VRAM base = D3FD80 + row*640, two MLT instructions, B=16/18 row glyph loop, row stride 0x0280=640. ★★★★★ 0x0A2032 LINE WRAP/SCROLL DECODED (~150B, zeroes curCol, IY+13 bit 2 gates scroll, two scroll modes, LDIR row shift). ★★★★ 0x09C4E0 = BIT 0,(IY+7);RET. ★★★★ 0x0A2013/0x0A1F48 init+cursor predicates decoded. GOLDEN REGRESSION PASS 26/26.**)
+**Last updated**: 2026-06-05 (auto-session 521 — **★★★★★ 0x09CEAF COMPOSITE REFRESH FULLY DECODED (29B, SET 5,(IY+0) → CALL 0x09CE6B/0x0A1F52/0x097AC8/0x0A1F80/0x0800B8 → RES 6,(IY+73) → RET). ★★★★★ 0x097AC8 = EDIT-BUFFER TYPE DISPATCHER/STATE RESETTER (clears 4 IY flags + 3 RAM locations, type-dispatch cascade via 0x07F7BD with 7 type codes, 22 nested CALLs). ★★★★★ 0x0A1F80 = CURSOR POSITION SAVER + DISPLAY-LINE BUFFER SYNC (saves curRow→D02685, LDIR 0x20D0-byte buffer swap D031F6↔D07396, 9 IY flag checks). ★★★★★ 0x09BAFF EXTENDED TOKEN CLASSIFIER FULLY DECODED (34 CP comparisons, 23 unique handler targets, D005F8/D005F9/D005FA write pattern, B-register type codes: 0x5C→B=2, 0xAA→B=4, 0x5D→B=1, 0x5E→B=3, 0x61→B=8, 0x62-63→B=0, default→B=7). ★★★★★ TOKEN TABLE STRUCTURE CONFIRMED: 45 uniform LD A,imm8 + JR/JP stubs → common handler 0x061DB2 (stores D008DF, CALL 0x03E1B4, SP restore from D008E0). 0x061D22=token 0x89, 0x061D3E=token 0x8E — NOT distinct handler types. ★★★★★ 0x0A3126 DISPLAY SCROLL FULLY DECODED (dual-layer: pixel LDIR/LDDR at D40000 + text LDIR at D006BF, up/down via IY+0x4C bit 7, dual VRAM buffer D031F6/D052C6 via IY+0x4A bit 3, MLT L*0xA0*4=640 row stride, edit-buffer scroll at 0x0A321D with 26-col LDDR + space fill). GOLDEN REGRESSION PASS 26/26.**)
 
-> Previous: 2026-06-05 (auto-session 519 — 0x0A1B5B char render wrapper, edit-buffer predicates, scan-code routing 64 pairs, 0x09CE6B/0x0A1F52 decoded)
+> Previous: 2026-06-05 (auto-session 520 — 0x09BAB8/0x09BAD1 token reader + OPS stack reader, 0x09BF58 range dispatcher, 0x0A1799 font lookup, 0x0A2032 line wrap/scroll)
+
+**Session 521 findings (2026-06-05)**:
+
+(1) ★★★★★ 0x09CEAF COMPOSITE REFRESH FULLY DECODED (probe-phase521-decode-composite-refresh.mjs, Codex+Sonnet, Opus-verified):
+- **Entry (0x09CEAF, 29B)**: SET 5,(IY+0) [D00080 bit 5 = refresh-in-progress] → CALL 0x09CE6B → CALL 0x0A1F52 → CALL 0x097AC8 → CALL 0x0A1F80 → CALL 0x0800B8 → RES 6,(IY+73) [D000C9 bit 6] → RET.
+- **0x097AC8 = EDIT-BUFFER TYPE DISPATCHER / STATE RESETTER**: Clears 4 IY flags on entry: RES 2,(IY+73) [D000C9], RES 0,(IY+7) [D00087], RES 7,(IY+83) [D000D3], RES 0,(IY+31) [D0009F]. Zeroes 3 RAM locations: D02713, D00334, D02506. Calls 0x07F7BD (type checker), then dispatches on A against 7 type codes: 0x1B, 0x20, 0x21, 0x1C, 0x01, 0x0D, 0x02 (list, matrix, string, program, etc.). 22 nested CALLs to type-specific setup helpers. Writes D02712 (edit-mode type register), D00332 (state counter).
+- **0x0A1F80 = CURSOR POSITION SAVER + DISPLAY-LINE BUFFER SYNC**: Calls 0x0A1F48 (cursor state predicate) first, returns early if cursor inactive. Guards on BIT 6,(IY+21) [D00095]. Reads D00595 (curRow), calls 0x0A2D4C, writes result to D02685 (saved cursor row). Conditionally writes D02687 gated by BIT 3,(IY+73) and BIT 1,(IY+13). Contains LDIR block copying 0x20D0 bytes (8400 = 32 LCD rows × ~263 bytes) between D031F6 and D07396 under DI/EI — display-line buffer swap. 9 distinct IY flag checks.
+- **COMPOSITE REFRESH CALL ORDER**: (1) Mark refresh in progress, (2) cursor/column update via 0x09CE6B, (3) cursor state via 0x0A1F52, (4) edit-buffer type reset via 0x097AC8, (5) cursor save + buffer sync via 0x0A1F80, (6) shared display helper 0x0800B8, (7) clear flag, (8) RET.
+- **ADJACENT CODE (0x09CECC+)**: Contains a CALL 0x09CEAF caller + secondary dispatcher (CP 0x01-0x04 → JP to 0x098383/0x098342/0x098355/0x09836D). Also CALL 0x099211, CALL 0x082961/0x082957/0x09D029/0x0828FC/0x082902/0x082C50 — FP arithmetic chain.
+- **NEW RAM**: D02713, D00334, D02506 (zeroed by 0x097AC8), D02712 (edit-mode type), D00332 (state counter), D07396 (display-line buffer B target for LDIR swap).
+
+(2) ★★★★★ 0x09BAFF EXTENDED TOKEN CLASSIFIER FULLY DECODED (probe-phase521-decode-09BAFF-classifier.mjs, Sonnet, Opus-verified):
+- **Entry (0x09BAFF)**: CALL 0x09BAAF → CALL 0x09B9C8 (fetch next token into A).
+- **34 CP comparisons across ~600 bytes** routing to 23 unique handler targets.
+- **PRIMARY DISPATCH TABLE**:
+  - 0xEF (plot/stats prefix) → 0x09BB34 → secondary decode: SUB 0x50, range 0x00-0x09, writes D005F9 as 2-byte key code
+  - 0xEB → CALL 0x099FDA (collects up to 6 sub-tokens, writes D0231A) → JP 0x059FFF
+  - 0x41-0x5B (uppercase letters A-Z, matrix tokens) → JP 0x059FFF (variable handler)
+  - 0x72 → JP 0x059FFF
+  - 0x5C (list var) → B=0x02, 0x5D (Y-var) → B=0x01, 0x5E → B=0x03, 0x61 → B=0x08, 0xAA (string var) → B=0x04, 0x62-0x63 → B=0x00, default → B=0x07
+  - Post-classification (0x09BB93): reads next token via 0x09BAAF → writes D005FA, writes B to D005F8, JP 0x059FFF
+- **SECONDARY DISPATCH (0x09BBEB+)**: Token 0x04/0x11 → 0x09BC16 (FP math via 0x07F8A2/0x082AC2/0x07F7BD). Return 0x01 → JP 0x061D22 (token 0x89). Return 0x02 → JP 0x061D36 (token 0x8C). Default → JP 0x061D1A (token 0x88).
+- **HELPER 0x09BBA6**: Peek-ahead for comparison operators (checks 0x3E '>' and 0x3F '?').
+- **HELPER 0x09BAC9**: Token-type filter — returns Z for 0xB5, 0xAB, 0xEB, 0xAA, or 0x41-0x63 (variables/names). Falls through to JP 0x099D49.
+- **RAM**: D005F8 (descriptor type code = B), D005F9 (key/token code), D005FA (descriptor flags = secondary token), D0061A (secondary var type), D00687 (var data ptr), D0068A (var address), D0231A (curPC saved/restored), D02581 (bit-6 check → CALL 0x03D1E4 if set).
+- **KEY INSIGHT**: The B-register encodes variable type: list=2, Y-var=1, matrix=3, program=8, string=4, equation=0, default=7. This feeds into D005F8 which 0x097757 (decoded session 518) uses for predicate dispatch.
+
+(3) ★★★★★ TOKEN TABLE STRUCTURE CONFIRMED — FLAT STUB ARRAY (probe-phase521-decode-token-table-offsets.mjs, Codex+Sonnet, Opus-verified):
+- **0x061CFA-0x061DB1 = 45 uniform "LD A,imm8 + JR/JP" stubs**, all converging on common handler at 0x061DB2.
+- **0x061DB2 (common handler)**: LD (D008DF),A → CALL 0x03E1B4 (token processor) → 4 IY-relative bit operations (FD CB at 0x061DBA-0x061DC9) → LD SP,(D008E0) (longjmp stack unwind) → POP AF → RET.
+- **0x061D22 = entry index 10, loads A=0x89** (NOT a distinct handler type, just another stub).
+- **0x061D3E = entry index 16, loads A=0x8E** (same — another stub).
+- **REFUTATION**: Session 520's hypothesis that 0x061D22/0x061D3E are "push operand" vs "execute operator" entry points is WRONG. They are simply different token codes (0x89, 0x8E) selected by the 0x09BF58 range dispatcher for different token-type ranges. All 45 entries use the same handler.
+- **All 45 token codes** (table order): 0xB2, 0xB3, 0x81-0x85, 0x87-0x89, 0x9E, 0x9D, 0x8A-0x8D, 0x8E, 0x0E, 0x8F-0x93, 0x86, 0x15, 0x96, 0x98-0x9A, 0x9C, 0x1B, 0xAA, 0x2D, 0x28, 0x2E, 0xAB, 0xAC, 0xAF, 0x2F-0x31, 0xB4, 0x9F, 0xB5, 0x36.
+
+(4) ★★★★★ 0x0A3126 DISPLAY SCROLL FULLY DECODED (probe-phase521-decode-0A3126-display-scroll.mjs, Sonnet, Opus-verified):
+- **SCROLL UP (0x0A3126)**: RES 7,(IY+0x4C) [D000CC = direction flag, 0=up]. Computes rows to scroll: IX[1]-IX[0]-1, MLT by 0x14 (20) for byte count. Calls 0x0A2D4C (row→pixel-Y). Enters shared engine at 0x0A3146.
+- **SCROLL DOWN (0x0A31FD)**: SET 7,(IY+0x4C) [1=down]. Same row-count calc but from IX[1], decrements. Falls into 0x0A3146.
+- **SHARED ENGINE (0x0A3146)**: Interrupt-safe (LD A,I → DI → ... → RET PO / EI / RET). Row-to-VRAM-offset helper at 0x0A31F6: `L * 0xA0 * 4 = L * 640` (MLT HL + ADD HL,HL + ADD HL,HL).
+  - UP path (0x0A3161): LDIR at 0x0A3175 copies VRAM upward, base = D40000 + offset.
+  - DOWN path (0x0A31A6): LDDR at 0x0A31C1 copies VRAM downward (reverse block copy).
+- **DUAL VRAM BUFFER**: BIT 3,(IY+0x4A) [D000CA] selects buffer A (D031F6) or buffer B (D052C6). Offset = (A-0x1E)*0x28 added to base.
+- **EDIT BUFFER SCROLL (0x0A321D)**: Calls 0x0A31FD (pixel scroll down), then scrolls text buffer at D006BF. Uses 0x0A2A37 (A*0x1A = row*26 columns) for row offset. LDDR at 0x0A3298 shifts content. Clears bottom row: B=0x1A, A=0x20 (26 spaces). Calls 0x09EF20 (LCD rectangle: HL=0, DE=0x13F=319 = full width).
+- **NEW RAM**: D000CC/IY+0x4C bit 7 (scroll direction: 0=up, 1=down), D000CA/IY+0x4A bit 3 (dual VRAM buffer selector), D00085/IY+0x05 bit 2 (set during edit-buffer scroll), D031F6 (VRAM buffer A), D052C6 (VRAM buffer B), D006BF (edit buffer base), D40000 (LCD VRAM frame).
+- **NEW FUNCTIONS**: 0x0A31F6 (row-to-VRAM-offset: L*640), 0x0A31FD (scroll-down entry), 0x0A321D (edit-buffer scroll), 0x09EF20 (LCD rectangle operation), 0x0A2B53 (token lookup helper from adjacent code).
+- **KEY ARCHITECTURE**: Display scroll is DUAL-LAYER — pixel layer (LDIR/LDDR in D40000 VRAM) + text layer (LDIR/LDDR in D006BF edit buffer). Both directions share the engine at 0x0A3146.
+
+(5) CODEX: P1 exit 0 (composite refresh probe created after Sonnet also created it — Sonnet version used). P2 exit 0 (classifier probe created — Sonnet also created, Sonnet version used and ran). P3 exit 1 (failed — Sonnet fallback succeeded). P4 exit 1 (failed — Sonnet fallback succeeded). Overall: 2/4 Codex success, 2/4 Codex failure, 4/4 Sonnet success.
+
+(6) NEW FUNCTIONS: 0x097AC8 (edit-buffer type dispatcher/state resetter), 0x0A1F80 (cursor position saver + display-line buffer sync), 0x0A3126 (scroll-up entry), 0x0A31FD (scroll-down entry), 0x0A31F6 (row-to-VRAM-offset helper), 0x0A321D (edit-buffer scroll), 0x09EF20 (LCD rectangle op), 0x0A2B53 (token lookup helper), 0x09BBA6 (peek-ahead comparator), 0x09BAC9 (token-type filter helper), 0x09BC16 (FP math + type-dispatch sub-handler). NEW RAM: D02713, D00334, D02506, D02712, D00332, D07396, D000CC/IY+0x4C bit 7, D000CA/IY+0x4A bit 3, D006BF (edit buffer base), D005F8 (descriptor type B), D0061A, D00687, D0068A, D02581.
+
+PROBES: probe-phase521-decode-composite-refresh.mjs (Sonnet, Opus-verified), probe-phase521-decode-09BAFF-classifier.mjs (Sonnet, Opus-verified), probe-phase521-decode-token-table-offsets.mjs (Codex+Sonnet, Opus-verified), probe-phase521-decode-0A3126-display-scroll.mjs (Sonnet, Opus-verified). BOOT STATE: 51,622 seeds, 145,927 blocks, 713,624 covered bytes (unchanged — pure investigation). Golden regression PASS 26/26.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — Browser-bound, needs human. Full rendering pipeline now fully decoded: string renderer → 0x0A1B5B → 0x0A1799 (font lookup) → VRAM. Composite refresh (0x09CEAF) also fully decoded. (b) ★★★★ DECODE 0x092F35 (INSERTMEM-BASED CONTENT SCROLL) — Called by 0x0A2032 scroll mode A. The only remaining unknown in the scroll mechanism. (c) ★★★★ DECODE 0x09EF20 (LCD RECTANGLE OPERATION) — Called by 0x0A321D (edit-buffer scroll) with HL=0, DE=0x13F=319 (full LCD width). Understanding this completes the display scroll pipeline. (d) ★★★★ MAP THE 0x097AC8 TYPE-DISPATCH TARGETS — 0x097AC8 dispatches on 7 type codes (0x01, 0x02, 0x0D, 0x1B, 0x1C, 0x20, 0x21) to type-specific setup helpers. Mapping these gives the full type-specific rendering paths. (e) ★★★★ DECODE 0x09B9C8 (TOKEN FETCH) — Called at entry of 0x09BAFF classifier. Understanding this gives the token reading mechanism before classification. (f) ★★★ DECODE 0x07FACF — Called after PUSH AF in classifier (0x09BB35). FP-related context setup? --END SESSION 521--
 
 **Session 520 findings (2026-06-05)**:
 

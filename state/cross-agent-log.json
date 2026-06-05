@@ -16437,15 +16437,136 @@
       "timestamp": "2026-06-05T04:05:58Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "0d832e23cd3b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode sub-handlers 0x09AF4E and 0x099BB0 \u2014 full scan-code-to-token-table routing\n\n## Contex",
+      "status": "completed",
+      "duration_seconds": 104.337,
+      "timestamp": "2026-06-05T06:04:10Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f9c69d52c8dd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x09CE6B and 0x0A1F52 \u2014 post-render helpers from 0x097757\n\n## Context\n\nYou are workin",
+      "status": "completed",
+      "duration_seconds": 110.568,
+      "timestamp": "2026-06-05T06:04:24Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2894f0c35428",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0A1B5B \u2014 char-to-glyph converter (shared rendering pipeline)\n\n## Context\n\nYou are w",
+      "status": "success",
+      "duration_seconds": 138.728,
+      "timestamp": "2026-06-05T06:04:47Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d50cb7987d20",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode edit-buffer handlers 0x06C72D, 0x06C73C, 0x06C732, 0x06C737\n\n## Context\n\nYou are work",
+      "status": "success",
+      "duration_seconds": 159.506,
+      "timestamp": "2026-06-05T06:05:10Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "dcc38bebf0e9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 520 P2: Decode 0x0A1799 Font Lookup Internals\n\n## Context\nThis is a TI-84 Plus CE ROM",
+      "status": "completed",
+      "duration_seconds": 125.811,
+      "timestamp": "2026-06-05T08:05:46Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8064c3c16998",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 520 P1: Decode Intermediate Token Handlers 0x09BAB8, 0x09BAD1, 0x09BF58\n\n## Context\nT",
+      "status": "completed",
+      "duration_seconds": 128.82,
+      "timestamp": "2026-06-05T08:05:48Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7a189db00749",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 520 P3: Decode 0x0A2032 Line Wrap/Scroll Function\n\n## Context\nThis is a TI-84 Plus CE",
+      "status": "completed",
+      "duration_seconds": 147.629,
+      "timestamp": "2026-06-05T08:06:10Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "768179250d64",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map Token Table Offsets 0x061D22 and 0x061D3E\n\n## Context\nYou are working on the TI-84 Plus ",
+      "status": "success",
+      "duration_seconds": 114.912,
+      "timestamp": "2026-06-05T10:04:22Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9adee834643f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0A3126 (DISPLAY SCROLL)\n\n## Context\nYou are working on the TI-84 Plus CE ROM transp",
+      "status": "success",
+      "duration_seconds": 117.603,
+      "timestamp": "2026-06-05T10:04:26Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "727049c3d76e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x09BAFF EXTENDED TOKEN CLASSIFIER (200B, 15+ CP comparisons)\n\n## Context\nYou are wor",
+      "status": "completed",
+      "duration_seconds": 124.861,
+      "timestamp": "2026-06-05T10:04:29Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3e69d16a2884",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x09CEAF COMPOSITE REFRESH (unknowns 0x097AC8 and 0x0A1F80)\n\n## Context\nYou are worki",
+      "status": "completed",
+      "duration_seconds": 161.51,
+      "timestamp": "2026-06-05T10:05:04Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1365,
-    "cc_to_codex": 1365,
+    "total_calls": 1376,
+    "cc_to_codex": 1376,
     "codex_to_cc": 0,
-    "completed": 964,
+    "completed": 971,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 542.733
+    "avg_duration_seconds": 539.437
   }
 }
