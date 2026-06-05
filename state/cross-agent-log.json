@@ -16646,15 +16646,59 @@
       "timestamp": "2026-06-05T14:04:15Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "74059435d8d4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x09903E \u2014 List Setup Helper\n\n## Context\nThis is a TI-84 Plus CE OS ROM (eZ80 ADL mod",
+      "status": "success",
+      "duration_seconds": 84.975,
+      "timestamp": "2026-06-05T16:03:56Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "077b07555ef1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0997AE \u2014 Edit-Buffer Pre-Setup\n\n## Context\nThis is a TI-84 Plus CE OS ROM (eZ80 ADL",
+      "status": "completed",
+      "duration_seconds": 105.002,
+      "timestamp": "2026-06-05T16:04:10Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d997c7d25899",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0989E9 \u2014 Type-Init Success Handler\n\n## Context\nThis is a TI-84 Plus CE OS ROM (eZ80",
+      "status": "success",
+      "duration_seconds": 109.834,
+      "timestamp": "2026-06-05T16:04:19Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a07daa493e2c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x08021B \u2014 Main Type-Init Operation\n\n## Context\nThis is a TI-84 Plus CE OS ROM (eZ80 ",
+      "status": "success",
+      "duration_seconds": 113.467,
+      "timestamp": "2026-06-05T16:04:21Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1384,
-    "cc_to_codex": 1384,
+    "total_calls": 1388,
+    "cc_to_codex": 1388,
     "codex_to_cc": 0,
-    "completed": 975,
+    "completed": 976,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 537.007
+    "avg_duration_seconds": 535.757
   }
 }

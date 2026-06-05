@@ -8,9 +8,56 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-05 (auto-session 523 — **★★★★ 0x0987B5/0x0987B7 TYPE-SPECIFIC INITIALIZER DECODED (~70B, dual entry: 0x0987B5 forces A=0x1A, 0x0987B7 uses caller's A; CALL 0x0997AE setup → CALL 0x08021B operation → on carry bail to secondary dispatch at 0x0987FB; on success: 15-byte stack frame, CALL 0x0989E9/0x09953F/0x098A13, conditional CALL 0x099574). ★★★★ 0x097C8A LIST/COMPLEX SETUP DECODED (~170B, stores type to D02712, CALL 0x058D49 clears D0008E[5:0], BIT 7,(IY+9) → conditional LD 7→D02506+D0250D, CALL 0x097AB2 shared exit, JP Z 0x097F6A, .SIS LD (D02563) zeros, CALL 0x07F7A8 type normalizer, CP 0x02/0x04 routing, CALL 0x09903E, stores BC→D00338, writes 0x7D '}' + 0x00 terminator at D00335, list iteration via D02695+DE=9). ★★★★ 0x07FACF BCD UTILITY COLLECTION DECODED (multi-entry: 0x07FACF→D005F8, 0x07FAD5→D00603, 0x07FADB→D0060E clear 3 bytes + continue at 0x07FA7F for 11+ byte clear; 0x07FAE7 DJNZ B-count zero fill; 0x07FAED upper-nibble extractor; 0x07FAF4 C*16; 0x07FAFA-0x07FB34 RRD-chain BCD digit clearing at D005FA+). ★★★★ 0x098B80 PROGRAM EDITOR SETUP DECODED (~200B+, RES 7,(IY+0x1B)+RES 6,(IY+0x56), BIT/SET 0,(IY+0x49) editing flag, CALL 0x098D04→local var, CALL 0x07FE50 type rewriter, zeros D02510, token 0xDB exponent handling with '('/')'/'^' rendering via 0x0994D7, checks D005F9/D005FA BCD values, 11 CALL targets). GOLDEN REGRESSION PASS 26/26.**)
+**Last updated**: 2026-06-05 (auto-session 524 — **★★★★ 0x0997AE CONDITIONAL FP SAVE/RESTORE WRAPPER DECODED (~53B, IY+0x53 bit 7/6 gates, copies OP2 D00603↔D02B39 around sub-call 0x0997E3→0x07DBC2+0x08021B, CALL 0x05BF5C alternate path). ★★★★ 0x08021B TYPE RANGE VALIDATOR DECODED (13B, CALL 0x07F7BD loads A from D005F8 + AND 0x3F, CP 0x1A: types ≥0x1A → SCF+RET=failure, type 0x18 → Z+RET=special, others → NZ+NC+RET=success). ★★★★ 0x0989E9 FP SAVE TO STACK FRAME DECODED (29B, saves OP1 D005F8 to IX-9 and OP2 D00603 to IX-18 via 0x098A3D frame-offset calculator + 0x07F978 11-byte FP copy). ★★★★ 0x09903E LIST ELEMENT ITERATOR DECODED (~109B, CALL 0x0990AB inits D02563+calls 0x082C50, IX stack frame, CALL 0x069A67 per-element dispatch→0x0987B7/0x098B80, CALL 0x097AB2 flag check, LDIR element copy, writes '{'/space to buffer, updates D00335, DJNZ-style loop). GOLDEN REGRESSION PASS 26/26.**)
 
-> Previous: 2026-06-05 (auto-session 522 — 0x092F35 scroll helper, 0x09EF20 LCD rect fill, 0x097AC8 type-dispatch mapped, 0x09B9C8 token gate, 0x09BAB8 token fetch)
+> Previous: 2026-06-05 (auto-session 523 — 0x0987B5/0x0987B7 type init, 0x097C8A list/complex setup, 0x07FACF BCD utilities, 0x098B80 program editor setup)
+
+**Session 524 findings (2026-06-05)**:
+
+(1) ★★★★ 0x0997AE CONDITIONAL FP SAVE/RESTORE WRAPPER DECODED (probe-phase524-decode-0997AE-prebuf-setup.mjs, Codex+Opus manual verification):
+- **Entry (0x0997AE, ~53B)**: BIT 7,(IY+0x53) → JR Z → RET (early exit if bit 7 clear = no FP context needed).
+- **Bit 6 check**: BIT 6,(IY+0x53) → JR NZ → skip to main body at 0x0997C0. If bit 6 clear: CALL 0x05BF5C (→0x06868A→JP 0x07F7D6) then RET.
+- **Main body (0x0997C0)**: CALL 0x07F7BD (type normalizer, loads A from D005F8, AND 0x3F) → JR NZ → RET (if type nonzero, skip FP save).
+- **FP save/restore**: LD HL,D00603 (OP2) → LD DE,D02B39 → CALL 0x07F978 (11-byte FP copy: OP2→D02B39). Then CALL 0x0997E3 (sub: CALL 0x07DBC2 + CALL 0x08021B type validator + RET NC). Then LD DE,D00603 → LD HL,D02B39 → CALL 0x07F978 (copy back: D02B39→OP2). RET.
+- **PURPOSE**: Conditionally preserves OP2 FP accumulator (D00603) across a sub-operation (0x0997E3→0x07DBC2+0x08021B). Guards on IY+0x53 bits 7/6 and current type code. The save buffer at D02B39 is temporary storage for the 11-byte OP2 value.
+- **CALL targets**: 0x05BF5C (alt path), 0x07F7BD (type normalizer), 0x07F978 (FP copy, called twice), 0x0997E3 (→0x07DBC2+0x08021B).
+- **NEW RAM**: D02B39 (OP2 save buffer, 11 bytes).
+
+(2) ★★★★ 0x08021B TYPE RANGE VALIDATOR DECODED (probe-phase524-decode-08021B-type-op.mjs, Codex+Opus manual verification):
+- **Entry (0x08021B, 13B)**: CALL 0x07F7BD (loads A from D005F8, AND 0x3F) → CP 0x1A → JR NC,+3 → CP 0x18 → RET.
+- **At 0x080228 (reached when type ≥ 0x1A)**: CP 0x19 → SCF → RET. Always sets carry = failure for types ≥ 0x1A.
+- **Type routing**: Type < 0x18 → NZ+NC (generic success). Type 0x18 → Z+NC (special case, zero flag set). Type 0x19 → carry set (failure). Types ≥ 0x1A → carry set (failure).
+- **0x07F7BD sub-function (4B)**: LD A,(D005F8) → AND 0x3F → RET. Reads FP accumulator sign/flags byte and masks to lower 6 bits (type code).
+- **NOTE**: The Codex decoder misread `E6 3F` (AND 0x3F, 2-byte instruction) as two separate bytes (E6=?, 3F=CCF). Manual ROM verification confirms AND 0x3F is correct.
+- **PURPOSE**: Validates the FP accumulator's type code. Returns carry=1 for invalid types (≥0x1A), Z for type 0x18 (special handling), NZ+NC for valid types <0x18.
+
+(3) ★★★★ 0x0989E9 FP SAVE TO STACK FRAME DECODED (probe-phase524-decode-0989E9-success-handler.mjs, Codex+Opus manual verification):
+- **Entry (0x0989E9, 29B ending in tail JP)**: LD L,0xF7 → CALL 0x098A3D → LD DE,D005F8 → CALL 0x098A01 → LD L,0xEE → CALL 0x098A3D → LD DE,D00603 → EX DE,HL → JP 0x07F978.
+- **0x098A3D (13B)**: PUSH IX → POP DE → PUSH AF → LD A,L → LD HL,0xFFFFFF → LD L,A → POP AF → ADD HL,DE → RET. Computes IX + (L - 0x100) = IX + signed_offset. For L=0xF7: offset = -9 (IX-9). For L=0xEE: offset = -18 (IX-18).
+- **0x098A01 (5B, inline)**: EX DE,HL → JP 0x07F978. Swaps source/dest then tail-calls FP 11-byte copy.
+- **Two FP saves**: (a) OP1 (D005F8) saved to stack frame at IX-9. (b) OP2 (D00603) saved to stack frame at IX-18. Both via 0x07F978 (11-byte LDIR copy).
+- **PURPOSE**: Saves both FP accumulators (OP1+OP2) to the 15-byte local stack frame allocated by the type-init success path. This preserves the caller's FP state before further type-specific operations.
+- **FRAME MAP**: IX-9 through IX-1 = OP1 save (9 bytes of 11-byte FP value). IX-18 through IX-10 = OP2 save. Note: only 15 bytes allocated but 22 bytes of FP data — the saves overlap / the frame is actually larger than documented in session 523 (likely 22+ bytes).
+
+(4) ★★★★ 0x09903E LIST ELEMENT ITERATOR DECODED (probe-phase524-decode-09903E-list-helper.mjs, Codex+Opus manual verification):
+- **Entry (0x09903E, ~109B)**: CALL 0x0990AB (sub-init) → IX stack frame setup (PUSH IX, LD IX,0, ADD IX,SP, allocate 2 locals).
+- **0x0990AB sub-init (~40B)**: LD HL,0 → .SIS LD (D02563),HL (zero counter) → CALL 0x082C50 → reads element count/metadata → .SIS LD (D02718),BC + .SIS LD (D02565),BC → LD (D00687),HL + LD (D02695),HL (iteration pointer). RET NZ if count nonzero, else sets up empty-list error path → JP 0x061D36.
+- **Main loop**: CALL 0x069A67 (per-element dispatch: calls 0x07F7A4 type normalizer → if type=0: CALL 0x07FA07 + CALL 0x098B80 program editor, returns HL=D02510; if type≠0: LD A,0x1A + CALL 0x0987B7, returns HL=D0060E). PUSH DE, read local var (IX-1), loop counter management.
+- **CALL 0x097AB2**: BIT 2,(IY+73) → RET. Simple flag check (2 bytes + RET).
+- **Buffer operations**: On success: if type==0x02 writes 0x7B '{' to buffer, LDIR copies element data, writes 0x20 ' ' spacer, updates D00335 (buffer end pointer). BIT 2,(IY+14) gates loop continuation vs CP 0x3F/0x1B exit check.
+- **Loop control**: DEC BC → LD A,C → OR B → JR NZ back to loop start. Iterates over all list elements.
+- **CLEANUP**: LD C,(IX-1) → LD B,0 → DEC C → LD SP,IX → POP IX → RET.
+- **PURPOSE**: Iterates over all elements in a list/complex variable, dispatching each element through type-specific handlers (0x0987B7 for non-program types, 0x098B80 for programs), copying rendered data to the edit buffer with appropriate separators.
+- **NEW RAM**: D02563 (element counter, zeroed at start), D02565 (iteration BC metadata), D00687 (iteration HL pointer copy), D02695 (iteration pointer).
+
+(5) CODEX: All 4 created probe files successfully. All probes ran to completion. P1 decoder only captured early-return path (18B of 53B) — supplemented by Opus manual ROM decode. P2 decoder misread AND 0x3F as two separate bytes (E6=unknown, 3F=CCF) — corrected by Opus manual verification. P3 decoder produced correct output (29B). P4 decoder had DD/FD/.SIS prefix issues but captured the 109B structure correctly. No Sonnet fallbacks needed.
+
+(6) NEW FUNCTIONS: 0x0997AE (conditional FP save/restore wrapper, ~53B), 0x0997E3 (sub: 0x07DBC2+0x08021B+RET NC, 10B), 0x08021B (type range validator, 13B), 0x07F7BD (D005F8 type reader, 4B), 0x0989E9 (FP save to stack frame, 29B), 0x098A3D (IX frame offset calculator, 13B), 0x098A01 (FP copy wrapper, 5B), 0x09903E (list element iterator, ~109B), 0x0990AB (list init sub, ~40B), 0x069A67 (per-element type dispatch, ~40B).
+NEW RAM: D02B39 (OP2 save buffer, 11 bytes), D02563 (element counter), D02565 (iteration BC metadata), D00687 (iteration HL pointer copy).
+
+PROBES: probe-phase524-decode-0997AE-prebuf-setup.mjs, probe-phase524-decode-08021B-type-op.mjs, probe-phase524-decode-0989E9-success-handler.mjs, probe-phase524-decode-09903E-list-helper.mjs (all Codex, Opus-verified). BOOT STATE: unchanged (pure investigation). Golden regression PASS 26/26.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — Browser-bound, needs human. (b) ★★★★ DECODE 0x07DBC2 — Called by 0x0997E3 before type validation; part of FP context save chain. (c) ★★★★ DECODE 0x09953F — Conditional test called after 0x0989E9 FP save on type-init success path. (d) ★★★★ DECODE 0x098A13 — Always called on both success+failure paths of type init cleanup. (e) ★★★★ DECODE 0x082C50 — Called by 0x0990AB list init; reads element count/metadata. (f) ★★★ DECODE 0x0994D7 — Token renderer called 6+ times by program editor. (g) ★★★ DECODE 0x0990F7 — Called between '(' and ')' rendering in program editor. (h) ★★★ FRAME SIZE INVESTIGATION — Session 523 says 15-byte frame, but 0x0989E9 saves 22 bytes of FP data. Verify actual frame allocation. --END SESSION 524--
 
 **Session 523 findings (2026-06-05)**:
 
