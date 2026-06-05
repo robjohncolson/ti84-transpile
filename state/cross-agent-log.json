@@ -16690,15 +16690,103 @@
       "timestamp": "2026-06-05T16:04:21Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "2c6ae8788ab5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: DECODE 0x09953F \u2014 Conditional test after FP save on type-init success\n\n## Context\nYou are wo",
+      "status": "completed",
+      "duration_seconds": 125.66,
+      "timestamp": "2026-06-05T18:04:35Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5d3d36679c11",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: DECODE 0x082C50 \u2014 Called by 0x0990AB list init, reads element count/metadata\n\n## Context\nYou",
+      "status": "success",
+      "duration_seconds": 145.543,
+      "timestamp": "2026-06-05T18:04:59Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "0fa11bbd2372",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: DECODE 0x098A13 \u2014 Cleanup function called on both success+failure paths\n\n## Context\nYou are ",
+      "status": "success",
+      "duration_seconds": 156.144,
+      "timestamp": "2026-06-05T18:05:07Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d2956c5d0b52",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: DECODE 0x07DBC2 \u2014 Called by 0x0997E3 before type validation\n\n## Context\nYou are working on T",
+      "status": "success",
+      "duration_seconds": 166.666,
+      "timestamp": "2026-06-05T18:05:14Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "11b272f5780c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07FA07 \u2014 FP Restore from Frame to OP2\n\nYou are working on `C:/Users/rober/Downloads",
+      "status": "partial",
+      "duration_seconds": 94.446,
+      "timestamp": "2026-06-05T20:03:36Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b266e281ba24",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x069E5E \u2014 FP Result Finalizer\n\nYou are working on `C:/Users/rober/Downloads/Projects",
+      "status": "success",
+      "duration_seconds": 121.794,
+      "timestamp": "2026-06-05T20:03:59Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ac70185c24ed",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x06A261 \u2014 Type 0x0C Early Exit\n\nYou are working on `C:/Users/rober/Downloads/Project",
+      "status": "completed",
+      "duration_seconds": 120.517,
+      "timestamp": "2026-06-05T20:04:00Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8529e17fed56",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07DC4A \u2014 FP Conversion Chain First Step\n\nYou are working on `C:/Users/rober/Downloa",
+      "status": "complete",
+      "duration_seconds": 128.944,
+      "timestamp": "2026-06-05T20:04:04Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1388,
-    "cc_to_codex": 1388,
+    "total_calls": 1396,
+    "cc_to_codex": 1396,
     "codex_to_cc": 0,
-    "completed": 976,
+    "completed": 978,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 535.757
+    "avg_duration_seconds": 533.446
   }
 }

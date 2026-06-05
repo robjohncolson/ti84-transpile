@@ -8,9 +8,56 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-05 (auto-session 525 — **★★★★ 0x07DBC2 FP TYPE-CHECK-AND-CONVERT DECODED (17B, CALL 0x07F7A4 type==0x0C check→JP 0x06A261 early exit, CALL 0x07DBEF conversion chain→0x07DC4A+0x07CC36+0x07D306+0x069E5E+CCF, CALL 0x08022C→0x08021B type validator+RET C). ★★★★ 0x09953F CONDITIONAL FP VALIDATION DECODED (39B, BIT 0,(IY+12) + BIT 0,(IY+73) dual gate, CALL 0x07F7BD type read, CP 0x19 special-case→RES/SET 4,(IY+72), CALL 0x07F7D6 type clear, CALL 0x07DBF3 FP comparison: carry=failure via SCF, success via CCF+RET NC). ★★★★ 0x098A13 OP2 RESTORER DECODED (11B, PUSH BC/HL, LD L,0xEE=-18, CALL 0x098A1E→0x098A3D frameOffsetCalc+JP 0x07FA07 FP restore IX-18→D00603, POP HL/BC/RET). ★★★★ 0x082C50 VARIABLE LOOKUP+TYPE VALIDATION DECODED (19B, CALL 0x0846EA VAT bounds check via D0259D/D0259A/D02590+SBC, JP C→0x061D3A error, JR 0x082C3F backward=mid-function entry; 0x082C5A: CALL 0x07F7BD+0x080151 type==0x03 list check). GOLDEN REGRESSION PASS 26/26.**)
+**Last updated**: 2026-06-05 (auto-session 526 — **★★★★ 0x07DC4A IY FLAG CONDITIONER DECODED (23B, SET/RES/BIT on IY+72 bit 4 gated by IY+73 bit 0 and IY+72 bit 0, gates FP conversion chain behavior). ★★★★ 0x069E5E FP RANGE CHECKER + SIGN-PRESERVING NORMALIZER DECODED (42B, BIT 4,(IY+72) gate, OP1 exponent CP 0x86 + OP2 exponent CP 0x84 range checks, CALL 0x069E46 sign read + 0x07F829 FP comparison + CALL NZ 0x069E4D sign restore, JP 0x069E12 tail finalizer, large exponent path→0x069EDB). ★★★★ 0x06A261 COMPLEX NUMBER (TYPE 0x0C) HANDLER DECODED (42B, dual entry 0x06A261/0x06A265, CALL 0x07FD30 OP1↔OP2 swap 11B DJNZ, CALL 0x082957 save OP2→stack 9xLDI, CALL 0x07FE5A/0x07FE24 type transforms, CALL 0x08021B type validator, type==0x18+sign bit 6 clear→CALL 0x07DC7E SET bits 4,5 IY+72+FP compare, CALL 0x0828FC restore OP2). ★★★★ 0x07FA07 FP ACCUMULATOR INIT TABLE DECODED (~128B, LD DE,D00603+JR 0x07F9FF shared copy, ~20 entry points for OP1/OP2/OP3/OP4 with copy via 0x07F9FF or BCD constant init via 0x07FA7A write loop: (HL)=0x00,(HL+1)=0x80,(HL+2)=A). CORRECTION: 0x07F978 SAVE uses 9x LDI (9-byte copy), NOT 11-byte LDIR. GOLDEN REGRESSION PASS.**)
 
-> Previous: 2026-06-05 (auto-session 524 — 0x0997AE conditional FP save/restore, 0x08021B type range validator, 0x0989E9 FP save to stack frame, 0x09903E list element iterator)
+> Previous: 2026-06-05 (auto-session 525 — 0x07DBC2 FP type-check-and-convert, 0x09953F conditional FP validation, 0x098A13 OP2 restorer, 0x082C50 variable lookup+type validation)
+
+**Session 526 findings (2026-06-05)**:
+
+(1) ★★★★ 0x07DC4A IY FLAG CONDITIONER DECODED (probe-phase526-decode-07DC4A-fp-conv-step.mjs, Sonnet+Opus verification):
+- **Entry (0x07DC4A, 23B)**: SET 4,(IY+72) → BIT 0,(IY+73) → RET NZ (early exit, bit 4 stays SET). RES 4,(IY+72) → BIT 0,(IY+72) → RET NZ (early exit, bit 4 CLEARED). SET 4,(IY+72) → RET (default, bit 4 SET).
+- **Logic**: Bit 4 of IY+72 = SET if IY+73 bit 0 is set OR both IY+72 bit 0 and IY+73 bit 0 are clear. CLEAR only if IY+73 bit 0 is clear AND IY+72 bit 0 is set.
+- **PURPOSE**: Gates the FP conversion chain behavior. Called first in 0x07DBEF chain before 0x07CC36+0x07D306. The bit 4 of IY+72 is then checked by 0x069E5E (the FP range checker) to skip all validation if set.
+- **KEY INSIGHT**: 0x07DC4A sets bit 4 → 0x069E5E checks bit 4 → if set, skips exponent range checks and goes straight to 0x069E12 finalizer. This is a fast-path gate.
+- No CALL targets, no RAM reads/writes (all IY-relative).
+
+(2) ★★★★ 0x069E5E FP RANGE CHECKER + SIGN-PRESERVING NORMALIZER DECODED (probe-phase526-decode-069E5E-fp-finalizer.mjs, Sonnet+Opus verification):
+- **Entry (0x069E5E, 42B)**: BIT 4,(IY+72) → JR NZ,0x069E84 (skip all checks if flag conditioner set fast-path). LD A,(D005F9) → CP 0x86 → JR NC,0x069EDB (large OP1 exponent path). LD A,(D00604) → CP 0x84 → JR NC,0x069EDB (large OP2 exponent path).
+- **Normal path**: CALL 0x069E46 (BIT 7,(D005F8)=OP1 sign read) → PUSH AF → CALL 0x07F829 (FP comparison/normalization, 60+B, calls 0x07FDD6/0x07FDD0, compares OP1 vs OP2 byte-by-byte with B=7 loop) → JR NC,0x069E88 (extended path). POP AF → CALL NZ,0x069E4D (SET 7,(D005F8)=restore negative sign) → JP 0x069E12 (tail finalizer).
+- **Sub-functions**: 0x069E46 (7B, LD HL,D005F8; BIT 7,(HL); RET — sign read), 0x069E4D (7B, LD HL,D005F8; SET 7,(HL); RET — sign set).
+- **RAM reads**: D005F8 (OP1 sign/type), D005F9 (OP1 exponent), D005FA (OP1 mantissa byte 2), D00603 (OP2 sign/type), D00604 (OP2 exponent), D00605 (OP2 mantissa byte 2).
+- **CALL targets**: 0x069E46, 0x069E4D, 0x07F829, 0x07FDD6, 0x07FDD0, 0x07FACF, 0x07FAD5, 0x080037.
+- **JP/JR targets**: 0x069E12 (tail finalizer), 0x069E84 (skip-to-tail), 0x069E88 (extended path), 0x069EDB (large exponent path).
+
+(3) ★★★★ 0x06A261 COMPLEX NUMBER (TYPE 0x0C) HANDLER DECODED (probe-phase526-decode-06A261-type0C-exit.mjs, Sonnet+Opus verification):
+- **Entry (0x06A261, 42B)**: CALL 0x06A265 (dual entry: 0x06A261 wraps 0x06A265 with extra CALL self+4).
+- **0x06A265 flow**: CALL 0x07FD30 (OP1↔OP2 swap, 11B byte-by-byte DJNZ loop D005F8↔D00603) → CALL 0x082957 (save OP2→stack, alloc 9B via 0x082BB5, copy via 9xLDI to D0258D) → CALL 0x07FE5A (pre-transform OP1 type via 0x07FE65) → CALL 0x08021B (type range validator) → JR NC,0x06A282 (skip if invalid). OR A → JR NZ,0x06A282 (skip if type≠0x18). CALL 0x06868A (BIT 6,(D005F8); RET NZ — sign bit 6 check) → CALL 0x07DC7E (SET 4,5 IY+72; CALL 0x07DBF3 FP compare; CALL 0x08022C validator).
+- **Cleanup**: CALL 0x07FE24 (post-transform OP1 type via 0x07FE2F) → CALL 0x0828FC (restore OP2 from stack, 9B via 0x07F978 LDI chain) → RET.
+- **Sub-functions**: 0x07FD30 (20B, OP1/OP2 swap), 0x082957 (39B, save OP2 to stack), 0x07FE5A (11B, type pre-transform), 0x07FE24 (11B, type post-transform), 0x06868A (7B, sign bit 6 check), 0x07DC7E (17B, SET bits 4,5 IY+72 + FP compare), 0x0828FC (~15B, restore OP2).
+- **PURPOSE**: Complex number decomposition. Type 0x0C = complex. Swaps real/imaginary parts, validates the imaginary component's type, conditionally runs FP comparison with special IY flags, then restores.
+- **RAM**: D005F8 (OP1), D00603 (OP2), D0258D (FP stack pointer).
+- **CALL targets**: 0x06868A, 0x06A265, 0x07DC7E, 0x07DBF3, 0x07FD30, 0x07FE24, 0x07FE2F, 0x07FE5A, 0x07FE65, 0x08021B, 0x08022C, 0x082957, 0x082BB5, 0x0828FC.
+
+(4) ★★★★ 0x07FA07 FP ACCUMULATOR INIT TABLE DECODED (probe-phase526-decode-07FA07-fp-restore.mjs, Sonnet+Opus verification):
+- **0x07FA07 (6B)**: LD DE,0xD00603 → JR 0x07F9FF (shared copy routine). Sets destination=OP2, source=HL (from caller e.g. IX-18 frame slot).
+- **Nearby entries (all JR 0x07F9FF)**: 0x07FA0D: LD HL,D005F8 (source=OP1). 0x07FA13: LD HL,D00603 (source=OP2).
+- **BCD constant entries (JR 0x07FA7A)**: Load HL with OP1/OP2/OP3/OP4, set A to BCD exponent (0x10/0x20/0x30/0x40/0x50/0x80). 0x07FA7A writes: (HL)=0x00, (HL+1)=0x80, (HL+2)=A, then zeros remaining bytes via XOR A loop.
+- **~20 entry points total** across 0x07FA07-0x07FA86 for different FP accumulator destinations and BCD constants.
+- **CORRECTION**: 0x07F978 (save/copy) uses **9x LDI** (9-byte copy, 0x07F978-0x07F98A), NOT 11-byte LDIR as previously assumed. This means FP values are 9 bytes when saved to stack frames, not 11.
+- **Missing**: 0x07F9FF (shared copy target) not yet decoded — follow-up needed.
+- **RAM**: D005F8 (OP1), D00603 (OP2), D0060E (OP3), D00619 (OP4).
+- **NEW**: D00619 confirmed as OP4 (FP accumulator 4).
+
+(5) CODEX: 0/4 agents succeeded (all empty output or exit code 1). All priorities completed via Sonnet fallback. Codex P3 produced a probe file but did not run verification.
+
+(6) NEW FUNCTIONS: 0x07DC4A (IY flag conditioner, 23B), 0x069E5E (FP range checker+normalizer, 42B), 0x069E46 (OP1 sign read, 7B), 0x069E4D (OP1 sign set, 7B), 0x06A261 (complex number handler, 42B), 0x06A265 (complex handler inner, shared with 0x06A261), 0x07FD30 (OP1/OP2 swap, 20B), 0x082957 (save OP2 to stack, 39B), 0x07FE5A (type pre-transform, 11B), 0x07FE24 (type post-transform, 11B), 0x06868A (sign bit 6 check, 7B), 0x07DC7E (IY flag setter+FP compare, 17B), 0x0828FC (restore OP2 from stack, ~15B), 0x07FA07 (FP init table: OP2 copy entry, 6B), 0x07FA0D-0x07FA86 (~20 FP init table entries).
+NEW CALL TARGETS DISCOVERED: 0x069E12 (tail FP finalizer), 0x069EDB (large exponent handler), 0x07F829 (FP comparison/normalization, 60+B), 0x07FDD6 (FP sub called by 0x07F829), 0x07FDD0 (FP sub called by 0x07F829), 0x07FAD5 (BCD utility), 0x080037 (FP utility), 0x07F9FF (shared copy routine target), 0x07FE65 (type transform sub), 0x07FE2F (type reverse-transform sub), 0x082BB5 (stack allocator for FP save).
+NEW RAM: D00619 (OP4, FP accumulator 4), D0258D (FP stack frame pointer).
+CORRECTION: 0x07F978 copies 9 bytes via 9xLDI, NOT 11 bytes via LDIR.
+
+PROBES: probe-phase526-decode-07DC4A-fp-conv-step.mjs, probe-phase526-decode-069E5E-fp-finalizer.mjs, probe-phase526-decode-06A261-type0C-exit.mjs, probe-phase526-decode-07FA07-fp-restore.mjs (all Sonnet, Opus-verified). BOOT STATE: unchanged (pure investigation). Golden regression PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — Browser-bound, needs human. (b) ★★★★ DECODE 0x069E12 — Tail FP finalizer jumped to by 0x069E5E and the complex handler; the actual carry-setting endpoint. (c) ★★★★ DECODE 0x07F829 — FP comparison/normalization routine (60+B), calls 0x07FDD6/0x07FDD0, compares OP1 vs OP2 byte-by-byte. Core FP comparison logic. (d) ★★★★ DECODE 0x07F9FF — Shared copy routine used by all 0x07FA07+ entries; the actual LDIR/LDI mechanics for FP accumulator copies. (e) ★★★★ DECODE 0x069EDB — Large exponent handler path from 0x069E5E (OP1 exponent≥0x86 or OP2 exponent≥0x84). (f) ★★★★ DECODE 0x098A94 FRAME TEARDOWN — LD SP,IX; POP IX region (carried from session 525). (g) ★★★★ DECODE 0x07FE65 + 0x07FE2F — Type transform and reverse-transform routines used by complex handler. (h) ★★★ DECODE 0x0994D7 — Token renderer (carried from session 524). (i) ★★★ FRAME SIZE INVESTIGATION — Session 526 CORRECTS: 0x07F978 copies 9 bytes, not 11. Reconcile with session 523's 15-byte frame and session 524's 22-byte claim (carried from session 524). --END SESSION 526--
 
 **Session 525 findings (2026-06-05)**:
 
