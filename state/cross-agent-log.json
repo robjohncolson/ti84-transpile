@@ -16602,15 +16602,59 @@
       "timestamp": "2026-06-05T12:05:03Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "136d0a0359a6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x097C8A \u2014 List/Complex Setup Helper\n\n## Context\nIn the TI-84 Plus CE OS ROM (`TI-84_",
+      "status": "success",
+      "duration_seconds": 87.301,
+      "timestamp": "2026-06-05T14:03:20Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "38e2f6605c09",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07FACF \u2014 FP-Related Context Setup\n\n## Context\nIn the TI-84 Plus CE OS ROM (`TI-84_P",
+      "status": "completed",
+      "duration_seconds": 105.868,
+      "timestamp": "2026-06-05T14:03:41Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "522633e81b28",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0987B5 and 0x0987B7 \u2014 Type-Specific Initializers\n\n## Context\nIn the TI-84 Plus CE O",
+      "status": "success",
+      "duration_seconds": 125.229,
+      "timestamp": "2026-06-05T14:03:56Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3e31bb92ad64",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x098B80 \u2014 Program-Specific Editor Setup\n\n## Context\nIn the TI-84 Plus CE OS ROM (`TI",
+      "status": "completed",
+      "duration_seconds": 137.134,
+      "timestamp": "2026-06-05T14:04:15Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1380,
-    "cc_to_codex": 1380,
+    "total_calls": 1384,
+    "cc_to_codex": 1384,
     "codex_to_cc": 0,
-    "completed": 973,
+    "completed": 975,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 538.233
+    "avg_duration_seconds": 537.007
   }
 }

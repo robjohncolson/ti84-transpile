@@ -8,9 +8,64 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-05 (auto-session 522 — **★★★★ 0x092F35 SCROLL HELPER FULLY DECODED (24B, SCF+conditional CALL 0x0A3146 pixel scroll if 0<B<0xC6, always CALL C,0x092F52 content adjust, ADD HL,BC pointer advance). ★★★★ 0x09EF20 LCD RECTANGLE FILL DECODED (wrapper around 0x09EF44: PUSH HL, LD HL,0x40FFFF→control, CALL 0x09EF44, dual VRAM path D40000 vs E30010 via 0x08C308, MLT H*0xA0 row stride, DJNZ 16-bit pixel fill loops, D0059C cursor, 0x000140/0x000280 row advance). ★★★★ 0x097AC8 TYPE-DISPATCH CASCADE FULLY MAPPED (7 type codes: 0x20=appvar→0x097B33 CALL 0x0987B5, 0x21=group→0x097B3F CALL 0x0987B5, 0x1C=protprog→0x097B4B LD A,0x1A+CALL 0x0987B7, 0x1B=prog→0x097B55 CALL 0x07F7A8+0x098B80, 0x01=real list→0x097B8C CALL 0x097C8A, 0x0D=complex list→0x097BA4 CALL 0x097C8A, 0x02=matrix→0x097BB0 CALL 0x099187+0x0A8FD0+0x097AAC, 0x04=extra→0x097BF5). ★★★★ 0x09B9C8 TOKEN GATE DECODED (5B: CALL 0x09BBAA validator [CP 0x3E/0x00/0x3F→RET Z], RET NZ, JP 0x061D2C token table). ★★★★ 0x09BAB8 TOKEN FETCH CONFIRMED (bounds-check curPC D0231A vs endPC D0231D via SBC, fetch byte at curPC into A). GOLDEN REGRESSION PASS 26/26.**)
+**Last updated**: 2026-06-05 (auto-session 523 — **★★★★ 0x0987B5/0x0987B7 TYPE-SPECIFIC INITIALIZER DECODED (~70B, dual entry: 0x0987B5 forces A=0x1A, 0x0987B7 uses caller's A; CALL 0x0997AE setup → CALL 0x08021B operation → on carry bail to secondary dispatch at 0x0987FB; on success: 15-byte stack frame, CALL 0x0989E9/0x09953F/0x098A13, conditional CALL 0x099574). ★★★★ 0x097C8A LIST/COMPLEX SETUP DECODED (~170B, stores type to D02712, CALL 0x058D49 clears D0008E[5:0], BIT 7,(IY+9) → conditional LD 7→D02506+D0250D, CALL 0x097AB2 shared exit, JP Z 0x097F6A, .SIS LD (D02563) zeros, CALL 0x07F7A8 type normalizer, CP 0x02/0x04 routing, CALL 0x09903E, stores BC→D00338, writes 0x7D '}' + 0x00 terminator at D00335, list iteration via D02695+DE=9). ★★★★ 0x07FACF BCD UTILITY COLLECTION DECODED (multi-entry: 0x07FACF→D005F8, 0x07FAD5→D00603, 0x07FADB→D0060E clear 3 bytes + continue at 0x07FA7F for 11+ byte clear; 0x07FAE7 DJNZ B-count zero fill; 0x07FAED upper-nibble extractor; 0x07FAF4 C*16; 0x07FAFA-0x07FB34 RRD-chain BCD digit clearing at D005FA+). ★★★★ 0x098B80 PROGRAM EDITOR SETUP DECODED (~200B+, RES 7,(IY+0x1B)+RES 6,(IY+0x56), BIT/SET 0,(IY+0x49) editing flag, CALL 0x098D04→local var, CALL 0x07FE50 type rewriter, zeros D02510, token 0xDB exponent handling with '('/')'/'^' rendering via 0x0994D7, checks D005F9/D005FA BCD values, 11 CALL targets). GOLDEN REGRESSION PASS 26/26.**)
 
-> Previous: 2026-06-05 (auto-session 521 — 0x09CEAF composite refresh, 0x097AC8 type dispatcher, 0x0A1F80 cursor saver, 0x09BAFF token classifier, 0x0A3126 display scroll)
+> Previous: 2026-06-05 (auto-session 522 — 0x092F35 scroll helper, 0x09EF20 LCD rect fill, 0x097AC8 type-dispatch mapped, 0x09B9C8 token gate, 0x09BAB8 token fetch)
+
+**Session 523 findings (2026-06-05)**:
+
+(1) ★★★★ 0x0987B5/0x0987B7 TYPE-SPECIFIC INITIALIZER DECODED (probe-phase523-decode-0987B5-type-init.mjs, Codex+Opus manual verification):
+- **Entry 0x0987B5 (2B)**: LD A,0x1A → falls through to 0x0987B7. Default entry for appvar/group dispatch — forces A=0x1A.
+- **Entry 0x0987B7**: LD B,A → PUSH BC → CALL 0x0997AE (setup) → POP BC → CALL 0x08021B (operation). Alternate entry used when caller pre-loads A (e.g., prot program loads A=0x1A then CALL 0x0987B7).
+- **On carry (0x08021B failure)**: JR to 0x0987FB secondary dispatch: CP 0x1C → if match, LD A,B + JP 0x099629; otherwise enters extended handler (46-byte stack frame, handles types 0x20/0x21 with CP checks at 0x098816).
+- **On success**: 15-byte stack frame (PUSH IX, LD IX,0, ADD IX,SP, PUSH HL, LD HL,-15, ADD HL,SP, LD SP,HL). CALL 0x0989E9 → CALL 0x09953F → if carry: CALL 0x098A13, cleanup, JR to 0x0987FB; if no carry: POP AF → CALL 0x099574 → CALL 0x098A13, cleanup, RET.
+- **CALL targets**: 0x0997AE (pre-setup), 0x08021B (main operation), 0x0989E9, 0x09953F (conditional test), 0x098A13 (always called on both paths), 0x099574 (only on success+no-carry). Secondary: JP 0x099629 (for type 0x1C).
+
+(2) ★★★★ 0x097C8A LIST/COMPLEX SETUP DECODED (probe-phase523-decode-097C8A-list-setup.mjs, Codex+Opus manual verification):
+- **Entry (0x097C8A)**: PUSH AF → LD (D02712),A (store type code) → CALL 0x058D49.
+- **0x058D49 (11B)**: LD A,(D0008E) → AND 0xC0 → LD (D0008E),A → RET. Clears lower 6 bits of RAM flag at D0008E.
+- **Flag check**: BIT 7,(IY+9) → if set: LD A,7 → LD (D02506),A → LD (D0250D),A (set column counts to 7).
+- **Shared exit**: CALL 0x097AB2 → JP Z,0x097F6A (error/empty path).
+- **Main body**: .SIS LD (D02563),HL zeros D02563 (via MBASE=D0), POP AF + PUSH AF, CALL 0x07F7A8 type normalizer, CP 0x02 → JP Z,0x097D54, CP 0x04 → JP Z,0x097D69.
+- **List setup**: CALL 0x09903E → .SIS LD (D00338),BC → LD HL,(D00335) → LD (HL),0x00 → DEC HL → LD (HL),0x7D (writes '}' terminator). Then LD HL,(D02695), PUSH HL, LD DE,9, .SIS LD BC,(D02718).
+- **PURPOSE**: Shared list/complex editor setup — stores type, clears mode flags, validates type, writes list terminator '}'+NUL to edit buffer end, sets up iteration with stride=9 from buffer metadata D02695/D02718.
+- **NEW RAM**: D02563 (cleared at setup), D0008E (mode flags, lower 6 bits cleared), D02506/D0250D (column counts, set to 7 if IY+9 bit 7), D00335/D00338 (edit buffer end pointer/BC metadata).
+
+(3) ★★★★ 0x07FACF BCD UTILITY COLLECTION DECODED (probe-phase523-decode-07FACF-fp-context.mjs, Codex+Opus manual verification):
+- **NOT a single function** — this is a cluster of small BCD/FP utility routines with multiple entry points:
+  - **0x07FACF (6B)**: LD HL,D005F8 → JR 0x07FADF — clear 3 bytes at D005F8 then continue to 0x07FA7F for extended clear (11+ bytes total).
+  - **0x07FAD5 (6B)**: LD HL,D00603 → JR 0x07FADF — clear 3 bytes at D00603 + extended.
+  - **0x07FADB (4B)**: LD HL,D0060E → fall through to 0x07FADF — clear 3 bytes at D0060E + extended.
+  - **0x07FADF (7B)**: XOR A → LD (HL),A → INC HL → LD (HL),A → INC HL → LD (HL),A → JR 0x07FA7F.
+  - **0x07FA7F**: Continuation — INC HL, LD (HL),A, XOR A, then continues filling more bytes (clears sign+exponent+mantissa of FP accumulator area).
+  - **0x07FAE7 (5B)**: LD (HL),0 → INC HL → DJNZ -5 → RET. Generic B-count zero fill.
+  - **0x07FAED (5B)**: RRA×4 → AND 0x0F → RET. Upper nibble extraction (shifts nibble to lower position).
+  - **0x07FAF4 (5B)**: LD A,C → ADD A,A×4 → RET. C × 16 (shifts lower nibble to upper position).
+  - **0x07FAFA-0x07FB34**: Multiple entry points using RRD chains on D005FA+ (8-9 RRD operations per path). BCD digit rotation/clearing for the FP accumulator mantissa bytes.
+- **FP ACCUMULATOR MAP**: D005F8 = sign/flags, D005F9 = exponent, D005FA-D00602 = mantissa (9 BCD digits). D00603 = second accumulator (OP2). D0060E = third accumulator (OP3).
+
+(4) ★★★★ 0x098B80 PROGRAM EDITOR SETUP DECODED (probe-phase523-decode-098B80-prog-setup.mjs, Codex+Opus manual verification):
+- **Entry (0x098B80)**: RES 7,(IY+0x1B) → RES 6,(IY+0x56) — clear two editor state flags.
+- **Stack frame**: PUSH IX, LD IX=SP, 1-byte local allocation (IX-1 stores token code).
+- **Flag management**: BIT 0,(IY+0x49) → PUSH AF (save old state) → SET 0,(IY+0x49) — mark "editing active".
+- **Setup calls**: CALL 0x098D04 → store result to (IX-1). CALL 0x07FE50 (type rewriter).
+- **Buffer init**: LD HL,0 → .SIS LD (D02510),HL (clear program pointer). LD DE,D02510, CALL 0x08020A.
+- **Token routing (~100B)**: Complex dispatch on token stored at (IX-1):
+  - Token 0xDB (exponent/power): renders '(' expression ')' via CALL 0x0994D7 + CALL 0x0990F7, or '^' '(' prefix when flags set.
+  - Token 0x2D ('-' minus): CALL Z,0x0994D7 with A=0x1A.
+  - BCD value checks at D005F9 (exponent=0x80?) and D005FA (mantissa lead=0x10?) with DJNZ loop checking 6 zero mantissa bytes.
+- **CALL targets (11)**: 0x098D04, 0x07FE50, 0x08020A, 0x07FD4A, 0x080204, 0x07FD50, 0x0994D7 (token renderer, called 6+ times), 0x0990F7, 0x07FD30, 0x07F7BD, 0x07FDC9.
+- **PURPOSE**: Program-specific editor initialization. Clears state flags, allocates program edit context, then processes the first token — handling exponentiation display (0xDB→'^(' prefix), minus sign rendering, and zero-value simplification (if FP value is exactly 0, special handling via 0x07FDC9).
+- **NEW RAM**: IY+0x1B bit 7, IY+0x56 bit 6 (editor state flags cleared at entry), IY+0x49 bit 0 (editing-active flag, SET unconditionally).
+
+(5) CODEX: All 4 created probe files (P1 exit 1/success, P2 exit 1/success, P3 exit 0, P4 exit 0). Exit code 1 from cross-agent wrapper, not from Codex task itself. Disassemblers have known DD/FD/SIS prefix handling issues (treat IX/IY prefixes as separate "DB" bytes, miss .SIS mode prefix 0x40). All findings manually verified by Opus via ROM hex dumps. No Sonnet fallbacks needed.
+
+(6) NEW FUNCTIONS: 0x0987B5/0x0987B7 (type-specific initializer, ~70B, dual entry), 0x0987FB (secondary type dispatch, extends to types 0x20/0x21/0x1C), 0x058D49 (D0008E flag clearer, 11B), 0x097C8A (list/complex setup, ~170B), 0x098B80 (program editor setup, ~200B+), 0x07FACF/0x07FAD5/0x07FADB (FP accumulator clearers), 0x07FADF (3-byte zero fill), 0x07FA7F (extended FP clear), 0x07FAE7 (B-count zero fill), 0x07FAED (upper nibble extractor), 0x07FAF4 (C*16), 0x07FAFA-0x07FB34 (RRD BCD digit operations).
+NEW RAM: D02563 (list setup, cleared), D0008E (mode flags), D02506/D0250D (column counts), D00335/D00338 (edit buffer end/metadata), D005F8 (FP sign/flags), D005F9 (FP exponent), D005FA-D00602 (FP mantissa OP1), D00603 (OP2 start), D0060E (OP3 start), D02718 (list iteration metadata).
+
+PROBES: probe-phase523-decode-0987B5-type-init.mjs (Codex, Opus-verified), probe-phase523-decode-097C8A-list-setup.mjs (Codex, Opus-verified), probe-phase523-decode-07FACF-fp-context.mjs (Codex, Opus-verified), probe-phase523-decode-098B80-prog-setup.mjs (Codex, Opus-verified). BOOT STATE: 51,622 seeds, 145,927 blocks, 713,624 covered bytes (unchanged — pure investigation). Golden regression PASS 26/26.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — Browser-bound, needs human. Full rendering pipeline + scroll + rect fill + type dispatch + program editor now fully decoded. (b) ★★★★ DECODE 0x0997AE — Called first by 0x0987B5 type init. Pre-setup for edit-buffer creation. (c) ★★★★ DECODE 0x08021B — The main operation in 0x0987B5 that gates success/failure of type init (carry = failure). (d) ★★★★ DECODE 0x0989E9 — Called on success path of type init. (e) ★★★★ DECODE 0x09903E — Called by 0x097C8A list setup before BC metadata write. (f) ★★★ DECODE 0x0994D7 — Token renderer called 6+ times by program editor. (g) ★★★ DECODE 0x0990F7 — Called between '(' and ')' rendering in program editor. (h) ★★★ MAP FULL FP ACCUMULATOR LAYOUT — D005F8-D0060E area now partially mapped (OP1/OP2/OP3); confirm against TI SDK docs. --END SESSION 523--
 
 **Session 522 findings (2026-06-05)**:
 
