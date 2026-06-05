@@ -8,9 +8,67 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-05 (auto-session 526 — **★★★★ 0x07DC4A IY FLAG CONDITIONER DECODED (23B, SET/RES/BIT on IY+72 bit 4 gated by IY+73 bit 0 and IY+72 bit 0, gates FP conversion chain behavior). ★★★★ 0x069E5E FP RANGE CHECKER + SIGN-PRESERVING NORMALIZER DECODED (42B, BIT 4,(IY+72) gate, OP1 exponent CP 0x86 + OP2 exponent CP 0x84 range checks, CALL 0x069E46 sign read + 0x07F829 FP comparison + CALL NZ 0x069E4D sign restore, JP 0x069E12 tail finalizer, large exponent path→0x069EDB). ★★★★ 0x06A261 COMPLEX NUMBER (TYPE 0x0C) HANDLER DECODED (42B, dual entry 0x06A261/0x06A265, CALL 0x07FD30 OP1↔OP2 swap 11B DJNZ, CALL 0x082957 save OP2→stack 9xLDI, CALL 0x07FE5A/0x07FE24 type transforms, CALL 0x08021B type validator, type==0x18+sign bit 6 clear→CALL 0x07DC7E SET bits 4,5 IY+72+FP compare, CALL 0x0828FC restore OP2). ★★★★ 0x07FA07 FP ACCUMULATOR INIT TABLE DECODED (~128B, LD DE,D00603+JR 0x07F9FF shared copy, ~20 entry points for OP1/OP2/OP3/OP4 with copy via 0x07F9FF or BCD constant init via 0x07FA7A write loop: (HL)=0x00,(HL+1)=0x80,(HL+2)=A). CORRECTION: 0x07F978 SAVE uses 9x LDI (9-byte copy), NOT 11-byte LDIR. GOLDEN REGRESSION PASS.**)
+**Last updated**: 2026-06-05 (auto-session 527 — **★★★★ 0x069E12 TAIL FP FINALIZER FULLY DECODED (52B, two exit paths: SCF+RET=success writes type 0x18/0x19 with sign preservation, CP A+RET=failure loads default from D00842. Exponent range checks via 0x069DF6 with B=0x86/0x84 thresholds, OP1↔OP3 save/restore via 0x07F8CC/0x07F920, 0x069EE5 OP2→OP1 swap+exp check. Extended path 0x069E88 calls 0x069CCE complex FP division, three-stage reduction loop with B=0x83, type 0x19 alternate exit via 0x069E30). ★★★★ 0x07F829 FP COMPARISON/NORMALIZATION FULLY DECODED (62B, type validation via 0x07FDD6/0x07FDD0 with AND 0x3F+CP 0x1C/0x1D gate, zero-exponent normalization for OP1/OP2, sign-aware dispatch: both positive→exponent SUB+B=7 mantissa loop, both negative→reversed HL/DE pointers, mixed signs→immediate result. 0x080037 exponent comparator: LD A,(D005F9)/SUB (D00604). Epilogue restores zero-exponent OPs via 0x07FAC2/0x07FAAF). ★★★★ 0x07F9FF SHARED COPY = JP 0x07F978 TRAMPOLINE (4B, actual copy is 9x LDI chain at 0x07F978=19B. FP init table 0x07FA07+ has ~20 entries: copy entries set HL/DE+JR 0x07F9FF, BCD entries set HL+A+JR 0x07FA7A. 0x07FA7A BCD init=27B: writes type=0x00, sign=0x80, exponent=A, 7 mantissa zeros). ★★★★ 0x069EDB LARGE EXPONENT HANDLER DECODED (10B, loads D00842→OP1 via 0x07F9FB, CP A clears carry+sets Z, RET=failure/equality. Extended path 0x069E88=87B: 0x069CCE FP division, OP3 zero check, three-stage exponent reduction with 0x069DF6 B=0x83, ultimate success via 0x069E30 with A=0x19 type code). GOLDEN REGRESSION PASS.**)
 
-> Previous: 2026-06-05 (auto-session 525 — 0x07DBC2 FP type-check-and-convert, 0x09953F conditional FP validation, 0x098A13 OP2 restorer, 0x082C50 variable lookup+type validation)
+> Previous: 2026-06-05 (auto-session 526 — 0x07DC4A IY flag conditioner, 0x069E5E FP range checker, 0x06A261 complex number handler, 0x07FA07 FP accumulator init table)
+
+**Session 527 findings (2026-06-05)**:
+
+(1) ★★★★ 0x069E12 TAIL FP FINALIZER FULLY DECODED (probe-phase527-decode-069E12-tail-finalizer.mjs, Sonnet+Opus verification):
+- **Entry (0x069E12, 52B)**: LD B,0x86 → CALL 0x069DF6 (exponent range check: OP1_exp - B, RET NC if exp < B) → JP NC,0x069EDB (fail if OP1 exp < 0x86). CALL 0x07F8CC (copy OP1→OP3 via 11B LDI chain). CALL 0x069EE5 (swap OP2→OP1 + check OP2 exp ≥ 0x84). PUSH AF, CALL 0x07F920 (restore OP3→OP1), POP AF. JP NC,0x069EDB (fail if OP2 exp < 0x84).
+- **Success path (0x069E2E-0x069E45)**: LD A,0x18 (type code). LD HL,D00605 / LD DE,D005FE. Two LDI copies (mantissa bytes→result area). CALL 0x069E54 (sign-preserving: tests OP1 sign bit 7, sets bit 7 of A if negative). LD (HL),A / INC HL / LD (HL),0x00. **SCF → RET** (carry set = success).
+- **Failure path**: JP 0x069EDB (carry clear = failure, loads default from D00842).
+- **Sub-functions**: 0x069DF6 (3B exponent check), 0x069EE5 (11B OP2→OP1 swap+exp check), 0x069E54 (10B sign-preserving helper).
+- **KEY**: Two type codes possible: 0x18 (normal path via 0x069E12) and 0x19 (extended path via 0x069E88→0x069E30). Both share the same success tail at 0x069E30.
+- **CALL targets**: 0x069CBF, 0x069CC8, 0x069CCE, 0x069D49, 0x069DF6, 0x069E46, 0x069E4D, 0x069E54, 0x069EE5, 0x07C9AF, 0x07F829, 0x07F8AC, 0x07F8CC, 0x07F90E, 0x07F91A, 0x07F920, 0x07F954, 0x07F958, 0x07F95E, 0x07F968, 0x07F9FB, 0x07FAA1, 0x07FACF, 0x07FAD5, 0x07FB15, 0x07FB19, 0x07FB48, 0x07FB4C, 0x07FBFC, 0x07FC7C, 0x07FD0E, 0x07FD50, 0x07FDD0, 0x07FDD6, 0x07FE1A, 0x080037.
+- **RAM**: D005F8 (OP1 type/sign), D005F9 (OP1 exp), D005FA (OP1 mantissa), D005FE (result area), D00603-D00605 (OP2), D0060E/D00610 (OP3), D00619 (OP4), D00624 (OP5), D0062F/D00631 (OP6), D00842 (default/error FP value).
+
+(2) ★★★★ 0x07F829 FP COMPARISON/NORMALIZATION FULLY DECODED (probe-phase527-decode-07F829-fp-compare.mjs, Sonnet+Opus verification):
+- **Entry (0x07F829, 62B to RET at 0x07F897)**: Phase 1: CALL 0x07FDD6 (OP1 type validate: AND 0x3F, CP 0x1C/0x1D, if match→copy to OP5+RET, else RES 7,(HL) strip sign). CALL 0x07FDD0 (same for OP2).
+- **Phase 2 — Zero-exponent normalization**: LD A,(D005FA), if zero→CALL 0x07FACF (zero-clear OP1). LD A,(D00605), if zero→CALL 0x07FAD5 (zero-clear OP2).
+- **Phase 3 — Sign-aware dispatch**: LD A,(D005F8), OR A. LD A,(D00603). JP M,0x07F86D (OP2 negative path). AND 0x80, JR NZ,0x07F883 (mixed signs→immediate result).
+- **Phase 4 — Exponent comparison**: CALL 0x080037 (LD A,(D005F9); SUB (D00604); RET — 10B). Sets HL=D00605, DE=D005FA. JR NZ,0x07F883 (exponents differ→done).
+- **Phase 5 — B=7 mantissa loop**: LD B,0x07. Loop at 0x07F864: LD A,(DE) / CP (HL) / RET NZ / INC HL / INC DE / DJNZ. If all 7 equal→JR 0x07F883.
+- **Negative path (0x07F86D)**: AND 0x80 (test OP1 sign). If mixed signs: SUB 0x01 (sets carry, OP1>OP2). If both negative: load exponents, SUB, swap HL/DE pointers (reverse comparison for negatives), JR back to 0x07F860.
+- **Epilogue (0x07F883)**: PUSH AF. If OP1 exp zero→CALL 0x07FAC2 (reinit as BCD constant type=0, exp=0x80). If OP2 exp zero→CALL 0x07FAAF. POP AF, RET.
+- **Return semantics**: Carry from SUB of exponents (OP1 exp < OP2 exp), or from CP of mantissa bytes, or from sign-difference shortcut.
+- **Sub-functions**: 0x07FDD6 (13B OP1 type validator), 0x07FDD0 (6B OP2 type validator→falls into 0x07FDD6), 0x080037 (10B exponent comparator), 0x07FACF/0x07FAD5 (zero-clearers), 0x07FAC2/0x07FAAF (BCD reinitializers).
+- **RAM**: D005F8, D005F9, D005FA (OP1), D00603, D00604, D00605 (OP2).
+
+(3) ★★★★ 0x07F9FF SHARED COPY ROUTINE = JP 0x07F978 TRAMPOLINE (probe-phase527-decode-07F9FF-shared-copy.mjs, Sonnet+Opus verification):
+- **0x07F9FF (4B)**: `JP 0x07F978` — trivial trampoline, no logic of its own.
+- **0x07F978 (19B)**: 9 consecutive LDI instructions + RET. Copies exactly 9 bytes from (HL) to (DE). This is the TI-OS FP accumulator copy size.
+- **CONFIRMS session 526 correction**: 9x LDI = 9 bytes, not 11-byte LDIR.
+- **FP Init Table (0x07FA07+)**: ~20 entry points organized as:
+  - **Copy entries** (via JR 0x07F9FF): Set HL=source, DE=dest: 0x07FA07 (DE=D00603/OP2), 0x07FA0D (HL=D005F8/OP1), 0x07FA13 (HL=D00603/OP2).
+  - **BCD constant entries** (via JR 0x07FA7A): Set HL=target OP, A=exponent value.
+- **0x07FA7A BCD Constant Init (27B, 0x07FA7A-0x07FA94)**: LD (HL),0x00 (type=real) → LD (HL+1),0x80 (sign=positive) → LD (HL+2),A (exponent from caller) → XOR A → 8x LD (HL),A; INC HL (zero 8 mantissa bytes) → RET.
+- **Preamble (0x07F9E0-0x07F9FE)**: Additional entry points for OP3/OP4/OP5 copies, jump to 0x07F978 directly or 0x07F974 (earlier in LDI chain for larger copies).
+- **KEY INSIGHT**: 0x07F974 entry (5 LDI before the 9x chain at 0x07F978) would copy 11 bytes total. The 0x07F8CC/0x07F920 etc. entry points that session 526's 0x069E12 calls use 0x07F974 for 11-byte copies (full OP register), while 0x07F9FF uses 0x07F978 for 9-byte copies.
+
+(4) ★★★★ 0x069EDB LARGE EXPONENT HANDLER DECODED (probe-phase527-decode-069EDB-large-exp.mjs, Sonnet+Opus verification):
+- **0x069EDB (10B)**: LD HL,0xD00842 → CALL 0x07F9FB (copy D00842→OP1 via 9B LDI) → CP A (clears carry, sets Z) → RET. Returns Z=1, C=0 = failure/equality.
+- **PURPOSE**: When exponents are too large for comparison, loads a pre-stored default FP value from D00842 into OP1 and returns with carry clear.
+- **Extended path 0x069E84-0x069EDA (87B)**:
+  - 0x069E84: `JP 0x069E12` (direct entry to tail finalizer — separate from extended path).
+  - 0x069E88: Calls 0x069CCE (complex FP division/normalization ~120B). Conditionally calls 0x069E4D (set OP1 sign negative).
+  - 0x069E91-0x069E96: LD A,(D00610) [OP3 byte], AND A, RET Z (early exit if OP3 indicator zero).
+  - 0x069E97-0x069EA7: Save OP1→OP5 (D00624), copy OP2→OP1, save OP3→OP6 (D0062F), call 0x069EE5.
+  - **Three-stage reduction**: Calls 0x069DF6 (exp check B=0x83) three times with FP shuffle ops between. Each JR NC,0x069EDB bails if exponent still too large.
+  - **Final success (0x069EC9-0x069ED7)**: Copies 2 bytes D00631→D005FC, LD A,0x19 (alternate type code), JP 0x069E30 (shared success tail with 0x069E12).
+- **KEY**: 0x069EDB does NOT reach 0x069E12 — it takes its own exit path (CP A; RET). Only the extended path's success branch reaches the shared tail at 0x069E30.
+- **D00842**: Pre-stored default/error FP value. Loaded on failure. Needs investigation — what constant is stored there?
+- **RAM**: D005F8-D005FE (OP1 area), D00603-D00605 (OP2), D0060E-D00610 (OP3), D00619 (OP4), D00624 (OP5), D0062F-D00631 (OP6), D00842 (default FP value).
+
+(5) CODEX: 2/4 created files but all had import bugs (tried to import `decodeAt` from ez80-decoder.js which doesn't export it). 2/4 failed outright. All 4 priorities completed via Sonnet fallback.
+
+(6) NEW FUNCTIONS: 0x069E12 (tail FP finalizer, 52B), 0x069DF6 (exponent range checker, 3B), 0x069EE5 (OP2→OP1 swap+exp check, 11B), 0x069E54 (sign-preserving helper, 10B), 0x07F829 (FP comparison/normalization, 62B), 0x07FDD6 (OP1 type validator, 13B), 0x07FDD0 (OP2 type validator, 6B), 0x080037 (exponent comparator, 10B), 0x07F9FF (trampoline→0x07F978, 4B), 0x07F978 (9x LDI copy, 19B), 0x07FA7A (BCD constant init, 27B), 0x069EDB (large exp handler, 10B), 0x069CCE (complex FP division, ~120B — referenced but not fully decoded).
+NEW CALL TARGETS DISCOVERED: 0x069CBF, 0x069CC8, 0x069D49, 0x07C9AF, 0x07F8AC, 0x07F8CC, 0x07F90E, 0x07F91A, 0x07F920, 0x07F954, 0x07F958, 0x07F95E, 0x07F968, 0x07F9FB, 0x07FAA1, 0x07FB15, 0x07FB19, 0x07FB48, 0x07FB4C, 0x07FBFC, 0x07FC7C, 0x07FD0E, 0x07FD50, 0x07FE1A, 0x07FAC2, 0x07FAAF, 0x07D27A, 0x07FDED.
+NEW RAM: D005FE (OP1 result area), D00842 (default/error FP value), D00624 (OP5), D0062F/D00631 (OP6).
+
+PROBES: probe-phase527-decode-069E12-tail-finalizer.mjs, probe-phase527-decode-07F829-fp-compare.mjs, probe-phase527-decode-07F9FF-shared-copy.mjs, probe-phase527-decode-069EDB-large-exp.mjs (all Sonnet, Opus-verified). BOOT STATE: unchanged (pure investigation). Golden regression PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — Browser-bound, needs human. (b) ★★★★ DECODE 0x069CCE — Complex FP division/normalization (~120B), called by extended path 0x069E88. Major undecoded FP routine. (c) ★★★★ DECODE 0x098A94 FRAME TEARDOWN — LD SP,IX; POP IX region (carried from session 526). (d) ★★★★ DECODE 0x07FE65 + 0x07FE2F — Type transform and reverse-transform routines used by complex handler (carried from session 526). (e) ★★★★ INVESTIGATE D00842 — What FP constant is pre-stored at this address? It's the default/error value loaded on comparison failure. (f) ★★★★ DECODE 0x07D27A — Tail-called by type validator 0x07FDD6 when type is 0x1C/0x1D (matrix/list). (g) ★★★ DECODE 0x0994D7 — Token renderer (carried from session 524). (h) ★★★ FRAME SIZE INVESTIGATION — Session 527 CONFIRMS two copy sizes: 9-byte via 0x07F978 and 11-byte via 0x07F974. Reconcile with session 523's 15-byte frame claim. (i) ★★★ DECODE 0x07F974 — The 11-byte LDI chain entry point (2 extra LDI before the 9x chain). Used by 0x07F8CC/0x07F920/0x07F95E for full OP register copies. --END SESSION 527--
 
 **Session 526 findings (2026-06-05)**:
 
