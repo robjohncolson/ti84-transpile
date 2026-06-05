@@ -8,9 +8,54 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-05 (auto-session 521 — **★★★★★ 0x09CEAF COMPOSITE REFRESH FULLY DECODED (29B, SET 5,(IY+0) → CALL 0x09CE6B/0x0A1F52/0x097AC8/0x0A1F80/0x0800B8 → RES 6,(IY+73) → RET). ★★★★★ 0x097AC8 = EDIT-BUFFER TYPE DISPATCHER/STATE RESETTER (clears 4 IY flags + 3 RAM locations, type-dispatch cascade via 0x07F7BD with 7 type codes, 22 nested CALLs). ★★★★★ 0x0A1F80 = CURSOR POSITION SAVER + DISPLAY-LINE BUFFER SYNC (saves curRow→D02685, LDIR 0x20D0-byte buffer swap D031F6↔D07396, 9 IY flag checks). ★★★★★ 0x09BAFF EXTENDED TOKEN CLASSIFIER FULLY DECODED (34 CP comparisons, 23 unique handler targets, D005F8/D005F9/D005FA write pattern, B-register type codes: 0x5C→B=2, 0xAA→B=4, 0x5D→B=1, 0x5E→B=3, 0x61→B=8, 0x62-63→B=0, default→B=7). ★★★★★ TOKEN TABLE STRUCTURE CONFIRMED: 45 uniform LD A,imm8 + JR/JP stubs → common handler 0x061DB2 (stores D008DF, CALL 0x03E1B4, SP restore from D008E0). 0x061D22=token 0x89, 0x061D3E=token 0x8E — NOT distinct handler types. ★★★★★ 0x0A3126 DISPLAY SCROLL FULLY DECODED (dual-layer: pixel LDIR/LDDR at D40000 + text LDIR at D006BF, up/down via IY+0x4C bit 7, dual VRAM buffer D031F6/D052C6 via IY+0x4A bit 3, MLT L*0xA0*4=640 row stride, edit-buffer scroll at 0x0A321D with 26-col LDDR + space fill). GOLDEN REGRESSION PASS 26/26.**)
+**Last updated**: 2026-06-05 (auto-session 522 — **★★★★ 0x092F35 SCROLL HELPER FULLY DECODED (24B, SCF+conditional CALL 0x0A3146 pixel scroll if 0<B<0xC6, always CALL C,0x092F52 content adjust, ADD HL,BC pointer advance). ★★★★ 0x09EF20 LCD RECTANGLE FILL DECODED (wrapper around 0x09EF44: PUSH HL, LD HL,0x40FFFF→control, CALL 0x09EF44, dual VRAM path D40000 vs E30010 via 0x08C308, MLT H*0xA0 row stride, DJNZ 16-bit pixel fill loops, D0059C cursor, 0x000140/0x000280 row advance). ★★★★ 0x097AC8 TYPE-DISPATCH CASCADE FULLY MAPPED (7 type codes: 0x20=appvar→0x097B33 CALL 0x0987B5, 0x21=group→0x097B3F CALL 0x0987B5, 0x1C=protprog→0x097B4B LD A,0x1A+CALL 0x0987B7, 0x1B=prog→0x097B55 CALL 0x07F7A8+0x098B80, 0x01=real list→0x097B8C CALL 0x097C8A, 0x0D=complex list→0x097BA4 CALL 0x097C8A, 0x02=matrix→0x097BB0 CALL 0x099187+0x0A8FD0+0x097AAC, 0x04=extra→0x097BF5). ★★★★ 0x09B9C8 TOKEN GATE DECODED (5B: CALL 0x09BBAA validator [CP 0x3E/0x00/0x3F→RET Z], RET NZ, JP 0x061D2C token table). ★★★★ 0x09BAB8 TOKEN FETCH CONFIRMED (bounds-check curPC D0231A vs endPC D0231D via SBC, fetch byte at curPC into A). GOLDEN REGRESSION PASS 26/26.**)
 
-> Previous: 2026-06-05 (auto-session 520 — 0x09BAB8/0x09BAD1 token reader + OPS stack reader, 0x09BF58 range dispatcher, 0x0A1799 font lookup, 0x0A2032 line wrap/scroll)
+> Previous: 2026-06-05 (auto-session 521 — 0x09CEAF composite refresh, 0x097AC8 type dispatcher, 0x0A1F80 cursor saver, 0x09BAFF token classifier, 0x0A3126 display scroll)
+
+**Session 522 findings (2026-06-05)**:
+
+(1) ★★★★ 0x092F35 SCROLL HELPER FULLY DECODED (probe-phase522-decode-092F35-insertmem-scroll.mjs, Codex+Opus manual verification):
+- **Entry (0x092F35, 24B)**: SCF → PUSH AF → PUSH BC → LD D,A → LD A,B → CP 0xC6 → JR NC,skip → OR A → LD A,D → JR Z,skip → CALL 0x0A3146 → POP BC → POP AF → CALL C,0x092F52 → RET.
+- **0x0A3146 = PIXEL SCROLL ENGINE (183B)**: Called when row count B is in range (0, 0xC6). 4 LDIR/LDDR block transfers: forward scroll uses LDIR at D40000 (VRAM) + LDIR at D031F6/D052C6 (text buffers); reverse uses LDDR for both. IY+0x4C bit 7 selects direction, IY+0x4A bit 3 selects text buffer (D031F6 vs D052C6). Uses MLT HL (H=0xA0) for row-to-byte-offset (640 * row).
+- **0x092F52 = INSERTMEM PARAMETER CALCULATOR (43B)**: Called via CALL C (always true since SCF at entry). Reads D02684 (edit buffer metadata), IY+0x4C bit 7 gates two calculation paths for B (count) and C (position). LD HL=2, LD DE=0x013F=319. Calls 0x08200D (InsertMem/DeleteMem primitive).
+- **PURPOSE**: Two-phase scroll helper: (1) pixel-level VRAM scroll via 0x0A3146 if rows to scroll > 0 and < 0xC6, then (2) edit-buffer memory insertion via 0x092F52→0x08200D. The scroll completes by also adjusting the edit buffer content, not just the display.
+
+(2) ★★★★ 0x09EF20 LCD RECTANGLE FILL DECODED (probe-phase522-decode-09EF20-lcd-rect.mjs, Codex, Opus-verified):
+- **Entry (0x09EF20, ~15B wrapper)**: PUSH HL → LD HL,0x40FFFF → LD (0xE12AC0),HL → CALL 0x09EF44 → RET.
+- **0x09EF44 = RECTANGLE FILL CORE (~200B)**: DI/EI protected. Parameters: B=start row, C=end row, DE=start column. A = C-B+1 (row count). Dual VRAM path via CALL 0x08C308: (a) Non-zero → LD DE,(E30010) alternate VRAM base, row advance 0x000140 (320 bytes), 1-byte pixel writes; (b) Zero → LD DE,D40000 standard VRAM, row advance 0x000280 (640 bytes), 2-byte pixel writes (LD (HL),E + LD (HL),D). Both paths use DJNZ for pixel fill within a row, outer loop DEC A / JR NZ for rows. D0059C used as VRAM cursor (saved/restored per row).
+- **NEW INSIGHT**: The 0x08C308 check determines 8bpp vs 16bpp VRAM mode. 0x000140 = 320 bytes (8bpp row), 0x000280 = 640 bytes (16bpp row).
+
+(3) ★★★★ 0x097AC8 TYPE-DISPATCH CASCADE FULLY MAPPED (probe-phase522-decode-097AC8-type-targets.mjs, Sonnet, Opus manual ROM verification):
+- **Full dispatch table** (CP/JR NZ cascade after 0x097B1F):
+  - CP 0x20 (appvar) → 0x097B33: CALL 0x0987B5, LD A,0x20, JR→0x097B02
+  - CP 0x21 (group) → 0x097B3F: CALL 0x0987B5, LD A,0x21, JR→0x097B02
+  - CP 0x1C (prot program) → 0x097B4B: LD A,0x1A, CALL 0x0987B7, LD A,0x1C, JR→0x097B02
+  - CP 0x1B (program) NOT direct CP — reached via JR NC at 0x097AFC when type≥0x1B: CALL 0x07F7A8, JR NZ→0x097B88, CALL 0x098B80, CP 0x1B at 0x097B60
+  - CP 0x01 (real list) → 0x097B8C: CALL 0x097C8A, LD A,0x01, LD HL,D0033A, CALL 0x097AB2
+  - CP 0x0D (complex list) → 0x097BA4: LD A,0x0D, CALL 0x097C8A, JR→0x097B92
+  - CP 0x02 (matrix) → 0x097BB0: CALL 0x099187, CALL 0x0A8FD0, CALL 0x097AAC, conditional LD HL,1→(D0250D/D0250B), CALL 0x098096, LD A,0x02→D02712
+  - CP 0x04 (extra/equation?) → 0x097BF5: CALL 0x097CFE, CALL 0x097C45 (6 CALLs total)
+- **Shared paths**: Types 0x20/0x21 both CALL 0x0987B5 + JR to 0x097B02 (common exit). Types 0x01/0x0D both CALL 0x097C8A. Default path (no match) falls to 0x097CC9+.
+- **KEY FUNCTIONS**: 0x0987B5/0x0987B7 = type-specific initializers, 0x097C8A = list/complex setup, 0x097AB2 = shared post-dispatch, 0x097AAC = most-shared helper (called by 7 type handlers).
+- **EXTRA DISCOVERY**: Type 0x04 (likely equation) also dispatched at 0x097BF5 → CALL 0x097CFE + CALL 0x097C45. Not in original 7-type list from session 521. Total: 8 type codes + default path.
+- **32 unique CALL targets** across all handlers. 0x097AAC is the most-shared (7 types).
+- **NEW RAM**: D02510 (used by program/list handler), D0033A (real list edit pointer), D0250D/D0250B (matrix init flags), D02712 (edit-mode type, written with type code).
+
+(4) ★★★★ 0x09B9C8 TOKEN GATE + 0x09BAB8 TOKEN FETCH CONFIRMED (probe-phase522-decode-09B9C8-token-fetch.mjs, Sonnet, Opus-verified):
+- **0x09B9C8 (5B)**: CALL 0x09BBAA → RET NZ → JP 0x061D2C.
+- **0x09BBAA = TOKEN VALIDATOR (8B)**: CP 0x3E → RET Z (newline/end token?); OR A → RET Z (null byte); CP 0x3F → RET (flags set for caller).
+- **GATE LOGIC**: If A is 0x3E, 0x00, or 0x3F → return NZ (token rejected). Otherwise → JP 0x061D2C (enter token table dispatcher).
+- **0x09BAAF = ADVANCE curPC (10B)**: LD HL,(D0231A) → INC HL → LD (D0231A),HL. Advances parse pointer by 1.
+- **0x09BAB8 = FETCH BYTE AT curPC (17B)**: LD BC,(D0231A) [curPC] → LD HL,(D0231D) [endPC] → XOR A → SBC HL,BC → RET C [if past end] → PUSH BC → POP HL → LD A,(HL) → RET. Bounds-checked fetch: returns carry if curPC > endPC, else returns byte at curPC in A.
+- **TOKEN FETCH PIPELINE**: 0x09BAAF (advance) → 0x09BAB8 (bounds-check + fetch) → 0x09B9C8 (validate + dispatch to token table).
+
+(5) CODEX: P1 exit 0 (created probe, ran with decoder issues — Opus manually decoded 0x092F35). P2 exit 0 (created probe, ran successfully with good VRAM analysis). P3 exit 0 (created probe, decoder missed 6/7 dispatch targets — Sonnet fallback produced full disassembly, Opus manual ROM reads confirmed). P4 exit 0 (created probe, 16-bit address bug — Sonnet fixed to 24-bit ADL mode). Overall: Codex 4/4 created files, but quality varied. Sonnet 3/4 completed (P1 still running at commit time). All findings Opus-verified via manual ROM reads and probe execution.
+
+(6) NEW FUNCTIONS: 0x092F35 (scroll helper, 24B), 0x092F52 (InsertMem param calculator, 43B), 0x0A3146 (pixel scroll engine, 183B, 4 LDIR/LDDR), 0x08200D (InsertMem/DeleteMem primitive), 0x09EF20 (LCD rect fill wrapper), 0x09BBAA (token validator, 8B), 0x09B9C8 (token gate, 5B), 0x097C8A (list/complex setup helper), 0x0987B5/0x0987B7 (type-specific initializers), 0x097AAC (shared type handler, called by 7 types), 0x08C308 (VRAM mode checker, 8bpp vs 16bpp gate). NEW RAM: D02510 (program/list handler), D0033A (real list edit pointer), D0250D/D0250B (matrix init flags), D02684 (edit buffer metadata for scroll), D0059C (VRAM cursor), E12AC0 (LCD control), E30010 (alternate VRAM base).
+
+PROBES: probe-phase522-decode-092F35-insertmem-scroll.mjs (Codex, Opus-verified), probe-phase522-decode-09EF20-lcd-rect.mjs (Codex, Opus-verified), probe-phase522-decode-097AC8-type-targets.mjs (Sonnet, Opus-verified), probe-phase522-decode-09B9C8-token-fetch.mjs (Sonnet, Opus-verified). BOOT STATE: 51,622 seeds, 145,927 blocks, 713,624 covered bytes (unchanged — pure investigation). Golden regression PASS 26/26.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — Browser-bound, needs human. Full rendering pipeline + scroll + rect fill now fully decoded. (b) ★★★★ DECODE 0x0987B5/0x0987B7 TYPE-SPECIFIC INITIALIZERS — Called by all type-dispatch handlers in 0x097AC8. Understanding these completes the edit-buffer type setup. (c) ★★★★ DECODE 0x097C8A LIST/COMPLEX SETUP — Shared by real list (0x01) and complex list (0x0D) handlers. (d) ★★★★ DECODE 0x07FACF — Called after PUSH AF in classifier (0x09BB35). FP-related context setup? (e) ★★★ DECODE 0x098B80 — Called by program type (0x1B) handler. Program-specific editor setup? (f) ★★★ DECODE 0x08C308 — The VRAM mode checker (8bpp vs 16bpp gate) called by 0x09EF44. Understanding this explains which LCD mode the OS uses. --END SESSION 522--
 
 **Session 521 findings (2026-06-05)**:
 
