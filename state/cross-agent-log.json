@@ -16305,15 +16305,147 @@
       "timestamp": "2026-06-04T00:05:15Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "4012abb01dcd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 517 \u2014 P3: Map the Key-to-Token Table at 0x061CFA-0x061DB1\n\n## Context\nThis is a TI-84",
+      "status": "success",
+      "duration_seconds": 65.693,
+      "timestamp": "2026-06-04T02:04:21Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "fef2b847ec8a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 517 \u2014 P1: Trace 0x0B8505 (BCD Digit Renderer) End-to-End\n\n## Context\nThis is a TI-84 ",
+      "status": "complete",
+      "duration_seconds": 105.287,
+      "timestamp": "2026-06-04T02:04:56Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "0265fdd33629",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 517 \u2014 P4: Decode Type Remapping Tables at 0x07FE8A and 0x07FE91\n\n## Context\nThis is a",
+      "status": "completed",
+      "duration_seconds": 113.819,
+      "timestamp": "2026-06-04T02:05:11Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d63a53f9d7c8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 517 \u2014 P2: Decode 0x03E1B4 (Token Processor)\n\n## Context\nThis is a TI-84 Plus CE ROM t",
+      "status": "completed",
+      "duration_seconds": 163.257,
+      "timestamp": "2026-06-04T02:05:56Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "55bbb73fe39f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Test 0x0B9032 (String Renderer) End-to-End\n\n## Context\nYou are working on TI-84 Plus CE ROM ",
+      "status": "completed",
+      "duration_seconds": 77.183,
+      "timestamp": "2026-06-04T04:03:51Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "26f19d740bcc",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x097757 \u2014 Post-Allocation Handler\n\n## Context\nYou are working on TI-84 Plus CE ROM t",
+      "status": "success",
+      "duration_seconds": 98.077,
+      "timestamp": "2026-06-04T04:04:08Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c036bb266446",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Cross-Reference Key-to-Token Table with _GetCSC Scan Codes\n\n## Context\nYou are working on TI",
+      "status": "complete",
+      "duration_seconds": 98.037,
+      "timestamp": "2026-06-04T04:04:10Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1a83f2cc8b77",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x03E187 \u2014 Flash Unlock + Token Processing Core\n\n## Context\nYou are working on TI-84 ",
+      "status": "completed",
+      "duration_seconds": 124.074,
+      "timestamp": "2026-06-04T04:04:31Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "01b0d7059893",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Cross-Reference Key-to-Token Table with _GetCSC Scan Codes\n\n## Context\nYou are working on th",
+      "status": "success",
+      "duration_seconds": 132.878,
+      "timestamp": "2026-06-05T04:05:36Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3d38598717f4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Test 0x0B9032 (String Renderer) End-to-End\n\n## Context\nYou are working on the TI-84 Plus CE ",
+      "status": "completed",
+      "duration_seconds": 130.736,
+      "timestamp": "2026-06-05T04:05:38Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1db0970953b1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x03E187 \u2014 Flash Unlock + Token Processor Core\n\n## Context\nYou are working on the TI-",
+      "status": "success",
+      "duration_seconds": 146.45,
+      "timestamp": "2026-06-05T04:05:45Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6ee529246a50",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x097757 \u2014 Post-Allocation Handler\n\n## Context\nYou are working on the TI-84 Plus CE R",
+      "status": "completed",
+      "duration_seconds": 157.255,
+      "timestamp": "2026-06-05T04:05:58Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1353,
-    "cc_to_codex": 1353,
+    "total_calls": 1365,
+    "cc_to_codex": 1365,
     "codex_to_cc": 0,
-    "completed": 958,
+    "completed": 964,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 546.502
+    "avg_duration_seconds": 542.733
   }
 }

@@ -8,7 +8,58 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-03 (auto-session 517 — **★★★★★ 0x0B8505 → 0x0A1799 RENDERING PIPELINE VERIFIED END-TO-END (1389 steps, 534 VRAM bytes, 267 pixels at rows 97-112, rasterizer hit at step 7). ★★★★★ 0x03E1B4 DECODED AS INTERRUPT-SAFE WRAPPER AROUND 0x03E187 (flash access + token processing), TOKEN PROCESSING BODY AT 0x03E230 (PUSH IX, LD IY=D00080, CALL 0x03E023/0x03E039 display state init, CALL 0x03E256 token insertion). ★★★★★ KEY-TO-TOKEN TABLE 0x061CFA-0x061DB1 FULLY EXTRACTED (45 ENTRIES: 43 standard LD A,token;JR + 2 fallthrough, ALL converging on 0x061DB2 common handler). ★★★★★ TYPE REMAPPING TABLES AT 0x07FE8A/0x07FE91 DECODED AS BIDIRECTIONAL CODEC (6+5 entries sharing 12-byte data region, each function's search table is the other's replacement table via CPIR BC residual). GOLDEN REGRESSION PASS 26/26.**)
+**Last updated**: 2026-06-05 (auto-session 518 — **★★★★★ 0x0B9032 STRING RENDERER VERIFIED END-TO-END (1682 steps, 724 VRAM bytes, 362 pixels at rows 97-114, 2 char renderer hits for "Hi" test string, pipeline 0x0B9032→0x0A1B5B→0x0A1799→VRAM CONFIRMED). ★★★★★ 0x097757 POST-ALLOCATION HANDLER DECODED (200B, contains BUILT-IN STRING RENDERING LOOP at 0x0977D6 calling 0x0A1B5B char renderer, plus token metadata integration via 0x06C72D/0x06C73C/0x06C732/0x06C737 edit-buffer helpers). ★★★★★ 0x03E187 FLASH UNLOCK DECODED (44B, DI→IM1→OUT0 ports 0x28/0x06/0x24, flash validation CP 0x88/JP NZ 0x000066, adjacent function 0x03E1E6 writes 0x8C to port 0x24 + JP 0x03E187 loop). ★★★★ DISPATCHER FALLTHROUGH ANALYSIS: ONLY 3 SCAN CODES (0xFC/0xFD/0xFE) REACH 0x061D1A DIRECTLY — other token table entries reached via direct JPs from sub-handlers 0x09AF4E/0x099BB0/etc. GOLDEN REGRESSION PASS 26/26.**)
+
+> Previous: 2026-06-03 (auto-session 517 — 0x0B8505→0x0A1799 rendering pipeline verified, 0x03E1B4 decoded, key-to-token table extracted, type remapping tables decoded)
+
+**Session 518 findings (2026-06-05)**:
+
+(1) ★★★★★ 0x0B9032 STRING RENDERER VERIFIED END-TO-END (probe-phase518-test-0B9032-string.mjs, Codex, Opus-verified):
+- Boot → seed descriptor state, set "Hi" string (0x48,0x69) in RAM at D01000, curRow=3, curCol=0.
+- Set PC=0x0B9032, ran 1682 steps, returned cleanly to fake ret addr.
+- **2 char renderer (0x0A1B5B) hits**, 2 rasterizer (0x0A1799) hits — one per character.
+- **724 non-zero VRAM bytes** (362 pixels), bounding box rows [97..114] cols [0..25] = 18×26 pixel region.
+- curCol advanced from 0 to 2 (one increment per character rendered).
+- **CONFIRMS**: 0x0B9032 is the string renderer calling 0x0A1B5B (char-to-glyph converter) which calls 0x0A1799 (rasterizer). Both direct callers of 0x0A1799 now verified: 0x0B8505 (BCD digit, session 517) and 0x0B9032 (string, session 518).
+
+(2) ★★★★★ 0x097757 POST-ALLOCATION HANDLER DECODED (200B, probe-phase518-decode-097757.mjs, Codex, Opus-verified):
+- **Entry (0x097757)**: PUSH HL, LD HL,(D00687) — loads token metadata pointer.
+- **Metadata validation**: Reads (HL),(HL+1) — OR together; if zero → alternate path at 0x0977BA.
+- **D005FA bit routing**: Reads D005FA (descriptor flags), dispatches based on bits 4/5/6:
+  - Bit 6 set: CALL 0x06C72D (edit buffer handler type 1)
+  - Bit 5 set: routes to CALL 0x06C737 (edit buffer handler type 2)
+  - Bit 4 set: CALL 0x06C73C (edit buffer handler type 3)
+  - Neither: CALL 0x06C732 (default edit buffer handler)
+- **Common validation (0x09778C)**: Checks B AND 0x3F, CP 0x03 → JP Z 0x03D1E4 (error/overflow). Tests IY+23 (D00097) bit 1 → JP NZ 0x03D1E4. SET 0,(IY+23). JP 0x03D1EE.
+- **Alternate path (0x0977BA)**: Reads D02581 (allocation pointer), tests/clears bit 0 of pointed-to byte.
+- **★ STRING RENDERING LOOP (0x0977D6-0x0977F1)**: PUSH BC, PUSH AF, LD A,(D02505) → B (column limit). Loop: LD A,(HL); INC HL; OR A; JR Z exit; **CALL 0x0A1B5B** (char renderer); LD A,(D00595); CP B; JR C loop. POP BC, LD A,B, POP BC, RET.
+- **KEY INSIGHT**: 0x097757 is dual-purpose: (a) token metadata integration via edit-buffer helpers 0x06C72D/0x06C73C/0x06C732/0x06C737, AND (b) inline string rendering loop using 0x0A1B5B. D02505 = column limit, D00595 = current column tracker.
+- **11 CALL targets**: 0x097746 (helper, called 2×), 0x06C72D/0x06C73C/0x06C732/0x06C737 (edit-buffer handlers), 0x0A1B5B (char renderer), 0x0800A0, 0x07F920, 0x09CE6B, 0x0A1F52.
+- **NEW RAM**: D00687 (token metadata ptr), D005FA (descriptor flags, bits 4/5/6), D02581 (allocation ptr), D00097/IY+23 (bits 0,1 — state flags), D02505 (column limit), D00595 (column tracker).
+
+(3) ★★★★ 0x03E187 FLASH UNLOCK DECODED (44B static, probe-phase518-decode-03E187.mjs, Codex, Opus-verified):
+- **0x03E187-0x03E1B3 (FLASH UNLOCK)**: NOP×4 → PUSH AF → XOR A → DI → JR+0 → DI → LD A,I → IM 1 → OUT0 port 0x28 (flash control?) → IN0/OUT0 port 0x06 (flash page select, with bit manipulation via CB prefix) → LD A,0x88 → OUT0 port 0x24 → CP 0x88 / JP NZ 0x000066 (reset vector on validation failure) → POP AF → RET.
+- **Adjacent function 0x03E1E6-0x03E22C**: Writes 0x8C to port 0x24, validates (CP 0x8C / JP NZ 0x000066). IN0/OUT0 port 0x06 (SET bit 2 via CB D7). LD A,0x04 → flash port sequence (port 0x28 again). CALL 0x03D202, loads DE from D00555, CALL 0x023E8A, conditional CALL 0x0002E4, JP 0x03E187 (loop back for re-lock).
+- **I/O ports**: 0x28 (flash control register), 0x06 (flash page select), 0x24 (flash status/command).
+- **Pattern**: Standard eZ80 flash unlock: DI, write unlock sequence to ports, validate status, process, re-lock, EI. The JP NZ 0x000066 safety net forces a system reset if flash hardware doesn't respond correctly.
+- **NEW CALL targets**: 0x03D202 (flash helper), 0x023E8A (flash page handler), 0x0002E4 (conditional post-handler).
+- **NEW RAM**: D00555 (flash page metadata, loaded into DE for 0x023E8A).
+- **NOTE**: Dynamic trace timed out at 180s (flash port I/O not emulated in peripherals.js, likely infinite-loops on port validation). Static disassembly is complete and reliable.
+
+(4) ★★★★ DISPATCHER FALLTHROUGH ANALYSIS (probe-phase518-scancode-token-map.mjs, Codex+Sonnet):
+- Full 0x099921 dispatcher cascade re-extracted and confirmed: 38 CP/JP entries matching session 514.
+- **ONLY 3 SCAN CODES** reach 0x061D1A directly via the default JP fallthrough: 0xFC, 0xFD, 0xFE.
+- **KEY INSIGHT**: The 45-entry key-to-token table at 0x061CFA-0x061DB1 is NOT reached through a single entry point. Individual entries are reached via direct JPs from sub-handlers inside 0x09AF4E, 0x099BB0, 0x09B68A, 0x09AEA6, etc. Each sub-handler does its own internal scan-code-to-table-entry routing.
+- **IMPLICATION**: Building the complete scan-code→token map requires decoding the intermediate sub-handlers (0x09AF4E handles 0xAE-0xCD range, 0x099BB0 handles 0x30-0x3B range, etc.) to see which specific token table addresses they jump to.
+- Token table confirmed: 45 entries extracted, matching session 517.
+
+(5) CODEX: P1 exit 1 (probe created, dynamic trace timed out on flash ports — static output valid). P2 exit 0 (full success). P3 exit 1 (created probe with broken keyboard-matrix.md parsing — Sonnet rewrote). P4 exit 0 (created working probe). 2/4 Codex usable, 2/4 needed Sonnet fallback. Pattern continues.
+
+(6) NEW FUNCTIONS: 0x06C72D (edit-buffer handler type 1), 0x06C73C (type 3), 0x06C732 (default), 0x06C737 (type 2), 0x0A1B5B (char-to-glyph converter — called by BOTH 0x0B9032 and 0x097757), 0x03D202 (flash helper), 0x023E8A (flash page handler), 0x0002E4 (conditional post-handler), 0x0800A0/0x07F920/0x09CE6B/0x0A1F52 (0x097757 helpers). NEW RAM: D00687 (token metadata ptr), D005FA (descriptor flags bits 4/5/6), D02505 (column limit), D00595 (column tracker), D00097/IY+23 (state flags bits 0,1), D00555 (flash page metadata).
+
+PROBES: probe-phase518-decode-03E187.mjs (Codex, static only — dynamic timed out), probe-phase518-decode-097757.mjs (Codex, Opus-verified), probe-phase518-scancode-token-map.mjs (Codex+Sonnet, Opus-verified), probe-phase518-test-0B9032-string.mjs (Codex, Opus-verified). BOOT STATE: 51,622 seeds, 145,927 blocks, 713,624 covered bytes (unchanged — pure investigation + rendering verification). Golden regression PASS 26/26.
+
+NEXT: (a) ★★★★★ DECODE SUB-HANDLERS 0x09AF4E AND 0x099BB0 — These range dispatchers handle scan codes 0xAE-0xCD and 0x30-0x3B respectively. Session 515 partially decoded them (15+32 CP checks). Trace their internal routing to see which specific addresses in the 0x061CFA-0x061DB1 token table each scan code jumps to. This completes the scan-code→token map. (b) ★★★★★ DECODE 0x0A1B5B (CHAR-TO-GLYPH CONVERTER) — Called by BOTH 0x0B9032 (string renderer) and 0x097757 (post-allocation). This is the shared char→glyph lookup that feeds the rasterizer 0x0A1799. Understanding it completes the text rendering pipeline. (c) ★★★★★ DECODE 0x06C72D/0x06C73C/0x06C732/0x06C737 (EDIT-BUFFER HANDLERS) — Four closely-spaced functions called by 0x097757 based on D005FA flag bits. These manage the edit buffer that stores typed tokens. (d) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — Browser-bound, needs human. Full rendering pipeline now verified BOTH paths (BCD digit via 0x0B8505, string via 0x0B9032), token processing decoded through to rendering. (e) ★★★★ DECODE 0x09CE6B AND 0x0A1F52 — Called by 0x097757 after string rendering. Likely post-render cleanup or display list update. --END SESSION 518--
 
 > Previous: 2026-06-03 (auto-session 516 — ★★★★★ 0x061D1A DECODED AS LONGJMP/KEY-TO-TOKEN TABLE, CPIR TABLE 0x09AF6F FULLY EXTRACTED, 0x07F7FA/0x07EFF0 EXIT PATHS DECODED, 0x07CFA7 CONFIRMED AS COORDINATOR NOT RASTERIZER CALLER)
 
