@@ -8,9 +8,53 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-05 (auto-session 524 — **★★★★ 0x0997AE CONDITIONAL FP SAVE/RESTORE WRAPPER DECODED (~53B, IY+0x53 bit 7/6 gates, copies OP2 D00603↔D02B39 around sub-call 0x0997E3→0x07DBC2+0x08021B, CALL 0x05BF5C alternate path). ★★★★ 0x08021B TYPE RANGE VALIDATOR DECODED (13B, CALL 0x07F7BD loads A from D005F8 + AND 0x3F, CP 0x1A: types ≥0x1A → SCF+RET=failure, type 0x18 → Z+RET=special, others → NZ+NC+RET=success). ★★★★ 0x0989E9 FP SAVE TO STACK FRAME DECODED (29B, saves OP1 D005F8 to IX-9 and OP2 D00603 to IX-18 via 0x098A3D frame-offset calculator + 0x07F978 11-byte FP copy). ★★★★ 0x09903E LIST ELEMENT ITERATOR DECODED (~109B, CALL 0x0990AB inits D02563+calls 0x082C50, IX stack frame, CALL 0x069A67 per-element dispatch→0x0987B7/0x098B80, CALL 0x097AB2 flag check, LDIR element copy, writes '{'/space to buffer, updates D00335, DJNZ-style loop). GOLDEN REGRESSION PASS 26/26.**)
+**Last updated**: 2026-06-05 (auto-session 525 — **★★★★ 0x07DBC2 FP TYPE-CHECK-AND-CONVERT DECODED (17B, CALL 0x07F7A4 type==0x0C check→JP 0x06A261 early exit, CALL 0x07DBEF conversion chain→0x07DC4A+0x07CC36+0x07D306+0x069E5E+CCF, CALL 0x08022C→0x08021B type validator+RET C). ★★★★ 0x09953F CONDITIONAL FP VALIDATION DECODED (39B, BIT 0,(IY+12) + BIT 0,(IY+73) dual gate, CALL 0x07F7BD type read, CP 0x19 special-case→RES/SET 4,(IY+72), CALL 0x07F7D6 type clear, CALL 0x07DBF3 FP comparison: carry=failure via SCF, success via CCF+RET NC). ★★★★ 0x098A13 OP2 RESTORER DECODED (11B, PUSH BC/HL, LD L,0xEE=-18, CALL 0x098A1E→0x098A3D frameOffsetCalc+JP 0x07FA07 FP restore IX-18→D00603, POP HL/BC/RET). ★★★★ 0x082C50 VARIABLE LOOKUP+TYPE VALIDATION DECODED (19B, CALL 0x0846EA VAT bounds check via D0259D/D0259A/D02590+SBC, JP C→0x061D3A error, JR 0x082C3F backward=mid-function entry; 0x082C5A: CALL 0x07F7BD+0x080151 type==0x03 list check). GOLDEN REGRESSION PASS 26/26.**)
 
-> Previous: 2026-06-05 (auto-session 523 — 0x0987B5/0x0987B7 type init, 0x097C8A list/complex setup, 0x07FACF BCD utilities, 0x098B80 program editor setup)
+> Previous: 2026-06-05 (auto-session 524 — 0x0997AE conditional FP save/restore, 0x08021B type range validator, 0x0989E9 FP save to stack frame, 0x09903E list element iterator)
+
+**Session 525 findings (2026-06-05)**:
+
+(1) ★★★★ 0x07DBC2 FP TYPE-CHECK-AND-CONVERT DECODED (probe-phase525-decode-07DBC2-fp-sub.mjs, Sonnet+Opus verification):
+- **Entry (0x07DBC2, 17B)**: CALL 0x07F7A4 (reads D005F8 AND 0x3F, CP 0x0C) → JP Z,0x06A261 (early exit if type==0x0C). CALL 0x07DBEF (FP conversion chain). CALL 0x08022C (→0x08021B type validator + RET C). RET.
+- **0x07DBEF (FP conversion chain, 20B)**: CALL 0x07DC4A → CALL 0x07CC36 → CALL 0x07D306. If carry (0x07D306 failure): JR to 0x07DC03 → CALL 0x07F7D6 (clear type) → SCF → RET (failure). If no carry: CALL 0x069E5E → CCF → RET NC (success = original had carry from 0x069E5E).
+- **0x08022C (type validator wrapper, 5B)**: CALL 0x08021B → RET C. Thin wrapper that bails on type validation failure.
+- **PURPOSE**: Checks type code, skips type 0x0C (list?), runs FP format conversion, validates result. Part of 0x0997E3→0x0997AE conditional FP save chain.
+- **CALL targets**: 0x069E5E, 0x07CC36, 0x07D306, 0x07DBEF, 0x07DC4A, 0x07F7A4, 0x08021B, 0x08022C.
+- **RAM reads**: D005F8.
+
+(2) ★★★★ 0x09953F CONDITIONAL FP VALIDATION DECODED (probe-phase525-decode-09953F-conditional-test.mjs, Sonnet+Opus verification):
+- **Entry (0x09953F, ~39B)**: PUSH BC → BIT 0,(IY+12) → JR NZ to active path 0x09954C. If bit 0 clear: BIT 0,(IY+73) → JR Z to 0x099566 (skip exit, no validation).
+- **Active path (0x09954C)**: CALL 0x07F7BD (D005F8 AND 0x3F = type code) → RES 4,(IY+72) → CP 0x19 → JR Z skip SET → SET 4,(IY+72). Then CALL 0x07F7D6 (zero D005F8 type field, keep bits 7-6) → CALL 0x07DBF3 (FP comparison: 0x07CC36+0x07D306, carry gates, CCF/SCF for success/failure) → JR 0x09956E.
+- **IY flags**: IY+12 bit 0 = mode gate, IY+73 bit 0 = secondary mode gate, IY+72 bit 4 = type-0x19 display flag.
+- **Carry semantics**: 0x07DBF3 returns carry=failure (SCF), no-carry=success (CCF flips 0x069E5E result). Propagates to caller 0x0987B7.
+- **CALL targets**: 0x069E5E, 0x07CC36, 0x07D306, 0x07DBF3, 0x07F7BD, 0x07F7D6.
+
+(3) ★★★★ 0x098A13 OP2 RESTORER FROM STACK FRAME DECODED (probe-phase525-decode-098A13-cleanup.mjs, Sonnet+Opus verification):
+- **Entry (0x098A13, 11B)**: PUSH BC → PUSH HL → LD L,0xEE (=-18 signed) → CALL 0x098A1E → POP HL → POP BC → RET.
+- **0x098A1E (6B)**: CALL 0x098A3D (frame offset calculator) → JP 0x07FA07 (FP restore).
+- **0x098A3D (13B, frame offset calculator)**: PUSH IX → POP DE → PUSH AF → LD A,L → LD HL,0xFFFFFF → LD L,A → POP AF → ADD HL,DE → RET. Computes HL = IX + sign_extend(L). With L=0xEE: HL = IX-18.
+- **0x07FA07**: Copies 11-byte FP value from HL (=IX-18) back to OP2 (D00603). This is the RESTORE counterpart to 0x0989E9's SAVE.
+- **KEY**: Does NOT restore OP1 (IX-9), does NOT deallocate the frame. Frame teardown (LD SP,IX; POP IX) is at 0x098A94-0x098A96 in a separate code path.
+- **CALL targets**: 0x098A1E, 0x098A3D.
+- **Broader context**: Region around 0x098A4A contains related functions calling 0x0989E9 (save), 0x098B3F, 0x098B54, 0x07F7D6, 0x07DBF3, 0x08021B, 0x06868A. Frame teardown at 0x098A94.
+
+(4) ★★★★ 0x082C50 VARIABLE LOOKUP + TYPE VALIDATION DECODED (probe-phase525-decode-082C50-list-meta.mjs, Sonnet+Opus verification):
+- **Entry (0x082C50, 19B)**: CALL 0x0846EA (VAT lookup + bounds check) → JP C,0x061D3A (error handler on failure) → JR 0x082C3F (backward jump — 0x082C50 is mid-function entry, real function starts at ~0x082C3F).
+- **0x082C5A-0x082C62 (reached from 0x082C3F)**: CALL 0x07F7BD (D005F8 AND 0x3F) → CALL 0x080151 (AND 0x3F, CP 0x03, RET Z) → RET NZ. Type 0x03 = real list.
+- **0x0846EA (VAT bounds checker, ~49B)**: CALL 0x08011F → JP Z,0x083833. LD DE,(D0259D), LD A,(D005F9), CP 0x24. If type==0x24: LD HL,(D0259A), LD DE,(D02590). Else: LD HL,0xD3FFFF (top of RAM). INC DE, XOR A, CALL 0x082BE2, AND 0x3F, SBC HL,DE → RET C (bounds failure).
+- **RAM reads**: D005F8, D005F9, D02590, D0259A, D0259D (VAT pointers).
+- **CALL targets**: 0x07F7BD, 0x08011F, 0x080151, 0x082BE2, 0x0846EA.
+- **JP/JR targets**: 0x061D3A (error), 0x082C3F (backward to main flow), 0x083833, 0x08470A, 0x08470E.
+
+(5) CODEX: All 4 agents failed (0/4 — empty output or exit code 1). All priorities completed via Sonnet fallback.
+
+(6) NEW FUNCTIONS: 0x07DBC2 (FP type-check-and-convert, 17B), 0x07DBEF (FP conversion chain, 20B), 0x08022C (type validator wrapper, 5B), 0x09953F (conditional FP validation, 39B), 0x07DBF3 (FP comparison sub, 16B — also called by 0x09953F), 0x098A13 (OP2 restorer, 11B), 0x098A1E (frame offset+JP, 6B), 0x082C50 (variable lookup+type check, 19B), 0x0846EA (VAT bounds checker, ~49B), 0x080151 (type==0x03 check, 5B).
+NEW CALL TARGETS DISCOVERED: 0x07DC4A (called by 0x07DBEF), 0x07CC36 (FP conversion step), 0x07D306 (FP conversion step), 0x069E5E (FP result finalizer), 0x06A261 (type 0x0C early exit), 0x07FA07 (FP restore from frame→D00603), 0x08011F (VAT validator), 0x082BE2 (VAT byte reader), 0x083833 (VAT Z-path handler).
+NEW RAM: D0259A (VAT pointer, used when type==0x24), D02590 (VAT DE pointer), D0259D (VAT DE source).
+
+PROBES: probe-phase525-decode-07DBC2-fp-sub.mjs, probe-phase525-decode-09953F-conditional-test.mjs, probe-phase525-decode-098A13-cleanup.mjs, probe-phase525-decode-082C50-list-meta.mjs (all Sonnet, Opus-verified). BOOT STATE: unchanged (pure investigation). Golden regression PASS 26/26.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — Browser-bound, needs human. (b) ★★★★ DECODE 0x07DC4A — Called by 0x07DBEF in the FP conversion chain; first step before 0x07CC36+0x07D306. (c) ★★★★ DECODE 0x069E5E — FP result finalizer called after 0x07D306 succeeds; carry semantics via CCF determine success/failure. (d) ★★★★ DECODE 0x06A261 — Type 0x0C early exit target from 0x07DBC2; what happens when a list-type FP value is encountered. (e) ★★★★ DECODE 0x07FA07 — FP restore function: copies 11B from frame slot back to OP2 (D00603). Complement to 0x07F978. (f) ★★★★ DECODE 0x098A94 FRAME TEARDOWN — LD SP,IX; POP IX region; the actual stack frame deallocation. (g) ★★★ DECODE 0x0994D7 — Token renderer called 6+ times by program editor (carried from session 524). (h) ★★★ DECODE 0x0990F7 — Called between '(' and ')' rendering in program editor (carried from session 524). (i) ★★★ FRAME SIZE INVESTIGATION — Session 523 says 15-byte frame, but 0x0989E9 saves 22 bytes of FP data. Verify actual frame allocation (carried from session 524). --END SESSION 525--
 
 **Session 524 findings (2026-06-05)**:
 
