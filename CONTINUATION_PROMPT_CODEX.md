@@ -8,9 +8,81 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-06 (auto-session 540 — **★★★★ 0x03E1B4 INTERRUPT-SAFE ERROR WRAPPER DECODED (37B: saves IFF2 via LD A,I → DI → CALL 0x03E187 real error processor → restores interrupt state; D00542 scratch byte; real error handler is 0x03E187 not 0x03E1B4). ★★★★ ERROR CODE TABLE FULLY MAPPED TO SDK NAMES (43 entries: 26 match SDK 0x80-offset naming, 10 low/internal codes, 7 unknown high codes; top xrefs: E_DOMAIN 0x84=125, E_DATATYPE 0x89=98, E_SYNTAX 0x88=69, E_ARGUMENT 0x8A=68; 4 dead entries with 0 xrefs). ★★★★ 0x07F7DF TYPE PROMOTION DECODED (19B: Real→0x20, non-Real→0x21, preserving sign bits via AND 0xC0/OR B). ★★★ 0x07FA95-0x07FAC1 VALIDATION CLUSTER DECODED (3 zero stubs OP3/OP4/OP5 → shared zero-fill, BIT 5,(IY+0x0A) guard → E_NONREAL, dual-pass validation via CALL self+4 trick). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-06 (auto-session 541 — **★★★★ 0x03E187 REAL ERROR HANDLER DECODED (41B: 0x03E18B-0x03E1B3, port I/O for memory/flash/RAM protection via OUT0/IN0 ports 0x28/0x06/0x24, DI+XOR A+verify pattern, completes error wrapper pipeline). ★★★★ 0x03EA5E ERROR DISPLAY ROUTINE MAPPED (~300B, type dispatcher 0x1A/0x15/0x17, GUI calls into 0x0A region, ERROR STRINGS LOCATED at 0x06244E: DOMAIN/SYNTAX/INVALID DIMENSION/UNDEFINED/MEMORY/INVALID/WINDOW RANGE/ZOOM; type strings at 0x03ECFE: REAL/LIST/MATRX/PRGM/CPLX/WINDW/STRNG, 5 xrefs). ★★★★ 0x061DEF/0x061E20 SETJMP/LONGJMP DECODED (setjmp saves SP+context from D008E0/D0258A-D02593, JP (HL) return; longjmp restores SP, RET to setjmp point; 0x061E3F extended variant with IX; 0x061E33 error-dispatch-to-0x061DB2 helper). ★★★ 0x07F7FA-0x07F828 OP TRANSFORM STUBS MAPPED (0x07F7FA OP1 entry, 0x07F802 OP2 entry, 0x07F806 shared dual-call transform 13B, 0x07F813 copy+check, 0x07F81D FP init, 0x07F823 type fallback). GOLDEN REGRESSION 26/26 PASS.**)
 
-> Previous: 2026-06-06 (auto-session 539 — error dispatch table 44 entries mapped, ckOP1type decoded, zero-OP family decoded, internal types cross-referenced)
+> Previous: 2026-06-06 (auto-session 540 — 0x03E1B4 interrupt-safe error wrapper decoded, error table SDK-mapped 43 entries, 0x07F7DF type promotion decoded, validation cluster decoded)
+
+**Session 541 findings (2026-06-06)**:
+
+(1) ★★★★ 0x03E187 REAL ERROR HANDLER DECODED (probe-phase541-decode-03E187.mjs, Codex+Opus-verified):
+- **0x03E187-0x03E18A (4B)**: NOP padding (alignment).
+- **0x03E18B (41B, 0x03E18B-0x03E1B3)**: Real entry point. PUSH AF → XOR A → DI → JR+0 (delay) → DI (double-DI pattern for safety) → ED 7E (undocumented, likely IM?) → ED 56 (IM 1) → OUT0 (0x28),A (clear memory protection) → IN0 A,(0x28) (read back for verify) → CB 57 BIT 2,A (test protection bit) → IN0 A,(0x06) (read flash protection) → CB 97 RES 2,A (clear flash protection bit) → OUT0 (0x06),A (write flash protection) → LD A,0x88 → OUT0 (0x24),A (set RAM protection) → CP 0x88 (verify write) → JP NZ,0x000066 (reset vector if verify fails!) → POP AF → RET.
+- **PURPOSE**: Reconfigures memory/flash/RAM protection registers before error processing. The JP NZ,0x000066 is a hardware reset if the RAM protection register doesn't take — catastrophic protection failure.
+- **PORTS**: 0x28 = eZ80 memory wait state/mapping, 0x06 = flash access control, 0x24 = RAM protection boundary.
+- **0x03E1EB (42B, 0x03E1EB-0x03E214)**: Companion function — reverse protection setup. LD A,0x8C → OUT0 (0x24) → verify → IN0 A,(0x06) → SET 2,A → OUT0 (0x06) → LD A,0x04 → repeat memory protection → CALL 0x03D202 (stack bounds check).
+
+(2) ★★★★ 0x03EA5E ERROR DISPLAY ROUTINE MAPPED (probe-phase541-decode-03EA5E.mjs, Codex+Opus-verified):
+- **0x03EA5E (~300B+)**: Large error display handler with type-based dispatch:
+  - Entry: checks D00894 bit 4 (error display flag), stores 0 to D00596 (display mode), CALL 0x03EBA3, EI.
+  - Loads D0081C (error display type) and D00813 (error context). CP 0x14 → JP Z to 0x03EBED (special app error path).
+  - Type dispatcher: AND 0x3F strips sign, CP 0x1A → computed string pointer path (LD D,0xEF, HL+2, A=0x50+offset → DE=string addr), CP 0x15 (list) / 0x17 (matrix) → byte loop display path (B=8, loop CALL 0x0A1B5B per byte).
+  - CALL 0x08356A → SUB 0x0F → general error path, CALL 0x080090 type classifier.
+  - CALL 0x0A2A68 / 0x0A1CEC / 0x0A22B1 — GUI display routines (cursor position, text draw, screen refresh).
+  - CALL 0x03E039 (OP1 staging), CALL 0x08383D (error context), CALL 0x0821B2 (variable lookup).
+  - BIT 0,(IY+0x00) — system mode check, branches to extended error detail rendering.
+- **ERROR STRINGS LOCATED in ROM**:
+  - 0x06244E: "DOMAIN"
+  - 0x06256F: "SYNTAX"
+  - 0x0626F9: "INVALID DIMENSION"
+  - 0x06278D: "UNDEFINED"
+  - 0x0627C2: "MEMORY"
+  - 0x06282E: "INVALID"
+  - 0x062909: "WINDOW RANGE"
+  - 0x06296B: "ZOOM"
+- **TYPE STRINGS at 0x03ECFE**: "REAL", "LIST", "MATRX", "PRGM", "CPLX", "WINDW", "ZSTO", "TABLE", "STRNG", "AVAR", "UNKN", "GROUP", "IMAGE".
+- **5 CALL xrefs** to 0x03EA5E: from 0x03D48A, 0x03DB85, 0x03EA57 (self-near-call), 0x06B270, 0x06B349.
+
+(3) ★★★★ 0x061DEF/0x061E20 SETJMP/LONGJMP PAIR DECODED (probe-phase541-decode-061DEF.mjs, Codex+Opus-verified):
+- **0x061DEF (49B, 0x061DEF-0x061E1F) — setjmp**:
+  - POP DE (saves return address), PUSH HL (save caller's context pointer).
+  - LD HL,(D008E0) → PUSH HL (save previous jmp_buf SP).
+  - Loads and pushes context from D0258A/D0258D (SBC HL,BC to compute delta), and D02590/D02593 (same pattern). These are error handler chain pointers.
+  - LD HL,0x061DD1 → PUSH (saves a recovery handler address).
+  - LD HL,0x061E27 → PUSH (saves cleanup handler address).
+  - LD (D008E0),SP — **saves current SP as the jmp_buf**.
+  - EX DE,HL → JP (HL) — **returns to caller** (DE held the return address).
+- **0x061E20 (7B) — longjmp**:
+  - POP BC (discard longjmp's own return address).
+  - LD SP,(D008E0) — **restores SP to setjmp point**.
+  - RET — pops the cleanup handler address (0x061E27) pushed by setjmp, jumps there.
+- **0x061E27 (12B) — cleanup handler** (jumped to after longjmp):
+  - POP AF×3 (unwind the 3 pushed context values).
+  - EX (SP),HL → LD (D008E0),HL — restores previous jmp_buf SP from stack.
+  - POP HL, POP AF, PUSH BC, RET — returns to the code after the setjmp CALL with BC on stack.
+- **0x061E33 (12B) — error dispatch helper**:
+  - POP HL×2, LD A,L, LD IY,D00080, JP 0x061DB2 — routes to error handler.
+- **0x061E3F (extended setjmp)**: Same as 0x061DEF but with PUSH DE, PUSH IX preservation — saves IX in the jmp_buf.
+- **KEY RAM**: D008E0 (SP save), D0258A-D02593 (error handler chain, 4 pointers).
+- **CALLER 0x03E29B (48B)**: DI → RES 5,(IY+0x1F) → SET 2,(IY+0x12) → LD A,(D007E0) → CP 0x52 (mode check). Mode 0x52: LD HL,0x03E2CE → CALL 0x061DEF (setjmp) → LD A,(D008DF) → CALL 0x03E296 → JR to exit. Other modes: same setjmp → CALL 0x03E291 → CALL 0x061E20 (longjmp).
+
+(4) ★★★ 0x07F7FA-0x07F828 OP TRANSFORM STUB CLUSTER MAPPED (probe-phase541-decode-07F806.mjs, Codex+Opus-verified):
+- **0x07F7FA (4B)**: `LD HL,D005F8` (OP1) + `CALL 0x07F806` — OP1 type transform entry.
+- **0x07F802 (4B)**: `LD HL,D00603` (OP2) — falls through to 0x07F806 (OP2 type transform entry).
+- **0x07F806 (13B)**: `PUSH BC; PUSH DE; CALL 0x07FE5E; CALL 0x07FE28; POP DE; POP BC; RET` — shared dual-call type transform with register preservation. 0x07FE5E=forward type transform, 0x07FE28=type transform wrapper. Only 1 xref each (from this function).
+- **0x07F813 (6B)**: `CALL 0x07F914; CALL 0x07F8C0; JR +0x14→0x07F831` — OP copy dispatch entry + OP copy, falls through to comparison setup at 0x07F831.
+- **0x07F81D (4B)**: `CALL 0x07FA07; JR +0x0E→0x07F831` — FP accumulator init + comparison.
+- **0x07F823 (4B)**: `CALL 0x06867A; JR +0x08→0x07F831` — type fallback + comparison.
+- **0x07F829 (confirmed)**: FP comparison/normalization (decoded session 527, 62B). Hex bytes match.
+- **0x07F831 onward**: LD A,(D005FA) exponent check → zero-OP cleanup → LD A,(D005F8/D00603) type check → sign-aware comparison dispatch → CALL 0x080037 exponent compare → byte-by-byte mantissa comparison. This is the body of the FP comparison function.
+
+(5) NEW FUNCTIONS: 0x03E18B (41B real error handler), 0x03E1EB (42B reverse protection), 0x03EA5E (~300B error display), 0x061DEF (49B setjmp), 0x061E20 (7B longjmp), 0x061E27 (12B cleanup), 0x061E33 (12B error dispatch helper), 0x061E3F (extended setjmp), 0x07F7FA (4B OP1 transform), 0x07F802 (4B OP2 transform), 0x07F813 (6B copy+check), 0x07F81D (4B FP init entry), 0x07F823 (4B type fallback entry).
+NEW CALL TARGETS: 0x03EBA3 (error display init), 0x03EBED (app error path), 0x0A1B5B (byte display), 0x0A2A68 (cursor), 0x0A1CEC (text draw), 0x0A22B1 (screen refresh), 0x08356A (error offset calc), 0x080090 (type classifier), 0x0821B2 (variable lookup), 0x08383D (error context), 0x027EC4, 0x042366, 0x0425F7, 0x05CF8A, 0x080115, 0x03E296, 0x03E291.
+ERROR STRINGS: 0x06244E-0x06296B (8 error messages). TYPE STRINGS: 0x03ECFE-0x03ED4F (13 type names).
+SETJMP JMP_BUF: D008E0 (SP) + stack frame with D0258A/D0258D/D02590/D02593 chain pointers + handler addresses 0x061DD1/0x061E27.
+
+PROBES: 4/4 Codex created probe files. 4/4 probes ran via watchdog. Golden regression 26/26 PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x03EBA3 — error display init called from 0x03EA5E (what does it set up before the error screen?). (c) ★★★★ DECODE ERROR STRING TABLE STRUCTURE — the strings at 0x06244E are indexed somehow; find the index table that maps error codes (0x81-0x9D) to string addresses. (d) ★★★ DECODE 0x03E1EB — reverse memory protection setup (companion to 0x03E187, restores protection after error handling). (e) ★★★ DECODE 0x061DD1 — recovery handler address pushed by setjmp (what does the recovery path do?). (f) ★★ FRAME SIZE INVESTIGATION (carried). --END SESSION 541--
 
 **Session 540 findings (2026-06-06)**:
 
