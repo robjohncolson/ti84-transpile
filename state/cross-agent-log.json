@@ -16866,15 +16866,59 @@
       "timestamp": "2026-06-06T00:05:51Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "7bfd74ef467f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function at 0x0685DF\n\n## Context\nYou are working on a TI-84 Plus CE ROM transpila",
+      "status": "success",
+      "duration_seconds": 87.717,
+      "timestamp": "2026-06-06T02:04:39Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "342c4cc24bce",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function at 0x0994D7\n\n## Context\nYou are working on a TI-84 Plus CE ROM transpila",
+      "status": "completed",
+      "duration_seconds": 98.38,
+      "timestamp": "2026-06-06T02:04:55Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c802d5e981e0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function at 0x07CBB5\n\n## Context\nYou are working on a TI-84 Plus CE ROM transpila",
+      "status": "completed",
+      "duration_seconds": 112.377,
+      "timestamp": "2026-06-06T02:05:07Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "08013026567e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function at 0x07D27A\n\n## Context\nYou are working on a TI-84 Plus CE ROM transpila",
+      "status": "completed",
+      "duration_seconds": 148.178,
+      "timestamp": "2026-06-06T02:05:37Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1404,
-    "cc_to_codex": 1404,
+    "total_calls": 1408,
+    "cc_to_codex": 1408,
     "codex_to_cc": 0,
-    "completed": 982,
+    "completed": 985,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 531.006
+    "avg_duration_seconds": 529.815
   }
 }
