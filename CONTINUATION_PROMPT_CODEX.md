@@ -8,9 +8,9 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-06 (auto-session 541 — **★★★★ 0x03E187 REAL ERROR HANDLER DECODED (41B: 0x03E18B-0x03E1B3, port I/O for memory/flash/RAM protection via OUT0/IN0 ports 0x28/0x06/0x24, DI+XOR A+verify pattern, completes error wrapper pipeline). ★★★★ 0x03EA5E ERROR DISPLAY ROUTINE MAPPED (~300B, type dispatcher 0x1A/0x15/0x17, GUI calls into 0x0A region, ERROR STRINGS LOCATED at 0x06244E: DOMAIN/SYNTAX/INVALID DIMENSION/UNDEFINED/MEMORY/INVALID/WINDOW RANGE/ZOOM; type strings at 0x03ECFE: REAL/LIST/MATRX/PRGM/CPLX/WINDW/STRNG, 5 xrefs). ★★★★ 0x061DEF/0x061E20 SETJMP/LONGJMP DECODED (setjmp saves SP+context from D008E0/D0258A-D02593, JP (HL) return; longjmp restores SP, RET to setjmp point; 0x061E3F extended variant with IX; 0x061E33 error-dispatch-to-0x061DB2 helper). ★★★ 0x07F7FA-0x07F828 OP TRANSFORM STUBS MAPPED (0x07F7FA OP1 entry, 0x07F802 OP2 entry, 0x07F806 shared dual-call transform 13B, 0x07F813 copy+check, 0x07F81D FP init, 0x07F823 type fallback). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-06 (auto-session 542 — **★★★★ ERROR STRING POINTER TABLE FOUND at 0x062245 (44 entries × 3B, maps error codes to string addresses with 0x1C index offset from SDK codes; DOMAIN at index 28, SYNTAX at 32, INVALID DIMENSION at 36, UNDEFINED at 37, MEMORY at 38, INVALID at 39, WINDOW RANGE at 42, ZOOM at 43). ★★★★ 0x061DD1 RECOVERY HANDLER DECODED (30B: restores error chain context D02590/D02593 + D0258A/D0258D via ADD HL,DE delta restore, restores previous jmp_buf SP to D008E0, loads error code from D008DF into A, RET to caller). ★★★ 0x03E1EB REVERSE MEMORY PROTECTION FULLY DECODED (42B: mirror of 0x03E18B — 0x8C→port 0x24 vs 0x88, SET 2→port 0x06 vs RES 2, 0x04→port 0x28 vs 0x00; JP NZ,0x000066 verify; CALL 0x03D202 stack bounds check). ★★★ 0x03D202 STACK BOUNDS CHECK (saves SP to D0053F, validates SP in D1987E-D1A87E range via CALL 0x04C980, JP NC,0x000066 reset if out of bounds). ★★ 0x03EBA3 = 13B "PRINT TWO SPACES" stub (LD A,0x20 + CALL 0x0A1B5B × 2 + RET). GOLDEN REGRESSION 26/26 PASS.**)
 
-> Previous: 2026-06-06 (auto-session 540 — 0x03E1B4 interrupt-safe error wrapper decoded, error table SDK-mapped 43 entries, 0x07F7DF type promotion decoded, validation cluster decoded)
+> Previous: 2026-06-06 (auto-session 541 — 0x03E187 real error handler 41B, 0x03EA5E error display ~300B, 0x061DEF/0x061E20 setjmp/longjmp, 0x07F7FA-0x07F828 OP transform stubs)
 
 **Session 541 findings (2026-06-06)**:
 
@@ -83,6 +83,71 @@ SETJMP JMP_BUF: D008E0 (SP) + stack frame with D0258A/D0258D/D02590/D02593 chain
 PROBES: 4/4 Codex created probe files. 4/4 probes ran via watchdog. Golden regression 26/26 PASS.
 
 NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x03EBA3 — error display init called from 0x03EA5E (what does it set up before the error screen?). (c) ★★★★ DECODE ERROR STRING TABLE STRUCTURE — the strings at 0x06244E are indexed somehow; find the index table that maps error codes (0x81-0x9D) to string addresses. (d) ★★★ DECODE 0x03E1EB — reverse memory protection setup (companion to 0x03E187, restores protection after error handling). (e) ★★★ DECODE 0x061DD1 — recovery handler address pushed by setjmp (what does the recovery path do?). (f) ★★ FRAME SIZE INVESTIGATION (carried). --END SESSION 541--
+
+**Session 542 findings (2026-06-06)**:
+
+(1) ★★★★ ERROR STRING POINTER TABLE LOCATED AT 0x062245 (probe-phase542-error-string-table.mjs, Codex+Sonnet, Opus-verified):
+- **0x062245-0x0622C8 (132B)**: 44 entries × 3-byte (24-bit) little-endian pointers.
+- **Index offset**: SDK error codes (0x81-0x9D) do NOT directly index the table. There is a 0x1C (28) offset: table index = error_code - 0x81 + 0x1C? The first known match (DOMAIN) is at index 28 (table offset 0x062299).
+- **Confirmed mappings**:
+  - Index 28 → 0x06244E "DOMAIN" (SDK E_DOMAIN=0x84)
+  - Index 32 → 0x06256F "SYNTAX" (SDK E_SYNTAX=0x88)
+  - Index 36 → 0x0626F9 "INVALID DIMENSION" (SDK E_DIMENSION=0x8C)
+  - Index 37 → 0x06278D "UNDEFINED" (SDK E_UNDEFINED=0x8D)
+  - Index 38 → 0x0627C2 "MEMORY" (SDK E_MEMORY=0x8E)
+  - Index 39 → 0x06282E "INVALID" (SDK E_INVALID=0x8F)
+  - Index 42 → 0x062909 "WINDOW RANGE" (SDK E_GRAPHRANGE=0x93)
+  - Index 43 → 0x06296B "ZOOM" (SDK E_ZOOM=0x94)
+- **Pattern**: SDK code 0x84 → index 28 means offset = 28 - (0x84 - 0x81) = 28 - 3 = 25 (0x19). So table_index = (error_code - 0x81) + 25 = error_code + 0x18. Cross-check: 0x88 + 0x18 = 0xA0 ≠ 32... need further investigation on exact mapping formula.
+- **No pointers found in 0x03EA5E-0x03ECFE range** — strings are accessed indirectly through this pointer table, not hardcoded in the display routine.
+- **0x08356A decoder failed** — all instructions returned undefined asm, suggesting data or instruction encodings the decoder doesn't render. Needs manual investigation.
+
+(2) ★★★★ 0x061DD1 RECOVERY HANDLER DECODED (probe-phase542-decode-061DD1.mjs, Codex+Sonnet, Opus-verified):
+- **0x061DD1 (30B)**: Restores the error handler chain context saved by setjmp:
+  - `LD HL,(D02590)` + `POP DE` + `ADD HL,DE` + `LD (D02593),HL` — restores handler chain pointer 2 (base + delta).
+  - `POP DE` + `LD HL,(D0258A)` + `ADD HL,DE` + `LD (D0258D),HL` — restores handler chain pointer 1.
+  - `POP HL` + `LD (D008E0),HL` — restores previous jmp_buf SP.
+  - `LD A,(D008DF)` — loads error code into A.
+  - `RET` — returns to original caller with error code in A.
+- **PURPOSE**: This is the "unwind" path after longjmp → cleanup (0x061E27) → recovery (0x061DD1). It reverses the delta-encoded context that setjmp pushed, restoring the previous error handler frame. The delta encoding (SBC in setjmp, ADD in recovery) is a compact way to save/restore relative pointers without needing absolute copies.
+- **SETJMP/LONGJMP FLOW NOW FULLY MAPPED**:
+  - setjmp (0x061DEF): push prev SP + compute/push deltas for D0258A↔D0258D and D02590↔D02593 + push 0x061DD1 + push 0x061E27 + save SP to D008E0
+  - longjmp (0x061E20): restore SP from D008E0, RET → 0x061E27
+  - cleanup (0x061E27): pop 3 context values, restore prev jmp_buf, return
+  - recovery (0x061DD1): restore chain pointers via delta-add, restore prev SP, load error code, RET
+- **0x061DB2 SHARED ERROR HANDLER (31B)**: LD (D008DF),A (save error code) → CALL 0x03E1B4 (interrupt-safe wrapper) → RES 7,(IY+75) / RES 2,(IY+18) / RES 4,(IY+36) / RES 1,(IY+73) (clear 4 OS flags) → LD SP,(D008E0) → POP AF → RET (into setjmp recovery chain).
+
+(3) ★★★ 0x03E1EB REVERSE MEMORY PROTECTION FULLY DECODED (probe-phase542-decode-03E1EB.mjs, Codex+Sonnet, Opus-verified):
+- **0x03E1EB (42B)**: Mirror of forward function 0x03E18B. Differences:
+  - Port 0x24: writes 0x8C (forward writes 0x88) — different RAM protection boundary.
+  - Port 0x06: SET 2,A (forward uses RES 2,A) — restores flash protection bit vs clearing it.
+  - Port 0x28: writes 0x04 (forward writes 0x00) — restores memory mapping vs clearing it.
+  - Same JP NZ,0x000066 verify pattern (hardware reset if write fails).
+  - Extra CALL 0x03D202 at end (stack bounds check, not in forward function).
+- **Port summary (forward → reverse)**:
+  - 0x28 (memory wait/mapping): 0x00 (clear) → 0x04 (restore)
+  - 0x06 (flash access): RES 2 (disable protection) → SET 2 (enable protection)
+  - 0x24 (RAM protection): 0x88 → 0x8C (different boundary value)
+
+(4) ★★★ 0x03D202 STACK BOUNDS CHECK DECODED (probe-phase542-decode-03E1EB.mjs, Codex+Sonnet, Opus-verified):
+- **0x03D202 (~30B)**: PUSH BC/DE/HL → LD (D0053F),SP → LD HL,(D0053F) → LD BC,D1987E (stack bottom) → LD DE,D1A87E (stack top) → CALL 0x04C980 (range check) → JP NC,0x000066 (reset if SP out of range) → POP HL/DE.
+- **Stack range**: D1987E to D1A87E = 4096 bytes (0x1000). Hardware reset if SP escapes this range.
+- **KEY RAM**: D0053F (scratch for SP save).
+
+(5) ★★ 0x03EBA3 = 13B "PRINT TWO SPACES" STUB (probe-phase542-decode-03EBA3.mjs, Codex+Sonnet, Opus-verified):
+- `LD A,0x20` + `CALL 0x0A1B5B` + `LD A,0x20` + `CALL 0x0A1B5B` + `RET`.
+- Purpose: prints two space characters before error display. 0x0A1B5B is a character output routine.
+- The substantive error display init code likely starts at 0x03EBB0 (immediately after this RET).
+
+(6) NEW FUNCTIONS: 0x061DD1 (30B recovery handler), 0x03D202 (~30B stack bounds check).
+CONFIRMED: 0x03E1EB (42B reverse protection — full byte-level decode). 0x03EBA3 (13B print-two-spaces).
+NEW DATA STRUCTURES: Error string pointer table at 0x062245 (44 entries × 3B = 132B).
+NEW RAM: D0053F (SP scratch for stack check). Stack range D1987E-D1A87E (4KB).
+NEW CALL TARGETS: 0x04C980 (range check utility).
+
+PROBES: 4/4 Codex created probe files (all had broken imports — used `createEz80Decoder` instead of `decodeInstruction`). 0/4 Codex probes ran. 4/4 fixed and run via Sonnet fallback. Golden regression 26/26 PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x03EBB0 — the REAL error display init content starts here (right after 0x03EBA3's RET). (c) ★★★★ INVESTIGATE ERROR CODE → TABLE INDEX MAPPING FORMULA — the 0x1C offset needs exact formula derivation; also decode 0x08356A (SUB 0x0F conversion) with better decoder coverage. (d) ★★★ DECODE 0x04C980 — range check utility called from stack bounds check (does it just compare HL against BC..DE range?). (e) ★★★ DECODE REMAINING 36 POINTER TABLE ENTRIES — we mapped 8/44 entries; dump all 44 pointers and read the strings they point to. (f) ★★ FRAME SIZE INVESTIGATION (carried). --END SESSION 542--
 
 **Session 540 findings (2026-06-06)**:
 

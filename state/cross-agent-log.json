@@ -17295,15 +17295,191 @@
       "timestamp": "2026-06-06T18:54:02Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "3f66e71afb98",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07F7BD \u2014 Type/Descriptor Utility\n\n## Context\n0x07F7BD is a frequently-called utilit",
+      "status": "completed",
+      "duration_seconds": 68.875,
+      "timestamp": "2026-06-06T20:04:32Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "35e490b650ab",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Cross-reference Internal FPU Types 0x1B/0x1D/0x1E/0x1F\n\n## Context\nThe TI-84 Plus CE ROM FPU",
+      "status": "completed_with_environment_blockers",
+      "duration_seconds": 84.387,
+      "timestamp": "2026-06-06T20:04:45Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3168f572d94f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x061D02 \u2014 Error Longjmp Target\n\n## Context\n0x061D02 is an error/overflow longjmp tar",
+      "status": "success",
+      "duration_seconds": 82.393,
+      "timestamp": "2026-06-06T20:04:48Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "12ae085afc30",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07FAC2 \u2014 Zero OP1 Handler\n\n## Context\n0x07FAC2 is a heavily referenced \"zero OP1\" h",
+      "status": "partial",
+      "duration_seconds": 103.535,
+      "timestamp": "2026-06-06T20:05:12Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8f426c61c352",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map TI-OS SDK Error Code Semantics\n\n## Context\nSession 539 fully mapped the error dispatch t",
+      "status": "success",
+      "duration_seconds": 54.394,
+      "timestamp": "2026-06-06T21:13:29Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "bb33fd0bc3dd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07FA95-0x07FAC1 Validation Cluster\n\n## Context\nSession 539 decoded the zero-OP fami",
+      "status": "completed",
+      "duration_seconds": 76.511,
+      "timestamp": "2026-06-06T21:13:54Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "491ca27ac0eb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x03E1B4 \u2014 Main TI-OS Error Processing Routine\n\n## Context\nThe TI-84 Plus CE ROM has ",
+      "status": "success",
+      "duration_seconds": 117.912,
+      "timestamp": "2026-06-06T21:14:29Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "aeab6aaec19a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07F7DF \u2014 Continuation Beyond ckOP1type Cluster\n\n## Context\nSession 539 decoded the ",
+      "status": "success",
+      "duration_seconds": 117.294,
+      "timestamp": "2026-06-06T21:14:30Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "817f03208be5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07F806 Neighbors \u2014 Continue Mapping OP Copy Dispatch Entries\n\n## Context\nYou are wo",
+      "status": "success",
+      "duration_seconds": 72.768,
+      "timestamp": "2026-06-06T22:23:41Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6d919df22397",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x03E187 \u2014 Real Error Handler (Port I/O + Memory Protection)\n\n## Context\nYou are work",
+      "status": "success",
+      "duration_seconds": 112.057,
+      "timestamp": "2026-06-06T22:24:14Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7a09a0cb7623",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x061DEF/0x061E20 \u2014 setjmp/longjmp Pair for Error Recovery\n\n## Context\nYou are workin",
+      "status": "completed",
+      "duration_seconds": 112.344,
+      "timestamp": "2026-06-06T22:24:18Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "064f31b32fa4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x03EA5E \u2014 Full Error Display Routine\n\n## Context\nYou are working on the TI-84 Plus C",
+      "status": "complete",
+      "duration_seconds": 188.349,
+      "timestamp": "2026-06-06T22:25:32Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f39d4acbf959",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x061DD1 \u2014 Recovery Handler Address\n\n## Context\nYou are working on the TI-84 Plus CE ",
+      "status": "success",
+      "duration_seconds": 48.425,
+      "timestamp": "2026-06-06T23:34:01Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e3b9ce82de1f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x03EBA3 \u2014 Error Display Init\n\n## Context\nYou are working on the TI-84 Plus CE ROM tr",
+      "status": "completed",
+      "duration_seconds": 62.739,
+      "timestamp": "2026-06-06T23:34:09Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d955f21f90fe",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x03E1EB \u2014 Reverse Memory Protection Setup\n\n## Context\nYou are working on the TI-84 P",
+      "status": "completed",
+      "duration_seconds": 68.353,
+      "timestamp": "2026-06-06T23:34:19Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8e9466e3a5d0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode Error String Table Structure (error code \u2192 string address mapping)\n\n## Context\nYou ar",
+      "status": "success",
+      "duration_seconds": 71.379,
+      "timestamp": "2026-06-06T23:34:20Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1443,
-    "cc_to_codex": 1443,
+    "total_calls": 1459,
+    "cc_to_codex": 1459,
     "codex_to_cc": 0,
-    "completed": 1001,
+    "completed": 1006,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 519.497
+    "avg_duration_seconds": 514.788
   }
 }
