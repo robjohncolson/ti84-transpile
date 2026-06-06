@@ -8,7 +8,47 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-06 (auto-session 531 — **★★★★ 0x07C9AF POST-NORMALIZE DISPATCH FULLY DECODED (50B, 0x07C9AF-0x07C9E0: BIT 3,(IY+48) quick-exit, leading-zero normalization loop with BCD shift left 0x07FB48, exponent adjustment, falls through to 0x07C9E1). ★★★★ 0x07C9E1 SIGN NORMALIZATION DECODED (31B, 0x07C9E1-0x07CA01: AND 0x80 strip type to sign, clear D00601 guard, ADD A,0xB0 carry check, CALL 0x07FBCA BCD adjustment, JP 0x07FE1A exponent increment). ★★★★ 0x07CA02+0x07CA27 OP1/OP2 SIGN TOGGLE PAIR DECODED (37B+33B, type-check CP 0x1C/0x1D→JP matrix/list handlers 0x07D189/0x07D183, mantissa zero check, sign XOR 0x80 toggle). ★★★★ 0x07D306 PHASE 3 IY FLAG CONDITIONER CONFIRMED (35B, dual entry 0x07D306/0x07D310, SET/RES IY+48 bits 5+6, CALL 0x07DD2F=5B RES 3,(IY+48)+RET, exponent SUB 0x0B, range checks CP 0x83/0x86/0x7C). ★★★ 0x06868A TYPE VALIDATION DISPATCHER DECODED (29B+22B, BIT 6 OP1 type gate, CALL 0x07F7A4 save+0x07FE5A transform+0x0686A8 type dispatch CP 0x20/0x21→0x07CFA7, CP 0x1C→0x07CF1A). GOLDEN REGRESSION PASS.**)
+**Last updated**: 2026-06-06 (auto-session 532 — **★★★★ 0x07FBCA BCD CARRY PROPAGATION DECODED (15B, LD A,0x01; B=7 ADC+DAA backward loop, RET NC early exit, compact carry chain). ★★★★ 0x07CFA7 TYPE 0x20/0x21 HANDLER DECODED (37B, equation/string: CALL 0x07CF9D+0x07FE9C+0x07F7A4+0x07FE5A+0x07F16C+0x07C8B7 BCD multiply+0x07CF8E epilogue). ★★★★ 0x07CF1A MATRIX 0x1C HANDLER DECODED (130B, two-phase row/column computation, dimension checks 0x07CE86/0x07CE79, BCD multiply+division, LDIR 0x37B epilogue, clarifies 0x07CF24 alternate entry). ★★★ 0x07D183/0x07D189 LIST SIGN HANDLERS DECODED (~34B shared, OP2/OP1 entry stubs, XOR 0x20/0x10 bit toggles via 0x07CE5F/0x07CE71). GOLDEN REGRESSION PASS.**)
+
+> Previous: 2026-06-06 (auto-session 531 — 0x07C9AF post-normalize 50B, 0x07C9E1 sign normalization 31B, 0x07CA02+0x07CA27 sign toggle 37B+33B, 0x07D306 IY conditioner 35B, 0x06868A type dispatcher 29B+22B)
+
+**Session 532 findings (2026-06-06)**:
+
+(1) ★★★★ 0x07FBCA BCD CARRY PROPAGATION DECODED (probe-phase532-decode-07FBCA-bcd-rounding.mjs, Codex+Sonnet, Opus-verified):
+- **0x07FBCA (15B, 0x07FBCA-0x07FBD8)**: Compact BCD carry propagation.
+- **Entry**: LD A,0x01; LD B,0x07; OR A (clear carry for first ADC).
+- **Loop (0x07FBCF-0x07FBD6)**: ADC A,(HL); DAA; LD (HL),A; RET NC (done). DEC HL; LD A,0x00; DJNZ.
+- **Exit**: RET at 0x07FBD8 (carry through all 7 bytes → caller handles overflow).
+- **PURPOSE**: Propagates BCD +1 carry from guard byte backward through 7 mantissa bytes. Completes sign normalization pipeline: 0x07C9E1→0x07FBCA→0x07FE1A.
+
+(2) ★★★★ 0x07CFA7 TYPE 0x20/0x21 HANDLER DECODED (probe-phase532-decode-07CFA7-type-handler.mjs, Codex+Sonnet, Opus-verified):
+- **0x07CFA7 (37B)**: Equation/string type handler with 8 CALL targets.
+- CALL 0x07CF9D (shared setup) → 0x07FE9C → 0x07F7A4 (save) → PUSH AF → 0x07FE5A (transform) → LD A,0x04; 0x07F16C → 0x07C8B7 (BCD multiply) → 0x07F7D6 (strip) → 0x07CF8E (epilogue) → POP AF; RET NZ / JP 0x07FE24.
+
+(3) ★★★★ 0x07CF1A MATRIX 0x1C HANDLER DECODED (probe-phase532-decode-07CF1A-matrix-handler.mjs, Codex+Sonnet, Opus-verified):
+- **0x07CF1A (130B, 0x07CF1A-0x07CF9C)**: Two-phase matrix computation with 18 CALL targets.
+- **Entry**: CALL 0x07CF9D + 0x07F95E, JR skip 0x07CF24. Alternate entry 0x07CF24 skips 0x07F95E.
+- **Phase 1 (rows)**: 0x07CD92, 0x07CE86 dim check, conditional 0x07CD7F or 0x07DF66+0x07CE8C+0x07F8FA+0x07CD7F+0x07C8B7.
+- **Phase 2 (cols)**: 0x07F8A2, 0x07CE34, 0x07CEA6, conditional 0x07CDD8 or same pattern with 0x07CE99.
+- **Final**: 0x07F8B6+0x07C77F+0x07CE79, conditional 0x07CD57+0x07CAB9 (BCD division).
+- **Epilogue 0x07CF8E**: LD DE,D00603; LD HL,D02B39; LD BC,0x37; LDIR; RET (55-byte copy shared with 0x07CFA7).
+- **CLARIFIES 0x07CF24**: Alternate entry skipping 0x07F95E — resolves sessions 529/530 carried priority.
+
+(4) ★★★ 0x07D183/0x07D189 LIST SIGN HANDLERS DECODED (probe-phase532-decode-07D183-sign-handlers.mjs, Codex+Sonnet, Opus-verified):
+- **0x07D183 (6B)**: LD HL,D00604; RET NC; JR 0x07D18D. **0x07D189 (4B)**: LD HL,D005F9; RET NC.
+- **Shared tail 0x07D18D (23B)**: PUSH HL; POP DE; INC HL×2. CALL 0x07CE5F → XOR 0x20 toggle bit 5. CALL 0x07CE71 → XOR 0x10 toggle bit 4. RET.
+- **Nearby 0x07D1A8**: CALL 0x07FDD6+0x07FDD0; JP 0x07D298 (stat computation entry).
+
+(5) NEW FUNCTIONS: 0x07FBCA (15B), 0x07CFA7 (37B), 0x07CF1A (130B), 0x07CF8E (14B shared epilogue), 0x07D183 (6B), 0x07D189 (4B), 0x07D18D (23B shared tail), 0x07D1A8 (12B dispatch).
+NEW CALL TARGETS: 0x07CF9D, 0x07FE9C, 0x07F16C, 0x07FE24, 0x07F95E, 0x07CD92, 0x07CE8C, 0x07CD7F, 0x07DF66, 0x07CE34, 0x07CEA6, 0x07CDD8, 0x07CE99, 0x07CD57, 0x07F8B6, 0x07CE5F, 0x07CE71.
+
+PROBES: 4/4 verified via watchdog. Golden regression PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x07CF9D — shared setup for matrix/type handlers. (c) ★★★★ DECODE 0x07FE9C — utility from type handler. (d) ★★★★ DECODE 0x07F16C — parameterized FP op (A=0x04). (e) ★★★ DECODE 0x07CD92 — matrix computation sub-function. (f) ★★★ DECODE 0x07CD7F/0x07CDD8 — matrix row/column computation pair. (g) ★★★ DECODE 0x07DF66 — conditional path helper. (h) ★★★ DECODE 0x068640 — type→dimension fallback (carried). (i) ★★★ DECODE 0x07DD34 — swap+flag pipeline (carried). (j) ★★★ FRAME SIZE INVESTIGATION (carried). --END SESSION 532--
+
+**Session 531 findings (2026-06-06)**:
+
+**Last-updated-531**: 2026-06-06 (auto-session 531 — ★★★★ 0x07C9AF POST-NORMALIZE DISPATCH FULLY DECODED (50B, 0x07C9AF-0x07C9E0: BIT 3,(IY+48) quick-exit, leading-zero normalization loop with BCD shift left 0x07FB48, exponent adjustment, falls through to 0x07C9E1). ★★★★ 0x07C9E1 SIGN NORMALIZATION DECODED (31B, 0x07C9E1-0x07CA01: AND 0x80 strip type to sign, clear D00601 guard, ADD A,0xB0 carry check, CALL 0x07FBCA BCD adjustment, JP 0x07FE1A exponent increment). ★★★★ 0x07CA02+0x07CA27 OP1/OP2 SIGN TOGGLE PAIR DECODED (37B+33B, type-check CP 0x1C/0x1D→JP matrix/list handlers 0x07D189/0x07D183, mantissa zero check, sign XOR 0x80 toggle). ★★★★ 0x07D306 PHASE 3 IY FLAG CONDITIONER CONFIRMED (35B, dual entry 0x07D306/0x07D310, SET/RES IY+48 bits 5+6, CALL 0x07DD2F=5B RES 3,(IY+48)+RET, exponent SUB 0x0B, range checks CP 0x83/0x86/0x7C). ★★★ 0x06868A TYPE VALIDATION DISPATCHER DECODED (29B+22B, BIT 6 OP1 type gate, CALL 0x07F7A4 save+0x07FE5A transform+0x0686A8 type dispatch CP 0x20/0x21→0x07CFA7, CP 0x1C→0x07CF1A). GOLDEN REGRESSION PASS.**)
 
 > Previous: 2026-06-06 (auto-session 530 — 0x07C8B7 BCD multiplication core 246B, 0x07CA48 FP normalize phase 2 87B, 0x07CAB9 BCD restoring division 246B, 0x07D27B matrix/list FP stat computation 519B)
 
