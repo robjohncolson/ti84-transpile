@@ -8,9 +8,52 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-06 (auto-session 538 — **★★★★ TYPE TRANSFORM TABLE DATA FULLY DUMPED (0x07FE8A-0x07FE96: forward maps 0x21→0x1B, 0x20→0x0C, 0x1C→0x1B, 0x18→0x1D, 0x00→0x1E, 0x19→0x1F; reverse maps 0x0C→0x21, 0x1B→0x20, 0x1D→0x1C, 0x1E→0x18, 0x1F→0x00). ★★★ 0x07FE20 DECODED AS JP 0x061D02 (4B standalone overflow/error longjmp, NOT a preamble to 0x07FE24). ★★★ 0x07FEE7 STRING HANDLER PATH CONFIRMED (PUSH AF at offset +6 from 0x07FEE1 — strings skip type validator CALL 0x08021F, enter directly at XOR A + CALL 0x07FEFC merge path). ★★★ 0x07F904-0x07F91F GAP MAPPED (4 new OP copy stubs: OP6→OP2 at 0x07F904, OP6→OP1 at 0x07F90E, OP4→OP1 at 0x07F914, OP5→OP1 at 0x07F91A — last 3 share DE load at 0x07F96C=LD DE,OP1, code-size optimization). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-06 (auto-session 539 — **★★★★★ 0x061D00-0x061DB0 ERROR CODE DISPATCH TABLE FULLY MAPPED (44 entries, each LD A,errorCode + JR/JP to shared handler at 0x061DB2 → stores D008DF + CALL 0x03E1B4, 291 total xrefs). ★★★★ 0x07F7BD ckOP1type DECODED (3B: LD A,(D005F8); AND 0x3F; RET — complementary to 0x07F7D6 AND 0xC0 sign-strip; plus 0x07F7C4 type-validated dispatch 9B, 0x07F7CE OP copy+transform pipeline 8B). ★★★★ 0x07FAC2 ZERO-OP FAMILY DECODED (5 entry stubs: 0x07FAC2 zero all OP1, 0x07FAC9 mantissa-only, 0x07FACF alt full, 0x07FAD5 OP2 boundary, 0x07FADB OP2+7 — shared unrolled zero-fill at 0x07FA7F). ★★★ INTERNAL TYPES 0x1B/0x1D/0x1E/0x1F CROSS-REFERENCED (297 hits, 74 significant: 0x1D dominates at 48 refs as error/status code, type validation cluster at 0x0801CC-0x080214 checks all 4). GOLDEN REGRESSION 26/26 PASS.**)
 
-> Previous: 2026-06-06 (auto-session 537 — 0x07FE2F table lookup type transform, 0x07F8B6 OP copy dispatch extension, 0x07FEF5 valid-type dispatch, 0x07FEFC sub-transform)
+> Previous: 2026-06-06 (auto-session 538 — type transform table data fully dumped, 0x07FE20 decoded, 0x07FEE7 string handler confirmed, 0x07F904-0x07F91F gap mapped)
+
+**Session 539 findings (2026-06-06)**:
+
+(1) ★★★★★ 0x061D00-0x061DB0 ERROR CODE DISPATCH TABLE FULLY MAPPED (probe-phase539-decode-061D02.mjs, Sonnet, Opus-verified):
+- **Structure**: 44 entries, each exactly 4 bytes: `LD A,<errorCode>` (2B) + `JR/JP <shared_handler>` (2B/4B).
+- **Shared handler at 0x061DB2**: `LD (D008DF),A` (store error code) → `CALL 0x03E1B4` (main error processing) → `RES 7,(IY+0x4B)` (clear flag) → stack restore + RET. Classic longjmp pattern.
+- **Relay at 0x061D24**: `JP 0x061DB2` — first batch of stubs uses short JR to this relay, later stubs use direct JP.
+- **Top entries by xref count**: 0x061D0E (error 0x84) = 50 xrefs, 0x061D22 (error 0x89) = 40 xrefs, 0x061D36 (error 0x8C) = 39 xrefs, 0x061D46 (error 0x8F) = 25 xrefs, 0x061D3E (error 0x8E) = 19 xrefs.
+- **Total xrefs**: 291 across all 44 entries + 10 direct to 0x061DB2 + 14 direct to 0x061DB6.
+- **Key call target**: 0x03E1B4 = main TI-OS error processing routine.
+- **Error code RAM**: D008DF stores the active error code.
+
+(2) ★★★★ 0x07F7BD ckOP1type + NEIGHBORS DECODED (probe-phase539-decode-07F7BD.mjs, Sonnet, Opus-verified):
+- **0x07F7BD (3B)**: `LD A,(D005F8); AND 0x3F; RET` — load OP1 type stripped of sign bits. Z flag set if type==0x00 (Real). This is the canonical "get OP1 type" utility.
+- **0x07F7C4 (9B)**: Type-validated dispatch entry. `AND 0x3F; RET Z` (Real → return with Z). `CALL 0x08021F` (type validator). `RET C` (invalid → return). `CP A` (force Z=1). `RET`. Validates non-real types then forces Z=1.
+- **0x07F7CE (8B)**: OP copy + type transform pipeline. `CALL 0x07F968` (OP copy within dispatch table). `JP 0x07FE5A` (tail-jump to forward type transform).
+- **0x07F7D6 (5B)**: `LD HL,D005F8; LD A,(HL); AND 0xC0; LD (HL),A; RET` — strips type bits, keeps sign bits. **Complementary to 0x07F7BD**: 0x07F7BD extracts type (AND 0x3F), 0x07F7D6 extracts sign (AND 0xC0).
+- **0x07F7DF**: Start of next function (LD HL,D005F8), continues beyond dump range.
+
+(3) ★★★★ 0x07FAC2 ZERO-OP ENTRY FAMILY DECODED (probe-phase539-decode-07FAC2.mjs, Sonnet, Opus-verified):
+- **0x07FAC2 (5B)**: `LD HL,D005F8; XOR A; JR 0x07FA7A` — zero ALL of OP1 (type+exponent+mantissa, 11 bytes).
+- **0x07FAC9 (6B)**: `LD HL,D005FA; JR 0x07FA84` — zero OP1 mantissa only (skip type+exponent).
+- **0x07FACF (6B)**: `LD HL,D005F8; JR 0x07FADF` — zero OP1 via 3-byte-then-tail path.
+- **0x07FAD5 (6B)**: `LD HL,D00603; JR 0x07FADF` — zero 3 bytes at D00603 (OP2 type area).
+- **0x07FADB (4B)**: `LD HL,D0060E` — falls through to 0x07FADF to zero 3 bytes at OP3.
+- **Shared zero-fill at 0x07FA7F-0x07FA94**: Hand-unrolled INC HL + LD (HL),A chain writing 0x00 to 9-10 consecutive bytes. RET at 0x07FA94.
+- **BONUS 0x07FA95-0x07FAC1**: Additional entry stubs for OP5 (D00624), OP4 (D00619), OP3 (D0060E), plus a validation check `BIT 5,(IY+0x0A); JP NZ,0x061D16` (error 0x87 — undefined variable?), `CALL 0x07FD4A; RET Z; CALL 0x07FDF1; RET NZ`.
+
+(4) ★★★ INTERNAL TYPES 0x1B/0x1D/0x1E/0x1F CROSS-REFERENCED (probe-phase539-internal-type-xref.mjs, Sonnet, Opus-verified):
+- **0x1D (48 significant refs)**: Most-referenced internal type. Dominated by `LD C,0x1D` patterns — used as an error/status code loaded into C before CALL targets. Functions as the default FPU pipeline type tag. Also used in CP comparisons for matrix/list type gating (CP 0x1D at 0x07CA0F, 0x0686B0, etc.).
+- **0x1B (7 significant refs)**: CP comparisons in type classifier at 0x07F7AE and type transform tables.
+- **0x1E (8 significant refs)**: `SBC A,0x1E` at 0x07D5B0/0x07D64D/0x07D7C6 — exponent bias arithmetic (subtracting 30). `OR 0x1E` at 0x08004D for bit masking.
+- **0x1F (11 significant refs)**: `LD H,0x1F` at 0x07D74E/0x07D7D2 — address high byte for 0x1FD0xx RAM regions. CP 0x1F at 0x0801CC in type validation cluster.
+- **Type validation cluster at 0x0801CC-0x080214**: Dense sequence checking all four internal types in order (0x1F, 0x1E, 0x1B, 0x1D) — this is a type dispatcher/validator for the FPU pipeline.
+- **CAVEAT**: Many 0x1D/0x1E/0x1F hits are false positives (address bytes, loop counters, not type references). The 74 significant hits are the high-confidence ones.
+
+(5) NEW FUNCTIONS: 0x07F7BD (3B ckOP1type), 0x07F7C4 (9B type-validated dispatch), 0x07F7CE (8B OP copy+transform chain), 0x07F7D6 (5B sign-strip, inverse of 0x07F7BD), 0x07FAC2 (5B zero all OP1), 0x07FAC9 (6B zero OP1 mantissa), 0x07FACF (6B zero OP1 alt), 0x07FAD5 (6B zero OP2 type area), 0x061D00-0x061DB0 (44 × 4B error code stubs), 0x061DB2 (shared error handler entry).
+ERROR TABLE: 44 entries at 0x061D00-0x061DB0, handler at 0x061DB2 → CALL 0x03E1B4. Error code stored at D008DF.
+NEW CALL TARGETS: 0x03E1B4 (main error processing), 0x07FA7A/0x07FA84 (shared zero-fill entries).
+
+PROBES: 4/4 ran via watchdog. Codex 0/4 (all empty output or exit 1). All completed via Sonnet fallback. Golden regression 26/26 PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x03E1B4 — main TI-OS error processing routine called from error dispatch table (high value: understanding the error handler completes the error path). (c) ★★★ DECODE 0x07F7DF — function starting at LD HL,D005F8, continuation beyond the 0x07F7BD cluster. (d) ★★★ MAP ERROR CODE SEMANTICS — cross-reference TI-OS SDK error codes (0x81=overflow, 0x84=domain, 0x89=?, 0x8C=?) against the 44-entry table at 0x061D00. (e) ★★ FRAME SIZE INVESTIGATION (carried). (f) ★★ DECODE 0x07FA95-0x07FAC1 VALIDATION CLUSTER — the OP3/4/5 zero stubs plus BIT 5,(IY+0x0A) error check and CALL 0x07FD4A/0x07FDF1 validation pair. --END SESSION 539--
 
 **Session 538 findings (2026-06-06)**:
 
