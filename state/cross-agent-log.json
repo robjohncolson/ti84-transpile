@@ -17251,15 +17251,59 @@
       "timestamp": "2026-06-06T18:04:24Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "32dc1fb25c5e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: READ TYPE TABLES AT 0x07FE8A-0x07FE96\n\n## Context\nThis is a TI-84 Plus CE ROM transpilation ",
+      "status": "completed",
+      "duration_seconds": 40.414,
+      "timestamp": "2026-06-06T18:53:26Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a36bbe66dc6d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: DECODE 0x07FEE7 (string type handler in 0x07FEE1 region)\n\n## Context\nThis is a TI-84 Plus CE",
+      "status": "success",
+      "duration_seconds": 51.109,
+      "timestamp": "2026-06-06T18:53:40Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "445b9c51d264",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: DECODE 0x07FE20 (4 bytes before 0x07FE24 type transform wrapper)\n\n## Context\nThis is a TI-84",
+      "status": "completed",
+      "duration_seconds": 54.378,
+      "timestamp": "2026-06-06T18:53:41Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "fa904866ad76",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: MAP REMAINING OP COPY STUBS AT 0x07F904-0x07F91F\n\n## Context\nThis is a TI-84 Plus CE ROM tra",
+      "status": "success",
+      "duration_seconds": 71.126,
+      "timestamp": "2026-06-06T18:54:02Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1439,
-    "cc_to_codex": 1439,
+    "total_calls": 1443,
+    "cc_to_codex": 1443,
     "codex_to_cc": 0,
-    "completed": 999,
+    "completed": 1001,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 520.79
+    "avg_duration_seconds": 519.497
   }
 }

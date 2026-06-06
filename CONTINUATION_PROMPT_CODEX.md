@@ -8,9 +8,45 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-06 (auto-session 537 — **★★★★ 0x07FE2F TABLE LOOKUP TYPE TRANSFORM DECODED (33B, CPIR search through 6-entry table at 0x07FE8A, maps to output table at 0x07FE90, preserves sign bits via AND 0xC0/OR B, default 0x0C complex). ★★★★ 0x07F8B6 OP COPY DISPATCH TABLE EXTENSION DECODED (7 new entry stubs: OP4→OP2, OP3→OP2, OP1→OP3, OP5→OP2, OP5→OP6, OP5→OP4, OP1→OP2 — all route to 0x07F974 shared LDI chain, extends session 536's 12+ entries to 19+ total). ★★★ 0x07FEF5 VALID-TYPE MULTI-PATH DISPATCH DECODED (7B, CP 0x21 string→JR 0x07FEE7, CP 0x1C matrix→RET Z, fallthrough to 0x07FEFC). ★★★ 0x07FEFC SUB-TRANSFORM DECODED (7B, AND 0x3F strip + JR Z for type 0/0x20, CP 0x20 equation gate, RET NZ). BONUS: 0x07FF03 zero-type handler (CALL 0x07FD4A zero-check, JP Z 0x07FAC2, exponent threshold 0xE4/0x1D dispatch). BONUS: 0x07FE50 dual-OP transform wrapper (21B, CALL 0x07FE5A for OP1 then OP2), 0x07FE65 REVERSE type transform (CPIR 5-entry table at 0x07FE91 → 0x07FE8A, inverse of 0x07FE2F). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-06 (auto-session 538 — **★★★★ TYPE TRANSFORM TABLE DATA FULLY DUMPED (0x07FE8A-0x07FE96: forward maps 0x21→0x1B, 0x20→0x0C, 0x1C→0x1B, 0x18→0x1D, 0x00→0x1E, 0x19→0x1F; reverse maps 0x0C→0x21, 0x1B→0x20, 0x1D→0x1C, 0x1E→0x18, 0x1F→0x00). ★★★ 0x07FE20 DECODED AS JP 0x061D02 (4B standalone overflow/error longjmp, NOT a preamble to 0x07FE24). ★★★ 0x07FEE7 STRING HANDLER PATH CONFIRMED (PUSH AF at offset +6 from 0x07FEE1 — strings skip type validator CALL 0x08021F, enter directly at XOR A + CALL 0x07FEFC merge path). ★★★ 0x07F904-0x07F91F GAP MAPPED (4 new OP copy stubs: OP6→OP2 at 0x07F904, OP6→OP1 at 0x07F90E, OP4→OP1 at 0x07F914, OP5→OP1 at 0x07F91A — last 3 share DE load at 0x07F96C=LD DE,OP1, code-size optimization). GOLDEN REGRESSION 26/26 PASS.**)
 
-> Previous: 2026-06-06 (auto-session 536 — 0x07F920 OP copy dispatch table, 0x07FEE1 type-check-and-merge, 0x07FE24 type transform wrapper, 0x07FD69 exponent range validator)
+> Previous: 2026-06-06 (auto-session 537 — 0x07FE2F table lookup type transform, 0x07F8B6 OP copy dispatch extension, 0x07FEF5 valid-type dispatch, 0x07FEFC sub-transform)
+
+**Session 538 findings (2026-06-06)**:
+
+(1) ★★★★ TYPE TRANSFORM TABLE DATA FULLY DUMPED (probe-phase538-read-type-tables.mjs, Codex+Opus-verified):
+- **Forward input table (0x07FE8A, 6 bytes)**: 0x21 0x20 0x1C 0x18 0x00 0x19
+- **Forward output table (0x07FE90, 6 bytes)**: 0x1B 0x0C 0x1B 0x1D 0x1E 0x1F
+- **Reverse input table (0x07FE91, 5 bytes)**: 0x0C 0x1B 0x1D 0x1E 0x1F
+- **Forward mapping**: 0x21 (String alt) → 0x1B, 0x20 (Equation alt) → 0x0C (Complex), 0x1C (Matrix alt) → 0x1B, 0x18 (String variant) → 0x1D, 0x00 (Real) → 0x1E, 0x19 → 0x1F
+- **Reverse mapping**: 0x0C (Complex) → 0x21, 0x1B → 0x20, 0x1D → 0x1C, 0x1E → 0x18, 0x1F → 0x00
+- **NOTE**: Types 0x1B/0x1D/0x1E/0x1F are internal intermediate types used during the FPU pipeline transform — they don't correspond to standard TI-OS user-facing types. The forward/reverse tables confirm bidirectional type conversion for the 0x07FEB6 dual-pass pipeline.
+
+(2) ★★★ 0x07FE20 DECODED AS JP 0x061D02 (probe-phase538-decode-07FE20.mjs, Codex+Opus-verified):
+- **0x07FE20 (4B)**: C3 02 1D 06 = JP 0x061D02. This is a standalone unconditional jump — NOT a preamble to 0x07FE24.
+- **PURPOSE**: Error/overflow longjmp. When 0x07FF03 detects exponent ≥ 0xE4 (via JP NC,$07FE20), it jumps here, which immediately redirects to 0x061D02 (likely the TI-OS error handler, same family as 0x061D0E/0x061D46 longjmps seen in sessions 535/519).
+- **CORRECTION**: Session 537 NEXT item (c) described this as "4 bytes before 0x07FE24, called from 0x07FF03" — this is accurate but it's a jump-away, not a wrapper entry.
+
+(3) ★★★ 0x07FEE7 STRING HANDLER PATH CONFIRMED (probe-phase538-decode-07FEE7-string-handler.mjs, Codex+Opus-verified):
+- **0x07FEE7 = PUSH AF** (F5), confirmed at offset +6 from 0x07FEE1.
+- **String path (entering at 0x07FEE7)**: Skips CALL 0x08021F (type range validator) and JR C (valid-type branch). Goes directly to: PUSH AF → XOR A → CALL 0x07FEFC (sub-transform with A=0) → POP AF → LD HL,$D005F8 → OR (HL) → LD (HL),A → RET.
+- **Normal path (entering at 0x07FEE1)**: Calls validator first, branches if type is valid, otherwise does the same merge.
+- **IMPLICATION**: String types (0x21) bypass validation entirely and always go through the sub-transform merge path. This makes sense — strings are a known valid type that needs specific handling (not the generic valid-type path).
+
+(4) ★★★ 0x07F904-0x07F91F GAP MAPPED — 4 NEW OP COPY STUBS (probe-phase538-map-07F904-stubs.mjs, Codex+Opus-verified):
+- **0x07F904 (10B)**: LD HL=$D0062F (OP6), LD DE=$D00603 (OP2), JR $07F974 → **OP6→OP2** (12-byte copy)
+- **0x07F90E (6B)**: LD HL=$D0062F (OP6), JR $07F96C → **OP6→OP1** (DE loaded at 0x07F96C = LD DE,$D005F8)
+- **0x07F914 (6B)**: LD HL=$D00619 (OP4), JR $07F96C → **OP4→OP1**
+- **0x07F91A (6B)**: LD HL=$D00624 (OP5), JR $07F96C → **OP5→OP1**
+- **CODE-SIZE OPTIMIZATION**: Stubs at 0x07F90E/0x07F914/0x07F91A share the DE load at 0x07F96C (inside the OP2→OP1 stub at 0x07F968), saving 4 bytes per stub. This pattern: LD HL only → JR to mid-stub that loads DE → falls through to LDI chain.
+- **COMBINED TABLE**: 0x07F8B6-0x07F97A now has **23+ entry points** for all OP register copy permutations. The 0x07F904-0x07F91F gap is fully accounted for — no uncharted bytes remain between sessions 537 and 536 regions.
+
+(5) NEW FUNCTIONS: 0x07F904 (10B OP6→OP2), 0x07F90E (6B OP6→OP1), 0x07F914 (6B OP4→OP1), 0x07F91A (6B OP5→OP1), 0x07FE20 (4B JP 0x061D02 longjmp).
+TYPE TABLE DATA: Forward 0x07FE8A→0x07FE90 (6 entries), Reverse 0x07FE91→0x07FE8A (5 entries). Internal types 0x1B/0x1D/0x1E/0x1F identified as FPU pipeline intermediates.
+
+PROBES: 4/4 created by Codex (P1/P2 exit 0, P3/P4 exit 1 but files created correctly). All 4 ran successfully via watchdog. P2 Codex analysis incorrectly described JP as "preamble" — corrected by Opus. Golden regression 26/26 PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ IDENTIFY INTERNAL TYPES 0x1B/0x1D/0x1E/0x1F — cross-reference these values against other FPU functions (0x07FEB6 pipeline, 0x07FBD9 BCD ADD, 0x07DF66 BCD DIV) to determine what they represent. (c) ★★★ FRAME SIZE INVESTIGATION (carried). (d) ★★ DECODE 0x07FAED — mantissa helper called from 0x07FD69 scanner (carried). (e) ★★ DECODE 0x07F7BD — type/descriptor utility called from 0x07FF03 for low exponents (<0x1D). (f) ★★ DECODE 0x061D02 — error longjmp target (related to 0x061D0E/0x061D46 family). --END SESSION 538--
 
 **Session 537 findings (2026-06-06)**:
 
