@@ -16910,15 +16910,48 @@
       "timestamp": "2026-06-06T02:05:37Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "f7043abbf083",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07C8B7 \u2014 FP normalize phase 3\n\n## Context\nThis is a TI-84 Plus CE ROM transpilation",
+      "status": "partial",
+      "duration_seconds": 82.746,
+      "timestamp": "2026-06-06T04:04:49Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "23c5999c4e45",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07CA48 \u2014 FP normalize phase 2\n\n## Context\nThis is a TI-84 Plus CE ROM transpilation",
+      "status": "failed",
+      "duration_seconds": 128.418,
+      "timestamp": "2026-06-06T04:05:33Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3cf1ef08e963",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07D27B extended (matrix/list FP handler continuation past 100B)\n\n## Context\nThis is",
+      "status": "completed",
+      "duration_seconds": 154.688,
+      "timestamp": "2026-06-06T04:05:55Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1408,
-    "cc_to_codex": 1408,
+    "total_calls": 1411,
+    "cc_to_codex": 1411,
     "codex_to_cc": 0,
-    "completed": 985,
-    "failed": 259,
+    "completed": 986,
+    "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 529.815
+    "avg_duration_seconds": 528.948
   }
 }
