@@ -8,9 +8,52 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-06 (auto-session 534 — **★★★★ 0x07DF66 BCD RESTORING DIVISION LOOP DECODED (~150B, 16-digit division with quotient nibble packing via RLD, exponent bias ADD 0x40, post-normalize dispatch 0x07C9AF, 12+ CALL targets). ★★★★ BCD CONSTANT TABLE AT 0x07F196 FULLY MAPPED (7 entries × 9B = 63B: entry 0=180/π, 1=π/2, 2=π/4, 3=log10(e), 4=π, 5=π/180, 6=ln(10) — NO type byte in table, loader writes type separately). ★★★ 0x07CF96 SHARED COPY DECODED (3B: LD BC,$37; LDIR; RET — copies 55 bytes from HL→DE). ★★★ 0x068640 TYPE FALLBACK DECODED (6B: AND 0x3F; JP 0x08021F — strips type flags, jumps to range validator). GOLDEN REGRESSION PASS.**)
+**Last updated**: 2026-06-06 (auto-session 535 — **★★★★ 0x07FEB6 DUAL-PASS TYPE TRANSFORM PIPELINE DECODED (43B, reads OP1 type D005F8, CALL 0x07F7A8 type-save, JR NZ to 0x07FEE1, two identical passes of [0x07FE5A→0x07FEE1→0x07FE24→0x07FD30]). ★★★★ 0x07FBD9 HYPOTHESIS CORRECTED — NOT multi-shift, it's a 13B CONDITIONAL DISPATCH STUB (checks D00603 bit 0, CALL Z 0x07FAF5, LD B,8, JR 0x07FBCE). BONUS: 4 BCD ADD entry stubs at 0x07FBE8/0x07FBF2/0x07FBFC/0x07FC06 (each loads HL/DE with different OP pairs, JR to 0x07FC0E). 0x07FC0E BCD ADD 49B fully decoded (8-byte unrolled ADD+DAA+ADC loop). 0x07FC3F 17B sign-aware BCD ADD/SUB dispatcher. ★★★ 0x080173 SETUP GUARD DECODED (10B, CALL 0x07FDC9 result-check, RET Z, JP 0x061D0E longjmp). ★★★ 0x07DD34 SWAP+FLAG PIPELINE DECODED (42B cluster: OP4→OP5 copy via 0x07FD38, IY+0x48 bit 6 exponent threshold gate 0x8C/0x8D, 0x07DD82 system-call chain). GOLDEN REGRESSION 26/26 PASS.**)
 
-> Previous: 2026-06-06 (auto-session 533 — 0x07FE9C type equation/string→real 26B, 0x07F16C BCD constant loader 42B, 0x07CF9D shared setup 10B, 0x07CD92 matrix dimension cluster ~100B)
+> Previous: 2026-06-06 (auto-session 534 — 0x07DF66 BCD division loop ~150B, BCD constant table 0x07F196 7 entries, 0x07CF96 shared copy, 0x068640 type fallback)
+
+**Session 535 findings (2026-06-06)**:
+
+(1) ★★★★ 0x07FEB6 DUAL-PASS TYPE TRANSFORM PIPELINE DECODED (probe-phase535-decode-07FEB6-utility.mjs, Codex, Opus-verified):
+- **0x07FEB6 (43B, 0x07FEB6-0x07FEE0)**: LD A,(D005F8) — reads OP1 type byte. CALL 0x07F7A8 (type save). JR NZ,0x07FEE1 (if NZ, skip first pass). Two identical passes: CALL 0x07FE5A (forward type transform), CALL 0x07FEE1, CALL 0x07FE24, CALL 0x07FD30 (OP copy). RET.
+- **CALL targets**: 0x07F7A8 (type save), 0x07FE5A (forward type transform), 0x07FEE1, 0x07FE24, 0x07FD30 (OP swap/copy).
+- **PURPOSE**: Applies a two-phase type transform on OP1/OP2 — each pass normalizes the type then copies/swaps operands. Called from 0x056B0F descriptor rendering loop between CALL 0x07C71D and POP DE/JP 0x07FA0D.
+- **NOTE**: Codex produced the probe (exit 1 but file created correctly). Probe ran clean.
+
+(2) ★★★★ 0x07FBD9 HYPOTHESIS CORRECTED — CONDITIONAL DISPATCH STUB (probe-phase535-decode-07FBD9-bcd-shift.mjs, Codex skeleton + Sonnet full decode, Opus-verified):
+- **0x07FBD9 (13B, 0x07FBD9-0x07FBE5)**: LD A,(D00603) — reads OP2 type byte. AND 0x01 — tests bit 0. LD A,B (restores A from B). CALL Z,0x07FAF5 (nibble extract, if bit 0 clear). LD B,8. JR 0x07FBCE (back into BCD carry propagation region).
+- **KEY CORRECTION**: Prior sessions described this as "BCD shift left by B positions" — WRONG. It is a conditional dispatch that checks OP2 type bit 0, optionally calls nibble extract 0x07FAF5, forces B=8, and jumps into 0x07FBCA area.
+- **BONUS — BCD ADD entry stubs** (4 stubs, each 8-10B):
+  - 0x07FBE8: HL=D00622 (OP4 end), DE=D0060C (OP2 mantissa end), JR→0x07FC0E (OP4+OP2)
+  - 0x07FBF2: HL=D00601 (OP1 end), DE=D0060C (OP2 end), JR→0x07FC0E (OP1+OP2)
+  - 0x07FBFC: HL=D0060C (OP2 end), DE=D00601 (OP1 end), JR→0x07FC0E (OP2+OP1)
+  - 0x07FC06: HL=D00617 (OP3 end), DE=D00601 (OP1 end), fallthrough→0x07FC0E (OP3+OP1)
+- **BONUS — 0x07FC0E BCD ADD (49B)**: Unrolled 8-byte BCD addition: LD A,(DE)/ADD A,(HL)/DAA/LD (DE),A/DEC DE/DEC HL for first byte (no carry), then 7× ADC+DAA pattern. Stores result at DE. RET.
+- **BONUS — 0x07FC3F sign-aware BCD ADD/SUB dispatcher (17B)**: LD A,(D00624) / AND 0x80 / LD HL,D00617 (OP3) / LD DE,D0060C (OP2 end) / JR NZ,0x07FC94 (BCD SUB if negative) / JP 0x07FC0E (BCD ADD if positive).
+
+(3) ★★★ 0x080173 SETUP GUARD DECODED (probe-phase535-decode-080173-setup.mjs, Codex, Opus-verified):
+- **0x080173 (10B, 0x080173-0x08017B)**: CALL 0x07FDC9 (result-check / validation). RET Z (return if result OK). JP 0x061D0E (longjmp/error handler if validation failed).
+- **0x08017C**: CALL 0x07F7BD (type/descriptor utility), JR→0x080177 (RET Z / JP error pattern).
+- **0x080182**: CALL 0x07FD62, JR→0x080177.
+- **0x080188**: CALL 0x080173 (recursive self-call!), CALL 0x07FD4A (zero-check gate), RET NZ, JR→0x080178.
+- **0x080193 (6B)**: CALL 0x082C50, PUSH DE, EX DE,HL, CALL 0x04C916, POP DE, RET.
+- **PURPOSE**: Validation guard for BCD division — checks result validity (0x07FDC9), aborts via longjmp (0x061D0E) on failure. The 0x080173 entry is only the guard stub; the division at 0x07DF66 calls it first to validate operands/state before the division loop begins.
+
+(4) ★★★ 0x07DD34 SWAP+FLAG PIPELINE DECODED (probe-phase535-decode-07DD34-swap-flag.mjs, Codex, Opus-verified):
+- **0x07DD34 (42B, 0x07DD34-0x07DD5D)**: CALL 0x07DD5E (OP4→OP5 setup). CALL 0x07FD30 (OP copy/swap). RES 6,(IY+0x48). CALL 0x07DD6A (type check). RET NC (if type invalid). RES 6,(IY+0x48). LD A,(D005F9) (OP1 exponent). CP 0x8D / JR NC → SET 6,(IY+0x48). CP 0x8C / RET NC. CALL 0x07FD69 (OP validation). RET Z. SET 6,(IY+0x48) / OR 0xC9 (suspicious — OR may be data boundary).
+- **Sub-function 0x07DD5E (10B)**: LD HL,D00619 (OP4). LD DE,D00624 (OP5). JP 0x07FD38 (shared OP copy kernel).
+- **Sub-function 0x07DD6A (10B)**: LD A,(D00624). AND 0x3F. JP 0x08021F (type range validator → C flag = valid).
+- **Sub-function 0x07DD74 (14B)**: Double CALL 0x07DD82. LD A,0x83. JP 0x06635A.
+- **Sub-function 0x07DD82 (22B)**: LD A,0xC0. CALL 0x0674AB. CALL 0x0828BC. CALL 0x0829B4. CALL 0x07F920. JP 0x07F8B6.
+- **PURPOSE**: Prepares OP4/OP5 operands for BCD arithmetic. The IY+0x48 bit 6 flag gates post-normalize dispatch in 0x07C9AF — this function sets/clears it based on exponent thresholds (0x8C/0x8D = overflow boundary for 12/13-digit numbers).
+- **NOTE**: P3 decoder had FD CB prefix issues (IY bit ops decoded as DB). Manual decode from raw bytes resolved the structure.
+
+(5) NEW FUNCTIONS: 0x07FEB6 (43B dual-pass type transform), 0x07FBD9 (13B conditional dispatch stub), 0x07FC0E (49B BCD ADD — 4 entry stubs at 0x07FBE8/F2/FC, 0x07FC06), 0x07FC3F (17B sign dispatcher), 0x080173 (10B validation guard + 4 neighbor stubs), 0x07DD34 (42B swap+flag cluster), 0x07DD5E/0x07DD6A/0x07DD74/0x07DD82 sub-functions.
+NEW CALL TARGETS: 0x07F7A8 (type save), 0x07FEE1, 0x07FE24, 0x07FAF5 (nibble extract), 0x07FDC9 (result check), 0x061D0E (longjmp/error), 0x07FD62, 0x07FD69, 0x082C50, 0x04C916, 0x0674AB, 0x0828BC, 0x0829B4, 0x07F920, 0x07F8B6, 0x06635A.
+
+PROBES: 4/4 ran via watchdog. P4 Codex decoder failed on 0x3A (LD A,(nn)) — Sonnet rewrote correctly. P3 Codex decoder missed FD CB prefix — manual decode resolved. P1/P2 Codex clean. Golden regression 26/26 PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x07FEE1 — called twice in the 0x07FEB6 pipeline, likely a sub-transform step. (c) ★★★★ DECODE 0x07FE24 — second transform step in same pipeline. (d) ★★★ DECODE 0x07F920 — called from 0x07DD82 system-call chain (4th call before JP 0x07F8B6). (e) ★★★ DECODE 0x07F8B6 — tail-jump target from 0x07DD82, may be a BCD result commit or OP register flush. (f) ★★★ DECODE 0x07FD69 — OP validation called from 0x07DD34. (g) ★★★ FRAME SIZE INVESTIGATION (carried). --END SESSION 535--
 
 **Session 534 findings (2026-06-06)**:
 
