@@ -16778,15 +16778,103 @@
       "timestamp": "2026-06-05T20:04:04Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "75e3fa24c1cd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 527 \u2014 Priority 3: DECODE 0x07F9FF Shared Copy Routine\n\n## Context\n\nYou are working on",
+      "status": "completed",
+      "duration_seconds": 78.864,
+      "timestamp": "2026-06-05T22:03:25Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b8d7b066fa43",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 527 \u2014 Priority 4: DECODE 0x069EDB Large Exponent Handler\n\n## Context\n\nYou are working",
+      "status": "success",
+      "duration_seconds": 82.1,
+      "timestamp": "2026-06-05T22:03:31Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "413fe8695d18",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 527 \u2014 Priority 1: DECODE 0x069E12 Tail FP Finalizer\n\n## Context\n\nYou are working on a",
+      "status": "success",
+      "duration_seconds": 88.667,
+      "timestamp": "2026-06-05T22:03:31Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a220cdebf5f0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 527 \u2014 Priority 2: DECODE 0x07F829 FP Comparison/Normalization\n\n## Context\n\nYou are wo",
+      "status": "completed",
+      "duration_seconds": 93.796,
+      "timestamp": "2026-06-05T22:03:38Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "248475fce1d6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 528 \u2014 Priority 4: INVESTIGATE D00842 FP Default/Error Value\n\n## Context\nYou are worki",
+      "status": "completed",
+      "duration_seconds": 78.877,
+      "timestamp": "2026-06-06T00:04:32Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "751b623f82c7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 528 \u2014 Priority 3: DECODE 0x07FE65 + 0x07FE2F Type Transform Routines\n\n## Context\nYou ",
+      "status": "completed",
+      "duration_seconds": 118.307,
+      "timestamp": "2026-06-06T00:05:09Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "32ef15fc58b1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 528 \u2014 Priority 2: DECODE 0x098A94 Frame Teardown\n\n## Context\nYou are working on a TI-",
+      "status": "complete",
+      "duration_seconds": 137.371,
+      "timestamp": "2026-06-06T00:05:25Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6631415102ef",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 528 \u2014 Priority 1: DECODE 0x069CCE Complex FP Division/Normalization\n\n## Context\nYou a",
+      "status": "complete",
+      "duration_seconds": 164.608,
+      "timestamp": "2026-06-06T00:05:51Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1396,
-    "cc_to_codex": 1396,
+    "total_calls": 1404,
+    "cc_to_codex": 1404,
     "codex_to_cc": 0,
-    "completed": 978,
+    "completed": 982,
     "failed": 259,
     "refused": 0,
-    "avg_duration_seconds": 533.446
+    "avg_duration_seconds": 531.006
   }
 }
