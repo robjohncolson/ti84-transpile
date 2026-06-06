@@ -8,9 +8,62 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-06 (auto-session 530 — **★★★★★ 0x07C8B7 BCD MULTIPLICATION CORE FULLY DECODED (246B, 0x07C8B7-0x07C9AD: RES 6,(IY+14), clear guards via 0x07CC36, OP1/OP2 zero checks, exponent computation via 0x07CA7C, accumulator init via 0x07FADB, 8-byte outer loop over OP2 mantissa digits, inner BCD ADD+ADC+DAA chain 9 bytes×B iterations for low+high nibble separately, RRD accumulator right-shift via 0x07FB19, overflow→0x07FE1A exponent increment, result copy to OP1 via 0x07F9C9, BIT 6,(IY+14) reversed-order gate). ★★★★ 0x07CA48 FP NORMALIZE PHASE 2 DECODED (~87B: CALL 0x07FD4A check OP1 mantissa→RET Z, clear D00601 guard, SUB 0x80 exponent bias removal→RET C underflow, CP 0x0F range check, BCD shift loop CALL 0x07FB33+0x07FDF1, exponent reconstruction ADD A,0x80 with overflow→JP 0x061D02, sign merge XOR (D005F8), RET at 0x07CA9F). ★★★★★ 0x07CAB9 BCD RESTORING DIVISION FULLY DECODED (246B, classic restoring division: 8-byte BCD SUB trial via 0x07FC94, restore via 0x07FC0E BCD ADD, RLD shift left via 0x07FB48, quotient nibble packing, 15/16-digit, leading-zero strip loop). ★★★★★ 0x07D27B FULLY DECODED — 519B MATRIX/LIST FP STATISTICAL COMPUTATION (7 phases, iterative convergence loop, 32 CALL targets, exit stubs at 0x07D481-0x07D496). GOLDEN REGRESSION PASS.**)
+**Last updated**: 2026-06-06 (auto-session 531 — **★★★★ 0x07C9AF POST-NORMALIZE DISPATCH FULLY DECODED (50B, 0x07C9AF-0x07C9E0: BIT 3,(IY+48) quick-exit, leading-zero normalization loop with BCD shift left 0x07FB48, exponent adjustment, falls through to 0x07C9E1). ★★★★ 0x07C9E1 SIGN NORMALIZATION DECODED (31B, 0x07C9E1-0x07CA01: AND 0x80 strip type to sign, clear D00601 guard, ADD A,0xB0 carry check, CALL 0x07FBCA BCD adjustment, JP 0x07FE1A exponent increment). ★★★★ 0x07CA02+0x07CA27 OP1/OP2 SIGN TOGGLE PAIR DECODED (37B+33B, type-check CP 0x1C/0x1D→JP matrix/list handlers 0x07D189/0x07D183, mantissa zero check, sign XOR 0x80 toggle). ★★★★ 0x07D306 PHASE 3 IY FLAG CONDITIONER CONFIRMED (35B, dual entry 0x07D306/0x07D310, SET/RES IY+48 bits 5+6, CALL 0x07DD2F=5B RES 3,(IY+48)+RET, exponent SUB 0x0B, range checks CP 0x83/0x86/0x7C). ★★★ 0x06868A TYPE VALIDATION DISPATCHER DECODED (29B+22B, BIT 6 OP1 type gate, CALL 0x07F7A4 save+0x07FE5A transform+0x0686A8 type dispatch CP 0x20/0x21→0x07CFA7, CP 0x1C→0x07CF1A). GOLDEN REGRESSION PASS.**)
 
-> Previous: 2026-06-05 (auto-session 529 — 0x07D27B matrix/list FP handler ~100B+, 0x0685DF exponent save+normalize 31B, 0x07CBB5 FP normalization core ~120B, 0x07FF38 exponent check 7B, 0x0994DC token type dispatcher)
+> Previous: 2026-06-06 (auto-session 530 — 0x07C8B7 BCD multiplication core 246B, 0x07CA48 FP normalize phase 2 87B, 0x07CAB9 BCD restoring division 246B, 0x07D27B matrix/list FP stat computation 519B)
+
+**Session 531 findings (2026-06-06)**:
+
+(1) ★★★★ 0x07C9AF POST-NORMALIZE DISPATCH FULLY DECODED (probe-phase531-decode-07C9AF-post-normalize.mjs, Codex, Opus-verified):
+- **0x07C9AF (50B, 0x07C9AF-0x07C9E0)**: Post-normalize dispatch with leading-zero normalization.
+- **Entry (0x07C9AF-0x07C9B3)**: FD CB 48 5E = BIT 3,(IY+48); C0 = RET NZ. Quick exit if IY+48 bit 3 is set (already normalized).
+- **Leading-zero check (0x07C9B4-0x07C9BB)**: LD HL,D005FA; LD A,(HL); AND 0xF0; JR NZ,0x07C9E1 (upper nibble present → skip to sign normalization).
+- **Normalization loop (0x07C9BD-0x07C9D0)**: LD C,0x10 (max 16 shifts). Loop: DEC C; JP Z,0x07FAC2 (overflow → zero OP1). CALL 0x07FB48 (BCD shift left). INC HL; LD A,(HL); AND 0xF0; JP Z,0x07C9BF (continue shifting until upper nibble appears).
+- **Exponent adjust (0x07C9D0-0x07C9E0)**: LD A,0x10; SUB C (shifts performed = 16-C). LD C,A. LD A,(D005F9); SUB C; JP C,0x07FAC2 (underflow → zero). LD (D005F9),A (store adjusted exponent). Falls through to 0x07C9E1.
+- **CALL targets**: 0x07FB48. **JP targets**: 0x07FAC2 (zero OP1), 0x07C9E1 (sign normalize).
+- **KEY INSIGHT**: This is the mantissa left-shift normalizer — ensures the first significant BCD digit is in the upper nibble of D005FA. The exponent is decremented by the number of shifts.
+
+(2) ★★★★ 0x07C9E1 SIGN NORMALIZATION DECODED (probe-phase531-decode-07C9E1-sign-normalize.mjs, Codex, Opus-verified):
+- **0x07C9E1 (31B, 0x07C9E1-0x07CA01)**: Sign extraction and guard-byte overflow check.
+- **Sign strip (0x07C9E1-0x07C9EA)**: LD A,(D005F8); AND 0x80; LD (D005F8),A — strips type code, keeps only sign bit.
+- **Guard byte check (0x07C9EB-0x07C9F5)**: LD HL,D00601 (OP2 guard byte). LD A,(HL); LD (HL),0x00 (read and clear guard). DEC HL (→D00600). ADD A,0xB0 (threshold check: carry if guard ≥ 0x50). RET NC (no overflow).
+- **Overflow path (0x07C9F6-0x07CA01)**: CALL 0x07FBCA (BCD rounding/carry propagation). RET NC (absorbed). INC HL; LD (HL),0x10 (set mantissa MSB to 0x10 = "1.0"). JP 0x07FE1A (increment exponent).
+- **CALL targets**: 0x07FBCA. **JP target**: 0x07FE1A (exponent increment).
+- **KEY INSIGHT**: After BCD arithmetic, the guard byte (D00601) may contain overflow digits. This function rounds them into the mantissa. If rounding itself overflows (carry propagates through all digits), it resets mantissa to 0x10 and increments the exponent.
+
+(3) ★★★★ 0x07CA02+0x07CA27 OP1/OP2 SIGN TOGGLE PAIR DECODED (probe-phase531-decode-07C9E1-sign-normalize.mjs, Codex, Opus-verified):
+- **0x07CA02 (37B, OP1 sign toggle)**: CALL 0x07CA27 (handle OP2 first). CALL 0x07F7BD (load OP1 type). CP 0x1C; JR Z,skip; CP 0x1D → JP Z,0x07D189 (matrix/list special handling). CALL 0x07FD4A (check OP1 mantissa). LD A,(D005F8). If zero mantissa: OR 0x80. XOR 0x80 (toggle sign bit). LD (D005F8),A. RET.
+- **0x07CA27 (33B, OP2 sign toggle)**: CALL 0x0801A8 (load OP2 type). CP 0x1C; JR Z,skip; CP 0x1D → JP Z,0x07D183. CALL 0x07FD50 (check OP2 mantissa). LD A,(D00603). If zero: OR 0x80. XOR 0x80 (toggle sign). LD (D00603),A. RET.
+- **PURPOSE**: Negate OP1 and OP2. For zero values, forces sign negative first (OR 0x80) then toggles. Matrix/list types 0x1C/0x1D route to special handlers 0x07D189/0x07D183.
+
+(4) ★★★★ 0x07D306 PHASE 3 IY FLAG CONDITIONER CONFIRMED (probe-phase531-decode-07D306-fp-format.mjs, Codex, Opus-verified):
+- **0x07D306 (4B)**: FD CB 48 EE = SET 5,(IY+48).
+- **0x07D30A (4B)**: FD CB 58 B6 = RES 6,(IY+88).
+- **0x07D30E (2B)**: JR 0x07D314 (skip alternate entry).
+- **0x07D310 (4B, alternate entry)**: FD CB 58 F6 = SET 6,(IY+88).
+- **0x07D314**: CALL 0x07DD2F. LD A,(D005F9); SUB 0x0B. BIT 5,(IY+48); JR Z,skip. INC A; RES 5,(IY+48). PUSH AF.
+- **0x07D32A onward**: CALL 0x07C9AF (post-normalize). LD DE,0xD00842 (FP zero default). Double CALL 0x07FA0D (FP init). CALL 0x07FD69 (exponent validity). Exponent range checks CP 0x83/0x86 gated by IY+88 bit 6. CP 0x7C lower bound → JP C,0x07D48D failure.
+- **0x07DD2F (5B sub-function)**: FD CB 48 9E = RES 3,(IY+48); C9 = RET. Trivial flag clear.
+- **0x07DD34+ (separate functions)**: 0x07DD34 CALL 0x07DD5E+0x07FD30+flag ops, 0x07DD5E LD HL,D00619/LD DE,D00624 JP 0x07FD38, 0x07DD6A type check AND 0x3F JP 0x08021F, 0x07DD74 double CALL 0x07DD82 + LD A,0x83 JP target.
+- **CONFIRMS session 530 phase 3 description exactly.** The dual entry (0x07D306=IY+48 bit 5 + IY+88 bit 6 clear, 0x07D310=IY+88 bit 6 set) gates whether exponent comparison uses CP 0x83 or CP 0x86.
+
+(5) ★★★ 0x06868A TYPE VALIDATION DISPATCHER DECODED (probe-phase531-decode-06868A-unknown.mjs, Codex, Opus-verified):
+- **0x06868A (29B, 0x06868A-0x0686A7)**: LD HL,D005F8; BIT 6,(HL); RET NZ (complex type 0x0C has bit 6 — bail on complex). CALL 0x07F7A4 (save flags/type). PUSH AF. CALL 0x07FE5A (forward type transform — related to 0x07FE65 decoded in session 528). CALL 0x0686A8 (type sub-dispatch). POP AF. LD HL,D005F8. JP Z,0x07FE28 (reverse type transform if sub-dispatch returned Z). RET.
+- **0x0686A8 (22B, type sub-dispatch)**: CALL 0x07F7BD (load type). CP 0x20 → JP Z,0x07CFA7. CP 0x21 → JP Z,0x07CFA7. CP 0x1C → JP Z,0x07CF1A. RET (unrecognized type).
+- **0x0686BF-0x0686EE**: Appears to be BCD constant data (not executable code — random-looking byte patterns after the RET at 0x0686BE).
+- **0x0686EF (type-to-dimension mapper, 27B)**: LD D,0x08; CP 0x1C; JR Z,done. LD D,0x09; CP 0x20; JR Z,done. CP 0x21; JR Z,done. LD D,A; CALL 0x068640; JR C,done. LD D,0x00. Done: LD A,D; RET. Maps type codes to dimension values (0x1C→8, 0x20/0x21→9, else→from 0x068640 or 0).
+- **0x07FF59 (calling context, 18B)**: CALL 0x06868A; CALL 0x08021B (type range validator); JP NC,0x07F7D6 (strip type on valid). CALL 0x07F7BD; RET Z. CP 0x0E; JR Z,0x07FF77. JP 0x061D22.
+- **PURPOSE**: Type validation + transform pipeline. Validates that OP1 is not complex (bit 6), transforms type code forward, dispatches to type-specific handlers (0x07CFA7 for types 0x20/0x21, 0x07CF1A for matrix 0x1C), then reverse-transforms on return.
+
+(6) CODEX: 4/4 created probe files (all exit code 1 but reported success in JSON output). All probes ran correctly via watchdog. P1 had minor decoder issues (0xAF=XOR A shown as "DB AF ; unknown opcode") but disassembly was complete and correct for the target regions. P3 had cleanest output with proper boundary annotations.
+
+(7) NEW FUNCTIONS: 0x07C9AF (post-normalize dispatch, 50B), 0x07C9E1 (sign normalization, 31B), 0x07CA02 (OP1 sign toggle, 37B), 0x07CA27 (OP2 sign toggle, 33B), 0x06868A (type validation dispatcher, 29B), 0x0686A8 (type sub-dispatch, 22B), 0x0686EF (type-to-dimension mapper, 27B).
+NEW SUB-FUNCTIONS: 0x07DD2F (5B RES 3,(IY+48); RET), 0x07DD34 (swap+flag pipeline), 0x07DD5E (OP4/OP5 pointer setup, 10B), 0x07DD6A (type-check AND 0x3F JP 0x08021F).
+NEW CALL TARGETS: 0x07FBCA (BCD rounding/carry propagation), 0x07F7A4 (save flags/type), 0x07FE5A (forward type transform), 0x07FE28 (reverse type transform on Z), 0x0801A8 (load OP2 type), 0x07CFA7 (type 0x20/0x21 handler), 0x07CF1A (matrix 0x1C handler), 0x068640 (type→dimension fallback), 0x07D189/0x07D183 (matrix/list sign special handlers).
+
+PROBES: probe-phase531-decode-07C9E1-sign-normalize.mjs (Codex, Opus-verified), probe-phase531-decode-07D306-fp-format.mjs (Codex, Opus-verified), probe-phase531-decode-07C9AF-post-normalize.mjs (Codex, Opus-verified), probe-phase531-decode-06868A-unknown.mjs (Codex, Opus-verified). BOOT STATE: unchanged (pure investigation). Golden regression PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — Browser-bound, needs human. (b) ★★★★ DECODE 0x07FBCA — BCD rounding/carry propagation, called from 0x07C9E1 sign normalization. Key function for mantissa overflow handling. (c) ★★★★ DECODE 0x07CFA7 — Type 0x20/0x21 handler, called from both 0x0686A8 (type dispatcher) and possibly from matrix/list pipeline. (d) ★★★★ DECODE 0x07CF1A — Matrix type 0x1C handler, called from 0x0686A8. (e) ★★★ DECODE 0x07CF24 — Complex validation chain in matrix/list handler (carried from sessions 529/530). (f) ★★★ FRAME SIZE INVESTIGATION — carried from session 529. (g) ★★★ DECODE 0x07D189/0x07D183 — Matrix/list sign special handlers, called from OP1/OP2 sign toggle functions. (h) ★★★ DECODE 0x068640 — Type→dimension fallback function, called from 0x0686EF. (i) ★★★ DECODE 0x07DD34 — Swap+flag pipeline near 0x07DD2F, multiple CALL targets. (j) ★★★ DECODE 0x07F7A4 — Save flags/type function, called from 0x06868A. --END SESSION 531--
 
 **Session 530 findings (2026-06-06)**:
 
