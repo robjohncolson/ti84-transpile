@@ -8,9 +8,59 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-06 (auto-session 535 — **★★★★ 0x07FEB6 DUAL-PASS TYPE TRANSFORM PIPELINE DECODED (43B, reads OP1 type D005F8, CALL 0x07F7A8 type-save, JR NZ to 0x07FEE1, two identical passes of [0x07FE5A→0x07FEE1→0x07FE24→0x07FD30]). ★★★★ 0x07FBD9 HYPOTHESIS CORRECTED — NOT multi-shift, it's a 13B CONDITIONAL DISPATCH STUB (checks D00603 bit 0, CALL Z 0x07FAF5, LD B,8, JR 0x07FBCE). BONUS: 4 BCD ADD entry stubs at 0x07FBE8/0x07FBF2/0x07FBFC/0x07FC06 (each loads HL/DE with different OP pairs, JR to 0x07FC0E). 0x07FC0E BCD ADD 49B fully decoded (8-byte unrolled ADD+DAA+ADC loop). 0x07FC3F 17B sign-aware BCD ADD/SUB dispatcher. ★★★ 0x080173 SETUP GUARD DECODED (10B, CALL 0x07FDC9 result-check, RET Z, JP 0x061D0E longjmp). ★★★ 0x07DD34 SWAP+FLAG PIPELINE DECODED (42B cluster: OP4→OP5 copy via 0x07FD38, IY+0x48 bit 6 exponent threshold gate 0x8C/0x8D, 0x07DD82 system-call chain). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-06 (auto-session 536 — **★★★★ 0x07F920 OP REGISTER COPY DISPATCH TABLE DECODED (~107B, 12+ entry points each loading HL/DE with different OP register pairs, shared LDI chain at 0x07F974 copies 12 bytes, 0x07F97A copies 7 bytes — unifies OP1↔OP2↔OP3↔OP4↔OP5↔OP6 copy operations). ★★★ 0x07FEE1 TYPE-CHECK-AND-MERGE DECODED (20B, CALL 0x08021F type validator, if invalid: XOR A + CALL 0x07FEFC + OR (HL) merge into D005F8 OP1 type). ★★★ 0x07FE24 TYPE TRANSFORM WRAPPER DECODED (11B, reads OP1 type D005F8, CALL 0x07FE2F transform, writes back). ★★★ 0x07FD69 EXPONENT RANGE VALIDATOR + MANTISSA SCANNER DECODED (~60B, checks exponent 0x80-0x8D range, D flag selects scan mode, walks mantissa bytes via HL+BC offset). BONUS: 0x07FD4A/0x07FD50 zero-check pair (6B each, AND A + RET for OP1/OP2 exponent+1), 0x07FD62 sign-check (7B, AND 0x80 + RET NZ for OP1 sign). GOLDEN REGRESSION 26/26 PASS.**)
 
-> Previous: 2026-06-06 (auto-session 534 — 0x07DF66 BCD division loop ~150B, BCD constant table 0x07F196 7 entries, 0x07CF96 shared copy, 0x068640 type fallback)
+> Previous: 2026-06-06 (auto-session 535 — 0x07FEB6 dual-pass type transform, 0x07FBD9 hypothesis corrected, 0x080173 validation guard, 0x07DD34 swap+flag pipeline)
+
+**Session 536 findings (2026-06-06)**:
+
+(1) ★★★★ 0x07F920 OP REGISTER COPY DISPATCH TABLE DECODED (probe-phase536-decode-07F920-syscall.mjs, Codex, Opus-verified):
+- **0x07F920 (~107B, 0x07F920-0x07F98A core + entry stubs beyond)**: Multi-entry OP register copy dispatch table. 12+ entry points each load HL (source) and DE (destination) with different OP register addresses, then JR into a shared LDI chain.
+- **Shared LDI chain at 0x07F974**: 12× LDI (copies 12 bytes = one full OP register + 1 byte). RET at 0x07F98A.
+- **Alternate entry at 0x07F97A**: 7× LDI (copies 7 bytes = mantissa portion). Already known from session 533's BCD constant loader.
+- **Entry point map** (HL → DE):
+  - 0x07F920: OP3 (D0060E) → OP1 (D005F8) — 12 bytes
+  - 0x07F926: OP6 (D0062F) → (via 0x07F930) OP5 (D00624) — 12 bytes
+  - 0x07F92C: OP4 (D00619) → OP5 (D00624) — 12 bytes
+  - 0x07F936: OP3 (D0060E) → OP5 (D00624) — 12 bytes
+  - 0x07F940: OP2 (D00603) → OP5 (D00624) — 12 bytes
+  - 0x07F94A: OP2 (D00603) → OP6 (D0062F) — 12 bytes
+  - 0x07F954: OP1 (D005F8) → OP6 (D0062F) — 12 bytes
+  - 0x07F95E: OP1 (D005F8) → OP5 (D00624) — 12 bytes
+  - 0x07F968: OP2 (D00603) → OP1 (D005F8) — 12 bytes
+  - 0x07F98B: DE=D0063A (OP7 start) → LDI chain — 12 bytes
+  - 0x07F991: OP1 exponent (D005FA) → OP4+2 (D0061B) — 7 bytes
+  - 0x07F99B: OP4+2 (D0061B) → next entry — 7 bytes
+- **PURPOSE**: Unified OP register copy dispatch. All cross-OP copies (OP1→OP5, OP3→OP1, etc.) route through this table to avoid duplicating LDI chains. The 12-byte entries copy a full OP register (type + exponent + mantissa + 2 extra). The 7-byte entries copy just the mantissa data.
+- **NOTE**: This confirms the session 535 0x07DD82 chain's CALL 0x07F920 copies OP3→OP1 as part of the swap+flag pipeline.
+
+(2) ★★★ 0x07FEE1 TYPE-CHECK-AND-MERGE DECODED (probe-phase536-decode-07FEE1-transform.mjs, Codex, Opus-verified):
+- **0x07FEE1 (20B, 0x07FEE1-0x07FEF4)**: CALL 0x08021F (type range validator). JR C,0x07FEF5 (if valid type, skip to next function). PUSH AF. XOR A. CALL 0x07FEFC (sub-transform with A=0). POP AF. LD HL,D005F8. OR (HL). LD (HL),A. RET.
+- **CALL targets**: 0x08021F (type range validator), 0x07FEFC (sub-transform — NEW, not yet decoded).
+- **PURPOSE**: Type validation + merge step in the 0x07FEB6 dual-pass pipeline. If type is invalid (NC from 0x08021F), clears A (XOR A), calls sub-transform 0x07FEFC, then merges the result back into OP1 type byte via OR (HL) + store.
+- **NOTE**: 0x07FEF5 is likely the start of the next function (the "valid type" path skips this merge).
+
+(3) ★★★ 0x07FE24 TYPE TRANSFORM WRAPPER DECODED (probe-phase536-decode-07FE24-transform.mjs, Codex, Opus-verified):
+- **0x07FE24 (11B, 0x07FE24-0x07FE2E)**: LD HL,D005F8 (OP1 type byte). LD A,(HL). CALL 0x07FE2F (type transform). LD (HL),A. RET.
+- **CALL targets**: 0x07FE2F (type transform — NEW, immediately follows this function).
+- **PURPOSE**: Simple wrapper — reads OP1 type, transforms via 0x07FE2F, writes result back. Called as the 3rd step in the 0x07FEB6 pipeline (after 0x07FE5A and 0x07FEE1, before 0x07FD30 OP copy).
+
+(4) ★★★ 0x07FD69 EXPONENT RANGE VALIDATOR + MANTISSA SCANNER DECODED (probe-phase536-decode-07FD69-validate.mjs, Codex+manual decode, Opus-verified):
+- **0x07FD69 (~60B, 0x07FD69-0x07FDA9+)**: LD HL,D005F9 (OP1 exponent). LD D,0x01 (scan mode 1). JR to shared body at 0x07FD73.
+- **Alternate entry 0x07FD71**: LD D,0x00 (scan mode 0). Falls through to 0x07FD73.
+- **Shared body 0x07FD73**: LD A,(HL); LD E,A (save exponent). SUB 0x80; RET C (exponent < 0x80 → number < 1). CP 0x0E; JR C,0x07FD7E (exponent-0x80 < 14 → valid 1-13 digit range). XOR A; RET (exponent ≥ 0x8E → overflow, return Z with A=0). Then: SRL A (CB 3F) to get digit count / 2, LD BC,0, LD C,A, INC HL, ADD HL,BC (09) — advances HL past integer digits to reach the fractional mantissa. Reads byte at HL, tests D bit 0 (scan mode) to branch into different mantissa inspection paths.
+- **BONUS — 0x07FD4A (6B)**: LD A,(D005FA) [OP1 mantissa byte 0]; AND A; RET. Returns Z if byte is zero.
+- **BONUS — 0x07FD50 (6B)**: LD A,(D00605) [OP2 mantissa byte 0]; AND A; RET. Same for OP2.
+- **BONUS — 0x07FD62 (7B)**: LD A,(D005F8) [OP1 type]; AND 0x80; RET NZ. Returns NZ if OP1 sign bit set (negative).
+- **PURPOSE**: Validates that OP1's exponent is in the representable BCD range (0x80-0x8D = 0-13 digits), then scans the mantissa starting at the first fractional digit. The D flag selects between two scan modes — likely "is mantissa all zeros below digit N" vs "extract specific digit". Called from 0x07DD34 swap+flag pipeline where the Z flag result determines whether to SET 6,(IY+0x48).
+- **NOTE**: The Codex decoder used 2-byte addresses instead of 3-byte eZ80 addresses, so CALL/LD (nn),A instructions were misaligned. Manual decode from raw bytes resolved the correct instruction boundaries and confirmed the 3-byte address forms (3A FA 05 D0 = LD A,(D005FA), not LD A,(05FA) + garbage).
+
+(5) NEW FUNCTIONS: 0x07F920 (~107B OP copy dispatch table, 12+ entries), 0x07FEE1 (20B type-check-and-merge), 0x07FE24 (11B type transform wrapper), 0x07FD69 (~60B exponent validator + mantissa scanner), 0x07FD4A (6B OP1 zero-check), 0x07FD50 (6B OP2 zero-check), 0x07FD62 (7B OP1 sign-check).
+NEW CALL TARGETS: 0x07FEFC (sub-transform from 0x07FEE1), 0x07FE2F (type transform from 0x07FE24), 0x07FAED (mantissa helper from 0x07FD8E).
+
+PROBES: 4/4 ran via watchdog. All Codex probes produced files (P1 exit 1 but file created correctly — same pattern as session 535). P4 decoder had 2-byte address bug (eZ80 uses 3-byte) — manual decode from raw bytes resolved. Golden regression 26/26 PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x07FE2F — type transform called from 0x07FE24, immediately follows it at 0x07FE2F. (c) ★★★★ DECODE 0x07FEFC — sub-transform called from 0x07FEE1 with A=0. (d) ★★★ DECODE 0x07F8B6 — tail-jump target from 0x07DD82, may be OP result commit (carried). (e) ★★★ DECODE 0x07FEF5 — "valid type" path after 0x07FEE1, skipped when type is valid. (f) ★★★ FRAME SIZE INVESTIGATION (carried). (g) ★★ DECODE 0x07FAED — mantissa helper called from 0x07FD69 scanner. --END SESSION 536--
 
 **Session 535 findings (2026-06-06)**:
 
