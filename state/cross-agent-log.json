@@ -17119,15 +17119,147 @@
       "timestamp": "2026-06-06T12:04:49Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "f0945423810d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 535 \u2014 P4: Decode 0x07FBD9\n\n## Task\nDisassemble and decode the function at ROM address",
+      "status": "completed",
+      "duration_seconds": 74.792,
+      "timestamp": "2026-06-06T14:04:23Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "334e8191f168",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 535 \u2014 P3: Decode 0x07DD34\n\n## Task\nDisassemble and decode the function(s) starting at",
+      "status": "completed",
+      "duration_seconds": 78.261,
+      "timestamp": "2026-06-06T14:04:25Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "0812f1d10e37",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 535 \u2014 P1: Decode 0x07FEB6\n\n## Task\nDisassemble and decode the function at ROM address",
+      "status": "success",
+      "duration_seconds": 107.384,
+      "timestamp": "2026-06-06T14:04:49Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5c581d0dca25",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 535 \u2014 P2: Decode 0x080173\n\n## Task\nDisassemble and decode the function at ROM address",
+      "status": "success",
+      "duration_seconds": 105.152,
+      "timestamp": "2026-06-06T14:04:49Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2669f9804e2e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function at 0x07FD69\n\n## Context\nYou are working on the TI-84 Plus CE ROM transpi",
+      "status": "completed",
+      "duration_seconds": 97.289,
+      "timestamp": "2026-06-06T16:04:25Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "57339c68a8a7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function at 0x07FEE1\n\n## Context\nYou are working on the TI-84 Plus CE ROM transpi",
+      "status": "success",
+      "duration_seconds": 121.312,
+      "timestamp": "2026-06-06T16:04:43Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5b447af22788",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function at 0x07FE24\n\n## Context\nYou are working on the TI-84 Plus CE ROM transpi",
+      "status": "completed",
+      "duration_seconds": 126.459,
+      "timestamp": "2026-06-06T16:04:50Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "afab9c6d2897",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function at 0x07F920\n\n## Context\nYou are working on the TI-84 Plus CE ROM transpi",
+      "status": "completed",
+      "duration_seconds": 136.16,
+      "timestamp": "2026-06-06T16:05:02Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "4f1f3f284a72",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function at 0x07FEF5 (\"valid type\" path after 0x07FEE1)\n\n## Context\nYou are worki",
+      "status": "completed",
+      "duration_seconds": 112.637,
+      "timestamp": "2026-06-06T18:04:05Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d2a6495a0151",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function at 0x07FEFC (sub-transform)\n\n## Context\nYou are working on a TI-84 Plus ",
+      "status": "success",
+      "duration_seconds": 119.116,
+      "timestamp": "2026-06-06T18:04:07Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e4a8d05299cb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function at 0x07FE2F (type transform)\n\n## Context\nYou are working on a TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 123.758,
+      "timestamp": "2026-06-06T18:04:10Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "97a1f7f875b5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function at 0x07F8B6 (tail-jump target from 0x07DD82)\n\n## Context\nYou are working",
+      "status": "success",
+      "duration_seconds": 134.089,
+      "timestamp": "2026-06-06T18:04:24Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1427,
-    "cc_to_codex": 1427,
+    "total_calls": 1439,
+    "cc_to_codex": 1439,
     "codex_to_cc": 0,
-    "completed": 992,
+    "completed": 999,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 524.233
+    "avg_duration_seconds": 520.79
   }
 }

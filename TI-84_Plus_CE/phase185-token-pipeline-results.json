@@ -1,0 +1,1152 @@
+{
+  "part1_homeHandlerDisasm": {
+    "rows": [
+      {
+        "pc": "0x058460",
+        "text": "ret nc"
+      },
+      {
+        "pc": "0x058461",
+        "text": "bit 0, (hl)"
+      },
+      {
+        "pc": "0x058463",
+        "text": "jp z, 0x061DB6"
+      },
+      {
+        "pc": "0x058467",
+        "text": "ld hl, 0x058BA9"
+      },
+      {
+        "pc": "0x05846B",
+        "text": "ld hl, (0xD007D6)"
+      },
+      {
+        "pc": "0x05846F",
+        "text": "call 0x06EDFE"
+      },
+      {
+        "pc": "0x058473",
+        "text": "indexed-cb-res"
+      },
+      {
+        "pc": "0x058477",
+        "text": "call 0x083623"
+      },
+      {
+        "pc": "0x05847B",
+        "text": "call 0x083764"
+      },
+      {
+        "pc": "0x05847F",
+        "text": "jp 0x058358"
+      },
+      {
+        "pc": "0x058483",
+        "text": "indexed-cb-res"
+      },
+      {
+        "pc": "0x058487",
+        "text": "indexed-cb-res"
+      },
+      {
+        "pc": "0x05848B",
+        "text": "indexed-cb-res"
+      },
+      {
+        "pc": "0x05848F",
+        "text": "call 0x0800EC"
+      },
+      {
+        "pc": "0x058493",
+        "text": "call 0x0A223A"
+      },
+      {
+        "pc": "0x058497",
+        "text": "call 0x058C65"
+      },
+      {
+        "pc": "0x05849B",
+        "text": "indexed-cb-res"
+      },
+      {
+        "pc": "0x05849F",
+        "text": "ld hl, 0xD0230E"
+      },
+      {
+        "pc": "0x0584A3",
+        "text": "call 0x07F9FB"
+      },
+      {
+        "pc": "0x0584A7",
+        "text": "call 0x07F7BD"
+      },
+      {
+        "pc": "0x0584AB",
+        "text": "cp 0x06"
+      },
+      {
+        "pc": "0x0584AD",
+        "text": "jp z, 0x061D42"
+      }
+    ],
+    "callTargets": [
+      {
+        "pc": "0x05846F",
+        "target": "0x06EDFE",
+        "annotation": "unknown"
+      },
+      {
+        "pc": "0x058477",
+        "target": "0x083623",
+        "annotation": "unknown"
+      },
+      {
+        "pc": "0x05847B",
+        "target": "0x083764",
+        "annotation": "unknown"
+      },
+      {
+        "pc": "0x05848F",
+        "target": "0x0800EC",
+        "annotation": "unknown"
+      },
+      {
+        "pc": "0x058493",
+        "target": "0x0A223A",
+        "annotation": "unknown"
+      },
+      {
+        "pc": "0x058497",
+        "target": "0x058C65",
+        "annotation": "unknown"
+      },
+      {
+        "pc": "0x0584A3",
+        "target": "0x07F9FB",
+        "annotation": "Copy9Bytes helper"
+      },
+      {
+        "pc": "0x0584A7",
+        "target": "0x07F7BD",
+        "annotation": "KeyClassifier"
+      }
+    ],
+    "memRefs": [
+      {
+        "pc": "0x05846B",
+        "addr": "0xD007D6",
+        "text": "ld hl, (0xD007D6)",
+        "annotation": ""
+      }
+    ]
+  },
+  "part2_convKeyToTokDisasm": {
+    "rows": [
+      {
+        "pc": "0x05C52C",
+        "text": "cp 0xFE"
+      },
+      {
+        "pc": "0x05C52E",
+        "text": "jr z, 0x05C593"
+      },
+      {
+        "pc": "0x05C530",
+        "text": "cp 0xFC"
+      },
+      {
+        "pc": "0x05C532",
+        "text": "jr z, 0x05C589"
+      },
+      {
+        "pc": "0x05C534",
+        "text": "cp 0xFB"
+      },
+      {
+        "pc": "0x05C536",
+        "text": "jr z, 0x05C579"
+      },
+      {
+        "pc": "0x05C538",
+        "text": "cp 0xFA"
+      },
+      {
+        "pc": "0x05C53A",
+        "text": "jr z, 0x05C566"
+      },
+      {
+        "pc": "0x05C53C",
+        "text": "cp 0x05"
+      },
+      {
+        "pc": "0x05C53E",
+        "text": "jr nz, 0x05C547"
+      },
+      {
+        "pc": "0x05C540",
+        "text": "ld de, 0x000000"
+      },
+      {
+        "pc": "0x05C544",
+        "text": "ld e, 0x3F"
+      },
+      {
+        "pc": "0x05C546",
+        "text": "ret"
+      },
+      {
+        "pc": "0x05C547",
+        "text": "sub 0x5A"
+      },
+      {
+        "pc": "0x05C549",
+        "text": "ld hl, 0x05BF84"
+      },
+      {
+        "pc": "0x05C54D",
+        "text": "ld de, 0x000000"
+      },
+      {
+        "pc": "0x05C551",
+        "text": "ld e, a"
+      },
+      {
+        "pc": "0x05C552",
+        "text": "add hl, de"
+      },
+      {
+        "pc": "0x05C553",
+        "text": "ld e, (hl)"
+      },
+      {
+        "pc": "0x05C554",
+        "text": "ret"
+      },
+      {
+        "pc": "0x05C555",
+        "text": "dec h"
+      },
+      {
+        "pc": "0x05C556",
+        "text": "jr z, 0x05C597"
+      },
+      {
+        "pc": "0x05C558",
+        "text": "cp 0xFA"
+      },
+      {
+        "pc": "0x05C55A",
+        "text": "jr z, 0x05C563"
+      },
+      {
+        "pc": "0x05C55C",
+        "text": "cp 0xFC"
+      },
+      {
+        "pc": "0x05C55E",
+        "text": "ld a, e"
+      },
+      {
+        "pc": "0x05C55F",
+        "text": "jr z, 0x05C58D"
+      },
+      {
+        "pc": "0x05C561",
+        "text": "jr 0x05C57D"
+      },
+      {
+        "pc": "0x05C563",
+        "text": "ld a, e"
+      },
+      {
+        "pc": "0x05C564",
+        "text": "jr 0x05C56A"
+      },
+      {
+        "pc": "0x05C566",
+        "text": "ld a, (0xD0058E)"
+      },
+      {
+        "pc": "0x05C56A",
+        "text": "ld de, 0x05C4A0"
+      },
+      {
+        "pc": "0x05C56E",
+        "text": "cp 0x44"
+      },
+      {
+        "pc": "0x05C570",
+        "text": "jp c, 0x05C5A7"
+      },
+      {
+        "pc": "0x05C574",
+        "text": "ld de, 0x000000"
+      },
+      {
+        "pc": "0x05C578",
+        "text": "ret"
+      },
+      {
+        "pc": "0x05C579",
+        "text": "ld a, (0xD0058E)"
+      },
+      {
+        "pc": "0x05C57D",
+        "text": "cp 0x8C"
+      },
+      {
+        "pc": "0x05C57F",
+        "text": "jr c, 0x05C583"
+      },
+      {
+        "pc": "0x05C581",
+        "text": "sub 0x7F"
+      },
+      {
+        "pc": "0x05C583",
+        "text": "ld de, 0x05C3AA"
+      },
+      {
+        "pc": "0x05C587",
+        "text": "jr 0x05C5A7"
+      },
+      {
+        "pc": "0x05C589",
+        "text": "ld a, (0xD0058E)"
+      },
+      {
+        "pc": "0x05C58D",
+        "text": "ld de, 0x05C1B0"
+      },
+      {
+        "pc": "0x05C591",
+        "text": "jr 0x05C5A7"
+      },
+      {
+        "pc": "0x05C593",
+        "text": "ld a, (0xD0058E)"
+      },
+      {
+        "pc": "0x05C597",
+        "text": "cp 0x69"
+      },
+      {
+        "pc": "0x05C599",
+        "text": "jr nc, 0x05C5A1"
+      },
+      {
+        "pc": "0x05C59B",
+        "text": "ld hl, 0x05C01D"
+      },
+      {
+        "pc": "0x05C59F",
+        "text": "jr 0x05C54D"
+      }
+    ],
+    "tableRefs": [
+      {
+        "pc": "0x05C549",
+        "value": "0x05BF84",
+        "pair": "hl"
+      },
+      {
+        "pc": "0x05C56A",
+        "value": "0x05C4A0",
+        "pair": "de"
+      },
+      {
+        "pc": "0x05C583",
+        "value": "0x05C3AA",
+        "pair": "de"
+      },
+      {
+        "pc": "0x05C58D",
+        "value": "0x05C1B0",
+        "pair": "de"
+      },
+      {
+        "pc": "0x05C59B",
+        "value": "0x05C01D",
+        "pair": "hl"
+      }
+    ],
+    "ramRefs": [
+      {
+        "pc": "0x05C566",
+        "addr": "0xD0058E",
+        "text": "ld a, (0xD0058E)"
+      },
+      {
+        "pc": "0x05C579",
+        "addr": "0xD0058E",
+        "text": "ld a, (0xD0058E)"
+      },
+      {
+        "pc": "0x05C589",
+        "addr": "0xD0058E",
+        "text": "ld a, (0xD0058E)"
+      },
+      {
+        "pc": "0x05C593",
+        "addr": "0xD0058E",
+        "text": "ld a, (0xD0058E)"
+      }
+    ],
+    "stagingWrites": []
+  },
+  "part3_convKeyToTokTests": [
+    {
+      "label": "k0",
+      "keyCode": "0x8E",
+      "resultA": "0x34",
+      "resultADecimal": 52,
+      "termination": "sentinel",
+      "steps": 0,
+      "hit": "sentinel",
+      "memInitOk": true,
+      "stagingBefore": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "stagingAfter": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "stagingChanged": false,
+      "op1Before": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "op1After": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "op1Changed": false,
+      "stagingWrites": [],
+      "blocksVisited": [
+        "0x05C52C",
+        "0x05C530",
+        "0x05C534",
+        "0x05C538",
+        "0x05C53C",
+        "0x05C547",
+        "MISSING:0x7FFFFE"
+      ],
+      "error": null
+    },
+    {
+      "label": "k1",
+      "keyCode": "0x8F",
+      "resultA": "0x35",
+      "resultADecimal": 53,
+      "termination": "sentinel",
+      "steps": 0,
+      "hit": "sentinel",
+      "memInitOk": true,
+      "stagingBefore": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "stagingAfter": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "stagingChanged": false,
+      "op1Before": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "op1After": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "op1Changed": false,
+      "stagingWrites": [],
+      "blocksVisited": [
+        "0x05C52C",
+        "0x05C530",
+        "0x05C534",
+        "0x05C538",
+        "0x05C53C",
+        "0x05C547",
+        "MISSING:0x7FFFFE"
+      ],
+      "error": null
+    },
+    {
+      "label": "k2",
+      "keyCode": "0x92",
+      "resultA": "0x38",
+      "resultADecimal": 56,
+      "termination": "sentinel",
+      "steps": 0,
+      "hit": "sentinel",
+      "memInitOk": true,
+      "stagingBefore": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "stagingAfter": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "stagingChanged": false,
+      "op1Before": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "op1After": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "op1Changed": false,
+      "stagingWrites": [],
+      "blocksVisited": [
+        "0x05C52C",
+        "0x05C530",
+        "0x05C534",
+        "0x05C538",
+        "0x05C53C",
+        "0x05C547",
+        "MISSING:0x7FFFFE"
+      ],
+      "error": null
+    },
+    {
+      "label": "k9",
+      "keyCode": "0x97",
+      "resultA": "0x3D",
+      "resultADecimal": 61,
+      "termination": "sentinel",
+      "steps": 0,
+      "hit": "sentinel",
+      "memInitOk": true,
+      "stagingBefore": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "stagingAfter": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "stagingChanged": false,
+      "op1Before": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "op1After": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "op1Changed": false,
+      "stagingWrites": [],
+      "blocksVisited": [
+        "0x05C52C",
+        "0x05C530",
+        "0x05C534",
+        "0x05C538",
+        "0x05C53C",
+        "0x05C547",
+        "MISSING:0x7FFFFE"
+      ],
+      "error": null
+    },
+    {
+      "label": "kAdd",
+      "keyCode": "0x9B",
+      "resultA": "0x41",
+      "resultADecimal": 65,
+      "termination": "sentinel",
+      "steps": 0,
+      "hit": "sentinel",
+      "memInitOk": true,
+      "stagingBefore": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "stagingAfter": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "stagingChanged": false,
+      "op1Before": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "op1After": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "op1Changed": false,
+      "stagingWrites": [],
+      "blocksVisited": [
+        "0x05C52C",
+        "0x05C530",
+        "0x05C534",
+        "0x05C538",
+        "0x05C53C",
+        "0x05C547",
+        "MISSING:0x7FFFFE"
+      ],
+      "error": null
+    },
+    {
+      "label": "kSub",
+      "keyCode": "0x9C",
+      "resultA": "0x42",
+      "resultADecimal": 66,
+      "termination": "sentinel",
+      "steps": 0,
+      "hit": "sentinel",
+      "memInitOk": true,
+      "stagingBefore": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "stagingAfter": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "stagingChanged": false,
+      "op1Before": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "op1After": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "op1Changed": false,
+      "stagingWrites": [],
+      "blocksVisited": [
+        "0x05C52C",
+        "0x05C530",
+        "0x05C534",
+        "0x05C538",
+        "0x05C53C",
+        "0x05C547",
+        "MISSING:0x7FFFFE"
+      ],
+      "error": null
+    },
+    {
+      "label": "kMul",
+      "keyCode": "0x9D",
+      "resultA": "0x43",
+      "resultADecimal": 67,
+      "termination": "sentinel",
+      "steps": 0,
+      "hit": "sentinel",
+      "memInitOk": true,
+      "stagingBefore": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "stagingAfter": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "stagingChanged": false,
+      "op1Before": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "op1After": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "op1Changed": false,
+      "stagingWrites": [],
+      "blocksVisited": [
+        "0x05C52C",
+        "0x05C530",
+        "0x05C534",
+        "0x05C538",
+        "0x05C53C",
+        "0x05C547",
+        "MISSING:0x7FFFFE"
+      ],
+      "error": null
+    },
+    {
+      "label": "kDiv",
+      "keyCode": "0x9E",
+      "resultA": "0x44",
+      "resultADecimal": 68,
+      "termination": "sentinel",
+      "steps": 0,
+      "hit": "sentinel",
+      "memInitOk": true,
+      "stagingBefore": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "stagingAfter": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "stagingChanged": false,
+      "op1Before": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "op1After": "00 00 00 00 00 00 00 00 00 00 00 00",
+      "op1Changed": false,
+      "stagingWrites": [],
+      "blocksVisited": [
+        "0x05C52C",
+        "0x05C530",
+        "0x05C534",
+        "0x05C538",
+        "0x05C53C",
+        "0x05C547",
+        "MISSING:0x7FFFFE"
+      ],
+      "error": null
+    }
+  ],
+  "part4_homeHandlerTrace": {
+    "termination": "max_steps",
+    "hit": null,
+    "memInitOk": true,
+    "lcdStallSkips": 1,
+    "callsToConvKeyToTok": [],
+    "callsToKeyClassifier": [
+      {
+        "step": 49,
+        "a": 53
+      },
+      {
+        "step": 196,
+        "a": 46
+      },
+      {
+        "step": 203,
+        "a": 3
+      },
+      {
+        "step": 221,
+        "a": 0
+      }
+    ],
+    "callsToBufInsert": [],
+    "callsToCopyHelper": [],
+    "stagingWrites": [
+      {
+        "addr": "0xD0231D",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD0231C",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD0231B",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD0231A",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD02319",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD02318",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD02317",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD02316",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD02315",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD02314",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD02313",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD02312",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD02311",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD02310",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD0230F",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD0230E",
+        "value": "00",
+        "pc": "0x083214"
+      }
+    ],
+    "op1Writes": [
+      {
+        "addr": "0xD005F8",
+        "value": "03",
+        "pc": "0x07FF87"
+      },
+      {
+        "addr": "0xD005F8",
+        "value": "03",
+        "pc": "0x0822D9"
+      },
+      {
+        "addr": "0xD00600",
+        "value": "00",
+        "pc": "0x08235D"
+      },
+      {
+        "addr": "0xD005FF",
+        "value": "00",
+        "pc": "0x08235D"
+      },
+      {
+        "addr": "0xD005FE",
+        "value": "2E",
+        "pc": "0x08235D"
+      },
+      {
+        "addr": "0xD005F9",
+        "value": "00",
+        "pc": "0x08235D"
+      },
+      {
+        "addr": "0xD005FA",
+        "value": "00",
+        "pc": "0x08235D"
+      },
+      {
+        "addr": "0xD005F8",
+        "value": "05",
+        "pc": "0x07FF85"
+      },
+      {
+        "addr": "0xD00607",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD00606",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD00605",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD00604",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD00603",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD00602",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD00601",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD00600",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD005FF",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD005FE",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD005FD",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD005FC",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD005FB",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD005FA",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD005F9",
+        "value": "00",
+        "pc": "0x083214"
+      },
+      {
+        "addr": "0xD005F8",
+        "value": "00",
+        "pc": "0x083214"
+      }
+    ],
+    "stagingAfter": "00 00 00 00 00 00 00 00 00",
+    "op1After": "00 00 00 00 00 00 00 00 00",
+    "blockLog": [
+      {
+        "step": 0,
+        "pc": "0x058483",
+        "a": "0x92"
+      },
+      {
+        "step": 1,
+        "pc": "0x0800EC",
+        "a": "0x92"
+      },
+      {
+        "step": 2,
+        "pc": "0x0800A0",
+        "a": "0x00"
+      },
+      {
+        "step": 3,
+        "pc": "0x0800BD",
+        "a": "0x00"
+      },
+      {
+        "step": 4,
+        "pc": "0x0800F2",
+        "a": "0x00"
+      },
+      {
+        "step": 5,
+        "pc": "0x0800F6",
+        "a": "0x00"
+      },
+      {
+        "step": 6,
+        "pc": "0x058493",
+        "a": "0x92"
+      },
+      {
+        "step": 7,
+        "pc": "0x0A223A",
+        "a": "0x92"
+      },
+      {
+        "step": 8,
+        "pc": "0x0A235E",
+        "a": "0x92"
+      },
+      {
+        "step": 9,
+        "pc": "0x0A223E",
+        "a": "0x92"
+      },
+      {
+        "step": 10,
+        "pc": "0x0800A0",
+        "a": "0x00"
+      },
+      {
+        "step": 11,
+        "pc": "0x0800BD",
+        "a": "0x00"
+      },
+      {
+        "step": 12,
+        "pc": "0x0A2247",
+        "a": "0x00"
+      },
+      {
+        "step": 13,
+        "pc": "0x0A2251",
+        "a": "0x00"
+      },
+      {
+        "step": 14,
+        "pc": "0x0A2254",
+        "a": "0x00"
+      },
+      {
+        "step": 15,
+        "pc": "0x0A225A",
+        "a": "0x1E"
+      },
+      {
+        "step": 16,
+        "pc": "0x0A2267",
+        "a": "0x00"
+      },
+      {
+        "step": 17,
+        "pc": "0x0A2D4C",
+        "a": "0x00"
+      },
+      {
+        "step": 18,
+        "pc": "0x0A226B",
+        "a": "0x25"
+      },
+      {
+        "step": 0,
+        "pc": "0x0A227A",
+        "a": "0x23"
+      },
+      {
+        "step": 1,
+        "pc": "0x058497",
+        "a": "0x00"
+      },
+      {
+        "step": 2,
+        "pc": "0x058C65",
+        "a": "0x00"
+      },
+      {
+        "step": 3,
+        "pc": "0x0800A8",
+        "a": "0x00"
+      },
+      {
+        "step": 4,
+        "pc": "0x0800AE",
+        "a": "0x00"
+      },
+      {
+        "step": 5,
+        "pc": "0x080259",
+        "a": "0x00"
+      },
+      {
+        "step": 6,
+        "pc": "0x0800B2",
+        "a": "0x00"
+      },
+      {
+        "step": 7,
+        "pc": "0x058C69",
+        "a": "0x00"
+      },
+      {
+        "step": 8,
+        "pc": "0x058C6A",
+        "a": "0x00"
+      },
+      {
+        "step": 9,
+        "pc": "0x058C83",
+        "a": "0x00"
+      },
+      {
+        "step": 10,
+        "pc": "0x058CFF",
+        "a": "0x00"
+      },
+      {
+        "step": 11,
+        "pc": "0x058D2E",
+        "a": "0x00"
+      },
+      {
+        "step": 12,
+        "pc": "0x07FF91",
+        "a": "0x00"
+      },
+      {
+        "step": 13,
+        "pc": "0x07FF87",
+        "a": "0x03"
+      },
+      {
+        "step": 14,
+        "pc": "0x07FF99",
+        "a": "0x03"
+      },
+      {
+        "step": 15,
+        "pc": "0x04C940",
+        "a": "0x03"
+      },
+      {
+        "step": 16,
+        "pc": "0x07FF9D",
+        "a": "0x03"
+      },
+      {
+        "step": 17,
+        "pc": "0x058D36",
+        "a": "0x03"
+      },
+      {
+        "step": 18,
+        "pc": "0x0846EA",
+        "a": "0x03"
+      },
+      {
+        "step": 19,
+        "pc": "0x08011F",
+        "a": "0x03"
+      },
+      {
+        "step": 20,
+        "pc": "0x0846EE",
+        "a": "0x2E"
+      },
+      {
+        "step": 21,
+        "pc": "0x0846F2",
+        "a": "0x2E"
+      },
+      {
+        "step": 22,
+        "pc": "0x08470A",
+        "a": "0x2E"
+      },
+      {
+        "step": 23,
+        "pc": "0x082BE2",
+        "a": "0x00"
+      },
+      {
+        "step": 24,
+        "pc": "0x084716",
+        "a": "0x00"
+      },
+      {
+        "step": 25,
+        "pc": "0x058D3A",
+        "a": "0x00"
+      },
+      {
+        "step": 26,
+        "pc": "0x058D03",
+        "a": "0x00"
+      },
+      {
+        "step": 27,
+        "pc": "0x058D04",
+        "a": "0x00"
+      },
+      {
+        "step": 28,
+        "pc": "0x061DEF",
+        "a": "0x00"
+      },
+      {
+        "step": 29,
+        "pc": "0x058D0C",
+        "a": "0x00"
+      },
+      {
+        "step": 30,
+        "pc": "0x082438",
+        "a": "0x00"
+      },
+      {
+        "step": 31,
+        "pc": "0x08241A",
+        "a": "0x03"
+      },
+      {
+        "step": 32,
+        "pc": "0x04C940",
+        "a": "0x03"
+      },
+      {
+        "step": 33,
+        "pc": "0x08241E",
+        "a": "0x03"
+      },
+      {
+        "step": 34,
+        "pc": "0x0822D1",
+        "a": "0x03"
+      },
+      {
+        "step": 35,
+        "pc": "0x0822D9",
+        "a": "0x03"
+      },
+      {
+        "step": 36,
+        "pc": "0x080084",
+        "a": "0x03"
+      },
+      {
+        "step": 37,
+        "pc": "0x080087",
+        "a": "0x03"
+      },
+      {
+        "step": 38,
+        "pc": "0x08008A",
+        "a": "0x03"
+      },
+      {
+        "step": 39,
+        "pc": "0x080090",
+        "a": "0x03"
+      },
+      {
+        "step": 40,
+        "pc": "0x080093",
+        "a": "0x03"
+      }
+    ],
+    "error": null
+  }
+}

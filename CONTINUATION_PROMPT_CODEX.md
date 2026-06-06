@@ -8,9 +8,50 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-06 (auto-session 536 — **★★★★ 0x07F920 OP REGISTER COPY DISPATCH TABLE DECODED (~107B, 12+ entry points each loading HL/DE with different OP register pairs, shared LDI chain at 0x07F974 copies 12 bytes, 0x07F97A copies 7 bytes — unifies OP1↔OP2↔OP3↔OP4↔OP5↔OP6 copy operations). ★★★ 0x07FEE1 TYPE-CHECK-AND-MERGE DECODED (20B, CALL 0x08021F type validator, if invalid: XOR A + CALL 0x07FEFC + OR (HL) merge into D005F8 OP1 type). ★★★ 0x07FE24 TYPE TRANSFORM WRAPPER DECODED (11B, reads OP1 type D005F8, CALL 0x07FE2F transform, writes back). ★★★ 0x07FD69 EXPONENT RANGE VALIDATOR + MANTISSA SCANNER DECODED (~60B, checks exponent 0x80-0x8D range, D flag selects scan mode, walks mantissa bytes via HL+BC offset). BONUS: 0x07FD4A/0x07FD50 zero-check pair (6B each, AND A + RET for OP1/OP2 exponent+1), 0x07FD62 sign-check (7B, AND 0x80 + RET NZ for OP1 sign). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-06 (auto-session 537 — **★★★★ 0x07FE2F TABLE LOOKUP TYPE TRANSFORM DECODED (33B, CPIR search through 6-entry table at 0x07FE8A, maps to output table at 0x07FE90, preserves sign bits via AND 0xC0/OR B, default 0x0C complex). ★★★★ 0x07F8B6 OP COPY DISPATCH TABLE EXTENSION DECODED (7 new entry stubs: OP4→OP2, OP3→OP2, OP1→OP3, OP5→OP2, OP5→OP6, OP5→OP4, OP1→OP2 — all route to 0x07F974 shared LDI chain, extends session 536's 12+ entries to 19+ total). ★★★ 0x07FEF5 VALID-TYPE MULTI-PATH DISPATCH DECODED (7B, CP 0x21 string→JR 0x07FEE7, CP 0x1C matrix→RET Z, fallthrough to 0x07FEFC). ★★★ 0x07FEFC SUB-TRANSFORM DECODED (7B, AND 0x3F strip + JR Z for type 0/0x20, CP 0x20 equation gate, RET NZ). BONUS: 0x07FF03 zero-type handler (CALL 0x07FD4A zero-check, JP Z 0x07FAC2, exponent threshold 0xE4/0x1D dispatch). BONUS: 0x07FE50 dual-OP transform wrapper (21B, CALL 0x07FE5A for OP1 then OP2), 0x07FE65 REVERSE type transform (CPIR 5-entry table at 0x07FE91 → 0x07FE8A, inverse of 0x07FE2F). GOLDEN REGRESSION 26/26 PASS.**)
 
-> Previous: 2026-06-06 (auto-session 535 — 0x07FEB6 dual-pass type transform, 0x07FBD9 hypothesis corrected, 0x080173 validation guard, 0x07DD34 swap+flag pipeline)
+> Previous: 2026-06-06 (auto-session 536 — 0x07F920 OP copy dispatch table, 0x07FEE1 type-check-and-merge, 0x07FE24 type transform wrapper, 0x07FD69 exponent range validator)
+
+**Session 537 findings (2026-06-06)**:
+
+(1) ★★★★ 0x07FE2F TABLE LOOKUP TYPE TRANSFORM DECODED (probe-phase537-decode-07FE2F-type-transform.mjs, Codex+manual decode, Opus-verified):
+- **0x07FE2F (33B, 0x07FE2F-0x07FE4F)**: PUSH BC/HL. AND 0x3F (strip sign bits). LD HL,$07FE8A (6-entry type table). LD BC,$000006. CPIR (search for matching type). JR Z,$07FE43 (found → lookup). LD B,$0C (default = complex type). JR $07FE49 (merge). At $07FE43: LD HL,$07FE90 (output table). ADD HL,BC. LD B,(HL) (transformed type). POP HL. LD A,(HL) (reload original with sign). AND 0xC0 (keep sign bits). OR B (merge). POP BC. RET.
+- **TABLES**: 0x07FE8A (6 input types to match), 0x07FE90 (6 output types). Tables are shared with 0x07FE65 (reverse transform).
+- **PURPOSE**: Forward type transform — maps base types via lookup table, preserves sign bits (AND 0xC0 | transformed). Default 0x0C (complex) when type not in table. Called from 0x07FE24 wrapper.
+- **BONUS — 0x07FE50 (21B, 0x07FE50-0x07FE64)**: Dual-OP transform. CALL 0x07FE5A (transform OP1 type), LD HL,$D00603 (OP2 type), falls to shared reader at 0x07FE5E: LD A,(HL), CALL 0x07FE65, LD (HL),A, RET. So 0x07FE5A is "forward transform OP1" and 0x07FE50 is "forward transform OP1 then reverse transform OP2".
+- **BONUS — 0x07FE65 REVERSE TYPE TRANSFORM**: PUSH DE/BC/HL. LD D,A. AND 0x3F. LD HL,$07FE91 (5-entry table). LD BC,$000005. CPIR. If found: LD HL,$07FE8A, ADD HL,BC, LD B,(HL), reload original, AND 0xC0, OR B. This is the inverse of 0x07FE2F — searches 0x07FE91 and maps to 0x07FE8A.
+- **NOTE**: Codex decoder missed PUSH/POP (C5/E5/C1) and CPIR (ED B1). Manual decode from raw bytes resolved all instructions correctly.
+
+(2) ★★★★ 0x07F8B6 OP COPY DISPATCH TABLE EXTENSION DECODED (probe-phase537-decode-07F8B6-tail-target.mjs, Codex raw bytes + manual decode, Opus-verified):
+- **0x07F8B6 (~78B, 0x07F8B6-0x07F903)**: 7 new OP register copy entry stubs, all routing to the shared 0x07F974 12-byte LDI chain (decoded session 536).
+- **Entry point map** (HL=source → DE=destination):
+  - 0x07F8B6: OP4 (D00619) → OP2 (D00603) — via JR to 0x07F8C8
+  - 0x07F8C0: OP3 (D0060E) → OP2 (D00603) — JP 0x07F974
+  - 0x07F8CC: OP1 (D005F8) → OP3 (D0060E) — JP 0x07F974
+  - 0x07F8D8: OP5 (D00624) → OP2 (D00603) — JP 0x07F974
+  - 0x07F8E4: OP5 (D00624) → OP6 (D0062F) — JP 0x07F974
+  - 0x07F8F0: OP5 (D00624) → OP4 (D00619) — JR 0x07F974
+  - 0x07F8FA: OP1 (D005F8) → OP2 (D00603) — JR 0x07F974
+- **PURPOSE**: Extension of the OP register copy dispatch table at 0x07F920 (session 536). Combined total: **19+ entry points** spanning 0x07F8B6-0x07F98A, all sharing the 0x07F974 LDI chain. The 0x07DD82 system-call chain (session 535) tails into 0x07F8B6 to copy OP4→OP2.
+- **NOTE**: Codex decoder used 2-byte addresses (same bug as session 536 P4). Manual decode from raw bytes resolved all 3-byte eZ80 ADL addresses.
+
+(3) ★★★ 0x07FEF5 VALID-TYPE MULTI-PATH DISPATCH DECODED (probe-phase537-decode-07FEF5-valid-type.mjs, Codex, Opus-verified):
+- **0x07FEF5 (7B, 0x07FEF5-0x07FEFB)**: CP 0x21 (string type). JR Z,$07FEE7 (if string, jump back into 0x07FEE1 region). CP 0x1C (matrix type). RET Z (if matrix, return — valid, no transform needed). Falls through to 0x07FEFC.
+- **PURPOSE**: "Valid type" continuation from 0x07FEE1's JR C,$07FEF5. Dispatches: string (0x21) → back to 0x07FEE7 handler, matrix (0x1C) → done, other valid types → fall through to 0x07FEFC sub-transform.
+
+(4) ★★★ 0x07FEFC SUB-TRANSFORM + 0x07FF03 ZERO-TYPE HANDLER DECODED (probe-phase537-decode-07FEFC-sub-transform.mjs, Codex, Opus-verified):
+- **0x07FEFC (7B, 0x07FEFC-0x07FF02)**: AND 0x3F (strip to base type). JR Z,$07FF03 (base type 0 → zero-type handler). CP 0x20 (equation type). RET NZ (if not equation, return with stripped type).
+- **0x07FF03 (~21B)**: CALL 0x07FD4A (OP1 mantissa byte 0 zero-check). JP Z,$07FAC2 (if zero mantissa, jump to 0x07FAC2). LD A,($D005F9) (OP1 exponent). CP 0xE4 (high threshold). JP NC,$07FE20 (exponent ≥ 0xE4 → jump). CP 0x1D (low threshold). RET NC (exponent ≥ 0x1D → return). CALL 0x07F7BD (type/descriptor utility for low exponents).
+- **CALL targets**: 0x07FD4A (OP1 zero-check, session 536), 0x07FAC2 (known from BCD division), 0x07FE20 (NEW — 4 bytes before 0x07FE24 wrapper), 0x07F7BD (type/descriptor utility).
+- **PURPOSE**: Handles base types 0x00 (real) and 0x20 (equation) that pass through the 0x07FEF5 dispatch. Checks mantissa validity, then dispatches by exponent range: very high (≥0xE4) → 0x07FE20, medium (0x1D-0xE3) → return, low (<0x1D) → 0x07F7BD utility.
+
+(5) NEW FUNCTIONS: 0x07FE2F (33B table lookup type transform), 0x07F8B6-0x07F903 (7 OP copy stubs, ~78B), 0x07FEF5 (7B valid-type dispatch), 0x07FEFC (7B sub-transform), 0x07FF03 (~21B zero-type handler), 0x07FE50 (21B dual-OP transform), 0x07FE65 (reverse type transform via CPIR).
+NEW CALL TARGETS: 0x07FE20 (pre-wrapper entry from 0x07FF03), 0x07FAC2 (zero-mantissa handler).
+TYPE TRANSFORM TABLES: 0x07FE8A (6 entries, forward input), 0x07FE90 (6 entries, forward output), 0x07FE91 (5 entries, reverse input). Forward/reverse transforms share these tables.
+
+PROBES: 4/4 ran via watchdog. P1 Codex missed PUSH/POP/CPIR opcodes — manual decode resolved. P3 Codex used 2-byte addresses — manual decode resolved. P2/P4 Codex decoders correct. Golden regression 26/26 PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ READ TYPE TABLES AT 0x07FE8A-0x07FE96 — dump the 6+6+5 table entries to see the actual type→type mappings (forward and reverse). (c) ★★★ DECODE 0x07FE20 — 4 bytes before 0x07FE24, called from 0x07FF03 when exponent ≥ 0xE4. (d) ★★★ DECODE 0x07FEE7 — string type (0x21) handler inside 0x07FEE1 region, jumped from 0x07FEF5. (e) ★★★ FRAME SIZE INVESTIGATION (carried). (f) ★★ DECODE 0x07FAED — mantissa helper called from 0x07FD69 scanner (carried). (g) ★★ MAP REMAINING 0x07F904-0x07F91F OP COPY STUBS — gap between 0x07F903 and 0x07F920, likely more entry points. --END SESSION 537--
 
 **Session 536 findings (2026-06-06)**:
 
