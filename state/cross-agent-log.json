@@ -17075,15 +17075,59 @@
       "timestamp": "2026-06-06T10:04:10Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "107c563d6978",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map BCD Constant Table at 0x07F196\n\n## Context\nYou are working on a TI-84 Plus CE ROM transp",
+      "status": "success",
+      "duration_seconds": 65.047,
+      "timestamp": "2026-06-06T12:03:58Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d3442abaeac9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07CF96 \u2014 Shared Copy/Conversion Routine\n\n## Context\nYou are working on a TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 88.32,
+      "timestamp": "2026-06-06T12:04:17Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2d23d4d8dcb0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x068640 \u2014 Type\u2192Dimension Fallback\n\n## Context\nYou are working on a TI-84 Plus CE ROM",
+      "status": "completed",
+      "duration_seconds": 100.645,
+      "timestamp": "2026-06-06T12:04:36Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ee3587779fcf",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07DF66 \u2014 Conditional Path Helper\n\n## Context\nYou are working on a TI-84 Plus CE ROM",
+      "status": "success",
+      "duration_seconds": 118.979,
+      "timestamp": "2026-06-06T12:04:49Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1423,
-    "cc_to_codex": 1423,
+    "total_calls": 1427,
+    "cc_to_codex": 1427,
     "codex_to_cc": 0,
-    "completed": 990,
+    "completed": 992,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 525.445
+    "avg_duration_seconds": 524.233
   }
 }

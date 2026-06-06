@@ -8,9 +8,52 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-06 (auto-session 533 — **★★★★ 0x07FE9C TYPE EQUATION/STRING→REAL TRANSFORM DECODED (26B, AND 0xC0 sign preserve, AND 0x3F base type extract, 0x20→0x00 equation→real, 0x21→0x18 string→real-variant, RET NZ passthrough). ★★★★ 0x07F16C BCD CONSTANT TABLE LOADER DECODED (42B, clears OP2 type, A×9 offset into table at 0x07F196, CALL 0x07F97A 7-byte copy + 2 LDI = 9B total, table includes π at entry 4 and 180/π at entry 0). ★★★ 0x07CF9D SHARED SETUP STUB DECODED (10B, LD HL,D00603 + LD DE,D02B39 + JR 0x07CF96). ★★★★ 0x07CD92/0x07CD57/0x07CD7F/0x07CDD8 MATRIX DIMENSION-TO-BCD CONVERTER CLUSTER DECODED (~100B total, multi-entry OP5/OP6/OP7→OP1/OP2 stubs, .SIL LD BC,(HL) eZ80 dimension read, exponent 0x82/0x81/0x80 by digit count, nibble ops 0x07FAF5/0x07FAED, bit 4/5 sign checks via 0x07CA06). GOLDEN REGRESSION PASS.**)
+**Last updated**: 2026-06-06 (auto-session 534 — **★★★★ 0x07DF66 BCD RESTORING DIVISION LOOP DECODED (~150B, 16-digit division with quotient nibble packing via RLD, exponent bias ADD 0x40, post-normalize dispatch 0x07C9AF, 12+ CALL targets). ★★★★ BCD CONSTANT TABLE AT 0x07F196 FULLY MAPPED (7 entries × 9B = 63B: entry 0=180/π, 1=π/2, 2=π/4, 3=log10(e), 4=π, 5=π/180, 6=ln(10) — NO type byte in table, loader writes type separately). ★★★ 0x07CF96 SHARED COPY DECODED (3B: LD BC,$37; LDIR; RET — copies 55 bytes from HL→DE). ★★★ 0x068640 TYPE FALLBACK DECODED (6B: AND 0x3F; JP 0x08021F — strips type flags, jumps to range validator). GOLDEN REGRESSION PASS.**)
 
-> Previous: 2026-06-06 (auto-session 532 — 0x07FBCA BCD carry 15B, 0x07CFA7 type 0x20/0x21 handler 37B, 0x07CF1A matrix 0x1C handler 130B, 0x07D183/0x07D189 list sign handlers ~34B)
+> Previous: 2026-06-06 (auto-session 533 — 0x07FE9C type equation/string→real 26B, 0x07F16C BCD constant loader 42B, 0x07CF9D shared setup 10B, 0x07CD92 matrix dimension cluster ~100B)
+
+**Session 534 findings (2026-06-06)**:
+
+(1) ★★★★ 0x07DF66 BCD RESTORING DIVISION LOOP DECODED (probe-phase534-decode-07DF66-conditional-helper.mjs, Codex+Sonnet fix, Opus-verified):
+- **0x07DF66 (~150B)**: Full restoring division loop for BCD floating-point engine.
+- **Entry**: CALL 0x080173 (setup), RES 6,(IY+14), CALL 0x07CC36+0x07FD4A (zero-check). RET Z (divisor is zero).
+- **Exponent prep (0x07DF77-0x07DF9A)**: CALL 0x07FADB, loads exponent from D005F9, RRA shift right, stores to D0060F. Conditional CALL 0x07FB48 (BCD shift left). Sets D00603=0x10 (16-digit loop counter).
+- **Division loop (0x07DFA0-0x07E009)**: Classic restoring division: CALL 0x07FBD9 (shift left B positions), CALL 0x07FC94 (BCD subtraction trial), carry=underflow→restore via CALL 0x07FC0E, RLD (0x07DFF1) for quotient nibble packing. Decrements loop counter, handles quotient digit storage via LD (DE),A.
+- **Post-loop (0x07E00B-0x07E04E)**: Stores final quotient digit, exponent ADD A,0x40 bias adjustment, CALL 0x07FDC9 (result check). Non-zero: CALL 0x07C9AF (post-normalize dispatch) unless IY+14 bit 6 set, then CALL 0x07F8FA+0x07FAC2, sets D00603=0x0C, JP 0x07F7FA. Zero: JP 0x07EFF0.
+- **PURPOSE**: Extended BCD division with full quotient extraction — complements 0x07CAB9 (the simpler BCD division decoded in session 530).
+- **NOTE**: Codex produced probe with `jrOps` TDZ bug; Sonnet fixed decoder, added CB/ED prefix support, DJNZ, full ALU register ops.
+
+(2) ★★★★ BCD CONSTANT TABLE AT 0x07F196 FULLY MAPPED (probe-phase534-bcd-constant-table.mjs, Codex+Sonnet fix, Opus-verified):
+- **0x07F196 (63 bytes, 7 entries × 9 bytes each)**:
+- **KEY INSIGHT**: Table entries do NOT include a type byte. Each 9-byte slot is: 1 byte exponent + 7 bytes BCD mantissa + 1 byte (part of mantissa or padding). The loader at 0x07F16C writes type=0x00 separately, then copies 9 data bytes via LDI chain.
+- **Entry 0 (0x07F196)**: exp=0x81, value=57.295779513082 → **180/π** (degrees-per-radian)
+- **Entry 1 (0x07F19F)**: exp=0x80, value=1.5707963267948 → **π/2** (half-pi)
+- **Entry 2 (0x07F1A8)**: exp=0x7F, value=0.78539816339744 → **π/4** (quarter-pi)
+- **Entry 3 (0x07F1B1)**: exp=0x7F, value=0.43429448190325 → **log₁₀(e)** (common log constant)
+- **Entry 4 (0x07F1BA)**: exp=0x80, value=3.1415926535898 → **π** (confirmed from session 533)
+- **Entry 5 (0x07F1C3)**: exp=0x7E, value=0.017453292519943 → **π/180** (radians-per-degree)
+- **Entry 6 (0x07F1CC)**: exp=0x80, value=2.3025850929940 → **ln(10)** (natural log of 10)
+- **Table ends at 0x07F1D5** where executable code begins.
+- **NOTE**: Codex probe had sign/exponent parsing bug; Sonnet rewrote decoder correctly.
+
+(3) ★★★ 0x07CF96 SHARED COPY ROUTINE DECODED (probe-phase534-decode-07CF96-shared-copy.mjs, Codex, Opus-verified):
+- **0x07CF96 (7B, 0x07CF96-0x07CF9C)**: `LD BC,$000037; LDIR; RET`.
+- **PURPOSE**: Copies 55 bytes (0x37) from address in HL to address in DE.
+- **Context**: Called from 0x07CF9D with HL=D00603 (OP2), DE=D02B39 (RAM save buffer). Saves 55 bytes of OP register data to scratch RAM for matrix/type handler restoration via epilogue at 0x07CF8E.
+- **55 bytes = OP2 through OP6**: D00603 (OP2) + 55 = D0063A. OP2=D00603, OP3=D0060E, OP4=D00619, OP5=D00624, OP6=D0062F, OP7=D0063A (end). Saves exactly OP2-OP6 (5 registers × 11 bytes = 55 bytes).
+
+(4) ★★★ 0x068640 TYPE FALLBACK DECODED (probe-phase534-decode-068640-type-fallback.mjs, Codex, Opus-verified):
+- **0x068640 (6B)**: `AND 0x3F; JP 0x08021F`.
+- **PURPOSE**: Strips sign/flag bits from type byte (AND 0x3F isolates base type), then jumps to 0x08021F (type range validator, a variant of 0x08021B decoded in session 524).
+- **Caller context**: 0x0686FF (`LD D,A; CALL 0x068640; JR C 0x068708`). Called when type doesn't match 0x1C (matrix), 0x20 (equation), or 0x21 (string). The carry flag from 0x08021F determines whether the type is valid (C=success) or not (NC=D set to 0x00).
+
+(5) NEW FUNCTIONS: 0x07DF66 (~150B BCD division), 0x07CF96 (7B copy), 0x068640 (6B type fallback).
+NEW CALL TARGETS from 0x07DF66: 0x080173, 0x07CC36, 0x07FD4A, 0x07FADB, 0x07FBD9, 0x07FC94, 0x07FC0E, 0x07FC14, 0x07FDC9, 0x07C9AF, 0x07F8FA, 0x07FAC2, 0x07F7FA, 0x07EFF0.
+BCD CONSTANT TABLE: 7 entries fully identified (180/π, π/2, π/4, log₁₀(e), π, π/180, ln(10)).
+
+PROBES: 4/4 ran via watchdog. P2 Codex had TDZ bug (Sonnet fixed). P3 Codex had BCD parse bug (Sonnet fixed). P1/P4 Codex clean. Golden regression 26/26 PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x07FEB6 — second function in 0x07FExx region (CALL 0x07F7A8). (c) ★★★ DECODE 0x07DD34 — swap+flag pipeline (carried). (d) ★★★ FRAME SIZE INVESTIGATION (carried). (e) ★★★ DECODE 0x080173 — setup routine called by 0x07DF66 division entry. (f) ★★★ DECODE 0x07EFF0 — zero-result handler from division loop. (g) ★★ DECODE 0x07FBD9 — BCD shift left by B positions (called by division loop). --END SESSION 534--
 
 **Session 533 findings (2026-06-06)**:
 
