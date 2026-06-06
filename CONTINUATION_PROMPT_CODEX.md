@@ -8,9 +8,60 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-06 (auto-session 539 — **★★★★★ 0x061D00-0x061DB0 ERROR CODE DISPATCH TABLE FULLY MAPPED (44 entries, each LD A,errorCode + JR/JP to shared handler at 0x061DB2 → stores D008DF + CALL 0x03E1B4, 291 total xrefs). ★★★★ 0x07F7BD ckOP1type DECODED (3B: LD A,(D005F8); AND 0x3F; RET — complementary to 0x07F7D6 AND 0xC0 sign-strip; plus 0x07F7C4 type-validated dispatch 9B, 0x07F7CE OP copy+transform pipeline 8B). ★★★★ 0x07FAC2 ZERO-OP FAMILY DECODED (5 entry stubs: 0x07FAC2 zero all OP1, 0x07FAC9 mantissa-only, 0x07FACF alt full, 0x07FAD5 OP2 boundary, 0x07FADB OP2+7 — shared unrolled zero-fill at 0x07FA7F). ★★★ INTERNAL TYPES 0x1B/0x1D/0x1E/0x1F CROSS-REFERENCED (297 hits, 74 significant: 0x1D dominates at 48 refs as error/status code, type validation cluster at 0x0801CC-0x080214 checks all 4). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-06 (auto-session 540 — **★★★★ 0x03E1B4 INTERRUPT-SAFE ERROR WRAPPER DECODED (37B: saves IFF2 via LD A,I → DI → CALL 0x03E187 real error processor → restores interrupt state; D00542 scratch byte; real error handler is 0x03E187 not 0x03E1B4). ★★★★ ERROR CODE TABLE FULLY MAPPED TO SDK NAMES (43 entries: 26 match SDK 0x80-offset naming, 10 low/internal codes, 7 unknown high codes; top xrefs: E_DOMAIN 0x84=125, E_DATATYPE 0x89=98, E_SYNTAX 0x88=69, E_ARGUMENT 0x8A=68; 4 dead entries with 0 xrefs). ★★★★ 0x07F7DF TYPE PROMOTION DECODED (19B: Real→0x20, non-Real→0x21, preserving sign bits via AND 0xC0/OR B). ★★★ 0x07FA95-0x07FAC1 VALIDATION CLUSTER DECODED (3 zero stubs OP3/OP4/OP5 → shared zero-fill, BIT 5,(IY+0x0A) guard → E_NONREAL, dual-pass validation via CALL self+4 trick). GOLDEN REGRESSION 26/26 PASS.**)
 
-> Previous: 2026-06-06 (auto-session 538 — type transform table data fully dumped, 0x07FE20 decoded, 0x07FEE7 string handler confirmed, 0x07F904-0x07F91F gap mapped)
+> Previous: 2026-06-06 (auto-session 539 — error dispatch table 44 entries mapped, ckOP1type decoded, zero-OP family decoded, internal types cross-referenced)
+
+**Session 540 findings (2026-06-06)**:
+
+(1) ★★★★ 0x03E1B4 INTERRUPT-SAFE ERROR WRAPPER + FULL ERROR PIPELINE DECODED (probe-phase540-decode-03E1B4.mjs, Sonnet, Opus-verified):
+- **0x03E1B4 (37B, 0x03E1B4-0x03E1D8)**: Interrupt-safe wrapper. Saves A to D00542 scratch, reads IFF2 via `LD A,I`, DI, `CALL 0x03E187` (real error handler), restores interrupt state, RET. Double LD A,I pattern handles Z80 IFF2 race condition.
+- **0x03E187**: The actual error handler — port I/O and memory protection state management (ED 39 = OUT0, ED 38 = IN0 — eZ80 port instructions for ports 0x24 and 0x06).
+- **0x03E1D9 (10B)**: Type check helper — CALL 0x07F7BD (ckOP1type), AND 0x3F, CP 0x15 (list type), SUB 0x0F, CCF. Type classifier for error context.
+- **0x03E1E6 (5B)**: SET 2,(IY+0x12) utility — sets "error active" system flag.
+- **0x03E230 (37B)**: Error display setup — sets IY=D00080 (system flags base), copies OP1 data to staging area, checks for app type 0x24, calls 0x03E256 (error display handler).
+- **0x03E256 (59B)**: Error display handler — checks OP1 byte 2 == 0x5E (special error object), allocates error variable from VAT via 0x0846EA, calls 0x03EA5E (full screen error display with message rendering).
+- **0x03E29B (51B)**: Error longjmp/recovery — mode-dependent (CP 0x52). Uses 0x061DEF (setjmp-style frame setup, saves SP to D008E0) and 0x061E20 (longjmp teardown, restores SP from D008E0). Clears error-active flag and EI before RET.
+- **KEY RAM**: D00542 (scratch), D007E0 (calculator mode), D008DF (error code), D008E0 (saved SP for longjmp), D0081C (error display type), D02581/D00687 (error variable pointers).
+- **KEY TARGETS**: 0x03E187 (port I/O handler), 0x03E023/0x03E039 (OP1 staging), 0x03D202 (stack bounds check), 0x0846EA (VAT error variable alloc), 0x03EA5E (error display), 0x061DEF/0x061E20 (setjmp/longjmp pair).
+
+(2) ★★★★ ERROR CODE TABLE FULLY MAPPED TO SDK NAMES (probe-phase540-error-code-map.mjs, Sonnet, Opus-verified):
+- **43 actual entries** at 0x061D02-0x061DAE (session 539 counted 44 including the skip-jump at 0x061D00).
+- **First 2 bytes** at 0x061D00: JR +0x22 → 0x061D24 (skip-jump to relay, not an error entry).
+- **0x061D24**: JP 0x061DB2 relay — first 10 entries use short JR to this relay for code-size optimization.
+- **26 entries match SDK 0x80-offset naming**: 0x81=E_OVERFLOW through 0x9D=E_LINK_ERROR.
+- **3 entries use raw low codes**: 0x0E=E_MEMORY (duplicate at 0x061D42, 37 xrefs), 0x15=E_STAT (15 xrefs), 0x1B=E_STATPLOT (3 xrefs).
+- **10 unknown high codes**: 0x9E(4), 0x9F(6), 0xAA(0), 0xAB(1), 0xAC(1), 0xAF(5), 0xB4(1), 0xB5(0) — OS-internal or newer.
+- **4 unknown low codes**: 0x28(1), 0x2D(1), 0x2E(4), 0x2F(1), 0x30(5), 0x31(3), 0x36(0) — undocumented internal.
+- **Top xrefs**: E_DOMAIN(0x84)=125, E_DATATYPE(0x89)=98, E_SYNTAX(0x88)=69, E_ARGUMENT(0x8A)=68, E_DIMENSION(0x8C)=63, E_INVALID(0x8F)=54.
+- **4 dead entries** (0 xrefs): 0x96=E_SOLVER, 0xAA, 0xB5, 0x36.
+- **NOTE**: Xref counts differ from session 539 (125 vs 50 for 0x84) because this probe scans full 4MB ROM for all 3-byte address references, while session 539 may have used a different counting method.
+
+(3) ★★★★ 0x07F7DF TYPE PROMOTION UTILITY DECODED (probe-phase540-decode-07F7DF.mjs, Sonnet, Opus-verified):
+- **0x07F7DF (19B, 0x07F7DF-0x07F7F1)**: `LD HL,D005F8; LD A,(HL); AND 0x3F` → get base type. If type==0 (Real): B=0x20, else: B=0x21. Then `LD A,(HL); AND 0xC0; OR B; LD (HL),A; RET` — preserves sign bits, replaces type with 0x20 or 0x21.
+- **PURPOSE**: Type promotion — converts Real(0x00) → type 0x20 (complex float), non-Real → type 0x21 (complex integer?). Preserves sign/flag bits in upper 2 bits.
+- **BONUS 0x07F7F2 (8B)**: `CALL 0x07FAC2; CALL 0x07FAAF` — zero OP1 then validate via guard.
+- **BONUS 0x07F7FA (4B)**: `LD HL,D005F8; CALL 0x07F806` — OP1 entry for shared type transform.
+- **BONUS 0x07F802 (4B)**: `LD HL,D00603` — OP2 entry, falls through to 0x07F806.
+- **BONUS 0x07F806 (13B)**: `PUSH BC; PUSH DE; CALL 0x07FE5E; CALL 0x07FE28; POP DE; POP BC; RET` — shared dual-call type transform with register preservation.
+- **0x07F813+**: `CALL 0x07F914; CALL 0x07F8C0; JR +0x14` → more OP copy dispatch entries continuing the cluster.
+
+(4) ★★★ 0x07FA95-0x07FAC1 VALIDATION CLUSTER DECODED (probe-phase540-decode-07FA95.mjs, Codex+Opus-verified):
+- **0x07FA95 (6B)**: `LD HL,D00624 (OP5); JR +0x2B → 0x07FAC6` (XOR A + shared zero-fill path).
+- **0x07FA9B (6B)**: `LD HL,D00619 (OP4); JR +0x25 → 0x07FAC6` (same path).
+- **0x07FAA1 (6B)**: `LD HL,D0060E (OP3); JR +0x1F → 0x07FAC6` (same path).
+- **0x07FAA7 (8B)**: `BIT 5,(IY+0x0A); JP NZ,0x061D16` — guard: if system flag bit 5 set, throw E_NONREAL (error 0x87). IY+0x0A bit 5 = "result is non-real" flag.
+- **0x07FAAF (5B)**: `XOR A; JP 0x07FA2F` — zero A and jump to alternate zero-fill entry.
+- **0x07FAB4 (14B)**: Dual-pass validation via self-call trick: `CALL 0x07FAB8` calls next instruction, so validation runs twice. Inner: `CALL 0x07FD4A` (OP1 zero-check) → RET Z; `CALL 0x07FDF1` (result validator) → RET NZ. Falls through only if 0x07FDF1 returns Z (both passes fail validation → falls to 0x07FAC2 zero-OP1).
+- **ALL 3 zero stubs** route to 0x07FAC6 (XOR A inside 0x07FAC2's body) → JR to shared zero-fill at 0x07FA7F. Same mechanism as session 539's 0x07FAC2-0x07FADB stubs.
+
+(5) NEW FUNCTIONS: 0x03E1B4 (37B interrupt-safe wrapper), 0x03E1D9 (10B type classifier), 0x03E1E6 (5B flag setter), 0x03E230 (37B error display setup), 0x03E256 (59B error display handler), 0x03E29B (51B error longjmp/recovery), 0x07F7DF (19B type promotion), 0x07F7F2 (8B zero+validate), 0x07F7FA (4B OP1 transform entry), 0x07F802 (4B OP2 transform entry), 0x07F806 (13B shared transform), 0x07FA95 (6B zero OP5), 0x07FA9B (6B zero OP4), 0x07FAA1 (6B zero OP3), 0x07FAA7 (8B non-real guard), 0x07FAAF (5B zero+jump), 0x07FAB4 (14B dual-pass validation).
+NEW CALL TARGETS: 0x03E187 (port I/O error handler), 0x03E023 (OP1 type copy), 0x03E039 (OP1 staging), 0x03D202 (stack bounds), 0x0846EA (VAT error alloc), 0x03EA5E (error display), 0x061DEF (setjmp), 0x061E20 (longjmp), 0x07FA2F (alternate zero-fill entry).
+ERROR TABLE: 43 entries mapped to SDK names. Error processing pipeline: 0x061Dxx table → 0x061DB2 handler → 0x03E1B4 interrupt wrapper → 0x03E187 port I/O → 0x03E230 display setup → 0x03E256 display → 0x03E29B longjmp recovery.
+
+PROBES: 4/4 ran via watchdog. Codex 1/4 (P4 succeeded, P1/P2/P3 failed exit 1). Sonnet 3/3 fallbacks succeeded. Golden regression 26/26 PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x03E187 — the real error handler (port I/O + memory protection) called from the interrupt-safe wrapper. (c) ★★★★ DECODE 0x03EA5E — full error display routine (screen setup, message rendering). (d) ★★★ DECODE 0x061DEF/0x061E20 — setjmp/longjmp pair for error recovery (saves/restores SP from D008E0). (e) ★★★ DECODE 0x07F806 NEIGHBORS — continue mapping 0x07F813+ (more OP copy dispatch entries, CALL 0x07F914/0x07F8C0). (f) ★★ FRAME SIZE INVESTIGATION (carried). --END SESSION 540--
 
 **Session 539 findings (2026-06-06)**:
 
