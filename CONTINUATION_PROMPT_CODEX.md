@@ -8,9 +8,57 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-06 (auto-session 532 — **★★★★ 0x07FBCA BCD CARRY PROPAGATION DECODED (15B, LD A,0x01; B=7 ADC+DAA backward loop, RET NC early exit, compact carry chain). ★★★★ 0x07CFA7 TYPE 0x20/0x21 HANDLER DECODED (37B, equation/string: CALL 0x07CF9D+0x07FE9C+0x07F7A4+0x07FE5A+0x07F16C+0x07C8B7 BCD multiply+0x07CF8E epilogue). ★★★★ 0x07CF1A MATRIX 0x1C HANDLER DECODED (130B, two-phase row/column computation, dimension checks 0x07CE86/0x07CE79, BCD multiply+division, LDIR 0x37B epilogue, clarifies 0x07CF24 alternate entry). ★★★ 0x07D183/0x07D189 LIST SIGN HANDLERS DECODED (~34B shared, OP2/OP1 entry stubs, XOR 0x20/0x10 bit toggles via 0x07CE5F/0x07CE71). GOLDEN REGRESSION PASS.**)
+**Last updated**: 2026-06-06 (auto-session 533 — **★★★★ 0x07FE9C TYPE EQUATION/STRING→REAL TRANSFORM DECODED (26B, AND 0xC0 sign preserve, AND 0x3F base type extract, 0x20→0x00 equation→real, 0x21→0x18 string→real-variant, RET NZ passthrough). ★★★★ 0x07F16C BCD CONSTANT TABLE LOADER DECODED (42B, clears OP2 type, A×9 offset into table at 0x07F196, CALL 0x07F97A 7-byte copy + 2 LDI = 9B total, table includes π at entry 4 and 180/π at entry 0). ★★★ 0x07CF9D SHARED SETUP STUB DECODED (10B, LD HL,D00603 + LD DE,D02B39 + JR 0x07CF96). ★★★★ 0x07CD92/0x07CD57/0x07CD7F/0x07CDD8 MATRIX DIMENSION-TO-BCD CONVERTER CLUSTER DECODED (~100B total, multi-entry OP5/OP6/OP7→OP1/OP2 stubs, .SIL LD BC,(HL) eZ80 dimension read, exponent 0x82/0x81/0x80 by digit count, nibble ops 0x07FAF5/0x07FAED, bit 4/5 sign checks via 0x07CA06). GOLDEN REGRESSION PASS.**)
 
-> Previous: 2026-06-06 (auto-session 531 — 0x07C9AF post-normalize 50B, 0x07C9E1 sign normalization 31B, 0x07CA02+0x07CA27 sign toggle 37B+33B, 0x07D306 IY conditioner 35B, 0x06868A type dispatcher 29B+22B)
+> Previous: 2026-06-06 (auto-session 532 — 0x07FBCA BCD carry 15B, 0x07CFA7 type 0x20/0x21 handler 37B, 0x07CF1A matrix 0x1C handler 130B, 0x07D183/0x07D189 list sign handlers ~34B)
+
+**Session 533 findings (2026-06-06)**:
+
+(1) ★★★★ 0x07FE9C TYPE EQUATION/STRING→REAL TRANSFORM DECODED (probe-phase533-decode-07FE9C-utility.mjs, Codex+Opus-verified):
+- **0x07FE9C (26B, 0x07FE9C-0x07FEB5)**: Converts equation/string type to real type while preserving sign bits.
+- **Entry**: LD HL,D005F8 (OP1 type byte).
+- **Sign extract**: LD A,(HL); AND 0xC0; LD B,A — saves bits 7,6 (sign bits) in B.
+- **Type extract**: LD A,(HL); AND 0x3F — isolates base type.
+- **Dispatch**: CP 0x20 (equation) → C=0x00; JR Z merge. CP 0x21 (string) → C=0x18; RET NZ (neither).
+- **Merge (0x07FEB2)**: LD A,C; OR B; LD (HL),A; RET — writes new type with preserved signs.
+- **PURPOSE**: Transforms equation type 0x20 to real 0x00, string type 0x21 to type 0x18, preserving sign/complex bits.
+- **Note**: Codex probe used Z80 mode decoder (3-byte immediates); Opus manually re-decoded as eZ80 ADL (4-byte immediates). Raw bytes confirmed correct.
+
+(2) ★★★★ 0x07F16C BCD CONSTANT TABLE LOADER DECODED (probe-phase533-decode-07F16C-fp-op.mjs, Codex+Opus-verified):
+- **0x07F16C (42B, 0x07F16C-0x07F195)**: Loads a BCD floating-point constant from a ROM table into OP2.
+- **Entry**: LD DE,D00603 (OP2); PUSH AF; XOR A; LD (DE),A (clear type); INC DE; POP AF.
+- **Table base**: LD HL,0x07F196 (constant table in ROM).
+- **Offset computation**: C=9 (entry size); B=A (parameter); loop: A += C; B--; JP P loop. Computes A = parameter × 9.
+- **Copy**: LD BC,0; LD C,A; ADD HL,BC; CALL 0x07F97A (7-byte LDI copy); POP BC; LDI; LDI; RET. Total 9 bytes copied from table to OP2[1..9].
+- **Table at 0x07F196**: BCD constant entries, 9 bytes each. Entry 0 = 180/π (57.29577951..., exponent 0x81). Entry 4 = π (3.14159265..., exponent 0x80). Called with A=0x04 from type 0x20/0x21 handler → loads π for angle/dimension computation.
+- **CALL targets**: 0x07F97A (7-byte LDI copy, offset +2 into 0x07F978 9xLDI chain).
+
+(3) ★★★ 0x07CF9D SHARED SETUP STUB DECODED (probe-phase533-decode-07CF9D-shared-setup.mjs, Codex+Opus-verified):
+- **0x07CF9D (10B, 0x07CF9D-0x07CFA6)**: Tiny setup stub called by 0x07CFA7 (type handler) and 0x07CF1A (matrix handler).
+- LD HL,D00603 (OP2 address); LD DE,D02B39 (RAM buffer); JR 0x07CF96 (shared routine).
+- **PURPOSE**: Pre-loads HL=OP2 and DE=RAM save buffer, then jumps to the shared conversion/copy routine at 0x07CF96 (not yet decoded — likely an OP register copy or dimension extraction).
+- **NEXT**: Decode 0x07CF96 to complete this function's behavior.
+
+(4) ★★★★ 0x07CD92/0x07CD57/0x07CD7F/0x07CDD8 MATRIX DIMENSION-TO-BCD CONVERTER CLUSTER DECODED (probe-phase533-decode-07CD92-matrix-sub.mjs, Codex, correct eZ80 ADL decoder, Opus-verified):
+- **0x07CD57 (multi-entry stubs, ~28B)**: Four entry points loading different OP register addresses:
+  - 0x07CD57: LD HL,D00625 (OP5); LD DE,D00603 (OP2); JR 0x07CD9A — OP5→OP2 conversion.
+  - 0x07CD61: LD HL,D00630 (OP6); JR 0x07CD96 — OP6→OP1.
+  - 0x07CD67: LD HL,D00636 (OP7?); JR 0x07CD96 — OP7→OP1.
+  - 0x07CD6D: LD HL,D00625 (OP5); JR 0x07CD96 — OP5→OP1.
+  - 0x07CD73: CALL 0x07FCE8; CALL 0x07CD7F; JP 0x07FCE8 — OP1↔OP2 swap bracket around dimension check.
+- **0x07CD7F (13B)**: LD HL,D00628 (OP5+3); CALL 0x07CD96; LD HL,D00625; BIT 4,(HL); CALL NZ,0x07CA06; RET. Row dimension check — if OP5 bit 4 set, toggle OP1 sign.
+- **0x07CD92 (50B, 0x07CD92-0x07CDC3)**: LD HL,D0062B (OP5+6) entry. Shared dimension-to-BCD conversion at 0x07CD96: .SIL LD BC,(HL) reads dimension value; EX DE,HL; sets type=0x00, exponent=0x82 (3 digits); AND 0x0F checks low nibble; DEC exponent for 2-digit (0x81) or 1-digit (0x80) values; CALL 0x07FAF5/0x07FAED for BCD nibble packing; clears remaining 5 mantissa bytes; RET.
+- **0x07CDD8 (13B)**: LD HL,D00627 (OP5+2); CALL 0x07CE38; LD HL,D00625; BIT 5,(HL); CALL NZ,0x07CA06; RET. Column dimension check — if OP5 bit 5 set, toggle OP1 sign.
+- **PURPOSE**: Converts matrix row/column dimension values (stored in OP5/OP6/OP7 descriptor bytes) into BCD floating-point numbers in OP1/OP2 for arithmetic operations. Row uses bit 4, column uses bit 5 for sign control.
+- **CALL targets**: 0x07FAF5 (nibble extract), 0x07FAED (nibble combine), 0x07CA06 (sign toggle), 0x07FCE8 (OP1↔OP2 swap), 0x07CE38 (column extract variant).
+
+(5) NEW FUNCTIONS: 0x07FE9C (26B), 0x07F16C (42B), 0x07CF9D (10B), 0x07CD57 (28B multi-entry), 0x07CD7F (13B), 0x07CD92 (50B), 0x07CDD8 (13B).
+NEW CALL TARGETS: 0x07F97A (7-byte LDI offset), 0x07F7A8 (from 0x07FEB6), 0x07CF96 (shared copy routine), 0x07FAF5 (nibble extract), 0x07FAED (nibble combine), 0x07CE38 (column extract), 0x07CE22 (alternate column).
+BCD CONSTANT TABLE: 0x07F196 (at least 5 entries × 9 bytes = 45 bytes of ROM data), includes π and 180/π.
+
+PROBES: 4/4 ran via watchdog. 3/4 had Z80-mode decoder bug (P1/P2/P3); P4 correct eZ80 ADL. All manually re-decoded by Opus from raw bytes. Golden regression PASS 26/26.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x07CF96 — shared copy/conversion routine (JR target from 0x07CF9D). (c) ★★★★ DECODE 0x07DF66 — conditional path helper (carried from 532). (d) ★★★ DECODE 0x07FEB6 — second function in 0x07FExx region (CALL 0x07F7A8, visible after 0x07FE9C). (e) ★★★ MAP BCD CONSTANT TABLE AT 0x07F196 — identify all entries (entry 0 = 180/π, entry 4 = π, how many entries total?). (f) ★★★ DECODE 0x068640 — type→dimension fallback (carried). (g) ★★★ DECODE 0x07DD34 — swap+flag pipeline (carried). (h) ★★★ FRAME SIZE INVESTIGATION (carried). --END SESSION 533--
 
 **Session 532 findings (2026-06-06)**:
 

@@ -16943,15 +16943,147 @@
       "timestamp": "2026-06-06T04:05:55Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "0e3777d9cf7d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x06868A \u2014 Unknown Purpose Function\n\n## Context\nYou are working on TI-84 Plus CE ROM ",
+      "status": "success",
+      "duration_seconds": 93.566,
+      "timestamp": "2026-06-06T06:05:06Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "babe4d9558a5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07D306 \u2014 FP Conversion/Formatting Function\n\n## Context\nYou are working on TI-84 Plu",
+      "status": "completed",
+      "duration_seconds": 104.982,
+      "timestamp": "2026-06-06T06:05:13Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "983436f0f868",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07C9E1 \u2014 Sign Normalization + Exponent Adjustment\n\n## Context\nYou are working on TI",
+      "status": "success",
+      "duration_seconds": 111.961,
+      "timestamp": "2026-06-06T06:05:18Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "0b4a06f414a6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07C9AF \u2014 Post-Normalize Dispatch\n\n## Context\nYou are working on TI-84 Plus CE ROM t",
+      "status": "success",
+      "duration_seconds": 126.9,
+      "timestamp": "2026-06-06T06:05:37Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "21e4bcdc3594",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM functions at 0x07D189 and 0x07D183 \u2014 Matrix/List Sign Special Handlers\n\n## Contex",
+      "status": "completed",
+      "duration_seconds": 115.661,
+      "timestamp": "2026-06-06T08:04:22Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c9b9e2892873",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function at 0x07CF1A \u2014 Matrix Type 0x1C Handler\n\n## Context\nYou are working on a ",
+      "status": "success",
+      "duration_seconds": 121.317,
+      "timestamp": "2026-06-06T08:04:25Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "31b7303eecb7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function at 0x07FBCA \u2014 BCD Rounding/Carry Propagation\n\n## Context\nYou are working",
+      "status": "success",
+      "duration_seconds": 128.083,
+      "timestamp": "2026-06-06T08:04:26Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c88c071bb0fb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function at 0x07CFA7 \u2014 Type 0x20/0x21 Handler\n\n## Context\nYou are working on a TI",
+      "status": "success",
+      "duration_seconds": 127.852,
+      "timestamp": "2026-06-06T08:04:28Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c5d0cd60bf6e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07FE9C \u2014 Utility Called by Type 0x20/0x21 Handler\n\n## Context\nYou are working on th",
+      "status": "blocked",
+      "duration_seconds": 96.527,
+      "timestamp": "2026-06-06T10:03:48Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "796f8536ed2e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07CF9D \u2014 Shared Setup for Matrix/Type Handlers\n\n## Context\nYou are working on the T",
+      "status": "completed",
+      "duration_seconds": 111.774,
+      "timestamp": "2026-06-06T10:04:01Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "25d07f7bf95b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07F16C \u2014 Parameterized FP Operation (A=0x04)\n\n## Context\nYou are working on the TI-",
+      "status": "partial",
+      "duration_seconds": 109.67,
+      "timestamp": "2026-06-06T10:04:03Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6fbb9fafde69",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x07CD92 \u2014 Matrix Computation Sub-function\n\n## Context\nYou are working on the TI-84 P",
+      "status": "completed",
+      "duration_seconds": 114.003,
+      "timestamp": "2026-06-06T10:04:10Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1411,
-    "cc_to_codex": 1411,
+    "total_calls": 1423,
+    "cc_to_codex": 1423,
     "codex_to_cc": 0,
-    "completed": 986,
+    "completed": 990,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 528.948
+    "avg_duration_seconds": 525.445
   }
 }
