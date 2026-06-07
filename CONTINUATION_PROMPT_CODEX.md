@@ -8,9 +8,73 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-07 (auto-session 548 — **★★★★ 0x02395F TOKEN DISPLAY ENTER (14B: INC D0265B nesting counter, EX (SP),HL trampoline via 0x02396D, JR to 0x023955 exit — bracket pattern for nesting depth). ★★★★ 0x087182 CORRECTED: NOT CODE — DATA TABLE of 2-byte TI token codes (pages 0x82/0xFB/0xFC/0xFE; session 547's "CP 0x82/83/84/85" was misidentification of FE bytes as opcodes). ★★★★ 0x087611 TOKEN_TABLE_SEARCH (14B: DJNZ loop comparing D:E pairs, 1 caller at 0x085505). ★★★★ D005F9 FULLY MAPPED: 357 refs (175R/82W/100P), 3-byte variable descriptor struct D005F8-D005FB, heaviest in graph/app (121) and math/FPU (100). ★★★ 0x0BAB88 TOKEN TEMPLATE RENDERER (DJNZ loop, subscript formatting for vars A-D via 0x26AC, dual output CALL 0x0A2A68 + 0x088F6B, index from D02A7B). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-07 (auto-session 549 — **★★★★ 0x0A2A68 TOKEN PAGE DISPATCHER (235B: D=page/L=code input, extensive CP tree dispatching to 10+ token string tables in 0x09Fxxx-0x0A00xx range, L×3+base indexing, 27 callers, CALL 0x023977+0x04E5FE, writes D026B8). ★★★★ 0x088F6B COUNTED STRING OUTPUT (loop with B=count HL=data, dispatches to 0x0A23E5 or 0x061986 via carry flag, DJNZ loop, 13 callers). ★★★ D025D2 MAPPED: only 2 refs (1W at 0x0238BB, 1R at 0x023971), very localized indirect dispatch slot. ★★★ 0x0BAB6D DISPLAY COORD SETUP (sets x via SIS LD (0x08D2),HL, y from D02A76+2→D008D5, template index from D02A7B, 2 callers at 0x0BA84D/0x0BAB60, falls through to 0x0BAB88). GOLDEN REGRESSION 26/26 PASS.**)
 
-> Previous: 2026-06-07 (auto-session 547 — 0x025774 IX dispatch thunk, 0x023955 token display exit, 0x83 archived equation type tag, 0x0BACB3 token template table, 0x03ED55 variable name strings)
+> Previous: 2026-06-07 (auto-session 548 — 0x02395F token display enter, 0x087182 corrected to data table, D005F9 fully mapped, 0x0BAB88 token template renderer)
+
+**Session 549 findings (2026-06-07)**:
+
+(1) ★★★★ 0x0A2A68 TOKEN PAGE DISPATCHER DECODED (probe-phase549-decode-0A2A68.mjs, Codex+Opus-verified):
+- **0x0A2A68 (235B, 0x0A2A68-0x0A2B52)**: Master token-to-string dispatcher.
+- **Input**: D=token page byte, L=token code. Entry clears H, copies E→L, checks D via OR A.
+- **Page dispatch tree** (CP values on D, each loads a different table base in DE):
+  - D=0x00 → DE=0x09F87D (1-byte tokens, base table)
+  - D=0x5D → DE=0x09FB7D (page 0x5D tokens)
+  - D=0x5D (exact) → JR Z to 0x09FB9B
+  - D<0x60 → bit tests on L for sub-pages: DE=0x09FBCB, 0x09FBEF, 0x09FC01
+  - D=0x60 → DE=0x09FBAD
+  - D=0x61 → DE=0x09FC0A / 0x09FC28
+  - D=0x63 → DE=0x09FC64
+  - D=0x7E → DE=0x09FDC6
+  - D=0xBB → DE=0x09FC46 / 0x09FDFF / 0x0A00E1
+- **Index computation**: After selecting base, computes HL = L×3 + base (3 bytes per token string entry).
+- **Rendering path**: Checks BIT 0,(IY+0x35), loads first byte → D026B8, calls 0x04E5FE and 0x023977 (token display with validation, known from session 545).
+- **27 callers** (26 CALL + 1 JP at 0x020874). Spread across all subsystems: core OS, variable, math, display, graph.
+- **KEY INSIGHT**: This is the central function that converts a 2-byte TI token code (page:code) into a display string. The 0x09Fxxx addresses are token string tables in ROM. Each entry is 3 bytes (pointer to the string for that token).
+
+(2) ★★★★ 0x088F6B COUNTED STRING OUTPUT DECODED (probe-phase549-decode-088F6B.mjs, Codex+Opus-verified):
+- **0x088F6B (~26B to first RET at 0x088F84)**: Loop-based string output.
+- **Entry**: OR A (set flags), LD B,(HL) (count), INC HL, LD A,(HL) (first byte), INC HL.
+- **Loop body**: PUSH HL/BC/AF, check carry flag:
+  - Carry set → CALL 0x0A23E5 (alternate output path)
+  - Carry clear → CALL 0x061986 (primary output path)
+- **DJNZ** loops back (0x10 EA at 0x088F82).
+- **13 callers** (12 CALL + 1 JP at 0x021B20). Concentrated in display subsystem (0x087xxx-0x089xxx) and graph/app (0x0BAxxx).
+- **Adjacent functions**:
+  - 0x088F85: Sets IY+0x2B bits, loads A=0xEF, calls 0x07B245. Display attribute setter.
+  - 0x088F9E: Triple CALL to 0x02672F + CALL 0x09EF44. Coordinate manipulation.
+- **PURPOSE**: Takes a counted byte array (length-prefixed) and outputs each byte through one of two rendering paths depending on carry. Used for outputting pre-formatted token/equation strings.
+
+(3) ★★★ D025D2 FULLY MAPPED (probe-phase549-map-D025D2.mjs, Codex+Opus-verified):
+- **Only 2 references** in entire ROM:
+  - WRITE: 0x0238BB — `LD (0xD025D2),HL` (stores function pointer from HL)
+  - READ: 0x023971 — `LD HL,(0xD025D2)` (loads pointer for indirect dispatch)
+- **Context at 0x0238BB**: Preceded by push/dup/load sequence (`C5 D5 ED 17 EB 06 00 46 23 22 D2 25 D0`). Part of token display setup — stores a callback address that 0x023970 later dispatches to.
+- **Very localized**: Single writer, single reader. This is a simple function-pointer slot used by the 0x023970 indirect dispatch mechanism (EX (SP),HL → RET pattern). The write site at 0x0238BB is in the token display subsystem (0x0238xx range, near 0x02398E token display prep).
+
+(4) ★★★ 0x0BAB6D DISPLAY COORDINATE SETUP DECODED (probe-phase549-decode-0BAB6D.mjs, Codex+Opus-verified):
+- **0x0BAB6D (27B, 0x0BAB6D-0x0BAB87)**: Entry function for template rendering pipeline.
+- **Sequence**:
+  1. LD HL,0x000048 → SIS LD (0x08D2),HL — stores x-position (0x48 = 72 decimal, likely pixel offset)
+  2. LD A,(0xD02A76) → ADD 2 → LD (0xD008D5),A — y-position = D02A76 value + 2
+  3. LD A,(0xD02A7B) → DEC A — template index (1-based → 0-based)
+  4. LD HL,0x0BACB3 — loads template table base
+  5. Falls through to CALL 0x03EC5A at 0x0BAB88 (template renderer)
+- **2 callers**: CALL at 0x0BA84D and CALL at 0x0BAB60. Both preceded by `CD 61 A5 0B` (CALL 0x0BA561), suggesting 0x0BA561 is a prerequisite setup function.
+- **No direct callers to 0x0BAB88**: The renderer is always reached via the coordinate setup entry at 0x0BAB6D.
+- **PURPOSE**: Configures display position (x=72px, y=D02A76+2) and selects template before rendering. Part of the graph equation label display pipeline (Y1=, Y2=, etc.).
+
+(5) CODEX: 4/4 produced files (all succeeded). SONNET FALLBACK: not needed. Golden regression 26/26 PASS.
+
+NEW FUNCTIONS: 0x0A2A68 (235B token page dispatcher, 27 callers), 0x088F6B (26B counted string output, 13 callers).
+NEW RAM: D026B8 (first byte of current token string, written by 0x0A2A68).
+FULLY MAPPED: D025D2 (2 refs only, single writer at 0x0238BB, single reader at 0x023971).
+CONFIRMED: 0x0BAB6D (27B) is the sole entry to 0x0BAB88 template renderer, 2 callers.
+TOKEN STRING TABLES: 10+ tables in 0x09F87D-0x0A00E1 range, indexed by token page byte via 0x0A2A68.
+
+PROBES: 4/4 Codex created files. All ran to completion with correct data. Golden regression 26/26 PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x04E5FE — called by 0x0A2A68 token page dispatcher during rendering; what does it do? (likely token string lookup or memory allocation). (c) ★★★★ MAP TOKEN STRING TABLES — dump entries from the 10+ tables at 0x09F87D-0x0A00E1 to verify they are 3-byte pointers to ASCII/TI-format strings. Start with base table at 0x09F87D. (d) ★★★★ DECODE 0x0A23E5 — alternate output path called by 0x088F6B when carry set; contrast with 0x061986 primary path. (e) ★★★★ DECODE 0x061986 — primary output path called by 0x088F6B when carry clear. (f) ★★★ DECODE 0x0BA561 — prerequisite setup called before both callers of 0x0BAB6D; what does it prepare? (g) ★★★ DECODE 0x08761F TOKEN_LOOKUP_DISPATCHER CALLERS — trace from 0x085505 upward (carried from session 548). (h) ★★ FRAME SIZE INVESTIGATION (carried). --END SESSION 549--
 
 **Session 548 findings (2026-06-07)**:
 
