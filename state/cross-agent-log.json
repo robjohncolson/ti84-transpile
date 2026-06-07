@@ -17471,15 +17471,103 @@
       "timestamp": "2026-06-06T23:34:20Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "bcc521438a98",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Dump All 44 Error String Pointer Table Entries\n\n## Context\nYou are working on the TI-84 Plus",
+      "status": "partial",
+      "duration_seconds": 40.82,
+      "timestamp": "2026-06-07T00:44:56Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "51103c48534f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x03EBB0 \u2014 Real Error Display Init\n\n## Context\nYou are working on the TI-84 Plus CE R",
+      "status": "complete",
+      "duration_seconds": 51.365,
+      "timestamp": "2026-06-07T00:45:01Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9a8fa6a354d2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x04C980 \u2014 Range Check Utility\n\n## Context\nYou are working on the TI-84 Plus CE ROM t",
+      "status": "success",
+      "duration_seconds": 49.731,
+      "timestamp": "2026-06-07T00:45:03Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b18e16ea9330",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate Error Code \u2192 Table Index Mapping Formula + Decode 0x08356A\n\n## Context\nYou are w",
+      "status": "completed",
+      "duration_seconds": 68.281,
+      "timestamp": "2026-06-07T00:45:19Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ef821072f9b2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x03EC8F \u2014 Error Context Formatter\n\n## Context\nYou are working on a TI-84 Plus CE ROM",
+      "status": "success",
+      "duration_seconds": 65.882,
+      "timestamp": "2026-06-07T01:53:33Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "75acd7798f93",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x03E9D4 \u2014 Extended Error Detail Handler\n\n## Context\nYou are working on a TI-84 Plus ",
+      "status": "success",
+      "duration_seconds": 66.928,
+      "timestamp": "2026-06-07T01:53:38Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "424970dcf112",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x06B9E8 \u2014 Equation Lookup for Type 0x11 Errors\n\n## Context\nYou are working on a TI-8",
+      "status": "success",
+      "duration_seconds": 71.687,
+      "timestamp": "2026-06-07T01:53:41Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "18bb27c84a27",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Complete Mapping of 0x08356A Case-Switch Error Offset Converter\n\n## Context\nYou are working ",
+      "status": "completed",
+      "duration_seconds": 96.46,
+      "timestamp": "2026-06-07T01:54:10Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1459,
-    "cc_to_codex": 1459,
+    "total_calls": 1467,
+    "cc_to_codex": 1467,
     "codex_to_cc": 0,
-    "completed": 1006,
+    "completed": 1008,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 514.788
+    "avg_duration_seconds": 512.329
   }
 }

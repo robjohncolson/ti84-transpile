@@ -8,7 +8,7 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-06 (auto-session 543 — **★★★★★ ERROR STRING TABLE CORRECTED: real base 0x062290 (NOT 0x062245), 19 entries (NOT 44), all 19 TI-84 CE error strings fully mapped: OVERFLOW/DIVIDE BY 0/SINGULAR MATRIX/DOMAIN/INCREMENT/BREAK/NONREAL ANSWERS/SYNTAX/DATA TYPE/ARGUMENT/DIMENSION MISMATCH/INVALID DIMENSION/UNDEFINED/MEMORY/INVALID/ILLEGAL NEST/BOUND/WINDOW RANGE/ZOOM. SDK code gap at 0x92 (no table entry). ★★★★ 0x03EBB0 ERROR DISPLAY INIT DECODED (22 instructions, 0x03EBB0-0x03EBEC: type 0x11 equation branch→CALL 0x06B9E8, D00596=0x0E display counter, CALL 0x03EC8F context formatter + 0x07FA07 FP init + 0x0A1C8A text output, BIT 6 IY+66 → CALL NZ 0x03E9D4 extended detail). ★★★★ 0x08356A ERROR OFFSET CONVERTER DECODED (multi-branch case-switch, NOT simple subtract: 0x0D→1, 0x06→DEC A, 0x0B→3, fallthrough AND 0x3F + multi-CP chain). ★★★ 0x04C980 RANGE CHECK UTILITY DECODED (16B: OR A + SBC HL,BC lower bound + SBC HL,DE upper bound + CCF; carry SET=in range [BC,DE], carry CLEAR=out of range; 1 caller at 0x03D216). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-06 (auto-session 544 — **★★★★ 0x03EC8F ERROR CONTEXT FORMATTER DECODED (103B: CALL 0x08356A offset converter → CP 0x1B bounds check → clamp to 0x09 default → BIT 1 IY+0x35 flag → token 0x3B path via CALL 0x02398E → 27-entry jump table at 0x03ECAD dispatched via 0x03EC5A; 1 caller 0x03EBD2). ★★★★ 0x08356A CASE-SWITCH FULLY MAPPED (49B, 6 callers: pre-mask 0x0D→1, 0x06→5, 0x0B→3; post-AND-0x3F: 0x00-0x17 passthrough, 0x18/0x19/0x1C→0, 0x1A passthrough, 0x1B/0x1D-0x1F→0x0C, 0x20-0x3F passthrough). ★★★★ 0x06B9E8 EQUATION VARIABLE LOOKUP (19B: A=0x0F→HL=D008AF, A=0x10→HL=D008B0, default→HL=D008B1; 8 callers). ★★★ 0x03E9D4 EXTENDED ERROR DETAIL HANDLER (60B: PUSH AF/BC/DE, display counter D00596, CALL 0x0802BB + 0x0A1799×2, LD A,0x59 'Y', RES 6 IY+0x42 + RES 4 IY+0x4A, POP×3 + RET; 2 callers both CALL NZ). GOLDEN REGRESSION 26/26 PASS.**)
 
 > Previous: 2026-06-06 (auto-session 542 — error string pointer table found, 0x061DD1 recovery handler, 0x03E1EB reverse protection, 0x03D202 stack bounds check)
 
@@ -205,6 +205,68 @@ NEW DATA: Error string pointer table CORRECTED to 0x062290 (19 entries, was wron
 PROBES: 4/4 Codex created probe files (all had decoder API bugs — used (addr)=>rom[addr] wrapper + .bytes property + madl=1 integer instead of rom buffer + rom.slice + 'adl' string). 1/4 Codex probes ran successfully (P4 error table dump). 3/4 fixed and run via Sonnet fallback. Golden regression 26/26 PASS.
 
 NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x03EC8F — error context formatter called from 0x03EBB0 (what formatting does it apply to the error context before display?). (c) ★★★★ DECODE 0x06B9E8 — equation lookup for type 0x11 errors (how does it find the equation variable name?). (d) ★★★ DECODE 0x03E9D4 — extended error detail handler (called when BIT 6 IY+66 is set — what extra info does it display?). (e) ★★★ MAP THE 0x08356A CASE-SWITCH COMPLETELY — the Sonnet probe got partial coverage; need full branch-by-branch decode with all CP values and their return values to derive the exact error-code-to-table-index formula. (f) ★★ FRAME SIZE INVESTIGATION (carried). --END SESSION 543--
+
+**Session 544 findings (2026-06-06)**:
+
+(1) ★★★★ 0x03EC8F ERROR CONTEXT FORMATTER DECODED (probe-phase544-decode-03EC8F.mjs, Sonnet, Opus-verified):
+- **0x03EC8F (103B, 0x03EC8F-0x03ECF6)**: Error context formatter — converts error type to display format string index.
+- Entry: `CALL 0x08356A` (error offset converter) → `CP 0x1B` (bounds check, 27 entries max) → if A ≥ 0x1B: `LD A,0x09` (clamp to default index 9).
+- **Flag check**: `BIT 1,(IY+0x35)` — if set, saves offset in B, tries token 0x3B via `CALL 0x02398E`. Returns if Z (token found/handled).
+- **Table dispatch**: `LD HL,0x03ECAD` (jump table base) → `JR 0x03EC5A` (shared table dispatcher).
+- **Jump table at 0x03ECAD**: 27 entries (3-byte pointers), maps error offset values to specific formatter routines. Data bytes (not code) at 0x03ECAD-0x03ECF6.
+- **PURPOSE**: Takes the raw error type code, converts it to a bounded index via 0x08356A, then dispatches to one of 27 error-specific formatting routines via the jump table.
+- **CALL targets**: 0x08356A (offset converter), 0x02398E (token/string routine), 0x03EC5A (table dispatcher).
+- **1 caller**: 0x03EBD2.
+
+(2) ★★★★ 0x08356A CASE-SWITCH FULLY MAPPED WITH COMPLETE I/O TABLE (probe-phase544-map-08356A.mjs, Sonnet, Opus-verified):
+- **0x08356A (49B, 0x08356A-0x08359A)**: Error offset converter — full input→output mapping now complete.
+- **Pre-AND-mask special cases** (raw A, before AND 0x3F):
+  - A=0x0D → output 0x01 (LD A,1; RET)
+  - A=0x06 → output 0x05 (DEC A; RET)
+  - A=0x0B → output 0x03 (LD A,3; RET)
+- **Post-AND-mask cases** (after AND 0x3F):
+  - 0x00-0x17 → pass through (A & 0x3F) [except 0x06/0x0B/0x0D caught above]
+  - 0x18 → 0x00 (XOR A)
+  - 0x19 → 0x00 (XOR A)
+  - 0x1A → 0x1A (pass through, < 0x1B)
+  - 0x1B → 0x0C (LD A,0x0C)
+  - 0x1C → 0x00 (XOR A)
+  - 0x1D → 0x0C
+  - 0x1E → 0x0C
+  - 0x1F → 0x0C
+  - 0x20-0x3F → pass through (A & 0x3F)
+- **6 callers**: 0x03E5A4 (→CP 0x0F), 0x03E7AD (→CP 0x0F), 0x03EA9F (→SUB 0x0F), 0x03EC8F (→CP 0x1B), 0x0833D7 (→LD B,A), 0x0833EC (→CP B).
+
+(3) ★★★★ 0x06B9E8 EQUATION VARIABLE POINTER LOOKUP DECODED (probe-phase544-decode-06B9E8.mjs, Sonnet, Opus-verified):
+- **0x06B9E8 (19B, 8 instructions)**: Simple 3-way dispatcher returning HL pointer based on A.
+  - A=0x0F → HL=D008AF (equation variable slot 1)
+  - A=0x10 → HL=D008B0 (equation variable slot 2)
+  - default → HL=D008B1 (equation variable slot 3)
+- **Structure**: CP/RET Z pairs for 0x0F and 0x10, fallthrough to D008B1 default.
+- **8 callers**: 0x03D541, 0x03D558 (equation display/editing), 0x03EBBC (error display type 0x11), 0x04A23A, 0x06B35C/0x06B7F8/0x06B80F/0x06B822 (equation management cluster).
+- **NEW RAM**: D008AF, D008B0, D008B1 (equation variable pointer slots).
+
+(4) ★★★ 0x03E9D4 EXTENDED ERROR DETAIL HANDLER DECODED (probe-phase544-decode-03E9D4.mjs, Sonnet, Opus-verified):
+- **0x03E9D4 (60B, 0x03E9D4-0x03EA0F)**: Extended error detail display — called conditionally when BIT 6 IY+66 (D000C2) is set.
+- Entry: PUSH AF/BC/DE → LD A,0x18 (display counter = 24) → JR 0x03EA0C (skip to epilogue — NOTE: linear decode shows overlapping bytes from fallthrough paths).
+- Stores A to D00596 (display counter), calls 0x0802BB (string display?) and 0x0A1799 (text output routine) ×2.
+- LD A,0x59 (ASCII 'Y') — likely displays equation variable name prefix.
+- Clears flags: RES 6,(IY+0x42), RES 4,(IY+0x4A).
+- LD HL,0x0000 → store to memory → POP HL/DE/BC/AF → RET.
+- **CALL targets**: 0x0802BB, 0x0A1799 (×2).
+- **2 callers** (both CALL NZ): 0x03EB9D, 0x03EBE7.
+
+(5) CODEX: 0/4 fully succeeded (all 4 exit 1, created probe files with broken decoder API usage). 4/4 priorities completed via Sonnet fallback.
+
+NEW FUNCTIONS: 0x03EC8F (103B error context formatter with 27-entry jump table), 0x06B9E8 (19B equation variable lookup).
+CONFIRMED/EXTENDED: 0x08356A (49B, now fully mapped with complete I/O table for all 256 input values), 0x03E9D4 (60B extended error detail).
+NEW CALL TARGETS: 0x02398E (token/string routine), 0x03EC5A (jump table dispatcher), 0x0802BB (string display?).
+NEW RAM: D008AF/D008B0/D008B1 (equation variable pointer slots).
+NEW DATA: Jump table at 0x03ECAD (27 entries × 3B = 81B, maps error offsets to formatter routines).
+
+PROBES: 4/4 Codex created files (all had broken decoder API). 0/4 Codex probes produced useful output. 4/4 Sonnet fallbacks succeeded. Golden regression 26/26 PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x03EC5A — the shared jump table dispatcher (how does it use HL base + A index to dispatch?). (c) ★★★★ DECODE 0x02398E — token/string routine called from error context formatter (what token 0x3B maps to). (d) ★★★★ DECODE 0x0802BB — string display routine called from extended error detail handler. (e) ★★★ DUMP 0x03ECAD JUMP TABLE — read all 27 3-byte pointers and identify what formatter routine each entry points to. (f) ★★ FRAME SIZE INVESTIGATION (carried). --END SESSION 544--
 
 **Session 540 findings (2026-06-06)**:
 
