@@ -8,15 +8,90 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-07 (auto-session 557 — **★★★★ 0x0A1CAC DECODED = 28B NULL-TERMINATED STRING OUTPUT LOOP (reads (HL), INC HL, tests null, CALL 0x0A1B5B per char, column limit D00595 vs B; reads D02505). ★★★★ 0x09EF20/0x09EF44 RENDERING PATHS DECODED (immediate=15B wrapper that calls deferred; deferred=64B+ with DI, register save, MLT y×160, CALL 0x08C308 BPP test, writes D0059C framebuffer ptr; branch at 0x0A22DA selects via BIT 4,(IY+0x4A)). ★★★★ LCD CALLERS DECODED (0x055228 passes A=0x2D=mode 45, tests BIT 2,(IY+70); 0x055261 passes A=0x27=mode 39, fills 512B palette to E30200, writes D026AC=0, D005F4=0xFF, calls 0x055743). ★★★★ 0x05AD MODULE = SCROLL/CURSOR-ADVANCE ROUTINE (one large function, 7× CALL 0x06CBE5, tests IY+0x2D bit 1=font size, heavily uses D0231A/D0231D cursor state, calls 0x08DBE1×2, 0x0AD455×2, 0x05AE1E×2). GOLDEN REGRESSION 5/5 PASS.**)
+**Last updated**: 2026-06-07 (auto-session 558 — **★★★★ 0x0A1B5B PER-CHAR RENDERER DISPATCH DECODED (51B: CP 0xD6 special-token check, calls 0x0A1799 glyph renderer, RES 0 IY+8, increments D00596 column counter, 26-column wrap via 0x0A2032). ★★★★ FRAMEBUFFER BLIT PATHS CLOSED (0x09EFB7=16bpp: ADD HL,HL + D40000 base → D0059C; 0x09F001=overflow: POP regs + JP 0x09F736 cleanup). ★★★★ 0x055191 DECODED (14B: sets IY=D00080, tests D000C6 bit 1, CALL Z 0x05519F — minimal BPP flag check). ★★★★ 0x08DBE1 DECODED (16B: CALL 0x08DB93 + DEC D0231A = cursor-back helper). ★★★★ 0x0AD455 PARTIALLY DECODED (514B+ complex input tokenizer/parser: IX+0x00 flags at D02670, compares 0x3E/0xBB/0xEF/0x04/0x11/0x06/0x07, calls 0x09BAC9/0x09BBAD/0x0AD736/0x0AD6D9, heavily uses D0231A). GOLDEN REGRESSION 26/26 PASS.**)
+
+> Previous: 2026-06-07 (auto-session 557 — 0x0A1CAC decoded 28B string loop, 0x09EF20/0x09EF44 rendering paths, LCD callers 0x055228/0x055261, 0x05AD scroll module)
 
 > Previous: 2026-06-07 (auto-session 556 — 0x055280 LCD register setup, IY+0x4A bit 4 context, 0x04E640/0x04E645 closed, 0x06CBE5 cursor Y conversion)
 
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
-> Previous: 2026-06-07 (auto-session 553 — 0x000380 font base vector, 0x0A1A9D framebuffer addr, 0x08C308 corrected, 0x04C916-0x04C978 math utils, color RAM D026AC/D026AA)
-
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**Session 558 findings (2026-06-07)**:
+
+(1) ★★★★ 0x0A1B5B PER-CHARACTER RENDERER DISPATCH DECODED (probe-phase558-decode-0A1B5B.mjs, Codex+Opus-verified):
+- **51 bytes** at 0x0A1B5B-0x0A1B8D. Full per-character output function.
+- **Disassembly flow**:
+  - PUSH AF, PUSH HL (save registers)
+  - `CP 0xD6` — special token check (0xD6 = newline/special char?)
+  - If match (JR NZ skips): `CALL 0x0A22B1` + `CALL 0x0A2032` (special handling + column reset), then column limit check
+  - Normal path at 0x0A1B77: `CALL 0x0A1799` — **the actual glyph renderer** (writes pixels to framebuffer)
+  - `RES 0,(IY+8)` — clear a flag after rendering
+  - `LD HL,0xD00596; INC (HL)` — **increment column counter** at D00596
+  - `CP 0x1A` (26 decimal) — compare column to max (26 columns per line)
+  - `CALL NC,0x0A2032` — if column >= 26, call line-wrap/scroll handler
+  - POP HL, POP AF, RET
+- **CALL targets**: 0x0A22B1 (special char handler), 0x0A2032 (line wrap/column reset), 0x0A1799 (glyph renderer)
+- **RAM**: D02505 (column limit, read), D00595 (current column, read), D00596 (column counter, read+write)
+- **IY**: RES 0,(IY+8) — clears "pending render" or similar flag after glyph output
+- **ARCHITECTURE**: 0x0A1B5B is the complete per-char dispatch: check for special tokens (0xD6), render glyph via 0x0A1799, advance column counter, handle 26-column line wrap. 0x0A1799 is the next critical function — the actual glyph renderer.
+
+(2) ★★★★ FRAMEBUFFER BLIT PATHS 0x09EFB7 + 0x09F001 DECODED (probe-phase558-blit-paths.mjs, Codex+Opus-verified):
+- **0x09EFB7 (16bpp branch, 25B)**:
+  - `ADD HL,HL` — double the row offset (16bpp = 2 bytes/pixel → 640B/row vs 320B)
+  - `LD DE,0xD40000; ADD HL,DE` — add VRAM base
+  - `POP BC; ADD HL,BC; ADD HL,BC` — add column offset (doubled for 16bpp)
+  - `LD (D0059C),HL` — store computed framebuffer address
+  - POP BC, POP AF — restore, then falls into shared exit
+- **0x09F001 (overflow/error path, 13B)**:
+  - `POP BC; POP DE; POP HL` — restore all saved registers
+  - `JP 0x09F736` — jump to cleanup/error handler (not decoded yet)
+- **CONCLUSION**: The 16bpp path simply doubles all offsets (row + column) before computing the framebuffer address. The overflow path is a clean bailout — pops saved regs and jumps to an error handler. Both paths are now closed.
+
+(3) ★★★★ 0x055191 SHARED BPP INIT HELPER DECODED (probe-phase558-decode-055191.mjs, Codex+Opus-verified):
+- **14 bytes** at 0x055191-0x05519E. Extremely minimal:
+  - `LD IY,0xD00080` — set IY to system flags base (D00080 + 0x46 = D000C6 = BPP flag)
+  - `BIT 1,(IY+70)` — test D000C6 bit 1 (NOT bit 2 which is BPP mode; bit 1 = different flag)
+  - `CALL Z,0x05519F` — if bit 1 clear, call the next function at 0x05519F
+  - `RET`
+- **ARCHITECTURE**: This is NOT the BPP mode flag (bit 2) — it's bit 1 of D000C6. The function just checks one flag and conditionally calls the very next address. 0x05519F is the actual init body — this is a thin conditional-call gate. The 12× callers in the BPP cluster all go through this gate.
+- **NEXT**: Decode 0x05519F to understand what the actual init does.
+
+(4) ★★★★ 0x08DBE1 CURSOR-BACK HELPER DECODED + ★★★ 0x0AD455 PARTIALLY DECODED (probe-phase558-scroll-helpers.mjs, Codex+Opus-verified):
+- **0x08DBE1 (16B)**: Simple cursor decrement:
+  - `CALL 0x08DB93` — pre-operation helper
+  - `PUSH HL; LD HL,(D0231A); DEC HL; LD (D0231A),HL; POP HL` — decrement cursor position
+  - `RET`
+  - **PURPOSE**: Moves cursor back one position. Called 2× from scroll module for character deletion or backspace behavior.
+- **0x0AD455 (514B+, hit max scan — VERY large function)**:
+  - Sets up IX=D02670 as a flags/state structure
+  - Main loop at 0x0AD484: reads input via `CALL 0x09BAC9`, then dispatches on character value:
+    - 0x3E ('>'): special handling → JP to 0x0AD691
+    - 0xBB: multi-byte token type 1 → calls 0x0AD736, 0x0AD6D9
+    - 0xEF: multi-byte token type 2 → calls 0x0AD709, 0x0AD6D4
+    - 0x04: end-of-expression?
+    - 0x11: cursor movement / editing command
+    - 0x06/0x07/0x08: control codes
+    - 0x2A ('*'): special operator handling → calls 0x056744
+  - Heavily reads/writes D0231A (cursor position)
+  - IX+0x00 bits: bit 0 = mode, bit 3 = range check, bit 5 = completion flag, bit 6 = set during input, bit 7 = termination
+  - **PURPOSE**: This is the **OS input line editor / tokenizer** — it reads characters from the input buffer (via 0x09BAC9), handles multi-byte TI-OS tokens (0xBB prefix, 0xEF prefix), cursor movement (0x11), and expression parsing. Far more complex than a simple scroll helper — it's the core text input processing loop.
+
+(5) VERIFICATION: All 4 probes ran to completion. Golden regression 26/26 PASS (verified separately). No runtime/source files modified.
+
+**NEW FUNCTIONS DECODED**: 0x0A1B5B (51B per-char renderer dispatch), 0x09EFB7 (25B 16bpp blit offset), 0x09F001 (13B overflow bailout), 0x055191 (14B conditional init gate), 0x08DBE1 (16B cursor-back), 0x0AD455 (514B+ input tokenizer, partial).
+**NEW RAM ADDRESSES**: D00596 (column counter, incremented per char), D02670 (IX-based input state structure for 0x0AD455).
+**CALL CHAIN UPDATE**: 0x0A1CAC → 0x0A1B5B → 0x0A1799 (glyph renderer). Next critical decode is 0x0A1799.
+**ARCHITECTURE INSIGHTS**:
+- 0x0A1B5B handles the full per-char lifecycle: special-token check (0xD6), glyph render, column advance, line wrap.
+- 26 columns per line (CP 0x1A at D00596).
+- 0x0AD455 is NOT a display helper — it's the OS input line editor. The scroll module calls it for re-parsing after scroll operations.
+- 0x055191 gates on D000C6 bit 1 (not bit 2 BPP). The actual init is at 0x05519F.
+
+PROBES: 4/4 ran to completion. Golden regression 26/26 PASS. Codex 4/4 success this session.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★★ DECODE 0x0A1799 — the actual glyph renderer (called from 0x0A1B5B). This is the function that writes pixels. (c) ★★★★ DECODE 0x0A2032 — line wrap/column reset handler (called at column overflow and from special-char path). (d) ★★★★ DECODE 0x05519F — the actual BPP init body (gated by 0x055191). (e) ★★★★ DECODE 0x0A22B1 — special char handler (called when char == 0xD6). (f) ★★★ DECODE 0x09BAC9 — input reader called from 0x0AD455 tokenizer. (g) ★★★ DECODE 0x08DB93 — pre-operation helper called from 0x08DBE1. (h) ★★★ MAP D00596 — column counter (writes at 0x0A1B83, who resets it?). (i) ★★★ DECODE 0x09F736 — overflow cleanup handler (target of 0x09F001 JP). (j) ★★ DECODE IY+0x4A BIT 0/BIT 7 CONTEXT — carried from 556. (k) ★★ DECODE 0x0BA561 — carried from 549. --END SESSION 558--
 
 **Session 557 findings (2026-06-07)**:
 
