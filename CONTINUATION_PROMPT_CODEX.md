@@ -8,9 +8,82 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-07 (auto-session 552 — **★★★★ 0x04C979 CHARACTER WIDTH CLIPPING (7B: SBC HL,DE comparison, carry=overflow, multiple utility entry points in 0x04C9xx). ★★★★ 0x0A26D6 RENDERER EARLY EXIT (register restore + SCF + RET, returns carry=1 for overflow; 5-byte bitmask table at 0x0A26E5; string output function at 0x0A26F5). ★★★★ 0x07BF3E GLYPH TABLE LOOKUP (76B: CALL 0x000380 for font base, ADD HL,DE for offset, LDIR 28B glyph data → D005A5-D005C0, clears D005A1-D005A4 header). ★★★★ 0x0A23E5 BLIT LOOP DECODED (0x0A24C8-0x0A26C7, ~512B: three rendering paths via IY+0x4A bits 5/6, IX glyph reads, SLA C bit-walking, DJNZ pixel loops, framebuffer row stride 320/640 bytes via D0059C, outer row loop at 0x0A2537). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-07 (auto-session 553 — **★★★★★ 0x000380 FONT BASE VECTOR → 0x003D85 → LD HL,0x003D6E (font table base, 28B/glyph = 14 rows × 2B, verified: char 0x20=all-zero, char 0x41='A' bitmap confirmed). ★★★★ 0x0A1A9D FRAMEBUFFER ADDRESS (119B: A=y, MLT HL y×160, ADD HL,HL → y×320/640; VRAM BASE = 0xD40000 confirmed; 3 modes via IY+0x4A: 16bpp stride=640 at D40000, 8bpp stride=320 via (0xE30010), 1bpp stride=40 at D031CE/D0529E). ★★★★ 0x08C308 CORRECTED: FLAG TEST NOT COLOR LOOKUP (9B: PUSH HL, LD HL,0xD000C6, BIT 2,(HL), POP HL, RET — tests rendering BPP mode). ★★★★ 0x04C916-0x04C978 UTILITY LIBRARY MAPPED (7 functions: 16-bit pointer load+zero-extend, BC/DE/HL zero-extend to 24-bit via D02AD7 scratch, HL÷10 division, HL÷A 24-bit division, HL vs DE compare). ★★★★ COLOR RAM FOUND: foreground=D026AC, background=D026AA (16-bit RGB565, loaded by SIS LD DE/BC at 0x0A2618-0x0A2623). GOLDEN REGRESSION 26/26 PASS.**)
+
+> Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
 
 > Previous: 2026-06-07 (auto-session 551 — 0x0A23C0 pre-render setup, 0x06002D cursor flag, 0x0A23E5 full disassembly, 0x0801B9 font size flag)
+
+**Session 553 findings (2026-06-07)**:
+
+(1) ★★★★★ 0x000380 FONT BASE ADDRESS PROVIDER DECODED (probe-phase553-decode-000380.mjs, Codex+Opus-verified):
+- **0x000380 (3B)**: JP vector → 0x003D85.
+- **0x003D85 (5B)**: LD HL,0x003D6E; RET. That's it — returns a constant.
+- **FONT TABLE BASE = 0x003D6E**. Each glyph is 28 bytes (14 rows × 2 bytes per row).
+- **Glyph format**: 14 rows of 16-bit bitmaps. Font is 7px wide × 14px tall (or similar; only left 7 bits used per 2-byte row).
+- **Verification**: char 0x20 (space) = 28 bytes of 0x00. Char 0x41 ('A') = recognizable bitmap with crossbar pattern (F8 F8 F8 F8). Char 0x30 ('0') = oval shape.
+- **Char 0x00** overlaps with OS code (glyph 0 is never rendered — character codes start at 0x01+).
+- **28 × 256 = 7168 bytes** of font data from 0x003D6E to 0x005B6E.
+- **0x000380 is vector #224** in the OS jump table (0x000380 / 3 = 0xC0 = 192... actually 0x380/3 = 298.67, so it's not evenly spaced by 3. It's entry at offset 0x380 in the vector table).
+
+(2) ★★★★ 0x0A1A9D FRAMEBUFFER ADDRESS COMPUTATION DECODED (probe-phase553-decode-0A1A9D.mjs, Sonnet+Opus-verified):
+- **0x0A1A9D (119B)**: Primary coordinate → framebuffer address converter.
+- **Input**: A = y-row, HL (pushed, recovered as BC) = x-pixel offset.
+- **Algorithm**: LD H,A / LD L,0xA0 / MLT HL / ADD HL,HL → HL = y × 320.
+- **CALL 0x08C308**: Tests BIT 2,(D000C6) for BPP mode selection.
+- **Three framebuffer modes (via IY+0x4A bits 5/6)**:
+  | Mode | Bit | Row stride | Base | Formula |
+  |------|-----|-----------|------|---------|
+  | 16bpp RGB565 | bits 5,6 clear | 640B (0x280) | D40000 (VRAM) | y×640 + D40000 + x×2 |
+  | 8bpp indexed | via 0x08C308 NZ | 320B (0x140) | indirect via (0xE30010) | y×320 + base + x |
+  | 1bpp mono | bit 5 set | 40B (0x28) | D031CE or D0529E | (y-30)×40 + base |
+  | 4bpp nibble | bit 6 set | variable | D09466 via 0x07B75F | complex |
+- **VRAM BASE = 0xD40000** confirmed (LD DE,0xD40000 at 0x0A1AB4).
+- **D000C6 bit 2**: BPP mode flag (16bpp vs 8bpp selection).
+- **Mono buffers**: D031CE (primary), D0529E (alternate). Stride = 40B = 320px / 8bits.
+- **Sub-byte alignment**: Table at 0x0A1B14 [0x80,0x40,0x20,0x10,0x08,0x04,0x02,0x01] for bit-position within byte (1bpp mode).
+
+(3) ★★★★ 0x08C308 CORRECTED — NOT A COLOR LOOKUP, IS A FLAG TEST (Opus manual decode):
+- **0x08C308 (9B, 0x08C308-0x08C310)**: PUSH HL / LD HL,0xD000C6 / BIT 2,(HL) / POP HL / RET.
+- **Purpose**: Tests bit 2 of RAM address D000C6 and returns Z/NZ. This selects between 16bpp (Z) and 8bpp (NZ) rendering modes.
+- **NOT a color lookup** — the Codex probe's decoder misinterpreted ADL-mode 24-bit `LD HL,imm24` as a 16-bit load + separate instruction.
+- **Adjacent function 0x08C311**: Hex-to-ASCII converter (used for debug display). AND 0xF0 / RRCA×4 / CALL 0x08C328, then AND 0x0F / CALL 0x08C328. Subroutine at 0x08C328: CP 0x0A / JR C / ADD 7 / ADD 0x30 = standard nibble-to-hex.
+- **COLOR RAM DISCOVERED SEPARATELY**: At the call site (0x0A2618-0x0A2623), the code does SIS LD DE,(0x26AC) and SIS LD BC,(0x26AA) BEFORE calling 0x08C308. So:
+  - **Foreground color (RGB565): D026AC** (loaded into DE)
+  - **Background color (RGB565): D026AA** (loaded into BC)
+
+(4) ★★★★ 0x04C916-0x04C978 MATH UTILITY LIBRARY FULLY MAPPED (probe-phase553-decode-04C916.mjs, Sonnet+Opus-verified):
+- **7 functions in 99 bytes**:
+  | Address | Size | Purpose |
+  |---------|------|---------|
+  | 0x04C916 | 6B | Load 16-bit from (HL), zero-extend to 24-bit (JR to 0x04C940) |
+  | 0x04C91C | 18B | Zero-extend BC to 24-bit (via D02AD7 scratch) |
+  | 0x04C92E | 18B | Zero-extend DE to 24-bit (via D02AD7 scratch) |
+  | 0x04C940 | 16B | Zero-extend HL to 24-bit (via D02AD7 scratch) |
+  | 0x04C950 | 19B | HL = HL ÷ 10 (16-bit binary division, B=0x10 iterations) |
+  | 0x04C963 | 16B | HL = HL ÷ A (24-bit binary division, B=0x18 iterations) |
+  | 0x04C973 | 6B | Compare HL vs DE (PUSH HL/OR A/SBC HL,DE/POP HL/RET) |
+- **Zero-extension trick**: Store to D02AD7 (3B), zero D02AD9, reload from D02AD7. Forces top byte to 0x00.
+- **Division algorithm**: Standard non-restoring binary division — ADD HL,HL shifts dividend, RLA shifts remainder, CP C / JR C / SUB C / INC L for quotient bit.
+- **0x04C950 (÷10)**: Used to convert pixel x-coordinates to 10-pixel-wide character columns.
+- **0x04C963 (÷A)**: General version for variable font widths (divisors 0xB4, 0x59, 0x98, 0x11B from caller).
+- **0x04C916 as cursor helper**: Loads a 16-bit coordinate value from a table pointer, zero-extends for 24-bit math, then caller does width division.
+
+(5) CODEX: 4/4 created probe files (despite exit code issues). SONNET FALLBACK: dispatched for all 4 for parallel verification. OPUS MANUAL DECODE: corrected 0x08C308 interpretation (ADL-mode 24-bit addressing missed by probe decoders). All probes ran to completion. Golden regression 26/26 PASS.
+
+**NEW FUNCTIONS DECODED**: 0x000380→0x003D85 (font base vector), 0x0A1A9D (119B framebuffer address), 0x08C308 (9B BPP mode flag), 0x04C916/0x04C91C/0x04C92E/0x04C940/0x04C950/0x04C963/0x04C973 (7 math utilities).
+**ARCHITECTURE INSIGHTS**:
+- **Font table**: Base 0x003D6E, 256 entries × 28B = 7168B at 0x003D6E-0x005B6E. Format: 14 rows × 2B (16-bit bitmap per row). Standard 7-wide font.
+- **VRAM**: Base 0xD40000, 320×240×2 = 153,600B (0x25800B), ends at D65800.
+- **Color RAM**: Foreground at D026AC, background at D026AA (16-bit RGB565 each).
+- **BPP mode flag**: D000C6 bit 2 (0=16bpp, 1=8bpp).
+- **Rendering mode flags (IY+0x4A)**: bit 5 = mono/1bpp, bit 6 = 4bpp nibble, both clear = 16bpp.
+- **Mono framebuffers**: D031CE (primary), D0529E (alternate), stride=40B (320÷8).
+- **Math scratch RAM**: D02AD7-D02AD9 (3 bytes, used for zero-extension trick).
+
+PROBES: 4/4 ran to completion. Golden regression 26/26 PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x07B75F — row calculation helper for 4bpp mode (called by 0x0A1B1C). (c) ★★★★ MAP D000C6 FULLY — BPP mode flag byte; what do other bits control? How many refs? (d) ★★★★ TRACE FONT TABLE 0x003D6E-0x005B6E — verify glyph boundaries, dump recognizable characters, check for alternate font tables (session 551 mentioned BIT 1,(IY+0x14) = small font). (e) ★★★ DECODE 0x0A1B14 — sub-byte alignment table usage in mono blit path. (f) ★★★ DECODE 0x04E640/0x04E645 CALLERS (carried from 550). (g) ★★★ DECODE 0x0BA561 (carried from 549). (h) ★★★ MAP D031CE/D0529E MONO BUFFERS — size, lifecycle, who writes them. (i) ★★ FIND SMALL FONT TABLE — if BIT 1,(IY+0x14)=1 means small font, where is THAT font table? Different base from 0x000380? (j) ★★ FRAME SIZE INVESTIGATION (carried). --END SESSION 553--
 
 **Session 552 findings (2026-06-07)**:
 
