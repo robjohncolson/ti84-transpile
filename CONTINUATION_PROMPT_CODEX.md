@@ -8,9 +8,9 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-06 (auto-session 542 — **★★★★ ERROR STRING POINTER TABLE FOUND at 0x062245 (44 entries × 3B, maps error codes to string addresses with 0x1C index offset from SDK codes; DOMAIN at index 28, SYNTAX at 32, INVALID DIMENSION at 36, UNDEFINED at 37, MEMORY at 38, INVALID at 39, WINDOW RANGE at 42, ZOOM at 43). ★★★★ 0x061DD1 RECOVERY HANDLER DECODED (30B: restores error chain context D02590/D02593 + D0258A/D0258D via ADD HL,DE delta restore, restores previous jmp_buf SP to D008E0, loads error code from D008DF into A, RET to caller). ★★★ 0x03E1EB REVERSE MEMORY PROTECTION FULLY DECODED (42B: mirror of 0x03E18B — 0x8C→port 0x24 vs 0x88, SET 2→port 0x06 vs RES 2, 0x04→port 0x28 vs 0x00; JP NZ,0x000066 verify; CALL 0x03D202 stack bounds check). ★★★ 0x03D202 STACK BOUNDS CHECK (saves SP to D0053F, validates SP in D1987E-D1A87E range via CALL 0x04C980, JP NC,0x000066 reset if out of bounds). ★★ 0x03EBA3 = 13B "PRINT TWO SPACES" stub (LD A,0x20 + CALL 0x0A1B5B × 2 + RET). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-06 (auto-session 543 — **★★★★★ ERROR STRING TABLE CORRECTED: real base 0x062290 (NOT 0x062245), 19 entries (NOT 44), all 19 TI-84 CE error strings fully mapped: OVERFLOW/DIVIDE BY 0/SINGULAR MATRIX/DOMAIN/INCREMENT/BREAK/NONREAL ANSWERS/SYNTAX/DATA TYPE/ARGUMENT/DIMENSION MISMATCH/INVALID DIMENSION/UNDEFINED/MEMORY/INVALID/ILLEGAL NEST/BOUND/WINDOW RANGE/ZOOM. SDK code gap at 0x92 (no table entry). ★★★★ 0x03EBB0 ERROR DISPLAY INIT DECODED (22 instructions, 0x03EBB0-0x03EBEC: type 0x11 equation branch→CALL 0x06B9E8, D00596=0x0E display counter, CALL 0x03EC8F context formatter + 0x07FA07 FP init + 0x0A1C8A text output, BIT 6 IY+66 → CALL NZ 0x03E9D4 extended detail). ★★★★ 0x08356A ERROR OFFSET CONVERTER DECODED (multi-branch case-switch, NOT simple subtract: 0x0D→1, 0x06→DEC A, 0x0B→3, fallthrough AND 0x3F + multi-CP chain). ★★★ 0x04C980 RANGE CHECK UTILITY DECODED (16B: OR A + SBC HL,BC lower bound + SBC HL,DE upper bound + CCF; carry SET=in range [BC,DE], carry CLEAR=out of range; 1 caller at 0x03D216). GOLDEN REGRESSION 26/26 PASS.**)
 
-> Previous: 2026-06-06 (auto-session 541 — 0x03E187 real error handler 41B, 0x03EA5E error display ~300B, 0x061DEF/0x061E20 setjmp/longjmp, 0x07F7FA-0x07F828 OP transform stubs)
+> Previous: 2026-06-06 (auto-session 542 — error string pointer table found, 0x061DD1 recovery handler, 0x03E1EB reverse protection, 0x03D202 stack bounds check)
 
 **Session 541 findings (2026-06-06)**:
 
@@ -148,6 +148,63 @@ NEW CALL TARGETS: 0x04C980 (range check utility).
 PROBES: 4/4 Codex created probe files (all had broken imports — used `createEz80Decoder` instead of `decodeInstruction`). 0/4 Codex probes ran. 4/4 fixed and run via Sonnet fallback. Golden regression 26/26 PASS.
 
 NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x03EBB0 — the REAL error display init content starts here (right after 0x03EBA3's RET). (c) ★★★★ INVESTIGATE ERROR CODE → TABLE INDEX MAPPING FORMULA — the 0x1C offset needs exact formula derivation; also decode 0x08356A (SUB 0x0F conversion) with better decoder coverage. (d) ★★★ DECODE 0x04C980 — range check utility called from stack bounds check (does it just compare HL against BC..DE range?). (e) ★★★ DECODE REMAINING 36 POINTER TABLE ENTRIES — we mapped 8/44 entries; dump all 44 pointers and read the strings they point to. (f) ★★ FRAME SIZE INVESTIGATION (carried). --END SESSION 542--
+
+**Session 543 findings (2026-06-06)**:
+
+(1) ★★★★★ ERROR STRING POINTER TABLE CORRECTED AND FULLY MAPPED (probe-phase543-error-table-full.mjs, Codex+Opus-verified):
+- **CORRECTED TABLE BASE**: 0x062290 (NOT 0x062245 as session 542 reported). Session 542 was 75 bytes too early — the "first 25 entries" were code bytes misinterpreted as 24-bit pointers.
+- **19 entries × 3B = 57 bytes** (NOT 44 entries):
+  - Index 0 → 0x062338 "OVERFLOW" (SDK 0x81)
+  - Index 1 → 0x062391 "DIVIDE BY 0" (SDK 0x82)
+  - Index 2 → 0x0623E1 "SINGULAR MATRIX" (SDK 0x83)
+  - Index 3 → 0x06244E "DOMAIN" (SDK 0x84)
+  - Index 4 → 0x0624C6 "INCREMENT" (SDK 0x85)
+  - Index 5 → 0x062504 "BREAK" (SDK 0x86)
+  - Index 6 → 0x06251E "NONREAL ANSWERS" (SDK 0x87)
+  - Index 7 → 0x06256F "SYNTAX" (SDK 0x88)
+  - Index 8 → 0x0625BF "DATA TYPE" (SDK 0x89)
+  - Index 9 → 0x06261F "ARGUMENT" (SDK 0x8A)
+  - Index 10 → 0x06267C "DIMENSION MISMATCH" (SDK 0x8B)
+  - Index 11 → 0x0626F9 "INVALID DIMENSION" (SDK 0x8C)
+  - Index 12 → 0x06278D "UNDEFINED" (SDK 0x8D)
+  - Index 13 → 0x0627C2 "MEMORY" (SDK 0x8E)
+  - Index 14 → 0x06282E "INVALID" (SDK 0x8F)
+  - Index 15 → 0x06287A "ILLEGAL NEST" (SDK 0x90)
+  - Index 16 → 0x0628C0 "BOUND" (SDK 0x91)
+  - Index 17 → 0x062909 "WINDOW RANGE" (SDK 0x93)
+  - Index 18 → 0x06296B "ZOOM" (SDK 0x94)
+- **MAPPING FORMULA**: For codes 0x81-0x91: index = code - 0x81 (simple). **SDK code 0x92 is SKIPPED** — no string entry. For 0x93-0x94: index = code - 0x81 - 1 (shifted by gap).
+- **PREVIOUS SESSION 542 CORRECTIONS**: "44 entries" → 19 entries. "0x062245" → 0x062290. "0x1C index offset" → simple code-0x81 with 0x92 gap.
+
+(2) ★★★★ 0x03EBB0 ERROR DISPLAY INIT DECODED (probe-phase543-decode-03EBB0.mjs, Codex+Sonnet, Opus-verified):
+- **0x03EBB0-0x03EBEC (22 instructions)**: Error display initialization body (follows 0x03EBA3 "print two spaces" stub).
+- POP AF → LD A,(D00813) error context → AND 0x3F strip sign → CP 0x11 type check.
+- **Type 0x11 path** (equation/Y-var): POP AF → CALL 0x06B9E8 (equation lookup) → LD A,(HL).
+- **Other types**: POP AF → DEC HL → LD A,(HL) → INC HL (read byte before HL).
+- Common path: PUSH AF → LD A,0x0E → LD (D00596),A (display counter = 14) → LD A,(D00813) reload → CALL 0x03EC8F (error context formatter) → CALL 0x07FA07 (FP accumulator init) → LD HL,D00603 (OP2) → CALL 0x0A1C8A (text display output).
+- POP AF → BIT 6,(IY+66) → CALL NZ,0x03E9D4 (conditional extended error detail) → EI → RET.
+- **CALL targets**: 0x03E9D4, 0x03EC8F, 0x06B9E8, 0x07FA07, 0x0A1C8A.
+- **RAM refs**: D00596 (display counter), D00603 (OP2), D00813 (error context).
+
+(3) ★★★★ 0x08356A ERROR OFFSET CONVERTER DECODED (probe-phase543-error-mapping.mjs, Codex+Sonnet, Opus-verified):
+- **Multi-branch case-switch** — NOT a simple subtract. Transforms error type codes before table lookup.
+- Known branches: 0x0D→returns 1, 0x06→DEC A (returns A-1), 0x0B→returns 3.
+- Fallthrough: AND 0x3F → multi-CP chain checking 0x18/0x19/0x1B/0x1C/0x20 with various conditional returns; default XOR A (returns 0).
+- Called from 0x03EA5E error display routine, followed by SUB 0x0F to compute final table index.
+
+(4) ★★★ 0x04C980 RANGE CHECK UTILITY FULLY DECODED (probe-phase543-decode-04C980.mjs, Codex+Sonnet, Opus-verified):
+- **0x04C980-0x04C98F (16B, 13 instructions)**: Generic range check.
+- Algorithm: OR A,A (clear carry) → PUSH HL → SBC HL,BC (test lower bound). If HL < BC: JR C → CCF → POP HL → RET (carry CLEAR = out of range). Otherwise: POP HL → PUSH HL → PUSH DE → EX DE,HL → SBC HL,DE (test upper bound) → POP DE → CCF → POP HL → RET.
+- **Semantics**: Returns **carry SET** if HL is in range [BC, DE] inclusive. Returns **carry CLEAR** if out of range.
+- **1 caller**: 0x03D216 (stack bounds check at 0x03D202).
+
+(5) NEW FUNCTIONS: 0x03EBB0 (22 instr, error display init body), 0x08356A (multi-branch error offset converter), 0x04C980 (16B range check utility).
+NEW CALL TARGETS: 0x03E9D4 (extended error detail), 0x03EC8F (error context formatter), 0x06B9E8 (equation lookup).
+NEW DATA: Error string pointer table CORRECTED to 0x062290 (19 entries, was wrongly 0x062245/44 entries in session 542).
+
+PROBES: 4/4 Codex created probe files (all had decoder API bugs — used (addr)=>rom[addr] wrapper + .bytes property + madl=1 integer instead of rom buffer + rom.slice + 'adl' string). 1/4 Codex probes ran successfully (P4 error table dump). 3/4 fixed and run via Sonnet fallback. Golden regression 26/26 PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x03EC8F — error context formatter called from 0x03EBB0 (what formatting does it apply to the error context before display?). (c) ★★★★ DECODE 0x06B9E8 — equation lookup for type 0x11 errors (how does it find the equation variable name?). (d) ★★★ DECODE 0x03E9D4 — extended error detail handler (called when BIT 6 IY+66 is set — what extra info does it display?). (e) ★★★ MAP THE 0x08356A CASE-SWITCH COMPLETELY — the Sonnet probe got partial coverage; need full branch-by-branch decode with all CP values and their return values to derive the exact error-code-to-table-index formula. (f) ★★ FRAME SIZE INVESTIGATION (carried). --END SESSION 543--
 
 **Session 540 findings (2026-06-06)**:
 
