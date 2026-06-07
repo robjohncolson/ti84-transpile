@@ -8,9 +8,54 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-06 (auto-session 544 — **★★★★ 0x03EC8F ERROR CONTEXT FORMATTER DECODED (103B: CALL 0x08356A offset converter → CP 0x1B bounds check → clamp to 0x09 default → BIT 1 IY+0x35 flag → token 0x3B path via CALL 0x02398E → 27-entry jump table at 0x03ECAD dispatched via 0x03EC5A; 1 caller 0x03EBD2). ★★★★ 0x08356A CASE-SWITCH FULLY MAPPED (49B, 6 callers: pre-mask 0x0D→1, 0x06→5, 0x0B→3; post-AND-0x3F: 0x00-0x17 passthrough, 0x18/0x19/0x1C→0, 0x1A passthrough, 0x1B/0x1D-0x1F→0x0C, 0x20-0x3F passthrough). ★★★★ 0x06B9E8 EQUATION VARIABLE LOOKUP (19B: A=0x0F→HL=D008AF, A=0x10→HL=D008B0, default→HL=D008B1; 8 callers). ★★★ 0x03E9D4 EXTENDED ERROR DETAIL HANDLER (60B: PUSH AF/BC/DE, display counter D00596, CALL 0x0802BB + 0x0A1799×2, LD A,0x59 'Y', RES 6 IY+0x42 + RES 4 IY+0x4A, POP×3 + RET; 2 callers both CALL NZ). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-06 (auto-session 545 — **★★★★ 0x03EC5A JUMP TABLE DISPATCHER DECODED (12B: LD E,A; ADD A,A; ADD A,E = A×3; LD DE,0; LD E,A; ADD HL,DE; ED 27 LD HL,(HL); RET — classic 3-byte-entry table lookup, returns HL=24-bit pointer from table). ★★★★ 0x03ECAD JUMP TABLE FULLY DUMPED (27 entries × 3B = 81B, all entries point to VARIABLE TYPE NAME STRINGS at 0x03ECFE-0x03ED54: REAL/LIST/MATRX/EQU/GDB/PIC/PRGM/CPLX/WINDW/ZSTO/TABLE/STRNG/APP/AVAR/UNKN/GROUP/IMAGE — 17 unique strings, maps error offsets to the variable type involved in each error). ★★★★ 0x02398E TOKEN DISPLAY PREP ROUTINE (37B, 54 callers: PUSH IX/AF/HL, LD HL=D02611, CALL 0x025758 check, JP Z 0x025762 abort; on success: OR 0x01, store 0x0109 to D025CF via SIS, RES 1 IY+0x35 clears parser flag, RET). ★★★ 0x0802BB DISPLAY POINTER SETTER (9B, 4 callers: SIS LD (0x2688),HL stores HL to D02688 via MBASE mapping, SET 4 IY+0x4A sets display flag at D000CA, RET). GOLDEN REGRESSION 26/26 PASS.**)
 
-> Previous: 2026-06-06 (auto-session 542 — error string pointer table found, 0x061DD1 recovery handler, 0x03E1EB reverse protection, 0x03D202 stack bounds check)
+> Previous: 2026-06-06 (auto-session 544 — 0x03EC8F error context formatter, 0x08356A case-switch fully mapped, 0x06B9E8 equation variable lookup, 0x03E9D4 extended error detail)
+
+**Session 545 findings (2026-06-06)**:
+
+(1) ★★★★ 0x03EC5A JUMP TABLE DISPATCHER FULLY DECODED (probe-phase545-decode-03EC5A.mjs, Codex+Opus-verified):
+- **0x03EC5A (12B, 0x03EC5A-0x03EC65)**: Classic 3-byte-entry table lookup dispatcher.
+- Sequence: LD E,A → ADD A,A → ADD A,E (A×3) → LD DE,0x000000 → LD E,A → ADD HL,DE → LD HL,(HL) → RET.
+- Input: A = entry index, HL = table base address. Output: HL = 24-bit pointer read from table[A].
+- The eZ80 opcode ED 27 = LD HL,(HL) performs a 24-bit indirect load in ADL mode.
+- Called from 0x03EC8F (error context formatter) with HL=0x03ECAD (jump table base) and A = error offset (0x00-0x1A).
+- The caller uses the returned HL as a string pointer (not as a jump target).
+
+(2) ★★★★ 0x03ECAD JUMP TABLE FULLY DUMPED WITH VARIABLE TYPE STRINGS (probe-phase545-dump-03ECAD.mjs, Codex+Opus-verified):
+- **0x03ECAD (81B, 27 entries × 3B)**: Each entry is a 24-bit LE pointer to a null-terminated ASCII type name string.
+- All 27 entries resolved. Entry 0x0E (reserved error 0x2A) is a null pointer (0x000000).
+- **17 unique type strings** at 0x03ECFE-0x03ED54 (87B total including nulls):
+  REAL (0x03ECFE) | LIST (0x03ED03) | MATRX (0x03ED08) | EQU (0x03ED0E) | GDB (0x03ED12) | PIC (0x03ED16) | PRGM (0x03ED1A) | CPLX (0x03ED1F) | WINDW (0x03ED24) | ZSTO (0x03ED2A) | TABLE (0x03ED2F) | STRNG (0x03ED35) | APP (0x03ED3B) | AVAR (0x03ED3F) | UNKN (0x03ED44) | GROUP (0x03ED49) | IMAGE (0x03ED4F).
+- Grouping by formatter target (most shared → least): UNKN×5 (DIM MISMATCH, DIMENSION, BAD GUESS, STAT PLOT, reserved), REAL×3 (OVERFLOW, 2 unknowns), LIST×2 (SYNTAX, INVALID), EQU×2 (INCREMENT, UNDEFINED), PRGM×2 (NON REAL, SYNTAX dup). All others unique.
+- This completes the error context formatting pipeline: error code → 0x08356A offset converter → 0x03EC8F context formatter → 0x03EC5A dispatcher → type string pointer → display.
+
+(3) ★★★★ 0x02398E TOKEN DISPLAY PREP ROUTINE DECODED (probe-phase545-decode-02398E.mjs, Codex→Sonnet, Opus-verified):
+- **0x02398E (37B, 0x02398E-0x0239B2)**: 16 instructions, 54 CALL xrefs — one of the most widely called OS routines.
+- Sequence: PUSH IX/AF/HL → LD HL,0xD02611 → CALL 0x025758 (validation check) → POP HL → JP Z,0x025762 (abort on failure) → POP AF → OR A,0x01 (set NZ return) → POP IX → PUSH HL → LD HL,0x000109 → SIS LD (0x25CF),HL (stores to D025CF) → POP HL → RES 1,(IY+0x35) → RET.
+- **PURPOSE**: Token display preparation. Validates via 0x025758, sets up display parameters at D025CF, clears the "token display pending" flag (BIT 1 of IY+0x35 = D000B5). The flag is tested by callers before entry (pattern: BIT 1,(IY+0x35) / CALL NZ 0x02398E).
+- **KEY RAM**: D02611 (validation target), D025CF (display parameter), D000B5 (IY+0x35 parser flags).
+- **KEY TARGETS**: 0x025758 (validation), 0x025762 (abort/cleanup on failure).
+- **CALLER DISTRIBUTION**: 0x028xxx (2), 0x03Exxx (2, error system), 0x045xxx (2), 0x055xxx (1), 0x062xxx (1), 0x06Axxx (1), 0x078xxx (4), 0x07Bxxx (3), 0x080xxx (4), 0x088xxx (6), 0x089xxx (1), 0x08Bxxx (3), 0x096xxx (1), 0x09Exxx (1), 0x0A2xxx (1), 0x0A5xxx (2), 0x0ABxxx (1), 0x0AExxx (3), 0x0AFxxx (1), 0x0B1xxx (3), 0x0B6xxx (2), 0x0B7xxx (3), 0x0B8xxx (1), 0x0B9xxx (2), 0x0BAxxx (1).
+
+(4) ★★★ 0x0802BB DISPLAY POINTER SETTER DECODED (probe-phase545-decode-0802BB.mjs, Codex→Sonnet, Opus-corrected):
+- **0x0802BB (9B, 0x0802BB-0x0802C3)**: 3 instructions, 4 callers.
+- Sequence: SIS LD (0x2688),HL → SET 4,(IY+0x4A) → RET.
+- **NOTE**: The decoder/Sonnet reported LD HL,(0x2688) (load direction), but raw opcode 0x22 = LD (nn),HL (STORE direction). Opus corrected from raw bytes. The SIS prefix means 16-bit address: actual target is D02688 (via MBASE=0xD0 Z80→physical mapping).
+- **PURPOSE**: Sets text display cursor/output pointer. Stores HL (display position/buffer address) to D02688, sets bit 4 of system flag at D000CA (IY+0x4A = display active flag).
+- **CALLERS**: 0x029911 (HL=0xF800), 0x029933 (HL=0x1F00), 0x03DF64 (HL=0xF800), 0x03E9E8 (HL=0x3374). All callers follow with CALL 0x0A1799 (text output), confirming this sets up the output target before rendering.
+- **KEY RAM**: D02688 (text output pointer), D000CA (IY+0x4A display flags, bit 4).
+
+(5) CODEX: 4/4 created probe files (all ran but with decoder issues: P1 alignment problems, P2 garbled multi-byte, P3 SIS prefix confusion, P4 treated strings as code). P1/P4 usable after Opus manual analysis. P2/P3 redone via Sonnet fallback (P3 direction error corrected by Opus). Golden regression 26/26 PASS.
+
+NEW DATA: Complete variable type name string table (17 entries, 0x03ECFE-0x03ED54). Jump table → type string mapping complete.
+NEW FUNCTIONS: 0x03EC5A (12B table dispatcher), 0x02398E (37B token display prep, 54 callers), 0x0802BB (9B display pointer setter).
+NEW RAM: D02611 (validation target for 0x02398E), D025CF (display parameter), D02688 (text output pointer), D000CA/IY+0x4A (display flags bit 4), D000B5/IY+0x35 (parser flags bit 1).
+NEW CALL TARGETS: 0x025758 (validation check), 0x025762 (abort/cleanup).
+
+PROBES: 4/4 Codex created files (P1 exit 0, P2/P3/P4 exit 1). P1 decoder alignment issues but table data correct. P4 table dump excellent, target "disassembly" wrong (strings not code). P2/P3 redone via Sonnet. P3 Sonnet had direction error — corrected by Opus from raw opcode. Golden regression 26/26 PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x025758 — validation check called by 0x02398E (what does it validate? D02611 content?). (c) ★★★★ DECODE 0x025762 — abort/cleanup path on 0x02398E failure. (d) ★★★ TRACE 0x03ED0E-0x03ED54 TYPE STRING USAGE — how do callers of 0x03EC5A use the returned HL type string pointer? (e) ★★★ MAP ALL 54 CALLERS OF 0x02398E — categorize by subsystem (error, FPU, tokenizer, display) and identify calling patterns. (f) ★★ FRAME SIZE INVESTIGATION (carried). --END SESSION 545--
 
 **Session 541 findings (2026-06-06)**:
 
