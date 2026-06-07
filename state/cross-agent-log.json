@@ -18208,15 +18208,103 @@
       "timestamp": "2026-06-07T20:34:34Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "d93be66531a0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0A2013 \u2014 Y advance / scroll trigger\n\n## Context\nYou are working on `C:/Users/rober/",
+      "status": "success",
+      "duration_seconds": 111.294,
+      "timestamp": "2026-06-07T21:43:48Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3b936989a239",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x025C33 \u2014 quick newline delegate\n\n## Context\nYou are working on `C:/Users/rober/Down",
+      "status": "completed",
+      "duration_seconds": 124.821,
+      "timestamp": "2026-06-07T21:44:05Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6221891147e1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Complete decode of 0x0A1799 glyph renderer \u2014 full pixel rendering loop\n\n## Context\nYou are w",
+      "status": "success",
+      "duration_seconds": 139.605,
+      "timestamp": "2026-06-07T21:44:14Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b3ccd9096a50",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0A2D4C \u2014 row pixel offset calculation\n\n## Context\nYou are working on `C:/Users/robe",
+      "status": "success",
+      "duration_seconds": 144.154,
+      "timestamp": "2026-06-07T21:44:22Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "143772c04965",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0A1F48 \u2014 Actual Y-Advance Helper\n\n## Context\nYou are working on the TI-84 Plus CE R",
+      "status": "complete",
+      "duration_seconds": 136.993,
+      "timestamp": "2026-06-07T22:54:32Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "02a9382014e2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0800B8 \u2014 Low-ROM Syscall\n\n## Context\nYou are working on the TI-84 Plus CE ROM trans",
+      "status": "completed",
+      "duration_seconds": 136.241,
+      "timestamp": "2026-06-07T22:54:35Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "179409af26b4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0B4EE2 \u2014 Partial-Clip Blit Function\n\n## Context\nYou are working on the TI-84 Plus C",
+      "status": "completed",
+      "duration_seconds": 137.761,
+      "timestamp": "2026-06-07T22:54:39Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "4b8f2142a107",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0A1A8F \u2014 Pixel Renderer Utility\n\n## Context\nYou are working on the TI-84 Plus CE RO",
+      "status": "completed",
+      "duration_seconds": 146.685,
+      "timestamp": "2026-06-07T22:54:43Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1526,
-    "cc_to_codex": 1526,
+    "total_calls": 1534,
+    "cc_to_codex": 1534,
     "codex_to_cc": 0,
-    "completed": 1031,
+    "completed": 1035,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 496.426
+    "avg_duration_seconds": 494.54
   }
 }

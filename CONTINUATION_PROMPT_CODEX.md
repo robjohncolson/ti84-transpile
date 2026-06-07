@@ -8,7 +8,9 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-07 (auto-session 560 — **★★★★ 0x0A1799 PIXEL LOOP FULLY DECODED (220B from 0x0A1819: B=16/18 rows per glyph via IY+05 BPP, stride 0x0280=640B for 16bpp, DJNZ pixel-shift at 0x18C8, IX walks glyph data, D0059C framebuffer ptr, workspace D02A62-D02A75). ★★★★ 0x0A2013 Y-ADVANCE WRAPPER DECODED (31B: guard on IY+0x09 bit 0, CALL 0x0A1F48 actual Y advance, busy-wait on D00824 + IY+0x15 bit 6, CALL 0x0800B8 syscall). ★★★★ 0x0A2D4C ROW OFFSET CALC DECODED (11B: A = input×20+37, pixel Y = row×20+37px). ★★★★ 0x025C33 QUICK NEWLINE DECODED (96B: .SIS mode 16-bit ops, loads width from 0x017F + clip X from 0x08D2, CALL 0x04C979 width-clip, CALL 0x0A23E5 blit loop with A=6, CALL 0x0B4EE2 new target, restores 0x08D2). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-07 (auto-session 561 — **★★★★★ 0x0A1F48 Y-ADVANCE COMPLEX FULLY DECODED (234B, 4 sub-functions: core flag test 10B, Y-advance worker 88B with row÷20 calc + D02685/D02687 render state + CALL 0x0A2D4C, interrupt-safe block copy 38B LDIR D031F6↔D07396 0x20D0 bytes, scroll trigger 33B + state copy 23B LDIR D006C0→D0232D 260B). ★★★★ 0x0A1A83 ROM TABLE LOOKUP (12B: ROM[0x0A26E4+A] glyph property fetch). ★★★★ 0x0A1A8F WORKSPACE PTR SELECTOR (14B: IY+0x4A bit 3 selects D031F6 vs D052C6). ★★★★ 0x0A1A9D ROW-TO-VRAM (22B: A×160×2+VRAM_BASE, calls 0x08C308 BPP check). ★★★★ 0x0A1AB3 8BPP VRAM+MASK (47B: bitmask table at 0x0A1B14). ★★★★ 0x0800B8 FLAG TEST STUB (5B: BIT 5,(IY+0x44) D000C4, OS flag query). ★★★★ 0x0B4EE2 BLIT SPACE WRAPPER (11B: LD A,0x20; CALL 0x0A23E5). GOLDEN REGRESSION 26/26 PASS.**)
+
+> Previous: 2026-06-07 (auto-session 560 — 0x0A1799 pixel loop 220B fully decoded, 0x0A2013 Y-advance wrapper 31B, 0x0A2D4C row offset 11B, 0x025C33 quick newline 96B)
 
 > Previous: 2026-06-07 (auto-session 559 — 0x0A1799 glyph renderer partial 300B+, 0x0A2032 line wrap 25B+, 0x05519F BPP init 95B, 0x0A22B1 special char 13B+)
 
@@ -21,6 +23,68 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**Session 561 findings (2026-06-07)**:
+
+(1) ★★★★★ 0x0A1F48 Y-ADVANCE COMPLEX FULLY DECODED (probe-phase561-decode-0A1F48.mjs, Sonnet+Opus-verified):
+- **234 bytes** at 0x0A1F48-0x0A2031. Contains **4 sub-functions**:
+- **0x0A1F48** (core Y-advance test, 10B): BIT 6,(IY+12) [D0008C] → RET Z, BIT 1,(IY+8) [D00088] → RET. Returns Z flag for advance eligibility.
+- **0x0A1F52** (Y-advance worker, 88B to 0x0A1FAA): Calls 0x0A1F48 recursively, SET 7,(IY+73) [D000C9], CALL 0x0800B8. Reads D02685 (render Y state), divides by 20 via subtract-loop (D6 14 = SUB 20, INC H counts quotient), writes row to D00595/.SIS (0x059A). Calls 0x0A2D4C (row offset calc). Conditionally writes D02685/D02687. BIT 6,(IY+21) [D00095] and BIT 3,(IY+73) [D000C9] gate alternate paths.
+- **0x0A1FAB** (interrupt-safe block copy, 38B to 0x0A1FD0): Copies 0x20D0 bytes (8400B) between D031F6 and D07396. Direction depends on entry: 0x0A1FAB = HL=D031F6→DE=D07396 (save), 0x0A1FB5 = reverse (restore). Uses LD A,I / DI / LDIR / RET PO / EI pattern for interrupt safety.
+- **0x0A1FD1** (scroll trigger, 33B): CALL 0x0A2802, BIT/SET 6,(IY+73), BIT 4,(IY+40) [D000A8] gate, CALL 0x0A1FAB (save framebuffer), CALL 0x0800B8, conditionally copies D02685→D02687.
+- **0x0A1FFC** (state copy, 23B): LDIR 0x104 bytes (260B) from D006C0→D0232D. .SIS LD HL,(0x0595) → .SIS LD (0x2431),HL (copies row state). RET.
+- **KEY INSIGHT**: The D031F6↔D07396 block copy (8400B) is the scroll buffer — saves/restores ~13 rows of 640B-stride framebuffer data during scrolling. The D006C0→D0232D copy (260B) resets cursor/display state after scroll.
+- **CALL targets**: 0x0800B8, 0x0A1F48 (recursive), 0x0A1FAB, 0x0A2802, 0x0A2D4C
+- **RAM**: D02685/D02687 (render Y state), D00595 (row), D031F6/D07396 (scroll buffers 8400B each), D006C0→D0232D (state copy 260B), D000C9 (IY+73 flags), D000A8 (IY+40 flags)
+
+(2) ★★★★ 0x0A1A83 ROM TABLE LOOKUP DECODED (probe-phase561-decode-0A1A8F.mjs, Sonnet+Opus-verified):
+- **12 bytes** at 0x0A1A83-0x0A1A8E. LD DE,0; LD E,A; LD HL,0x0A26E4; ADD HL,DE; LD A,(HL); RET.
+- **Function**: Returns ROM[0x0A26E4 + A] — byte lookup from glyph property table. Input: A = character/glyph index. Output: A = property byte (likely glyph width or pixel metadata).
+- **ROM TABLE**: 0x0A26E4 — new glyph property table discovered.
+
+(3) ★★★★ 0x0A1A8F WORKSPACE POINTER SELECTOR DECODED (probe-phase561-decode-0A1A8F.mjs, Sonnet+Opus-verified):
+- **14 bytes** at 0x0A1A8F-0x0A1A9C. LD DE,0xD031F6; BIT 3,(IY+0x4A); RET Z; LD DE,0xD052C6; RET.
+- **Function**: Returns workspace pointer in DE. IY+0x4A bit 3 selects: clear→D031F6 (primary), set→D052C6 (alternate).
+- **IY+0x4A bit 3** = workspace/buffer selector (double-buffering or graph-vs-home mode). Extends IY+0x4A mapping: bit 3=workspace, bit 4=text output guard (known), bit 5=BPP addressing mode.
+- **NEW RAM**: D052C6 (alternate pixel workspace buffer).
+
+(4) ★★★★ 0x0A1A9D ROW-TO-VRAM ADDRESS DECODED (bonus, probe-phase561-decode-0A1A8F.mjs):
+- **22 bytes** at 0x0A1A9D-0x0A1AB2. Computes framebuffer address: HL = A × 160 × 2 + VRAM_BASE + column_offset.
+- CALL 0x08C308 checks BPP mode: Z→8bpp (VRAM base 0xD40000), NZ→16bpp (reads from LCD register E30010).
+- **NEW CALL**: 0x08C308 (BPP mode test function).
+
+(5) ★★★★ 0x0A1AB3 8BPP VRAM+PIXEL MASK DECODED (bonus, probe-phase561-decode-0A1A8F.mjs):
+- **47 bytes** at 0x0A1AB3-0x0A1AE1. 8bpp variant of VRAM address calculation.
+- Tests BIT 5,(IY+0x4A) for mode flag. If set, uses bitmask table at 0x0A1B14 (80,40,20,10,08,04,02,01 — single-bit masks for 8 pixel positions). SRL B; RR C ×3 divides pixel X by 8 for byte offset.
+- Reads D026AE (pixel state byte).
+- **ROM TABLE**: 0x0A1B14 (8-entry pixel bitmask table).
+
+(6) ★★★★ 0x0800B8 OS FLAG TEST STUB DECODED (probe-phase561-decode-0800B8.mjs, Sonnet+Opus-verified):
+- **5 bytes** at 0x0800B8-0x0800BC. BIT 5,(IY+0x44); RET.
+- **Function**: Tests D000C4 bit 5, returns Z flag. Simple predicate — NOT a complex LCD sync syscall.
+- The 0x08xxxx range contains many such tiny `FD CB xx xx; C9` stubs (flag query routines).
+
+(7) ★★★★ 0x0B4EE2 BLIT SPACE WRAPPER DECODED (probe-phase561-decode-0B4EE2.mjs, Sonnet+Opus-verified):
+- **11 bytes** at 0x0B4EE2-0x0B4EEC. PUSH IX; LD A,0x20; CALL 0x0A23E5; POP IX; RET.
+- **Function**: Blits a space character (0x20) via the full blit loop 0x0A23E5. Preserves IX.
+- **ARCHITECTURE**: In 0x025C33 (quick newline), the DJNZ loop calling 0x0B4EE2 clears remaining columns by repeatedly blitting spaces. The "partial-clip" aspect is handled by 0x0A23E5 via cursor state, not this wrapper.
+
+(8) VERIFICATION: All 4 probes ran to completion. Golden regression 26/26 PASS (verified). No runtime/source files modified — probes are read-only ROM analysis. Codex 0/4 (all failed silently — empty output, no files created; likely Codex service issue). Sonnet 4/4 success (P1 needed one retry for decoder bug with FD CB prefix).
+
+**NEW FUNCTIONS DECODED**: 0x0A1F48 (234B Y-advance complex), 0x0A1A83 (12B ROM table lookup), 0x0A1A8F (14B workspace selector), 0x0A1A9D (22B row-to-VRAM), 0x0A1AB3 (47B 8bpp VRAM+mask), 0x0800B8 (5B flag test), 0x0B4EE2 (11B blit space).
+**NEW RAM ADDRESSES**: D052C6 (alternate pixel workspace), D031F6/D07396 (8400B scroll buffers), D006C0→D0232D (260B state copy on scroll), D026AE (pixel state), D000C4 (IY+0x44 flag byte).
+**NEW ROM TABLES**: 0x0A26E4 (glyph property table), 0x0A1B14 (8-entry pixel bitmask).
+**NEW CALLS**: 0x08C308 (BPP mode test), 0x0A2802 (called from scroll trigger).
+**IY+0x4A UPDATE**: bit 3=workspace selector (D031F6/D052C6), bit 4=text output guard, bit 5=BPP addressing mode.
+**ARCHITECTURE INSIGHTS**:
+- Scrolling works by saving 8400B of framebuffer to D07396, then restoring from D031F6 (or vice versa). This is ~13 rows × 640B stride.
+- Y-advance divides D02685 by 20 to compute logical row, confirming 20px/row from session 560's row×20+37 formula.
+- 0x0800B8 is just a flag query, not a hardware sync — the "syscall" label was misleading.
+- 0x0B4EE2 blits spaces to clear line tails during newline, explaining the DJNZ loop in 0x025C33.
+
+PROBES: 4/4 ran to completion. Golden regression 26/26 PASS. Codex 0/4 (service failure). Sonnet 4/4 success.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★★ DECODE 0x0A2802 — called from scroll trigger 0x0A1FD1 (new, critical for understanding scroll initiation). (c) ★★★★ DECODE 0x08C308 — BPP mode test (new, called from 0x0A1A9D row-to-VRAM). (d) ★★★★ DECODE 0x0A237E — alternate glyph path (carried from 559). (e) ★★★★ MAP 0x0A26E4 ROM TABLE — glyph property table (new, how many entries, what properties). (f) ★★★ DECODE 0x055316 — BPP helper called from 0x05519F (carried from 559). (g) ★★★ DECODE 0x09BAC9 — input reader (carried from 558). (h) ★★★ DECODE 0x08DB93 — pre-operation helper (carried from 558). (i) ★★★ MAP D02A62-D02A75 — pixel renderer workspace (carried from 560). (j) ★★★ MAP D031F6/D07396 SCROLL BUFFERS — how are these initialized? What triggers save vs restore? (k) ★★ DECODE 0x0BA561 — carried from 549. --END SESSION 561--
 
 **Session 560 findings (2026-06-07)**:
 
