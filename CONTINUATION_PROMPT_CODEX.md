@@ -8,9 +8,55 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-07 (auto-session 550 — **★★★★ 0x04E5FE TOKEN STRING PROPERTY ACCESSOR (60B: reads tag struct at D0260B, checks magic 0x18/0x02, extracts DE offset, calls 0x04E640/0x04E645, 3 callers). ★★★★ 0x061986 CHARACTER OUTPUT WRAPPER (45B: sets IY+50 bits 2+6, clears IY+5 bit 1, wraps 0x0A23E5, 30 callers — THE primary display output function). ★★★★ 0x0A23E5 CHARACTER RENDERER (84B+: RES 0 IY+35, saves display coords D008D5→D005A0 + SIS 0x4008D2→D1059C, configures char dimensions via IY+20/IY+17 flags, calls 0x0801B9+0x0A23C0). ★★★★ TOKEN STRING TABLES MAPPED: 14 tables in 0x09F87D-0x0A00E1, 255 entries in base table, strings are packed pool with 3-byte pointer entries (all tokens confirmed: letters, prgm, trig, stats, finance, time, graph settings). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-07 (auto-session 551 — **★★★★ 0x0A23C0 PRE-RENDER SETUP DECODED (28B: LD L,A, checks IY+0x32 bits 2&6, calls 0x07BF3E with H=0x1C, stores 0x0C at D005A4, 20 callers). ★★★★ 0x06002D CURSOR FLAG SETTER (5B: SET 1,(IY+02) + RET, 3 callers — minimal flag gate before character rendering). ★★★★ 0x0A23E5 FULL DISASSEMBLY (~200B+: continuation past 0x0A244D shows font dimension selection via 0x04C979, JP C to 0x0A26D6, IY+0x4A attribute flags, row height from D025CE + IY+0x32, glyph offset via IX, D0266F kerning). ★★★★ 0x0801B9 FONT SIZE FLAG (5B: BIT 1,(IY+20) + RET, 125 callers — THE font size check; Z=large font, NZ=small font). GOLDEN REGRESSION 26/26 PASS.**)
 
-> Previous: 2026-06-07 (auto-session 549 — 0x0A2A68 token page dispatcher, 0x088F6B counted string output, D025D2 mapped, 0x0BAB6D display coord setup)
+> Previous: 2026-06-07 (auto-session 550 — 0x04E5FE token string property accessor, 0x061986 character output wrapper, 0x0A23E5 character renderer first 84B, token string tables mapped)
+
+**Session 551 findings (2026-06-07)**:
+
+(1) ★★★★ 0x0A23C0 PRE-RENDER SETUP DECODED (probe-phase551-decode-0A23C0.mjs, Codex+Opus-verified):
+- **0x0A23C0 (28B, 0x0A23C0-0x0A23DB)**: Called by 0x0A23E5 character renderer early in execution.
+- **Entry**: LD L,A (saves character code in L).
+- **Logic**: Tests BIT 2,(IY+0x32) — if set, jumps to 0x0A23CD. Otherwise tests BIT 6,(IY+0x32) — if clear, falls through past RET (to continuation at 0x0A23DC).
+- **If either bit set (0x0A23CD)**: LD H,0x1C, ED 6C (MLT HL — multiplies H×L → HL), CALL 0x07BF3E, LD HL,0xD005A4, LD (HL),0x0C, RET.
+- **20 callers**: Spread across core OS (0x021164 JP), variable subsystem (0x025xxx), math (0x0301CC), display (0x05Cxxx, 0x05Exxx, 0x08xxxx), and within 0x0A23E5 itself.
+- **PURPOSE**: Pre-render setup that computes a character-code-dependent offset (H=0x1C × L=char_code via MLT), calls 0x07BF3E (likely glyph table lookup), and marks D005A4=0x0C (possibly "needs render" or row height indicator). The IY+0x32 flags gate whether this computation happens — bits 2 and 6 control different rendering modes.
+
+(2) ★★★★ 0x06002D CURSOR FLAG SETTER DECODED (probe-phase551-decode-06002D.mjs, Codex+Opus-verified):
+- **0x06002D (5B)**: SET 1,(IY+02) → RET.
+- **3 callers**: 0x05FE46, 0x06158F, 0x061994 (all in display subsystem 0x05F-0x061 range).
+- **PURPOSE**: Minimal flag-setter. Sets bit 1 of IY+0x02 (a display state flag byte). Called by 0x061986 before 0x0A23E5 — the bit signals "cursor/display mode active" or "output in progress" to downstream rendering code that checks IY+0x02.
+
+(3) ★★★★ 0x0A23E5 FULL DISASSEMBLY (probe-phase551-decode-0A23E5-full.mjs, Codex+Opus-verified):
+- **Full function extends to at least 0x0A2500+** (well over 200 bytes).
+- **First 84B recap**: RES 0,(IY+35), save AF via LD A,I / PUSH AF pattern (interrupt state save), EXX+PUSH shadow regs, CALL 0x0A23C0, save display coords D008D5→D005A0, SIS LD HL,(0x4008D2)→D1059C.
+- **0x0A241D-0x0A244D (font dimension selection)**:
+  - BIT 4,(IY+0x14): if clear → DE=0x000140 (320 pixels, full width).
+  - If set: CALL 0x0801B9 (font size check). If Z (large): DE=0x0000A0 (160). If NZ (small): DE=0x0000BD (189) or DE=0x000061 (97) depending on BIT 3,(IY+0x11).
+  - Additional paths: DE=0x000124 (292) for another mode.
+- **0x0A244D**: CALL 0x04C979 (character width computation/clipping). POP DE, CCF, JP C,0x0A26D6 (overflow → scroll/newline handler).
+- **0x0A2457-0x0A2493 (attribute flag setup)**: SIS LD (0x08D2),HL (update x-position), multiple IY+0x4A bit tests and sets (bits 1,5,6 — display attributes like bold/inverse/subscript).
+- **0x0A2493-0x0A24C8 (row height calculation)**: LD A,(D025CE) → B=A (base row height from RAM). Then complex cascaded BIT tests on IY+0x32 (bits 7,6,2) select different B values: 0x0E (14), 0x0C (12), or computed. BIT 1,(IY+0x05) adds +2, BIT 0,(IY+0x23) adjusts via D0266F kerning table.
+- **0x0A24C8+ (glyph positioning)**: INC IX, IX offset adjustments based on font flags, column width via E register comparison with 0x09.
+- **KEY INSIGHT**: 0x0A23E5 is a ~300B mega-function that: (1) saves interrupt/register state, (2) computes font-mode-dependent pixel width, (3) calls 0x04C979 for clipping/advance, (4) sets display attribute flags, (5) computes row height, (6) sets up glyph pointer via IX, then continues to actual pixel rendering. Jump to 0x0A26D6 on carry = line overflow (scroll/wrap).
+
+(4) ★★★★ 0x0801B9 FONT SIZE FLAG DECODED (probe-phase551-decode-0801B9.mjs, Codex+Opus-verified):
+- **0x0801B9 (5B)**: BIT 1,(IY+0x14) → RET. That's it — a single flag test.
+- **125 callers!** The most-called utility in the display subsystem.
+- **Return semantics**: Z flag = BIT 1 is CLEAR (large font mode). NZ = BIT 1 is SET (small font mode).
+- **Context at 0x0A23E5**: After CALL 0x0801B9, JR Z selects DE=0x0000A0 (160px width, large font) vs DE=0x0000BD/0x000061 (small font widths depending on BIT 3,(IY+0x11) — proportional vs fixed).
+- **Adjacent functions at 0x0801BE+**: Multiple character-class detection routines (CP 0x1F/0x21/0x1C/0x1A/0x18/0x19 — whitespace/control/printable classification). These share the 0x080xxx "font/character utility" neighborhood.
+- **IY+0x14 bit 1** = THE font size flag for the entire OS. 0=large, 1=small.
+
+(5) CODEX: 4/4 produced files (P1 exit 0, P2/P3/P4 exit 1 but all files created correctly — exit code is cross-agent.py wrapper issue). SONNET FALLBACK: not needed. Golden regression 26/26 PASS.
+
+**NEW FUNCTIONS**: 0x0A23C0 (28B pre-render setup, 20 callers), 0x06002D (5B flag setter, 3 callers), 0x0801B9 (5B font size check, 125 callers).
+**ARCHITECTURE INSIGHT**: 0x0A23E5 is a ~300B mega-function covering: interrupt save → font width selection → clipping (0x04C979) → overflow detection (JP C,0x0A26D6) → attribute flags (IY+0x4A) → row height (D025CE + IY+0x32 modes) → glyph pointer setup (IX). The font size flag at IY+0x14 bit 1 (checked by 0x0801B9, 125 callers) is THE global font switch.
+**DISPLAY FLAGS DECODED**: IY+0x02 bit 1 = output-in-progress (set by 0x06002D). IY+0x14 bit 1 = small font mode. IY+0x14 bit 4 = fixed-width mode. IY+0x32 bits 2,6,7 = rendering mode selectors. IY+0x4A bits 1,5,6 = display attributes. D025CE = base row height. D0266F = kerning adjustment.
+
+PROBES: 4/4 ran to completion with correct data. Golden regression 26/26 PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x04C979 — character width computation/clipping called by 0x0A23E5 at 0x0A244D (determines if char fits on current line). (c) ★★★★ DECODE 0x0A26D6 — line overflow/scroll handler (JP C target from 0x0A23E5; handles newline/wrap when char doesn't fit). (d) ★★★★ DECODE 0x07BF3E — glyph table lookup called by 0x0A23C0 (with H×L product = char_code × 28). (e) ★★★ DECODE 0x0A23E5 PIXEL RENDERING — the function continues past 0x0A2500; find the actual glyph blit loop and RET. (f) ★★★ MAP IY+0x14 — the font flag byte; what other bits does it carry? (g) ★★★ DECODE 0x04E640/0x04E645 CALLERS (carried from 550). (h) ★★★ DECODE 0x0BA561 (carried from 549). (i) ★★ FRAME SIZE INVESTIGATION (carried). --END SESSION 551--
 
 **Session 550 findings (2026-06-07)**:
 
