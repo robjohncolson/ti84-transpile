@@ -8,11 +8,75 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-07 (auto-session 554 — **★★★★ 0x07B75F MULTI-ENTRY 4BPP/8BPP FUNCTION (161B, 4 entries: row calc+bounds check+nibble write; IY+0x2B bit2 selects mode; row heights 133/93/160; nibble merge with double-buffer D09466/D0EA1F via IY+0x3C bit3; new RAM D014FE/D01501/D02A60/D02A8D/D02A90/D0EA1F). ★★★★ D000C6 FULLY MAPPED (7 refs ALL test bit 2 only; NO writes in ROM; single-purpose BPP flag). ★★★★ FONT TABLE ASCII ART VERIFIED (256 glyphs correct; each 16-bit row = normal+mirror; control chars = TI special symbols; second font NOT found — needs code-path trace). ★★★★ 0x0A1B14 TABLE CONFIRMED + 0x0A1B1C DISPATCHER (mono/4bpp/16bpp mode routing via IY+0x4A bits 5/6/3). D000C7 bit 0 XOR-toggled (render parity). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-07 (auto-session 555 — **★★★★ SMALL FONT CONFIRMED: SAME TABLE (0x07BF3E checks IY+0x35 bits 5/1 for special glyph substitution, then CALL 0x0380 for SAME font base 0x003D6E regardless; renderer at 0x0A25A2 uses IY+0x14 bit 1 to select row height 93 vs 133 — NO second table). ★★★★ BPP CLUSTER 0x052Axx-0x0554xx DECODED (11KB, ~56 functions; "ADD HL,HL" stride-doubling at 0x052C02/0x054412 for 16bpp; 0x05529B LDIR 76800B framebuffer blit D52C00→D40000 for 8bpp). ★★★★ D014FE MAPPED (43 refs: 33 reads, 1 write; cursor Y/row count; cross-refs D008D5 at 0x06CBFA/0x06CC02). D01501 = 2 refs only. D008D5 = 265 refs (primary y-coord). ★★★★ IY+0x4A FULLY MAPPED (70 bit ops + 2 whole-byte: bit 0 = 3 refs unknown; bit 1 = UNUSED; bit 2 = 5 refs BPP sub-mode; bit 3 = 7 refs alt buffer; bit 4 = 42 refs MOST ACTIVE likely dirty/update flag; bit 5 = 5 refs mono; bit 6 = 5 refs 4bpp; bit 7 = 3 refs unknown). GOLDEN REGRESSION 5/5 PASS.**)
+
+> Previous: 2026-06-07 (auto-session 554 — 0x07B75F multi-entry 4BPP/8BPP, D000C6 fully mapped, font table verified, 0x0A1B14+0x0A1B1C dispatcher)
 
 > Previous: 2026-06-07 (auto-session 553 — 0x000380 font base vector, 0x0A1A9D framebuffer addr, 0x08C308 corrected, 0x04C916-0x04C978 math utils, color RAM D026AC/D026AA)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**Session 555 findings (2026-06-07)**:
+
+(1) ★★★★ SMALL FONT = SAME TABLE, DIFFERENT ROW HEIGHT (probe-phase555-small-font-trace.mjs, Codex+Sonnet+Opus-verified):
+- **0x07BF3E glyph lookup (76B)**: Two early-exit paths via IY+0x35 (NOT IY+0x14):
+  - BIT 5,(IY+0x35) → CALL $3A1C with A=0x01 (special glyph substitution path 1)
+  - BIT 1,(IY+0x35) → CALL $398E with A=0x76 (special glyph substitution path 2)
+  - If neither set: CALL $0380 (font base) → ADD HL,DE → LDIR 28B glyph to D005A5 → 4× LDI header to D005A1
+- **NO alternate font base**: CALL $0380 returns 0x003D6E unconditionally. Same 256-glyph table for all font sizes.
+- **Renderer at 0x0A25A2**: BIT 1,(IY+0x14) selects row height — HL=0x85 (133) when clear (large font), HL=0x5D (93) when set (small font). This is the ONLY effect of the small-font flag on rendering.
+- **Font pointer scan**: 2 hits for exact base 0x003D6E (at 0x003D86 and 0x0059A7). No alternate font table pointers found.
+- **CONCLUSION**: Session 554's hypothesis confirmed — "small font" = rendering with shorter row stride, not a second table.
+
+(2) ★★★★ BPP CLUSTER 0x052A00-0x0554FF DECODED (probe-phase555-bpp-cluster.mjs, Codex+Sonnet+Opus-verified):
+- **11,008B region, ~56 functions** (56 RET instructions, 223 CALLs, 35 JPs).
+- **Largest functions**: 0x0533BD-0x053AD8 (1820B), 0x053AF7-0x0540CF (1497B), 0x052E4A-0x053181 (824B).
+- **Stride-doubling pattern at 0x052C02 and 0x054412**: `LD A,(D000C6); BIT 2,A; JR NZ,+1; ADD HL,HL`. When bit 2 clear (16bpp), ADD HL,HL executes → doubles stride from 320 to 640. When bit 2 set (8bpp), the ADD is skipped.
+- **0x05529B-0x0552B1 FRAMEBUFFER BLIT**: `BIT 2,A; JR Z,+14` (16bpp skips). For 8bpp: `LD HL,D52C00; LD DE,D40000; LD BC,012C00; LDIR` — copies 76,800 bytes (320×240) from back buffer D52C00 to VRAM D40000. This is the **8bpp page-flip** function.
+- **D52C00 = 8bpp back buffer** (new RAM address).
+- **0x055280**: Writes to LCD control registers at E30018/E30028/E30010/E30020. Sets VRAM base to D40000 via `LD (E30010),HL`. Checks BIT 2,(E30028) in a polling loop before returning.
+- **Cross-references**: Heavy use of OS vector CALLs (000138, 000154, 000158, 000218). Several internal calls to 055191 (appears 12×) and 055346 (appears 7×).
+
+(3) ★★★★ D014FE FULLY MAPPED (probe-phase555-map-D014FE.mjs, Codex+Sonnet+Opus-verified):
+- **D014FE (cursor Y / row count)**: 43 total refs — 33 reads, 1 write, 9 unknown (raw byte pattern matches).
+  - Single write likely in init or cursor-move function.
+  - Reads concentrated in 0x06Cxxx-0x07Bxxx (rendering/cursor management).
+- **D01501 (display width)**: 2 refs only, both reads. Highly focused — a constant set during display init.
+- **D008D5 (renderer Y coordinate)**: 265 total refs — 78 reads, 178 writes. This is the **primary y-coordinate** written by virtually every output routine.
+- **Cross-references**:
+  - D014FE + D008D5 appear 8 bytes apart at 0x06CBFA/0x06CC02 — confirmed related but distinct.
+  - D014FE + D01501 appear near each other at 0x0BCDEB/0x0BCDD7 (20 bytes apart).
+  - At 0x06CC02: `3D 91 C6 2F 32 D5 08 D0` = `DEC A; SUB C; ADD A,0x2F; LD (D008D5),A` — D014FE is read, arithmetic applied, result stored to D008D5. This is a **cursor Y → render Y coordinate conversion**.
+
+(4) ★★★★ IY+0x4A FULLY MAPPED (probe-phase555-map-IY4A.mjs, Codex+Sonnet+Opus-verified):
+- **72 total references** (70 FD CB 4A bit ops + 2 whole-byte LD A/LD (IY+d),A at 0x09EC43/0x09EC50).
+- **Per-bit breakdown**:
+  | Bit | BIT | SET | RES | Total | Purpose |
+  |-----|-----|-----|-----|-------|---------|
+  | 0 | 1 | 1 | 1 | 3 | Unknown (test at 0x05C669, set at 0x08C3A0, res at 0x05C673) |
+  | 1 | 0 | 0 | 0 | 0 | **UNUSED** — no ROM references at all |
+  | 2 | 2 | 1 | 2 | 5 | BPP sub-mode (in 0x07B6xx nibble write region) |
+  | 3 | 7 | 0 | 0 | 7 | Alternate buffer select — **READ-ONLY** (never SET/RES in ROM; set by init/table) |
+  | 4 | 3 | 17 | 22 | 42 | **MOST ACTIVE** — 42 refs. Heavily toggled in 0x045xxx-0x046xxx (menu/dialog) and renderer. Likely "rendering dirty" or "update pending" flag |
+  | 5 | 3 | 1 | 1 | 5 | Mono mode (1bpp rendering) — SET/RES at 0x0A247D/0x0A245B |
+  | 6 | 3 | 1 | 1 | 5 | 4bpp mode — SET/RES at 0x0A248F/0x0A245F |
+  | 7 | 1 | 1 | 1 | 3 | Unknown (set at 0x06ED32, test at 0x06F03E, res at 0x0B11B1) |
+- **Bit 4 cluster in 0x045xxx-0x046xxx**: 10 SETs and 14 RESes in this range alone — every SET is followed by a RES (bracket pattern). This is the TI-OS expression parser/evaluator: SET 4 = "currently evaluating", RES 4 = "evaluation complete". Connected to graphing/table calculations.
+- **No direct D000CA references** — all access through IY+0x4A displacement.
+
+(5) VERIFICATION: All 4 probes ran to completion. Golden regression 5/5 assertions PASS (status dots left, status dots right, Normal, Float, Radian). No code files modified (all probes are new read-only files).
+
+**NEW FUNCTIONS DECODED**: None (all analysis, no new function boundaries beyond the BPP cluster structure).
+**RAM ADDRESSES MAPPED**: D52C00 (8bpp back buffer, 76800B). D014FE confirmed 43 refs / 1 write. D01501 confirmed 2 refs. D008D5 confirmed 265 refs / primary y-coord.
+**ARCHITECTURE INSIGHTS**:
+- Font system fully resolved: ONE table at 0x003D6E, NO second table. Small font = rendering stride change (93 vs 133 rows).
+- IY+0x4A bit 4 is the most active flag in the rendering subsystem (42 refs) — likely controls "rendering active/dirty".
+- BPP cluster at 0x052Axx-0x0554xx is the LCD driver core (~11KB): page-flip, stride doubling, LCD register access. 0x055280 writes LCD control regs.
+- D014FE → D008D5 conversion at 0x06CC02: cursor Y position converted to render Y via arithmetic (DEC A; SUB C; ADD A,0x2F).
+
+PROBES: 4/4 ran to completion. Golden regression 5/5 PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x055280 LCD REGISTER SETUP — writes E30018/E30028/E30010/E30020 (LCD control). What are these registers? What values does it write? This function is called from the BPP cluster and controls display mode switching. (c) ★★★★ DECODE IY+0x4A BIT 4 CONTEXT — the 42-ref flag: what do the 0x045xxx-0x046xxx SET/RES pairs bracket? What is the function at 0x0A22DA that tests bit 4? (d) ★★★ DECODE 0x04E640/0x04E645 CALLERS (carried from 550). (e) ★★★ DECODE 0x0BA561 (carried from 549). (f) ★★★ DECODE IY+0x4A BIT 0 CONTEXT (0x05C669 test, 0x08C3A0 set) and BIT 7 CONTEXT (0x06ED32 set, 0x06F03E test, 0x0B11B1 res). (g) ★★★ DECODE 0x06CBFA-0x06CC02 CURSOR Y CONVERSION — the D014FE→D008D5 arithmetic. What function is this? Who calls it? (h) ★★ DECODE D000C7 TOGGLE CONTEXT (0x09B80D) — carried from 554. (i) ★★ FRAME SIZE INVESTIGATION — carried. --END SESSION 555--
 
 **Session 554 findings (2026-06-07)**:
 
