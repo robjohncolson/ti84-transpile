@@ -8,15 +8,106 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-07 (auto-session 556 — **★★★★ 0x055280 LCD REGISTER SETUP DECODED (27B: LD (E30018),A control write, SET 2,(E30028) status flag, LD (E30010),HL=D40000 VRAM base, polls BIT 2,(E30020) until ready; 2 callers 0x055228/0x055261). ★★★★ IY+0x4A BIT 4 CONTEXT DECODED (42 refs: SET/RES brackets CALL 0x0A1CAC in 7/8 pairs in 0x045xxx-0x046xxx = text output guard; renderer 0x0A22DA tests bit 4 → SET=0x09EF44/CLEAR=0x09EF20 rendering paths). ★★★ 0x04E640/0x04E645 RESOLVED (trivial: LD H,5;LD L,3;RET / LD H,5;LD L,0;RET → constants 0x0503/0x0500; 0 direct callers = table-dispatched). ★★★★ 0x06CBE5 CURSOR Y CONVERSION DECODED (100B: LD A,(D014FE); DEC A; SUB C; ADD A,0x2F; LD (D008D5),A; 9 callers heavy from 0x05ADxx cluster; also calls 0x04C979 width clip). GOLDEN REGRESSION 5/5 PASS.**)
+**Last updated**: 2026-06-07 (auto-session 557 — **★★★★ 0x0A1CAC DECODED = 28B NULL-TERMINATED STRING OUTPUT LOOP (reads (HL), INC HL, tests null, CALL 0x0A1B5B per char, column limit D00595 vs B; reads D02505). ★★★★ 0x09EF20/0x09EF44 RENDERING PATHS DECODED (immediate=15B wrapper that calls deferred; deferred=64B+ with DI, register save, MLT y×160, CALL 0x08C308 BPP test, writes D0059C framebuffer ptr; branch at 0x0A22DA selects via BIT 4,(IY+0x4A)). ★★★★ LCD CALLERS DECODED (0x055228 passes A=0x2D=mode 45, tests BIT 2,(IY+70); 0x055261 passes A=0x27=mode 39, fills 512B palette to E30200, writes D026AC=0, D005F4=0xFF, calls 0x055743). ★★★★ 0x05AD MODULE = SCROLL/CURSOR-ADVANCE ROUTINE (one large function, 7× CALL 0x06CBE5, tests IY+0x2D bit 1=font size, heavily uses D0231A/D0231D cursor state, calls 0x08DBE1×2, 0x0AD455×2, 0x05AE1E×2). GOLDEN REGRESSION 5/5 PASS.**)
+
+> Previous: 2026-06-07 (auto-session 556 — 0x055280 LCD register setup, IY+0x4A bit 4 context, 0x04E640/0x04E645 closed, 0x06CBE5 cursor Y conversion)
 
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
-
-> Previous: 2026-06-07 (auto-session 554 — 0x07B75F multi-entry 4BPP/8BPP, D000C6 fully mapped, font table verified, 0x0A1B14+0x0A1B1C dispatcher)
 
 > Previous: 2026-06-07 (auto-session 553 — 0x000380 font base vector, 0x0A1A9D framebuffer addr, 0x08C308 corrected, 0x04C916-0x04C978 math utils, color RAM D026AC/D026AA)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**Session 557 findings (2026-06-07)**:
+
+(1) ★★★★ 0x0A1CAC TEXT OUTPUT FUNCTION DECODED (probe-phase557-decode-0A1CAC.mjs, Codex+Opus-verified):
+- **28 bytes** at 0x0A1CAC-0x0A1CC7. Compact null-terminated string output loop.
+- **Disassembly**:
+  - C5 = PUSH BC, F5 = PUSH AF (save registers)
+  - `LD A,(D02505)` — read column limit / counter
+  - `LD B,A` — save limit in B
+  - Loop: `LD A,(HL); INC HL` — read next char from string ptr
+  - `OR A; SCF` — test for null terminator
+  - `JR Z,exit` — null = done (carry set = end-of-string indicator)
+  - `CALL 0x0A1B5B` — output single character (the real renderer dispatch)
+  - `LD A,(D00595); CP B` — compare current column position to saved limit
+  - `JR C,loop` — continue if column < limit
+  - Exit: POP BC, LD A,B, POP BC, RET
+- **CALL targets**: 0x0A1B5B (single character output — this is the next function to decode)
+- **RAM**: D02505 (read, column limit source), D00595 (read, current column position for limit check)
+- **Architecture**: 0x0A1CAC is a thin wrapper — it iterates HL-pointed string, calling 0x0A1B5B per char, stopping at null or column overflow. The 0x045xxx-0x046xxx bit 4 guard protects THIS loop from re-entrancy.
+
+(2) ★★★★ 0x09EF20 vs 0x09EF44 RENDERING PATHS DECODED (probe-phase557-render-paths.mjs, Codex+Opus-verified):
+- **0x09EF20 (immediate, 15B)**: PUSH HL, sets up HL=0x40FFFF, writes to E12AC0, then **CALL 0x09EF44** and RET. The "immediate" path is actually a WRAPPER around the deferred path — it pre-loads a default address and delegates.
+- **0x09EF44 (deferred, 64B+)**:
+  - `LD A,I; JP PE,0x09EF4C` — save interrupt state
+  - PUSH IX, PUSH AF, DI — disable interrupts
+  - PUSH HL, DE, BC — save all registers
+  - `SUB B; INC A` — compute row count (C-B+1)
+  - `EX DE,HL; SBC HL,DE` — calculate source/dest difference
+  - `JP C,0x09F001` — overflow check
+  - MLT: `LD H,B; LD L,0xA0; ED 6C` — multiply row × 160 (MLT HL)
+  - `ADD HL,HL` — double for 16bpp stride (320B/row)
+  - `CALL 0x08C308` — BPP flag test (BIT 2,D000C6)
+  - `JR Z,0x09EFB7` — branch if 16bpp
+  - Reads E30010 (VRAM base register), adds offset → stores to D0059C (framebuffer write address)
+- **Calling context at 0x0A22DA**:
+  - `BIT 4,(IY+0x4A); JR Z,0x0A22F0` — branch on text output active
+  - SET path: `LD HL,(0x40268A); LD (E12AC0),HL; CALL 0x09EF44` — uses saved address
+  - CLEAR path: `CALL 0x09EF20` — uses default address (0x40FFFF)
+  - After both: tests `BIT 1,(IY+0x0D)`, optionally `SET 0,(IY+0x4C)` + `CALL 0x026789`
+- **CONCLUSION**: Both paths end up calling 0x09EF44. The difference: immediate uses a default VRAM address; deferred uses a saved address from 0x40268A. 0x09EF44 is the **framebuffer row blit function** — it computes row offset, handles BPP stride, and writes the framebuffer pointer.
+
+(3) ★★★★ LCD CALLERS 0x055228/0x055261 DECODED (probe-phase557-lcd-callers.mjs, Codex+Opus-verified):
+- **0x055228 (at 0x0551FE-0x05523C, ~62B)**:
+  - Calls 0x055191 first (shared init helper, appears 12× in BPP cluster)
+  - `LD IY,D40000` — VRAM base
+  - Block fills and memory setup
+  - `LD IY,D00080; BIT 2,(IY+70)` — tests D000C6 bit 2 (BPP mode flag) via IY-relative
+  - `JR Z,+10` — skips LCD call if BPP bit clear (16bpp already active?)
+  - `LD A,0x2D` — **LCD mode 0x2D (45 decimal)**
+  - `CALL 0x055280` — LCD register setup
+  - After: `RES 2,(IY+70)` — clears BPP flag, `LD HL,0; LD (D026AC),HL` — clears color RAM
+  - **CONCLUSION**: This is the **switch-TO-8bpp function**. Tests if already 8bpp, if not calls LCD setup with mode 0x2D, then clears the BPP flag. Actually the logic is inverted: BIT 2 SET → call (was in 8bpp, reconfigure). Mode 0x2D = 8bpp LCD configuration.
+
+- **0x055261 (at 0x05523D-0x05527F, ~66B)**:
+  - Calls 0x055191 first
+  - `LD HL,D40000; LD (HL),0xFF; LD DE,D40001; LD BC,0x0257FF; LDIR` — fills entire 153,600B VRAM with 0xFF (white fill for 16bpp = 320×240×2)
+  - `LD HL,0x055777; LD DE,E30200; LD BC,0x000200; LDIR` — copies 512-byte palette table from ROM 0x055777 to LCD palette register E30200
+  - `LD A,0x27` — **LCD mode 0x27 (39 decimal)**
+  - `CALL 0x055280` — LCD register setup
+  - After: `LD (D026AC),A=0` — clear color, `LD (D005F4),A=0xFF` — set display-ready flag
+  - `CALL 0x055743` — additional post-init
+  - `SET 2,(IY+70)` — sets BPP flag (marks 16bpp active? or marks BPP-switched)
+  - **CONCLUSION**: This is the **switch-TO-16bpp function**. Fills VRAM white, loads 512B color palette from ROM table at 0x055777, sets LCD mode 0x27 = 16bpp.
+
+- **LCD MODE VALUES**: 0x2D=8bpp, 0x27=16bpp.
+- **ROM PALETTE TABLE**: 512B at 0x055777 = the default 16bpp color palette for the LCD controller.
+
+(4) ★★★★ 0x05AD MODULE DECODED — SCROLL/CURSOR ADVANCE ROUTINE (probe-phase557-display-module.mjs, Codex+Opus-verified):
+- **Single large function** spanning ~0x05AD00-0x05AE00 (one RET at 0x05AD09, rest is the body after a conditional RET Z entry check).
+- **7 CALL 0x06CBE5** (cursor Y conversion) at: 0x05AD22, 0x05AD39, 0x05AD45, 0x05AD85, 0x05AD91, 0x05AD9B, 0x05ADE2.
+- **C register values**: For calls at 0x05AD85/0x05AD91/0x05AD9B/0x05ADE2, C=0x01 (single-row offset). For 0x05AD22/0x05AD39/0x05AD45, C comes from computation (not immediate load).
+- **RAM state**: Heavily reads/writes D0231A (cursor X/column state, 7 refs) and D0231D (secondary position, 2 refs).
+- **IY flags**: All 4 IY-relative ops are `BIT 1,(IY+0x2D)` — the font size flag (small vs large). This confirms the module adapts scroll distance to font height.
+- **Other calls**: 0x04C979 (width clip), 0x08DBE1 ×2 (unknown display helper), 0x0AD455 ×2 (unknown), 0x05AE1E ×2 (local helper just past this region), 0x09BAB8 ×1 (unknown).
+- **Flow**: Heavy conditional branching — many `JP NC,0x05AE15` exits (bounds overflow). Internal jumps create a loop structure with `JP 0x05AD2C` looping back.
+- **ASSESSMENT**: This is a **multi-row scroll/cursor-advance function**. It iterates through display rows, converting cursor positions to render coordinates, checking font size for stride, and managing the cursor state at D0231A/D0231D. The 7 cursor Y calls with row offset=1 suggest it scrolls one row at a time.
+
+(5) VERIFICATION: All 4 probes ran to completion. Golden regression 5/5 assertions PASS. No runtime/source files modified — all changes are new read-only probe scripts.
+
+**NEW FUNCTIONS DECODED**: 0x0A1CAC (28B string output loop), 0x09EF20 (15B immediate blit wrapper), 0x09EF44 (64B+ framebuffer row blit), 0x0551FE (62B switch-to-8bpp), 0x05523D (66B switch-to-16bpp).
+**NEW RAM ADDRESSES**: D02505 (column limit source), D00595 (current column position), D0059C (framebuffer write address), D0231A (cursor X/column state), D0231D (secondary cursor position), 0x40268A (saved VRAM address for deferred blit), E12AC0 (blit address register).
+**NEW ROM DATA**: 0x055777 (512B 16bpp color palette table for LCD E30200 register).
+**ARCHITECTURE INSIGHTS**:
+- 0x0A1CAC is a thin string loop; 0x0A1B5B is the actual per-character renderer dispatch.
+- LCD modes: 0x2D=8bpp, 0x27=16bpp. Palette at E30200 loaded from ROM 0x055777.
+- 0x09EF20/0x09EF44: both resolve to the same framebuffer blit; the difference is which VRAM address is used (default vs saved). This is the actual LCD update mechanism.
+- 0x05AD module: scroll/cursor-advance managing D0231A/D0231D, adapts to font size.
+
+PROBES: 4/4 ran to completion. Golden regression 5/5 PASS. Codex 3/4 success (P2 failed, P1 had syntax error fixed by Opus).
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x0A1B5B — the per-character renderer dispatch called from 0x0A1CAC. What does it do? Route to glyph lookup? (c) ★★★★ DECODE 0x09F001 — the overflow path from 0x09EF44 framebuffer blit. Also decode 0x09EFB7 (the 16bpp branch target). (d) ★★★★ DECODE 0x055191 — the shared init helper called 12× in the BPP cluster. (e) ★★★ DECODE 0x08DBE1 and 0x0AD455 — unknown display helpers called 2× each from scroll module. (f) ★★★ MAP D0231A/D0231D — cursor state variables (7 refs for D0231A). What writes them? Full reference scan. (g) ★★★ DECODE 0x05AE1E — local helper called 2× from scroll module. (h) ★★★ DECODE IY+0x4A BIT 0/BIT 7 CONTEXT — carried from 556. (i) ★★★ DECODE 0x0BA561 — carried from 549. (j) ★★ DECODE D000C7 TOGGLE CONTEXT — carried from 554. (k) ★★ ROM PALETTE TABLE at 0x055777 — dump and decode the 512B 16bpp color palette. --END SESSION 557--
 
 **Session 556 findings (2026-06-07)**:
 

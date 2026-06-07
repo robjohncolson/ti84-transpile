@@ -18032,15 +18032,103 @@
       "timestamp": "2026-06-07T15:54:51Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "749c4311918e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode IY+0x4A Bit 4 Context \u2014 The 42-Reference Flag\n\n## Context\nYou are working on the TI-8",
+      "status": "completed",
+      "duration_seconds": 72.899,
+      "timestamp": "2026-06-07T17:03:46Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c4883620ce00",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x055280 LCD Register Setup Function\n\n## Context\nYou are working on the TI-84 Plus CE",
+      "status": "success",
+      "duration_seconds": 86.26,
+      "timestamp": "2026-06-07T17:03:57Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1f99eb6892f4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x04E640 and 0x04E645 Callers\n\n## Context\nYou are working on the TI-84 Plus CE ROM tr",
+      "status": "success",
+      "duration_seconds": 82.529,
+      "timestamp": "2026-06-07T17:03:58Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f4795536ea79",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x06CBFA-0x06CC02 Cursor Y Conversion Function\n\n## Context\nYou are working on the TI-",
+      "status": "completed",
+      "duration_seconds": 124.758,
+      "timestamp": "2026-06-07T17:04:42Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "451c9c3d07d1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x05AD22-0x05ADE2 Display Module (7 callers of cursor Y conversion)\n\n## Context\nThis ",
+      "status": "completed",
+      "duration_seconds": 81.262,
+      "timestamp": "2026-06-07T18:13:39Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8c281a936c17",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0A1CAC \u2014 Text Output / String Rendering Function\n\n## Context\nThis is the TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 114.091,
+      "timestamp": "2026-06-07T18:14:05Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "20b3688d67ff",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x09EF20 vs 0x09EF44 \u2014 Immediate vs Deferred Rendering Paths\n\n## Context\nThis is the ",
+      "status": "success",
+      "duration_seconds": 113.404,
+      "timestamp": "2026-06-07T18:14:06Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ea2f8ebb55e8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x055228 and 0x055261 \u2014 LCD Register Setup Callers\n\n## Context\nThis is the TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 113.386,
+      "timestamp": "2026-06-07T18:14:08Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1510,
-    "cc_to_codex": 1510,
+    "total_calls": 1518,
+    "cc_to_codex": 1518,
     "codex_to_cc": 0,
-    "completed": 1024,
+    "completed": 1029,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 500.507
+    "avg_duration_seconds": 498.389
   }
 }
