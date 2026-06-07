@@ -8,11 +8,95 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-07 (auto-session 553 — **★★★★★ 0x000380 FONT BASE VECTOR → 0x003D85 → LD HL,0x003D6E (font table base, 28B/glyph = 14 rows × 2B, verified: char 0x20=all-zero, char 0x41='A' bitmap confirmed). ★★★★ 0x0A1A9D FRAMEBUFFER ADDRESS (119B: A=y, MLT HL y×160, ADD HL,HL → y×320/640; VRAM BASE = 0xD40000 confirmed; 3 modes via IY+0x4A: 16bpp stride=640 at D40000, 8bpp stride=320 via (0xE30010), 1bpp stride=40 at D031CE/D0529E). ★★★★ 0x08C308 CORRECTED: FLAG TEST NOT COLOR LOOKUP (9B: PUSH HL, LD HL,0xD000C6, BIT 2,(HL), POP HL, RET — tests rendering BPP mode). ★★★★ 0x04C916-0x04C978 UTILITY LIBRARY MAPPED (7 functions: 16-bit pointer load+zero-extend, BC/DE/HL zero-extend to 24-bit via D02AD7 scratch, HL÷10 division, HL÷A 24-bit division, HL vs DE compare). ★★★★ COLOR RAM FOUND: foreground=D026AC, background=D026AA (16-bit RGB565, loaded by SIS LD DE/BC at 0x0A2618-0x0A2623). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-07 (auto-session 554 — **★★★★ 0x07B75F MULTI-ENTRY 4BPP/8BPP FUNCTION (161B, 4 entries: row calc+bounds check+nibble write; IY+0x2B bit2 selects mode; row heights 133/93/160; nibble merge with double-buffer D09466/D0EA1F via IY+0x3C bit3; new RAM D014FE/D01501/D02A60/D02A8D/D02A90/D0EA1F). ★★★★ D000C6 FULLY MAPPED (7 refs ALL test bit 2 only; NO writes in ROM; single-purpose BPP flag). ★★★★ FONT TABLE ASCII ART VERIFIED (256 glyphs correct; each 16-bit row = normal+mirror; control chars = TI special symbols; second font NOT found — needs code-path trace). ★★★★ 0x0A1B14 TABLE CONFIRMED + 0x0A1B1C DISPATCHER (mono/4bpp/16bpp mode routing via IY+0x4A bits 5/6/3). D000C7 bit 0 XOR-toggled (render parity). GOLDEN REGRESSION 26/26 PASS.**)
+
+> Previous: 2026-06-07 (auto-session 553 — 0x000380 font base vector, 0x0A1A9D framebuffer addr, 0x08C308 corrected, 0x04C916-0x04C978 math utils, color RAM D026AC/D026AA)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
 
-> Previous: 2026-06-07 (auto-session 551 — 0x0A23C0 pre-render setup, 0x06002D cursor flag, 0x0A23E5 full disassembly, 0x0801B9 font size flag)
+**Session 554 findings (2026-06-07)**:
+
+(1) ★★★★ 0x07B75F 4BPP/8BPP MULTI-ENTRY FUNCTION DECODED (probe-phase554-decode-07B75F.mjs, Codex hex dump + Sonnet full decode + Opus verification):
+- **0x07B75F-0x07B7FF (161B)**: 4 entry points sharing tail code for 4bpp/8bpp pixel addressing.
+- **Entry A (0x07B75F)** — Row → byte-offset calculator:
+  - BIT 2,(IY+0x2B): 0=8bpp mode, 1=4bpp mode.
+  - **8bpp path**: y-flip via D014FE − C − 1. H = 0x85 (133, large font) or 0x5D (93, small font via BIT 1,(IY+0x14)). MLT HL for row offset. DE >>= 1 for x÷2. ADD HL,DE.
+  - **4bpp path**: 0xEF − C with H=0xA0 (160 = 320/2 bytes/row for 4bpp). Same MLT/shift/add.
+  - Returns HL = byte offset, A = 0x0F (odd x, low nibble) or 0xF0 (even x, high nibble).
+  - Called from 0x0A1B4D; caller adds LD DE,0xD09466; ADD HL,DE for final address.
+- **Entry B (0x07B793)** — Bounds check / clip guard:
+  - Callers: 0x07B518 CALL, 0x02110D JP.
+  - 8bpp: x < (D01501) AND row < (D014FE). 4bpp: CALL 0x04C979 width clip AND row < 0xF0 (240).
+  - Carry CLEAR = in-bounds, carry SET = clipped.
+- **Entry C (0x07B7C9)** — Write nibble value = 0: XOR A, falls into Entry D.
+- **Entry D (0x07B7CC)** — Write nibble (general):
+  - Callers: 0x07B5FF, 0x07B653, 0x07B663, 0x07B6A3, 0x07B6B3 (5× CALL).
+  - Selects buffer base: IY+0x3C bit 3 → 0=D09466 (normal), 1=D0EA1F (alternate 4bpp buffer).
+  - HL += base → pixel byte address.
+  - Nibble merge: (HL) = ((HL) | mask) ^ mask | pixel_value.
+  - Saves: LD (D02A8D),HL (pixel address), LD (D02A90),A (nibble mask).
+- **NEW RAM**: D014FE (row count/height), D01501 (display width, 16-bit via SIS), D02A60 (current x), D02A8D/D02A90 (output slots), D0EA1F (alternate 4bpp buffer).
+- **NEW IY FLAGS**: IY+0x2B bit 2 (4bpp vs 8bpp), IY+0x14 bit 1 (row stride), IY+0x3C bit 3 (alternate buffer select).
+
+(2) ★★★★ D000C6 FULLY MAPPED — SINGLE-PURPOSE BPP FLAG (probe-phase554-map-D000C6.mjs, Codex+Sonnet+Opus-verified):
+- **7 references total, ALL test bit 2 only**:
+  | ROM address | Instruction | Pattern |
+  |-------------|-------------|---------|
+  | 0x052ADE | LD A,(D000C6); BIT 2,A; JR Z,+9 | Z=16bpp jumps, NZ=8bpp falls through |
+  | 0x052BFB | LD A,(D000C6); BIT 2,A; JR NZ,+1 | NZ=8bpp jumps, Z=16bpp doubling loop |
+  | 0x052CE9 | LD A,(D000C6); BIT 2,A; JR NZ,+98 | NZ=8bpp jumps far forward |
+  | 0x052D82 | LD A,(D000C6); BIT 2,A; JR NZ,+81 | NZ=8bpp jumps forward |
+  | 0x05440B | LD A,(D000C6); BIT 2,A; JR NZ,+1 | Doubling loop pattern |
+  | 0x05529C | LD A,(D000C6); BIT 2,A; JR Z,+14 | Z=16bpp jumps |
+  | 0x08C30A | LD HL,D000C6; BIT 2,(HL); RET | Returns Z/NZ (session 553) |
+- **NO writes to D000C6 found anywhere in ROM** — set by init or indirect table dispatch.
+- **Only bit 2 is ever tested** — bits 0,1,3-7 unused from ROM references. The entire byte is a single-purpose BPP mode flag.
+- **D000C5**: 2 embedded refs in data table at 0x08B7xx (table-driven flag operations, not code).
+- **D000C7**: 7 refs — bit 0 XOR-toggled at 0x09B80D/0x09B813 (read→XOR 0x01→write = render pass parity flag). Also appears in LDI block copy at 0x0B1118 and data tables at 0x08B9xx/0x0B70xx.
+
+(3) ★★★★ FONT TABLE FULLY VERIFIED VIA ASCII ART (probe-phase554-font-table.mjs, Codex+Sonnet+Opus-verified):
+- **256 glyphs at 0x003D6E, 28B each** — boundaries confirmed. **CORRECTION**: Table ends at 0x00596E (256×28=7168=0x1C00, so 0x003D6E+0x1C00=0x00596E), NOT 0x005B6E as session 553 stated (off by 0x200).
+- **Characters render correctly**: A-Z, a-z, 0-9, punctuation all recognizable as ASCII art.
+- **Endianness**: Natural (hi<<8|lo) with MSB-first rendering produces correct shapes.
+- **Effective font width: 13 pixels** (out of 16 raw bit-columns). This is a FIXED-WIDTH font at 13px. Width histogram: 0→1 (space), 12→1, 13→93 printable chars. Previous sessions guessed 7px — that was wrong; the font is 13px wide × 14px tall.
+- **Control characters 0x01-0x0F**: TI-specific special symbols (arrows, diamonds, boxes). Char 0x00 overlaps OS code.
+- **Extended range 0x80-0x9F**: All 32 slots non-blank — TI special symbols (fractions, roots, list indicators), all 13px wide.
+- **Second font table NOT FOUND**: LD HL,imm24+RET scan found 13 hits but only 0x003D85→0x003D6E is real; 0x007A60 cluster are self-referential stubs (inline data), others point to interrupt vectors. Statistical scan (≥64 non-blank 28B slots) produced 261K false positives. Exactly ONE font table exists. The "small font" flag (BIT 1,(IY+0x14)) likely controls rendering (row skip/scale) not a separate table.
+
+(4) ★★★★ 0x0A1B14 TABLE CONFIRMED + 0x0A1B1C RENDERING MODE DISPATCHER DECODED (probe-phase554-decode-0A1B14.mjs, Codex+Opus manual correction):
+- **Table at 0x0A1B14 CONFIRMED**: [0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01] — MSB-first single-bit masks for sub-byte pixel addressing in 1bpp mode.
+- **1 reference to table**: from 0x0A1ACA (inside 0x0A1A9D framebuffer address computation). Uses `LD HL,0x0A1B14; LD DE,0x000000; LD E,A` to index: table[x & 7] gives the bit mask.
+- **0x0A1B1C FUNCTION (~62B)**: Rendering mode sub-dispatcher called from the blit loop at 0x0A2525.
+  - **BIT 5,(IY+0x4A) set → Mono mode**:
+    - SUB 0x1E (subtract 30 — status bar offset)
+    - LD L,A; LD H,0x28 (40); MLT HL → row offset = (y-30)×40
+    - LD DE,0xD031CE (primary mono buffer)
+    - BIT 3,(IY+0x4A) → if set, LD DE,0xD0529E (alternate mono buffer)
+    - Falls through to common exit at 0x0A1B57
+  - **BIT 6,(IY+0x4A) set → 4bpp mode**:
+    - SUB 0x2E (subtract 46), LD C,A
+    - LD A,(D014FE); SUB C → adjusted row
+    - LD DE,0x000000; CALL 0x07B75F
+    - Falls through to common exit
+  - **Neither set → RET Z** (16bpp mode handled by caller 0x0A1A9D directly)
+- **1 reference to 0x0A1B1C**: from 0x0A2525 (blit loop).
+- **NEW RAM USAGE**: D014FE confirmed as cursor Y position (used by both 0x0A1B1C and 0x07B75F).
+- **IY+0x4A bit 3**: NEW — selects alternate mono buffer D0529E vs primary D031CE.
+
+(5) VERIFICATION: All 4 probes ran to completion. Golden regression 26/26 PASS. No code files modified (all probes are new read-only files).
+
+**NEW FUNCTIONS DECODED**: 0x07B75F (161B, 4 entry points: row calc + bounds check + nibble write), 0x0A1B1C (~62B rendering mode dispatcher).
+**RAM ADDRESSES MAPPED**: D000C6 fully mapped (7 refs, bit 2 only, no writes). D000C7 bit 0 toggled. D014FE = cursor Y / row count. D01501 = display width (16-bit). D02A60 = current x. D02A8D/D02A90 = pixel write output slots. D0EA1F = alternate 4bpp buffer. IY+0x4A bit 3 = alternate mono buffer select. IY+0x2B bit 2 = 4bpp vs 8bpp. IY+0x3C bit 3 = alternate 4bpp buffer select.
+**ARCHITECTURE INSIGHTS**:
+- The rendering pipeline now has complete mode dispatch: 0x0A1A9D (framebuffer addr, 119B) → 0x0A1B1C (mode dispatcher, ~62B) → 0x07B75F (4bpp/8bpp calc, 161B). Total: ~342B of address computation + pixel writing.
+- 0x07B75F is a multi-entry function: Entry A (row calc), Entry B (bounds check from 0x07B518/0x02110D), Entry C/D (nibble merge with two 4bpp buffers: D09466 normal, D0EA1F alternate via IY+0x3C).
+- D000C6 is written by init/table-dispatch (not direct ROM code) — data tables at 0x08B7xx are table-driven flag operations.
+- Font table glyph encoding stores normal + mirror orientation in each 16-bit row, explaining the blit loop's ability to render right-to-left.
+- The 4bpp subsystem has its own double-buffering: D09466 (normal) vs D0EA1F (alternate), selected by IY+0x3C bit 3.
+
+PROBES: 4/4 ran to completion. Golden regression 26/26 PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ FIND SMALL FONT TABLE — code-path trace through BIT 1,(IY+0x14): when set, does 0x07BF3E use a different font vector or different glyph size? Check 0x07BF8B+ (variable-width font lookup mentioned in session 552). (c) ★★★★ DECODE 0x052Axx-0x0554xx BPP-SWITCHING CLUSTER — 6 of 7 D000C6 refs live here; this is likely the main pixel-blitting/stride-doubling logic. At least decode the function boundaries. (d) ★★★ MAP D014FE — cursor Y position: how many refs, who writes it, how does it relate to the existing D008D5 y-coord? (e) ★★★ DECODE 0x04E640/0x04E645 CALLERS (carried from 550). (f) ★★★ DECODE 0x0BA561 (carried from 549). (g) ★★★ MAP IY+0x4A FULLY — we know bits 5 (mono), 6 (4bpp), 3 (alternate mono buffer), and session 552 mentioned bits from the blit loop. How many bits are used? (h) ★★ DECODE D000C7 TOGGLE CONTEXT (0x09B80D) — what is the wait loop testing before the toggle? What does parity control? (i) ★★ FRAME SIZE INVESTIGATION (carried). --END SESSION 554--
 
 **Session 553 findings (2026-06-07)**:
 
