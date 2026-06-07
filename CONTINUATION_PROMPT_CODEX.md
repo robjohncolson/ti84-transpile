@@ -8,13 +8,82 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-07 (auto-session 555 — **★★★★ SMALL FONT CONFIRMED: SAME TABLE (0x07BF3E checks IY+0x35 bits 5/1 for special glyph substitution, then CALL 0x0380 for SAME font base 0x003D6E regardless; renderer at 0x0A25A2 uses IY+0x14 bit 1 to select row height 93 vs 133 — NO second table). ★★★★ BPP CLUSTER 0x052Axx-0x0554xx DECODED (11KB, ~56 functions; "ADD HL,HL" stride-doubling at 0x052C02/0x054412 for 16bpp; 0x05529B LDIR 76800B framebuffer blit D52C00→D40000 for 8bpp). ★★★★ D014FE MAPPED (43 refs: 33 reads, 1 write; cursor Y/row count; cross-refs D008D5 at 0x06CBFA/0x06CC02). D01501 = 2 refs only. D008D5 = 265 refs (primary y-coord). ★★★★ IY+0x4A FULLY MAPPED (70 bit ops + 2 whole-byte: bit 0 = 3 refs unknown; bit 1 = UNUSED; bit 2 = 5 refs BPP sub-mode; bit 3 = 7 refs alt buffer; bit 4 = 42 refs MOST ACTIVE likely dirty/update flag; bit 5 = 5 refs mono; bit 6 = 5 refs 4bpp; bit 7 = 3 refs unknown). GOLDEN REGRESSION 5/5 PASS.**)
+**Last updated**: 2026-06-07 (auto-session 556 — **★★★★ 0x055280 LCD REGISTER SETUP DECODED (27B: LD (E30018),A control write, SET 2,(E30028) status flag, LD (E30010),HL=D40000 VRAM base, polls BIT 2,(E30020) until ready; 2 callers 0x055228/0x055261). ★★★★ IY+0x4A BIT 4 CONTEXT DECODED (42 refs: SET/RES brackets CALL 0x0A1CAC in 7/8 pairs in 0x045xxx-0x046xxx = text output guard; renderer 0x0A22DA tests bit 4 → SET=0x09EF44/CLEAR=0x09EF20 rendering paths). ★★★ 0x04E640/0x04E645 RESOLVED (trivial: LD H,5;LD L,3;RET / LD H,5;LD L,0;RET → constants 0x0503/0x0500; 0 direct callers = table-dispatched). ★★★★ 0x06CBE5 CURSOR Y CONVERSION DECODED (100B: LD A,(D014FE); DEC A; SUB C; ADD A,0x2F; LD (D008D5),A; 9 callers heavy from 0x05ADxx cluster; also calls 0x04C979 width clip). GOLDEN REGRESSION 5/5 PASS.**)
+
+> Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 554 — 0x07B75F multi-entry 4BPP/8BPP, D000C6 fully mapped, font table verified, 0x0A1B14+0x0A1B1C dispatcher)
 
 > Previous: 2026-06-07 (auto-session 553 — 0x000380 font base vector, 0x0A1A9D framebuffer addr, 0x08C308 corrected, 0x04C916-0x04C978 math utils, color RAM D026AC/D026AA)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**Session 556 findings (2026-06-07)**:
+
+(1) ★★★★ 0x055280 LCD REGISTER SETUP DECODED (probe-phase556-lcd-regs.mjs, Codex+Opus-verified):
+- **27 bytes** at 0x055280-0x05529A. Complete disassembly:
+  - `LD (E30018),A` — writes caller-provided A to LCD control register
+  - `LD HL,E30028; SET 2,(HL)` — **sets** bit 2 of LCD status register (write, not poll)
+  - `LD HL,D40000; LD (E30010),HL` — writes VRAM base address D40000 to LCD register E30010
+  - `LD HL,E30020; BIT 2,(HL); JR Z,-4` — polls bit 2 of E30020 until set (LCD ready wait)
+  - `RET`
+- **2 callers**: 0x055228 (CALL), 0x055261 (CALL). Both in the BPP cluster.
+- **LCD register map** (from this function):
+  - E30018 = LCD control register (value from A, mode-dependent)
+  - E30028 = LCD status/flag register (bit 2 set = enable/trigger)
+  - E30010 = VRAM base address register (always D40000)
+  - E30020 = LCD ready/busy status register (bit 2 = ready flag, polled)
+- **Architecture**: This is the LCD mode-switch finalizer — callers set A to the desired mode, then this function writes it, triggers the LCD, sets VRAM base, and waits for ready.
+
+(2) ★★★★ IY+0x4A BIT 4 CONTEXT FULLY DECODED (probe-phase556-iy4a-bit4.mjs, Codex+Opus-verified):
+- **42 references confirmed** (3 BIT, 17 SET, 22 RES).
+- **0x045xxx-0x046xxx cluster (24 refs)**: SET/RES pairs bracket calls to **0x0A1CAC** in 7 of 8 paired cases. One outlier (0x04674C-0x046760) brackets CALL 0x046960. The 0x0A1CAC function is the **text output/string rendering function** — bit 4 = "currently outputting text".
+- **Pattern**: Every bracket follows: `SET 4,(IY+0x4A)` → `CALL 0x0A1CAC` (or similar output fn) → `RES 4,(IY+0x4A)`. This is a **re-entrancy guard / rendering-active flag**.
+- **Renderer at 0x0A22DA**: `BIT 4,(IY+0x4A); JR Z,+0x10` (0x0A22F0). When bit 4 SET (currently rendering): saves to (D002AC0A) + calls 0x09EF44. When bit 4 CLEAR: calls 0x09EF20. These are **two different display update paths** — deferred vs immediate rendering.
+- **Other significant references**:
+  - 0x0802BF: SET with no paired RES nearby — likely "enter rendering mode" permanently for some context
+  - 0x0582BC: RES as part of a large flag-clearing sequence (also clears IY+0x05, IY+0x47, IY+0x49, etc.)
+  - 0x09EC47: Saves/restores IY+0x4A whole byte around CALL 0x0A1CAC — SET bit 4, call, then restore original byte
+- **CONCLUSION**: IY+0x4A bit 4 = **"text output active" guard**. SET before text output, RES after. Renderer checks it to choose immediate vs deferred display update.
+
+(3) ★★★ 0x04E640/0x04E645 RESOLVED — CONSTANT RETURNS, TABLE-DISPATCHED (probe-phase556-callers-04E640.mjs, Codex+Opus-verified):
+- **0x04E640 (5B)**: `LD H,0x05; LD L,0x03; RET` — returns HL=0x0503
+- **0x04E645 (5B)**: `LD H,0x05; LD L,0x00; RET` — returns HL=0x0500
+- **ZERO direct callers** (no CALL/JP patterns found in entire ROM).
+- **Conclusion**: These are table-dispatched or indirectly called via function pointers. The constants 0x0503 and 0x0500 likely encode cursor/display positions or menu item indices. Data region starts at 0x04E64A (NOP padding then what appears to be a lookup table with FE/FC/FB/FA/FF bytes — likely signed offset table for menu navigation).
+- **CLOSED**: No further investigation warranted — the functions are trivial constants with no direct references.
+
+(4) ★★★★ 0x06CBE5 CURSOR Y CONVERSION DECODED (probe-phase556-cursor-y-conv.mjs, Codex+Opus-verified):
+- **Function at 0x06CBE5, ~100 bytes** to 0x06CC48.
+- **Core conversion at 0x06CBF9**:
+  - `LD A,(D014FE)` — read cursor Y position
+  - `DEC A` — subtract 1
+  - `SUB C` — subtract C (row offset parameter)
+  - `ADD A,0x2F` — add 47 (base pixel row offset)
+  - `LD (D008D5),A` — store as renderer Y coordinate
+- **Formula**: render_Y = (cursor_Y - 1 - C) + 0x2F. Where C is a row offset from the caller.
+- **9 callers**:
+  - 7 CALLs from 0x05AD22-0x05ADE2 (concentrated cluster in display/menu region)
+  - 1 JP from 0x020BB4 (early OS init jump)
+  - 1 CALL from 0x06CBDD (self-referential, recursive/wrapper call)
+- **Additional operations**: After the Y conversion, the function reads D014FC (LD BC,(D014FC)), does address arithmetic, stores to D008D2 (LD (D008D2),HL), calls 0x06AF6C and 0x0AD92A, and calls 0x04C979 (width clipping). It also tests IY+0x02 bit 1 and conditionally calls 0x06C8AB.
+- **D014FE and D008D5 confirmed in same function** — the cursor Y → render Y conversion is a single unified function at 0x06CBE5.
+- **0x05ADxx cluster**: 7 callers in a ~192-byte range = a menu/dialog rendering module that heavily uses cursor Y conversion for positioning.
+
+(5) VERIFICATION: All 4 probes ran to completion. Golden regression 5/5 assertions PASS (status dots left, status dots right, Normal, Float, Radian). No code files modified — all probes are new read-only analysis files.
+
+**NEW FUNCTIONS DECODED**: 0x055280 (27B LCD register setup), 0x06CBE5 (100B cursor Y conversion), 0x04E640 (5B constant 0x0503), 0x04E645 (5B constant 0x0500).
+**NEW RAM ADDRESSES**: None new (all referenced addresses were previously known).
+**ARCHITECTURE INSIGHTS**:
+- LCD register map: E30018=control, E30028=status/flag (write), E30010=VRAM base, E30020=ready (poll).
+- IY+0x4A bit 4 = "text output active" re-entrancy guard. Brackets 0x0A1CAC calls. Renderer at 0x0A22DA uses it to choose immediate (0x09EF20) vs deferred (0x09EF44) display update.
+- 0x0A1CAC = text output/string rendering function (called 7× from 0x045xxx-0x046xxx under bit 4 guard).
+- Cursor Y conversion formula: render_Y = (D014FE - 1 - C) + 0x2F. Heavy use from 0x05ADxx display module.
+- 0x04E640/0x04E645 are dead-end constants — table-dispatched, no direct callers. Closed.
+
+PROBES: 4/4 ran to completion. Golden regression 5/5 PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x0A1CAC TEXT OUTPUT FUNCTION — the key function bracketed by bit 4 guard, called 7× from 0x045xxx-0x046xxx. What does it do? How does it render text? (c) ★★★★ DECODE 0x09EF20 vs 0x09EF44 — immediate vs deferred rendering paths selected by IY+0x4A bit 4 at 0x0A22DA. (d) ★★★★ DECODE 0x055228 and 0x055261 — the two callers of LCD register setup 0x055280. What mode values do they pass in A? (e) ★★★ DECODE 0x05AD22-0x05ADE2 DISPLAY MODULE — 7 callers of cursor Y conversion. What is this ~192B module? Menu rendering? Dialog rendering? (f) ★★★ DECODE IY+0x4A BIT 0 CONTEXT (0x05C669 test, 0x08C3A0 set) and BIT 7 CONTEXT (0x06ED32 set, 0x06F03E test, 0x0B11B1 res). (g) ★★★ DECODE 0x0BA561 (carried from 549). (h) ★★ DECODE D000C7 TOGGLE CONTEXT (0x09B80D) — carried from 554. (i) ★★ FRAME SIZE INVESTIGATION — carried. --END SESSION 556--
 
 **Session 555 findings (2026-06-07)**:
 
