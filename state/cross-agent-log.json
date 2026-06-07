@@ -18120,15 +18120,103 @@
       "timestamp": "2026-06-07T18:14:08Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "219f2c8f83c8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 558 P2: DECODE 0x09F001 + 0x09EFB7 \u2014 Framebuffer Blit Overflow & 16bpp Path\n\n## Conte",
+      "status": "success",
+      "duration_seconds": 118.533,
+      "timestamp": "2026-06-07T19:24:02Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e3b100c4eace",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 558 P3: DECODE 0x055191 \u2014 Shared BPP Cluster Init Helper\n\n## Context\nSessions 555-557",
+      "status": "completed",
+      "duration_seconds": 118.117,
+      "timestamp": "2026-06-07T19:24:03Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "580712e1477d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 558 P1: DECODE 0x0A1B5B \u2014 Per-Character Renderer Dispatch\n\n## Context\nSession 557 dec",
+      "status": "success",
+      "duration_seconds": 133.055,
+      "timestamp": "2026-06-07T19:24:14Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9f32833c1214",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 558 P4: DECODE 0x08DBE1 and 0x0AD455 \u2014 Display Helpers from Scroll Module\n\n## Context",
+      "status": "completed",
+      "duration_seconds": 135.162,
+      "timestamp": "2026-06-07T19:24:22Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5a7913727952",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x05519F \u2014 The Actual BPP Init Body\n\n## Context\nYou are working on the TI-84 Plus CE ",
+      "status": "success",
+      "duration_seconds": 96.235,
+      "timestamp": "2026-06-07T20:33:32Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c3b7bb4310e9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0A22B1 \u2014 Special Character Handler (char == 0xD6)\n\n## Context\nYou are working on th",
+      "status": "success",
+      "duration_seconds": 111.92,
+      "timestamp": "2026-06-07T20:33:50Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8522f2aaa128",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0A2032 \u2014 Line Wrap / Column Reset Handler\n\n## Context\nYou are working on the TI-84 ",
+      "status": "success",
+      "duration_seconds": 117.133,
+      "timestamp": "2026-06-07T20:33:51Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "dcf70091599c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0A1799 \u2014 The Actual Glyph Renderer\n\n## Context\nYou are working on the TI-84 Plus CE",
+      "status": "success",
+      "duration_seconds": 161.432,
+      "timestamp": "2026-06-07T20:34:34Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1518,
-    "cc_to_codex": 1518,
+    "total_calls": 1526,
+    "cc_to_codex": 1526,
     "codex_to_cc": 0,
-    "completed": 1029,
+    "completed": 1031,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 498.389
+    "avg_duration_seconds": 496.426
   }
 }
