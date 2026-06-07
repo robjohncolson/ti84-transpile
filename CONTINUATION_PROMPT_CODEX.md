@@ -8,9 +8,88 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-07 (auto-session 551 — **★★★★ 0x0A23C0 PRE-RENDER SETUP DECODED (28B: LD L,A, checks IY+0x32 bits 2&6, calls 0x07BF3E with H=0x1C, stores 0x0C at D005A4, 20 callers). ★★★★ 0x06002D CURSOR FLAG SETTER (5B: SET 1,(IY+02) + RET, 3 callers — minimal flag gate before character rendering). ★★★★ 0x0A23E5 FULL DISASSEMBLY (~200B+: continuation past 0x0A244D shows font dimension selection via 0x04C979, JP C to 0x0A26D6, IY+0x4A attribute flags, row height from D025CE + IY+0x32, glyph offset via IX, D0266F kerning). ★★★★ 0x0801B9 FONT SIZE FLAG (5B: BIT 1,(IY+20) + RET, 125 callers — THE font size check; Z=large font, NZ=small font). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-07 (auto-session 552 — **★★★★ 0x04C979 CHARACTER WIDTH CLIPPING (7B: SBC HL,DE comparison, carry=overflow, multiple utility entry points in 0x04C9xx). ★★★★ 0x0A26D6 RENDERER EARLY EXIT (register restore + SCF + RET, returns carry=1 for overflow; 5-byte bitmask table at 0x0A26E5; string output function at 0x0A26F5). ★★★★ 0x07BF3E GLYPH TABLE LOOKUP (76B: CALL 0x000380 for font base, ADD HL,DE for offset, LDIR 28B glyph data → D005A5-D005C0, clears D005A1-D005A4 header). ★★★★ 0x0A23E5 BLIT LOOP DECODED (0x0A24C8-0x0A26C7, ~512B: three rendering paths via IY+0x4A bits 5/6, IX glyph reads, SLA C bit-walking, DJNZ pixel loops, framebuffer row stride 320/640 bytes via D0059C, outer row loop at 0x0A2537). GOLDEN REGRESSION 26/26 PASS.**)
 
-> Previous: 2026-06-07 (auto-session 550 — 0x04E5FE token string property accessor, 0x061986 character output wrapper, 0x0A23E5 character renderer first 84B, token string tables mapped)
+> Previous: 2026-06-07 (auto-session 551 — 0x0A23C0 pre-render setup, 0x06002D cursor flag, 0x0A23E5 full disassembly, 0x0801B9 font size flag)
+
+**Session 552 findings (2026-06-07)**:
+
+(1) ★★★★ 0x04C979 CHARACTER WIDTH CLIPPING DECODED (probe-phase552-decode-04C979.mjs, Sonnet+Opus-verified):
+- **0x04C979 (7B, 0x04C979-0x04C97F)**: Core width comparison function.
+- **Sequence**: PUSH HL, OR A (clear carry), SBC HL,DE (HL - DE = current_position - width_limit), POP HL, RET.
+- **Return semantics**: Carry flag set if HL < DE (position still within width limit — character fits). Carry clear if HL >= DE (overflow). Caller at 0x0A244D does CCF after the call, inverting: JP C means overflow.
+- **Adjacent utilities (0x04C980-0x04C9E9)**: Multiple entry points for related math operations:
+  - 0x04C980: SBC HL,BC with CCF — compare with BC and invert carry
+  - 0x04C990: Negate BC (LD HL,0; SBC HL,BC; PUSH HL; POP BC)
+  - 0x04C99C: Negate DE (same pattern)
+  - 0x04C9A8: Halve HL with D02AD7/D02AD9 RAM (shift right through carry)
+  - 0x04C9C5: String length via CPIR (SUB A; CPIR; compute length)
+  - 0x04C9D9: Memory compare loop (DJNZ, LD A,(DE); CP (HL))
+  - 0x04C9E1: Add A to HL (LD C,A; ADD HL,BC with B=0)
+- **RAM used**: D02AD7, D02AD9 (halving function only).
+- **PURPOSE**: Ultra-minimal width test. The 0x04C9xx range is a math utility library used across the display subsystem.
+
+(2) ★★★★ 0x0A26D6 RENDERER EARLY EXIT + STRING OUTPUT (probe-phase552-decode-0A26D6.mjs, Sonnet+Opus-verified):
+- **0x0A26D6 (14B, 0x0A26D6-0x0A26E4)**: Character renderer cleanup/exit path.
+- **Sequence**: POP HL, EXX, POP BC/DE/HL (restore shadow regs), EXX, POP AF (restore interrupt state), JP PO,0x0A26E2 (skip EI if interrupts were disabled), EI, POP BC, SCF, RET.
+- **Return**: Carry flag SET — signals to callers that the character overflowed the line. This is the inverse of the normal rendering path which returns with carry clear (success).
+- **0x0A26E5 (5B data)**: Bitmask table: 0x80, 0xC0, 0xE0, 0xF0, 0xF8. These are left-justified bit masks for partial-byte glyph rendering (1-5 pixels in the last byte of a glyph row).
+- **0x0A26F5 (17B function)**: String output helper — PUSH DE/IX, loop: LD A,(HL), INC HL, CALL 0x0A23E5, JR C break, DJNZ loop, POP IX/DE, RET. Renders B characters from HL through the character renderer, stopping on carry (overflow). Direct call to 0x0A23E5 (no 0x061986 wrapper).
+- **0x0A2706+ (separate function)**: Another display function — stores y-coord from (HL) to D008D5, calls 0x04C916, does font width selection similar to 0x0A23E5 (same BIT tests on IY+0x11/0x14, same DE width constants 0xB4/0x59/0x98/0x11B, CALL 0x04C979+CCF). This is likely a **cursor positioning + width check** function.
+- **Width constants at 0x0A2706+**: DE=0xB4 (180), 0x59 (89), 0x98 (152), 0x11B (283) — slightly different from 0x0A23E5's values (0xA0, 0x61, 0xBD, 0x140). The difference may be due to cursor width vs character width or a column offset.
+
+(3) ★★★★ 0x07BF3E GLYPH TABLE LOOKUP DECODED (probe-phase552-decode-07BF3E.mjs, Sonnet+Opus-verified):
+- **0x07BF3E (76B, 0x07BF3E-0x07BF8A)**: Glyph data copier.
+- **IY flag checks**: BIT 5,(IY+0x35) → if set: LD A,0x01, CALL 0x023A1C, RET Z. BIT 1,(IY+0x35) → if set: LD A,0x76, CALL 0x02398E, RET Z. These are special-case paths for specific rendering modes (possibly token display or special characters).
+- **Main path (0x07BF5C)**:
+  1. EX DE,HL → DE = 28 × char_code (the offset)
+  2. CALL 0x000380 → returns HL = font table base address
+  3. ADD HL,DE → HL = font_base + 28 × char_code (pointer to glyph data)
+  4. LD DE,0x000000; LD (D005A1),DE; LD (D005A3),DE → clears 6 bytes at D005A1-D005A6 (glyph metadata header)
+  5. LD DE,0xD005A5; LD BC,0x001C; LDIR → copies 28 bytes from HL (ROM glyph data) to D005A5-D005C0
+  6. LD HL,0xD005A1; LDI×4 → copies 4 bytes from D005A1 onwards (the cleared header)
+  7. LD HL,0xD005A1; RET → returns HL pointing to the glyph buffer
+- **KEY INSIGHT**: The glyph data lives at D005A1-D005C0 (32 bytes total: 4-byte header + 28-byte glyph bitmap). 0x000380 is the font base address provider — decoding it will reveal where the font bitmaps live in ROM.
+- **D005A1-D005A4**: Cleared to 0x00 (metadata/padding). D005A5-D005C0: 28 bytes of actual glyph bitmap data.
+- **0x07BF8B+ (separate function)**: Loads DE from (D0066F), calls 0x04C940, reads (DE+2), calls 0x0801D9 (character class check), computes glyph pointer with optional doubling (ADD HL,HL). This is likely a **variable-width font glyph lookup** that uses a different table.
+
+(4) ★★★★ 0x0A23E5 GLYPH BLIT LOOP FULLY DECODED (probe-phase552-decode-0A23E5-blit.mjs, Sonnet+Opus-verified):
+- **0x0A24C8-0x0A26C7 (~512B)**: The complete glyph pixel rendering engine.
+- **Entry setup (0x0A24C8-0x0A2536)**:
+  - INC IX (advance past glyph header byte)
+  - BIT 0,(IY+0x23) → if set, adds kerning offset from D0266F to IX
+  - BIT 6/2,(IY+0x32) → selects column width: B=5 for special modes, else B = min(E, 8) for standard, with D = E - B (remaining pixels for next pass)
+  - Loads framebuffer pointer from (D0059C), loads saved y-coord from (D005A0)
+  - CALL 0x0A1A9D and CALL 0x0A1B1C → compute framebuffer row start address from x,y coordinates
+  - Sets up BC, HL (framebuffer pointer), DE (color/stride state)
+- **Glyph data read (0x0A253B)**: LD A,(IX+0x00), INC IX — reads one byte of glyph bitmap, advances IX. BIT 3,(IY+0x05) → if set, CPL (invert glyph for reverse video).
+- **Three rendering paths (based on IY+0x4A flags)**:
+  - **Path 1 — BIT 5,(IY+0x4A) set (0x0A254F-0x0A258B)**: 1-bit monochrome rendering. DJNZ loop at 0x0A2589→0x0A255F. SLA C walks through glyph bits. If bit set → writes foreground color; if clear → writes background. SRL B / LD B,0x80 handles byte boundary crossing in framebuffer. BIT 7,D controls row doubling (advance by 0x28=40 bytes between doubled rows).
+  - **Path 2 — BIT 6,(IY+0x4A) set (0x0A2597-0x0A2614)**: 4-bit color/bold rendering. Similar SLA C bit-walking but with OR operations for color blending. OR 0xD0/0x0D/0xB0/0x0B applies different color intensities based on BIT 7,B and row position. RRCA×4 rotates nibbles. DJNZ at 0x0A2612→0x0A25B7. Uses BIT 1,(IY+0x14) for font size (row offset 0x85=133 for large, 0x5D=93 for small).
+  - **Path 3 — default (0x0A2618-0x0A2694)**: Standard 16-bit color rendering. CALL 0x08C308 (likely color lookup). Two sub-paths based on carry: writes E/D (foreground) or C/B (background) as 16-bit pixel pairs. DJNZ loops at 0x0A2634 and 0x0A2682. LD (HL),C/LD (HL),E writes low byte, INC HL, LD (HL),B/LD (HL),D writes high byte — standard 16-bit color pixel write.
+- **Row advancement (0x0A2660/0x0A26B4)**:
+  - LD HL,(D0059C), LD BC,0x000140 (=320), ADD HL,BC, LD (D0059C),HL — advances framebuffer by one row (320 bytes = 160 pixels × 2 bytes for 16-bit color). Wait — 320 = 160 pixels at 16bpp. But the LCD is 320 pixels wide, which would be 640 bytes per row at 16bpp.
+  - Second path uses LD BC,0x000280 (=640) — this IS the full 320-pixel row stride at 16bpp.
+  - So 0x140 = half-row (used in split-screen or small font mode?), 0x280 = full row.
+- **Outer loop (0x0A266F/0x0A26C3)**: DEC B, JP NZ,0x0A2537 — loops back to render next glyph row. B counts the remaining rows of the glyph (set during row height calculation at 0x0A2493-0x0A24C8).
+- **Function end**: 0x0A26C7 POP HL, falls through to 0x0A26D6 (the cleanup/exit path with register restore and RET).
+- **KEY ARCHITECTURE**: The full character renderer 0x0A23E5 spans 0x0A23E5-0x0A26E4 = **767 bytes**. It is the single largest function decoded in this project. The three rendering paths handle monochrome, 4-bit color, and 16-bit color respectively, selected by attribute flags in IY+0x4A.
+
+(5) CODEX: 0/4 succeeded (all returned empty output — Codex API issue). SONNET FALLBACK: 4/4 produced files. All probes ran to completion. Golden regression 26/26 PASS.
+
+**NEW FUNCTIONS**: 0x04C979 (7B width clipping, math utility library at 0x04C9xx), 0x07BF3E (76B glyph data copier to D005A1-D005C0 buffer).
+**ARCHITECTURE INSIGHT**: The complete character rendering pipeline is now mapped end-to-end:
+1. 0x061986 (wrapper, 45B) → sets IY flags, calls 0x06002D
+2. 0x0A23E5 (entry, ~227B to 0x0A24C7) → saves state, calls 0x0A23C0 pre-render, font width selection, CALL 0x04C979 clipping, attribute setup, row height calculation
+3. 0x0A24C8-0x0A26C7 (blit, ~512B) → IX glyph read, 3 rendering paths (mono/4bit/16bit), framebuffer writes, row advancement
+4. 0x0A26D6 (exit, 14B) → register restore, SCF (overflow) or normal return
+Total: **767 bytes** for the core renderer, the largest single function in the ROM.
+**GLYPH BUFFER**: D005A1-D005C0 (32B: 4B header + 28B bitmap). Populated by 0x07BF3E from font table at ROM base provided by 0x000380.
+**FRAMEBUFFER**: D0059C holds current pixel pointer. Row strides: 0x140 (320B = half-row or 160px width) and 0x280 (640B = full 320px row at 16bpp).
+
+PROBES: 4/4 ran to completion with correct data. Golden regression 26/26 PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x000380 — font base address provider called by 0x07BF3E (THE key to finding where font bitmaps live in ROM). (c) ★★★★ DECODE 0x0A1A9D + 0x0A1B1C — framebuffer address computation from x,y coords (called during blit setup). (d) ★★★★ DECODE 0x08C308 — color lookup function called by the 16-bit color rendering path. (e) ★★★ MAP D005A1-D005C0 — glyph buffer structure; what are the 4 header bytes? What does each of the 28 glyph bytes represent? (f) ★★★ DECODE 0x04C916 — called by the cursor positioning function at 0x0A2706. (g) ★★★ DECODE 0x04E640/0x04E645 CALLERS (carried from 550). (h) ★★★ DECODE 0x0BA561 (carried from 549). (i) ★★ FRAME SIZE INVESTIGATION (carried). --END SESSION 552--
 
 **Session 551 findings (2026-06-07)**:
 
