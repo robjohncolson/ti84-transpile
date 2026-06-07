@@ -8,7 +8,9 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-07 (auto-session 559 — **★★★★ 0x0A1799 GLYPH RENDERER PARTIALLY DECODED (300B+ complex function: DI, RES 2 IY+2, tests IY+0x0D bit 1 → CALL 0x0A237E, bounds-checks char CP 0xFA→clamps to 0xD0, MLT HL with H=0x1C for glyph offset, CALL 0x07BF3E font table, reads D00595 column + CALL 0x0A2D4C for row offset, writes D0059C framebuffer addr, pixel loop with BPP-aware stride). ★★★★ 0x0A2032 LINE WRAP DECODED (25B+: PUSH regs, CALL 0x0A2013 for Y advance, SUB A + LD (D00596),A = column counter reset to 0, sets up D00595). ★★★★ 0x05519F BPP INIT BODY DECODED (95B: LD IY D00080, SET 1 IY+0x46 = sets D000C6 bit 1 gate flag, CALL 0x055316, writes D005EC/D005F4/D005F0/D005ED state, LDIR 13B from ROM 0x05550C→D02FD9, writes D02FD6). ★★★★ 0x0A22B1 SPECIAL CHAR HANDLER DECODED (13B quick path + fall-through: tests IY+0x2A bit 1, if set → CALL 0x025C33 + RET, if clear → falls to 0x0A22BE which reads D00596 and does full newline rendering). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-07 (auto-session 560 — **★★★★ 0x0A1799 PIXEL LOOP FULLY DECODED (220B from 0x0A1819: B=16/18 rows per glyph via IY+05 BPP, stride 0x0280=640B for 16bpp, DJNZ pixel-shift at 0x18C8, IX walks glyph data, D0059C framebuffer ptr, workspace D02A62-D02A75). ★★★★ 0x0A2013 Y-ADVANCE WRAPPER DECODED (31B: guard on IY+0x09 bit 0, CALL 0x0A1F48 actual Y advance, busy-wait on D00824 + IY+0x15 bit 6, CALL 0x0800B8 syscall). ★★★★ 0x0A2D4C ROW OFFSET CALC DECODED (11B: A = input×20+37, pixel Y = row×20+37px). ★★★★ 0x025C33 QUICK NEWLINE DECODED (96B: .SIS mode 16-bit ops, loads width from 0x017F + clip X from 0x08D2, CALL 0x04C979 width-clip, CALL 0x0A23E5 blit loop with A=6, CALL 0x0B4EE2 new target, restores 0x08D2). GOLDEN REGRESSION 26/26 PASS.**)
+
+> Previous: 2026-06-07 (auto-session 559 — 0x0A1799 glyph renderer partial 300B+, 0x0A2032 line wrap 25B+, 0x05519F BPP init 95B, 0x0A22B1 special char 13B+)
 
 > Previous: 2026-06-07 (auto-session 558 — 0x0A1B5B per-char dispatch 51B, blit paths 0x09EFB7/0x09F001 closed, 0x055191 conditional gate, 0x08DBE1 cursor-back, 0x0AD455 partial tokenizer)
 
@@ -19,6 +21,74 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**Session 560 findings (2026-06-07)**:
+
+(1) ★★★★ 0x0A1799 PIXEL RENDERING LOOP FULLY DECODED (probe-phase560-decode-0A1799-loop.mjs, Codex+Opus-verified):
+- **220 bytes** from 0x0A1819 (continuation of 0x0A1799 past the first 128 bytes decoded in session 559).
+- **Row count**: `LD B,$10` (16 rows default); if BIT 1,(IY+05) or BIT 3,(IY+05) set → B=$12 (18 rows). This confirms glyph height = 16px normal, 18px in extended BPP modes.
+- **Framebuffer stride**: `LD DE,$0280; ADD HL,DE; LD (D0059C),HL` — advances framebuffer pointer by 640 bytes per row (320 pixels × 2 bytes in 16bpp).
+- **Glyph data read**: `LD A,(IX+00); INC IX` — walks glyph bitmap data byte-by-byte from font table pointer.
+- **BPP pixel expansion**: BIT 3,(IY+05) selects between two paths:
+  - 4bpp path: SRL A; SRL A; XOR $FE; C=$07 (7 pixels per byte)
+  - 8bpp path: via BIT 0,(IY+08) → SRL A; SRL A; C=$05 (5 pixels per byte)
+- **Pixel shift loop (DJNZ at 0x18C8→0x18C4)**: `SRL D; RR E; DJNZ` — shifts pixel data right for sub-byte positioning.
+- **RAM workspace**: D02A62 (glyph base pointer), D02A6E (write pointer), D02A71 (mask byte), D02A72 (bit counter), D02A73 (pixel data), D02A74 (overflow), D02A75 (pixel count).
+- **CALL targets**: 0x0A1A8F (utility), 0x0A1A83 (conditional helper when D02A71 nonzero)
+- **IY flags used**: IY+05 bits 1,3 (BPP mode), IY+08 bit 0 (secondary BPP flag), IY+0x4C bit 5, IY+0x0D bit 1
+- **ARCHITECTURE**: The pixel loop iterates B times (16 or 18 rows). Each iteration: reads one glyph byte from IX, applies BPP-dependent expansion/shift, OR-blits into framebuffer at D0059C, advances by stride 640B. The DJNZ sub-loop does pixel shifting for sub-byte alignment.
+
+(2) ★★★★ 0x0A2013 Y-ADVANCE BUSY-WAIT WRAPPER DECODED (probe-phase560-decode-0A2013.mjs, Sonnet+Opus-verified):
+- **31 bytes** at 0x0A2013-0x0A2031. Not the Y-advance itself — it's a wrapper with guards.
+- **Structure**:
+  - Guard: BIT 0,(IY+9) → if set, XOR A + RET (quick exit)
+  - `CALL 0x0A1F48` — the ACTUAL Y-advance helper (this is the next decode target)
+  - RET Z — exit if helper returned zero
+  - Busy-wait loop: reads D00824, loops back to XOR A+RET if nonzero
+  - Second gate: BIT 6,(IY+0x15) → loop back if set
+  - `CALL 0x0800B8` — low-ROM syscall (LCD sync or similar)
+  - RET
+- **RAM**: D00824 (busy-wait state byte, polled until zero), D00089 (IY+9 guard), D00095 (IY+0x15 bit 6 gate)
+- **ARCHITECTURE**: The Y-advance work happens inside 0x0A1F48. This wrapper adds hardware-ready polling (D00824) and a flag gate (IY+0x15 bit 6) before a final syscall. Pattern: guard → delegate → poll → gate → syscall → return.
+
+(3) ★★★★ 0x0A2D4C ROW PIXEL OFFSET CALCULATION DECODED (probe-phase560-decode-0A2D4C.mjs, Codex+Opus-verified):
+- **11 bytes** at 0x0A2D4C-0x0A2D56. Complete function.
+- **Arithmetic**: A×2 → B=A×2 → A×4 → A×8 → A×8+B=A×10 → A×10×2=A×20 → A×20+0x25=A×20+37
+- **Formula**: `pixel_Y = row_number × 20 + 37`
+- **Interpretation**: 20 pixels per text row, 37-pixel top margin (status bar + padding). For a 240px LCD: (240-37)/20 = 10.15 → 10 rows of text visible. This matches TI-84 CE's 10-line display.
+- **ARCHITECTURE**: Ultra-compact multiply-by-constant using ADD A,A chains (no MLT needed for small constants). Called from 0x0A1799 (glyph renderer) and 0x0A22B1 (special char handler) to convert logical row → pixel Y offset.
+
+(4) ★★★★ 0x025C33 QUICK NEWLINE DELEGATE DECODED (probe-phase560-decode-025C33.mjs, Sonnet+Opus-verified):
+- **96 bytes** at 0x025C33-0x025C92. Complete function with PUSH/POP AF/BC/DE/HL envelope.
+- **Uses eZ80 .SIS mode** (0x40 prefix) for 16-bit addressing of low-memory locations:
+  - Loads width limit from (0x017F) via .SIS LD DE,(nn)
+  - Loads clip X from (0x08D2) via .SIS LD HL,(nn)
+- **Logic**:
+  - Compare clip_X vs width_limit: if >= limit, jump to epilogue (no-op)
+  - Otherwise compute remaining width, call 0x04C979 (width clipping with DE=8 stride)
+  - If no carry: blit loop with `CALL 0x0A23E5` (A=6 mode), loops on NZ
+  - If carry (partial clip): SRL A on L, DJNZ loop calling 0x0B4EE2
+  - Partial-clip path also decrements (0x08D2) and calls 0x0B4EE2 once more
+  - Epilogue: restores (0x08D2) from saved HL, pops all, RET
+- **NEW CALL TARGET**: 0x0B4EE2 (called in partial-clip path with DJNZ loop — likely single-column blit or pixel-fill)
+- **RAM**: (0x017F) = width limit, (0x08D2) = clip X / cursor column position (16-bit, accessed via .SIS)
+- **ARCHITECTURE**: This is a width-aware scroll/blit newline — it clips the current line's content to the screen width, then blits remaining columns using the established 0x0A23E5 blit loop. The .SIS mode confirms these addresses are in page 0 (< 0x010000), typical of OS variable area in early TI-OS.
+
+(5) VERIFICATION: All 4 probes ran to completion with valid output. Golden regression 26/26 PASS (verified 3×). No runtime/source files modified — probes are read-only ROM analysis.
+
+**NEW FUNCTIONS DECODED**: 0x0A1799 pixel loop (220B fully traced), 0x0A2013 (31B Y-advance wrapper), 0x0A2D4C (11B row×20+37 calc), 0x025C33 (96B quick newline with .SIS mode).
+**NEW RAM ADDRESSES**: D02A62-D02A75 (pixel renderer workspace: glyph ptr, write ptr, mask, counters), D00824 (busy-wait state polled by 0x0A2013), D00089 (IY+9 bit 0 guard), D00095 (IY+0x15 bit 6 gate), 0x017F (width limit via .SIS), 0x08D2 (clip X via .SIS).
+**CALL CHAIN UPDATE**: 0x0A2032 → 0x0A2013 → 0x0A1F48 (actual Y advance) + 0x0800B8 (syscall). 0x0A1799 pixel loop → 0x0A1A8F + 0x0A1A83 (helpers). 0x025C33 → 0x04C979 (clip) + 0x0A23E5 (blit) + 0x0B4EE2 (new: partial-clip blit).
+**ARCHITECTURE INSIGHTS**:
+- Glyph rendering is 16 or 18 pixel rows, 640B stride in 16bpp, with sub-byte pixel shifting via DJNZ.
+- Row-to-pixel formula: pixel_Y = row × 20 + 37. Top margin = 37px. 10 text rows on 240px display.
+- 0x0A2013 delegates Y-advance to 0x0A1F48 — that's the next key target.
+- 0x025C33 uses .SIS 16-bit mode for efficiency — accessing page-0 variables for width/clip state.
+- New function 0x0B4EE2 discovered in partial-clip path — likely single-column pixel fill.
+
+PROBES: 4/4 ran to completion. Golden regression 26/26 PASS. Codex 4/4 success (2 needed Sonnet retry for decoder issues).
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★★ DECODE 0x0A1F48 — actual Y advance function (called from 0x0A2013 wrapper; this is where cursor row increments and scroll triggers). (c) ★★★★ DECODE 0x0A1A8F — pixel renderer utility (called from 0x0A1799 loop). (d) ★★★★ DECODE 0x0800B8 — low-ROM syscall (called from 0x0A2013 after busy-wait). (e) ★★★★ DECODE 0x0B4EE2 — partial-clip blit (new, called from 0x025C33). (f) ★★★★ DECODE 0x0A237E — alternate glyph path (carried from 559). (g) ★★★ DECODE 0x055316 — BPP helper called from 0x05519F (carried from 559). (h) ★★★ DECODE 0x09BAC9 — input reader (carried from 558). (i) ★★★ DECODE 0x08DB93 — pre-operation helper (carried from 558). (j) ★★★ MAP D02A62-D02A75 — pixel renderer workspace (how are these initialized before glyph rendering?). (k) ★★ DECODE 0x0BA561 — carried from 549. --END SESSION 560--
 
 **Session 559 findings (2026-06-07)**:
 
