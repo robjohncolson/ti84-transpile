@@ -17647,15 +17647,103 @@
       "timestamp": "2026-06-07T05:25:01Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "5cb675bd1efa",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x025774 \u2014 Secondary Cleanup Called by 0x025762\n\n## Context\nYou are working on a TI-8",
+      "status": "completed",
+      "duration_seconds": 64.216,
+      "timestamp": "2026-06-07T06:33:27Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3fa8d51ce023",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0BACB3 Table \u2014 Graph/App Type String Table\n\n## Context\nYou are working on a TI-84 P",
+      "status": "success",
+      "duration_seconds": 61.046,
+      "timestamp": "2026-06-07T06:33:30Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a1f41966e611",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate 0x83 Type Tag \u2014 What Variable Type is 0x83?\n\n## Context\nYou are working on a TI-",
+      "status": "success",
+      "duration_seconds": 70.416,
+      "timestamp": "2026-06-07T06:33:37Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "15fbfbc3bcfe",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x023955 \u2014 Common Return Path for Token Display Functions\n\n## Context\nYou are working",
+      "status": "success",
+      "duration_seconds": 116.443,
+      "timestamp": "2026-06-07T06:34:21Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "81400718b7c5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x02395F \u2014 Complementary Function to 0x023955\n\n## Context\nYou are working on a TI-84 ",
+      "status": "success",
+      "duration_seconds": 53.387,
+      "timestamp": "2026-06-07T07:44:05Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a970a2b96fc6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map D005F9 Usage \u2014 Variable Type Byte RAM Location\n\n## Context\nYou are working on a TI-84 Pl",
+      "status": "completed",
+      "duration_seconds": 89.783,
+      "timestamp": "2026-06-07T07:44:46Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "029f31ea4a99",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x087182 Archived-Type Handler (Sequential CP 0x82/0x83/0x84/0x85)\n\n## Context\nYou ar",
+      "status": "completed",
+      "duration_seconds": 121.292,
+      "timestamp": "2026-06-07T07:45:15Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "282c3d07f708",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0BAB88 \u2014 Graph/App Caller of Type String Dispatcher\n\n## Context\nYou are working on ",
+      "status": "success",
+      "duration_seconds": 151.831,
+      "timestamp": "2026-06-07T07:45:50Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1475,
-    "cc_to_codex": 1475,
+    "total_calls": 1483,
+    "cc_to_codex": 1483,
     "codex_to_cc": 0,
-    "completed": 1011,
+    "completed": 1014,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 509.936
+    "avg_duration_seconds": 507.676
   }
 }

@@ -8,9 +8,72 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-07 (auto-session 547 — **★★★★ 0x025774 IX DISPATCH THUNK (2B: JP (IX), 1 caller from abort path at 0x02576A). ★★★★ 0x023955 TOKEN DISPLAY EXIT (10B: PUSH AF/HL, LD HL,D0265B, DEC (HL), POP HL/AF, RET — decrements abort counter, 1 JP xref from 0x025770). ★★★★ 0x83 TYPE TAG = ARCHIVED EQUATION (bit 7 = archive flag; 0x80 | 0x03; 17 CP 0x83 sites across ROM in token display, graph, math subsystems). ★★★ 0x0BACB3 TABLE = 12-ENTRY TI TOKEN SEQUENCE TABLE (not ASCII type names — binary formatted equation display data with control codes 0x02-0x11). ★★★ 0x03ED55 NOT A POINTER TABLE — contains direct ASCII strings "Window", "RclWindow", "TblSet" as variable name data. GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-07 (auto-session 548 — **★★★★ 0x02395F TOKEN DISPLAY ENTER (14B: INC D0265B nesting counter, EX (SP),HL trampoline via 0x02396D, JR to 0x023955 exit — bracket pattern for nesting depth). ★★★★ 0x087182 CORRECTED: NOT CODE — DATA TABLE of 2-byte TI token codes (pages 0x82/0xFB/0xFC/0xFE; session 547's "CP 0x82/83/84/85" was misidentification of FE bytes as opcodes). ★★★★ 0x087611 TOKEN_TABLE_SEARCH (14B: DJNZ loop comparing D:E pairs, 1 caller at 0x085505). ★★★★ D005F9 FULLY MAPPED: 357 refs (175R/82W/100P), 3-byte variable descriptor struct D005F8-D005FB, heaviest in graph/app (121) and math/FPU (100). ★★★ 0x0BAB88 TOKEN TEMPLATE RENDERER (DJNZ loop, subscript formatting for vars A-D via 0x26AC, dual output CALL 0x0A2A68 + 0x088F6B, index from D02A7B). GOLDEN REGRESSION 26/26 PASS.**)
 
-> Previous: 2026-06-07 (auto-session 546 — 0x025758 type-tag validation, 0x025762 abort/cleanup path, 0x02398E 100-caller map, 0x03EC5A type string dispatcher traced)
+> Previous: 2026-06-07 (auto-session 547 — 0x025774 IX dispatch thunk, 0x023955 token display exit, 0x83 archived equation type tag, 0x0BACB3 token template table, 0x03ED55 variable name strings)
+
+**Session 548 findings (2026-06-07)**:
+
+(1) ★★★★ 0x02395F TOKEN DISPLAY ENTER DECODED (probe-phase548-decode-02395F.mjs, Sonnet+Opus-verified):
+- **0x02395F (14B, 0x02395F-0x02396C)**: Entry counterpart to 0x023955 (TOKEN DISPLAY EXIT).
+- Sequence: POP AF → PUSH HL → LD HL,0xD0265B → INC (HL) → POP HL → CALL 0x02396D → JR 0x023955.
+- **PURPOSE**: Bracket pattern — increments D0265B nesting counter on entry, calls body via trampoline, then falls through to 0x023955 which decrements counter on exit. Tracks token display nesting depth.
+- **0x02396D (3B)**: PUSH HL → EX (SP),HL → RET. Return-address swap trampoline — saves HL, puts caller's return address into HL, "returns" to wherever HL was pointing. When the dispatched function RETs, execution resumes at 0x02396B (JR to 0x023955).
+- **0x023970 (7B)**: Related indirect dispatch — LD HL,(0xD025D2) → EX (SP),HL → RET. Loads function pointer from RAM and jumps to it.
+- **0x023977 (22B)**: Part of 0x02398E prologue with different validation path (LD HL,0xD0260E instead of D02611, CALL 0x025758, JP Z,0x025763, RES 0,(IY+0x35)).
+- **XREFS**: 0x02395F has ZERO external CALL/JP callers — reached only internally from 0x025762's cleanup path. 0x02396D has 1 CALL (from 0x023967 inside 0x02395F).
+
+(2) ★★★★ 0x087182 CORRECTED — DATA TABLE, NOT CODE (probe-phase548-decode-087182.mjs, Sonnet+Opus-verified):
+- **Session 547 misidentified** bytes at 0x087180-0x087187 as CP 0x82/0x83/0x84/0x85 instructions. The 0xFE bytes are actually TI token page prefixes (page 0xFE = extended-2 tokens), not CP opcodes.
+- **Evidence**: Zero xrefs to any address in 0x087160-0x087190. No conditional branches follow the "CP" bytes. Disassembly produces impossible targets.
+- **0x087611 TOKEN_TABLE_SEARCH (14B)**: Takes HL=table pointer, D:E=2-byte token, B=10 entries max. DJNZ loop comparing pairs. Returns Z if found.
+- **0x08761F TOKEN_LOOKUP_DISPATCHER**: Searches 3 sub-tables sequentially:
+  - Sub-table 1 at 0x087201: 10 entries (FE A7-A9, FC 22-24, FC 29-2C)
+  - Sub-table 2 at 0x0871E8: 10 entries (FC 00-02, FC 1F-21, FC 25-28)
+  - Sub-table 3 at 0x08722C: 10 entries (FC 50-59)
+- **1 external caller**: 0x085505 CALL 0x08761F.
+- **Broader structure**: 0x087140-0x087240 is a multi-section token data table (pages 0x82, 0xFB, 0xFC, 0xFE).
+
+(3) ★★★★ D005F9 FULLY MAPPED (probe-phase548-map-D005F9.mjs, Sonnet+Opus-verified):
+- **357 total references**: 175 READ (49%), 82 WRITE (23%), 100 POINTER (28%), 0 OTHER.
+- **Subsystem distribution**:
+  - Graph/app (0x09-0B): 121 refs (34%, heaviest) — 78R, 15W, 28P
+  - Math/FPU/display (0x07-08): 100 refs (28%) — 40R, 32W, 28P
+  - Variable/equation (0x05-06): 83 refs (23%) — 42R, 18W, 23P
+  - Error/system (0x03): 23 refs — 6R, 8W, 9P
+  - Memory mgmt (0x04): 20 refs — 7R, 7W, 6P
+  - Core OS (0x02): 10 refs — 2R, 2W, 6P
+- **3-byte variable descriptor struct**: D005F9 is part of D005F8-D005FB. LD (D005F9),HL and LD (D005F9),BC appear at 11 sites, writing 3 bytes simultaneously.
+- **Common written values**: 0x5D (list), 0x7B (equation), 0x40 (real), 0x72 (app), 0x80 (archive flag), 0xFF, 0xFE, 0x24, 0x26 — all TI-OS variable type codes.
+- **Read-modify-write patterns**: ADD 3, SUB 10, ADD 0x40, SUB 0x80, CPL, DEC A, ADD 0x80 — type arithmetic converting between base types and variants.
+- **KEY INSIGHT**: D005F9 is the "current variable type byte" — the OS loads the type of whatever variable is being processed into this location and all subsystems reference it.
+
+(4) ★★★ 0x0BAB88 TOKEN TEMPLATE RENDERER DECODED (probe-phase548-decode-0BAB88.mjs, Sonnet+Opus-verified):
+- **Part of larger function starting at 0x0BAB6D** — sets up display coordinates (SIS LD (0x08D2),HL, y-position from D02A76+2 into D008D5).
+- **Template rendering loop (0x0BAB8E-0x0BABC5)**:
+  1. Reads template index from D02A7B (1-based), converts to 0-based
+  2. Looks up template via 0x0BACB3 table using dispatcher 0x03EC5A
+  3. First byte = length (DJNZ counter), remaining bytes = token data
+  4. For each byte: loads into DE, checks for special cases:
+     - 0x4F: overrides DE to 0xBBBF (special token reference)
+     - 0x41-0x44 (A-D): sets subscript marker 0x1F at address 0x26AC before display
+  5. Calls 0x0A2A68 (primary display output) + 0x088F6B (secondary display output)
+  6. Clears subscript marker after each character
+  7. DJNZ loops back
+- **PURPOSE**: Renders formatted equation labels (Y1=, Y2=, etc.) with subscript formatting for graph function display.
+- **Sibling at 0x0BABF2**: Also calls 0x03EC5A with same table, but copies template data via LDIR rather than rendering character-by-character. Sets D00839=1 flag.
+- **XREFS**: 0 direct CALL xrefs to 0x0BAB88 — reached by fall-through from 0x0BAB6D entry.
+
+(5) CODEX: 0/4 produced output (all failed/empty). SONNET FALLBACK: 4/4 succeeded — all probe files created and ran correctly. Golden regression 26/26 PASS.
+
+NEW FUNCTIONS: 0x02395F (14B token display enter, INC D0265B, trampoline), 0x02396D (3B return-address swap), 0x023970 (7B indirect dispatch from D025D2), 0x087611 (14B token table search), 0x08761F (token lookup dispatcher, 3 sub-tables).
+NEW RAM: D005F8-D005FB (3-byte variable descriptor struct, 357 refs), D025D2 (function pointer for indirect dispatch), D02A7B (template index, 1-based), D008D5 (y-position for template display).
+CORRECTED: 0x087182 is DATA (token page bytes), NOT CODE (not CP instructions). Session 547's "CP 0x82/83/84/85" finding was wrong.
+CONFIRMED: D0265B is a token display nesting depth counter (INC on enter at 0x02395F, DEC on exit at 0x023955).
+
+PROBES: 4/4 Sonnet created files. All ran to completion with correct data. Golden regression 26/26 PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x0A2A68 — primary token display output function called by template renderer (what does it actually render?). (c) ★★★★ DECODE 0x088F6B — secondary token display output (companion to 0x0A2A68 in the template renderer loop). (d) ★★★★ MAP D025D2 USAGE — function pointer used by 0x023970 indirect dispatch; who writes it? What functions get dispatched? (e) ★★★ DECODE 0x08761F TOKEN_LOOKUP_DISPATCHER CALLERS — trace from 0x085505 upward; what is the broader token lookup workflow? (f) ★★★ DECODE 0x0BAB6D ENTRY — the function that sets up display coordinates before falling through to 0x0BAB88 template renderer; what are its callers? (g) ★★ FRAME SIZE INVESTIGATION (carried). --END SESSION 548--
 
 **Session 547 findings (2026-06-07)**:
 
