@@ -8,9 +8,56 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-07 (auto-session 546 — **★★★★ 0x025758 TYPE-TAG VALIDATION DECODED (10B: ED 27 LD HL,(HL) dereference → LD A,(HL) load type byte → CP 0x83 → RET with Z if type=0x83; 19 callers, called by 0x02398E with HL=D02611). ★★★★ 0x025762 ABORT/CLEANUP PATH DECODED (falls through from 0x025758; POP AF, INC D0265B counter, CALL 0x025774, POP IX, JP 0x023955; 18 JP Z callers — all from 0x023xxx token display functions). ★★★★ 0x02398E CALLER MAP COMPLETE (100 total: 54 CALL + 46 CALL NZ; distribution: Core OS 4, Error 2, Memory 4, Variable/equation 23, Math/FPU/display 30, Graph/app 37). ★★★ 0x03EC5A TYPE STRING DISPATCHER TRACED (4 callers: 0x03EC55/0x03EC79 error system, 0x0BAB88/0x0BABF2 graph/app; callers use returned HL as string pointer for display/copy). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-07 (auto-session 547 — **★★★★ 0x025774 IX DISPATCH THUNK (2B: JP (IX), 1 caller from abort path at 0x02576A). ★★★★ 0x023955 TOKEN DISPLAY EXIT (10B: PUSH AF/HL, LD HL,D0265B, DEC (HL), POP HL/AF, RET — decrements abort counter, 1 JP xref from 0x025770). ★★★★ 0x83 TYPE TAG = ARCHIVED EQUATION (bit 7 = archive flag; 0x80 | 0x03; 17 CP 0x83 sites across ROM in token display, graph, math subsystems). ★★★ 0x0BACB3 TABLE = 12-ENTRY TI TOKEN SEQUENCE TABLE (not ASCII type names — binary formatted equation display data with control codes 0x02-0x11). ★★★ 0x03ED55 NOT A POINTER TABLE — contains direct ASCII strings "Window", "RclWindow", "TblSet" as variable name data. GOLDEN REGRESSION 26/26 PASS.**)
 
-> Previous: 2026-06-06 (auto-session 545 — 0x03EC5A jump table dispatcher, 0x03ECAD type string table, 0x02398E token display prep, 0x0802BB display pointer setter)
+> Previous: 2026-06-07 (auto-session 546 — 0x025758 type-tag validation, 0x025762 abort/cleanup path, 0x02398E 100-caller map, 0x03EC5A type string dispatcher traced)
+
+**Session 547 findings (2026-06-07)**:
+
+(1) ★★★★ 0x025774 IX DISPATCH THUNK DECODED (probe-phase547-decode-025774.mjs, Codex+Opus-verified):
+- **0x025774 (2B)**: Single instruction: `DD E9` = `JP (IX)`.
+- **PURPOSE**: Indirect call thunk — transfers control to whatever address IX holds. Used by 0x025762 abort path: `CALL 0x025774` acts as `CALL (IX)` since JP (IX) jumps to IX and the eventual RET returns to the caller of 0x025774.
+- **1 xref**: CALL at 0x02576A (inside 0x025762 abort path). Very localized — only the abort cleanup uses this thunk.
+
+(2) ★★★★ 0x023955 TOKEN DISPLAY EXIT DECODED (probe-phase547-decode-023955.mjs, Codex created but decoded in 16-bit mode; Opus manually corrected to ADL 24-bit mode from raw bytes):
+- **0x023955 (10B, 0x023955-0x02395E)**: 7 instructions in ADL mode.
+- Sequence: PUSH AF → PUSH HL → LD HL,0xD0265B → DEC (HL) → POP HL → POP AF → RET.
+- **PURPOSE**: Decrements the abort/skip counter at D0265B and returns. This is the normal completion exit for token display functions — it undoes the increment that 0x025762 performs on the abort path, keeping the counter balanced.
+- **FLOW**: 0x025762 (abort) INC's D0265B → CALL 0x025774 (JP IX, executes cleanup subroutine) → RET back → POP IX → JP 0x023955 → DEC D0265B → RET to original caller.
+- **1 JP xref**: JP 0x023955 at 0x025770 (end of 0x025762 abort path).
+- **CORRECTION**: Codex probe decoded `21 5B 26 D0` as `LD HL,0x265B` + `RET NC` (16-bit mode). In ADL mode (eZ80 default), this is `LD HL,0xD0265B` (24-bit immediate). The probe's structural analysis was wrong; manual correction from raw bytes is authoritative.
+- **ADJACENT FUNCTION**: 0x02395F (appears to be a complementary function that INC's D0265B, CALL's 0x02396D, then JR's back to 0x023955).
+
+(3) ★★★★ 0x83 TYPE TAG = ARCHIVED EQUATION (probe-phase547-type-0x83.mjs, Codex+Opus-verified):
+- **17 CP 0x83 instructions** found across the full ROM.
+- **Distribution**: 0x0238xx (token display, 2), 0x024033 (1), 0x02575F (type-tag validation, 1), 0x05DBxx-0x066xxx (variable/memory, 2), 0x074xxx-0x07Dxxx (math/FPU, 5), 0x087xxx-0x088xxx (display, 2), 0x093xxx (1), 0x0AExxx-0x0AFxxx (graph/app, 2), 0x0B88xx (1).
+- **Multiple sites load from D005F9** before CP 0x83 (0x05DBDD, 0x07D040, 0x07D08E, 0x093D39) — D005F9 holds a type byte for the current variable context.
+- **Bit 7 = archive flag**: 0x83 = 0x80 | 0x03 (Equation). TI-84 CE uses bit 7 of the type byte to mark archived/flash-resident variables.
+- **No AND 0x7F or BIT 7,A near type-checking code**: The ROM checks for specific 0x83 values directly rather than masking bit 7 first, indicating these are special-case handlers for archived equations (not a generic "is archived?" check).
+- **Key address 0x087182**: Shows sequential CP 0x82, CP 0x83, CP 0x84, CP 0x85 — checking archived Real (0x82), Equation (0x83), String (0x84), Program (0x85). Confirms the 0x80+base pattern.
+- **Relationship to type string table**: 0x83 is outside the 0x00-0x1A range of the 27-entry table at 0x03ECAD. Code must strip bit 7 before table lookup or handle archived types as special cases.
+
+(4) ★★★ 0x0BACB3 TABLE DECODED — NOT ASCII TYPE NAMES (probe-phase547-decode-0BACB3.mjs, Codex+Opus-verified):
+- **12 entries** (3-byte pointers) at 0x0BACB3-0x0BACD6.
+- Pointers: 0x0BACD7 through 0x0BAD49.
+- **Strings are TI token sequences**, not ASCII. First entry starts with `02 4E 4F 05 41 82 58 70 42...` — control codes 0x02/0x05/0x06 are TI formatting tokens, 0x82 is likely subscript-T or superscript marker. These are pre-formatted equation display strings for the graph/app subsystem.
+- **CORRECTED understanding**: Session 546 called this a "type string table" by analogy with 0x03ECAD, but it's actually a **formatted equation template table** used by 0x0BAB88/0x0BABF2 for graph function display (Y1=, Y2=, etc. with subscript formatting).
+
+(5) ★★★ 0x03ED55 DECODED — VARIABLE NAME STRINGS (from P4 probe):
+- **NOT a pointer table** — first 3-byte read gives 0xD01E30 which exceeds ROM range.
+- **Raw bytes at 0x03ED6B-0x03ED80**: ASCII strings "Window\t", "RclWindow\t", "TblSet" visible in hex.
+- **PURPOSE**: Direct variable name string data used by 0x03EC55's call to 0x03EC5A. The dispatcher reads from this area differently than the pointer-table format at 0x03ECAD.
+
+(6) CODEX: 4/4 created probe files. P1/P3/P4 ran correctly. P2 ran but decoded in 16-bit mode (wrong for eZ80 ADL mode) — manually corrected from raw bytes. Golden regression 26/26 PASS.
+
+NEW FUNCTIONS: 0x025774 (2B IX dispatch thunk, 1 caller), 0x023955 (10B token display exit, DEC D0265B counter).
+CONFIRMED: 0x83 = archived Equation (0x80 | 0x03). Bit 7 = archive flag across all type bytes.
+CORRECTED: 0x0BACB3 is a formatted equation template table (TI tokens), not an ASCII type name table. 0x03ED55 is variable name string data, not a pointer table.
+KEY FINDING at 0x087182: Sequential CP 0x82/0x83/0x84/0x85 confirms archived type pattern (archived Real/Equation/String/Program).
+
+PROBES: 4/4 Codex created files. P1/P3/P4 ran to completion with correct data. P2 ran but decoded in 16-bit mode — manual correction applied. Golden regression 26/26 PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x02395F — complementary function to 0x023955 (INC D0265B, CALL 0x02396D, JR back to 0x023955; what is 0x02396D?). (c) ★★★★ DECODE 0x087182 ARCHIVED-TYPE HANDLER — sequential CP 0x82/0x83/0x84/0x85 block; what are the branch targets? Map the full archived-type dispatch. (d) ★★★ MAP D005F9 USAGE — RAM location holding current variable type byte; who writes it, who reads it? (e) ★★★ DECODE 0x0BAB88 — graph/app caller of 0x03EC5A that parses the 0x0BACB3 token table entries character-by-character (what does it render?). (f) ★★ FRAME SIZE INVESTIGATION (carried). --END SESSION 547--
 
 **Session 546 findings (2026-06-07)**:
 
