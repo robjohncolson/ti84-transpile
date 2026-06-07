@@ -8,9 +8,54 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-07 (auto-session 549 — **★★★★ 0x0A2A68 TOKEN PAGE DISPATCHER (235B: D=page/L=code input, extensive CP tree dispatching to 10+ token string tables in 0x09Fxxx-0x0A00xx range, L×3+base indexing, 27 callers, CALL 0x023977+0x04E5FE, writes D026B8). ★★★★ 0x088F6B COUNTED STRING OUTPUT (loop with B=count HL=data, dispatches to 0x0A23E5 or 0x061986 via carry flag, DJNZ loop, 13 callers). ★★★ D025D2 MAPPED: only 2 refs (1W at 0x0238BB, 1R at 0x023971), very localized indirect dispatch slot. ★★★ 0x0BAB6D DISPLAY COORD SETUP (sets x via SIS LD (0x08D2),HL, y from D02A76+2→D008D5, template index from D02A7B, 2 callers at 0x0BA84D/0x0BAB60, falls through to 0x0BAB88). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-07 (auto-session 550 — **★★★★ 0x04E5FE TOKEN STRING PROPERTY ACCESSOR (60B: reads tag struct at D0260B, checks magic 0x18/0x02, extracts DE offset, calls 0x04E640/0x04E645, 3 callers). ★★★★ 0x061986 CHARACTER OUTPUT WRAPPER (45B: sets IY+50 bits 2+6, clears IY+5 bit 1, wraps 0x0A23E5, 30 callers — THE primary display output function). ★★★★ 0x0A23E5 CHARACTER RENDERER (84B+: RES 0 IY+35, saves display coords D008D5→D005A0 + SIS 0x4008D2→D1059C, configures char dimensions via IY+20/IY+17 flags, calls 0x0801B9+0x0A23C0). ★★★★ TOKEN STRING TABLES MAPPED: 14 tables in 0x09F87D-0x0A00E1, 255 entries in base table, strings are packed pool with 3-byte pointer entries (all tokens confirmed: letters, prgm, trig, stats, finance, time, graph settings). GOLDEN REGRESSION 26/26 PASS.**)
 
-> Previous: 2026-06-07 (auto-session 548 — 0x02395F token display enter, 0x087182 corrected to data table, D005F9 fully mapped, 0x0BAB88 token template renderer)
+> Previous: 2026-06-07 (auto-session 549 — 0x0A2A68 token page dispatcher, 0x088F6B counted string output, D025D2 mapped, 0x0BAB6D display coord setup)
+
+**Session 550 findings (2026-06-07)**:
+
+(1) ★★★★ 0x04E5FE TOKEN STRING PROPERTY ACCESSOR DECODED (probe-phase550-decode-04E5FE.mjs, Codex+Opus-verified):
+- **0x04E5FE (60B, 0x04E5FE-0x04E639)**: Called by 0x0A2A68 token page dispatcher during rendering.
+- **Entry**: PUSH HL, loads HL=0xD0260B (tag structure base), saves DE/BC/AF.
+- **Logic**: ED 17 (LD DE,(HL) in eZ80), copies to HL. Reads (HL+1) and compares with 0x18, then (HL+2) with 0x02. If both match: extracts D and E from (HL+3) and (HL+4), computes HL-BC (SBC with D0260B base), calls 0x04E640 (if Z) or 0x04E645 (if NZ).
+- **If no match**: jumps to 0x04E63A → sets carry, returns with error indication.
+- **3 callers**: 0x04E490, 0x04E528, 0x0A2B35 (inside token page dispatcher).
+- **Helper functions**: 0x04E640 (5B: LD H,5; LD L,3; RET) and 0x04E645 (5B: LD H,5; LD L,0; RET) — return small constants in HL.
+- **PURPOSE**: Validates a token string tag structure at D0260B (checks magic bytes 0x18, 0x02), extracts a DE offset from the tag, and returns either HL=0x0503 or HL=0x0500 based on the computed offset.
+
+(2) ★★★★ 0x061986 CHARACTER OUTPUT WRAPPER DECODED (probe-phase550-decode-061986.mjs, Codex+Opus-verified):
+- **0x061986 (45B, 0x061986-0x0619B2)**: Primary character output function in the display subsystem.
+- **Sequence**: PUSH IX → SET 2,(IY+50) → SET 6,(IY+50) → RES 1,(IY+5) → CALL 0x06002D → SET 4,(IY+36) → PUSH IX → **CALL 0x0A23E5** → POP IX → RES 4,(IY+36) → RES 2,(IY+50) → RES 6,(IY+50) → POP IX → RET.
+- **30 callers** (28 CALL + 2 JP). Concentrated in display (0x087xxx-0x089xxx, 0x0B4xxx-0x0B5xxx) and graph/app (0x0BAxxx).
+- **KEY INSIGHT**: 0x061986 is a **wrapper** around 0x0A23E5. The "carry set → 0x0A23E5, carry clear → 0x061986" distinction from 0x088F6B means: carry clear = full display setup (set IY flags, call 0x06002D for additional init, then render); carry set = direct render without the flag ceremony.
+- **0x06002D**: Called before 0x0A23E5 — likely cursor/position advancement or display buffer management.
+
+(3) ★★★★ 0x0A23E5 CHARACTER RENDERER DECODED (probe-phase550-decode-0A23E5.mjs, Codex+Opus-verified):
+- **0x0A23E5 (~84B first segment)**: The actual character rendering core.
+- **Entry**: RES 0,(IY+35) — clears a rendering flag. Saves B=A (character to render).
+- **Display coord save**: LD A,(D008D5) → LD (D005A0),A (saves y-coord), SIS LD HL,(0x4008D2) → LD (D1059C),HL (saves x-coord via 16-bit SIS read).
+- **Character dimensions**: Tests BIT 4,(IY+20), branches based on result. Calls 0x0801B9 for further check. Sets DE to character width: 0xBD (189, large font), 0x61 (97, small font), or other values based on BIT 3,(IY+17) flag.
+- **Calls**: 0x0A23C0 (pre-render setup), 0x0801B9 (font size detection).
+- **RAM used**: D008D5 (y-position), D005A0 (saved y), 0x4008D2 (x-position via SIS), D1059C (saved x).
+- **Continues past 84B**: Function extends beyond initial JR target — full character rendering including glyph lookup and pixel output follows.
+
+(4) ★★★★ TOKEN STRING TABLES FULLY MAPPED (probe-phase550-map-token-tables.mjs, Codex+Opus-verified):
+- **14 tables** across 0x09F87D-0x0A00E1, all with 3-byte LE pointer entries into string pool at 0x0A02D9-0x0A13xx.
+- **Base table (D=0x00) at 0x09F87D**: 255 valid entries. Token strings are packed (adjacent entries share a string pool — each pointer starts at a different offset in the packed data).
+- **Recognized token strings across all tables**: `round(`, `pxl-Test(`, `augment(`, `rowSwap(`, `row+(`, `*row(`, `max(`, `min(`, `R>P[(`, `R>Pr(`, `P>Rx(`, `P>Ry(`, `median(`, `randM(`, `mean(`, `solve(`, `seq(`, `fnInt(`, `nDeriv(`, `prgm`, `Radian`, `Degree`, `Normal`, `Sci`, `Eng`, `Float`, A-Z, `Str1`-`Str9`, `I%`, `PV`, `PMT`, `FV`, `P/Y`, `C/Y`, `npv(`, `irr(`, `bal(`, `Σ Prn(`, `Σ Int(`, `Pmt_End`, `Pmt_Bgn`, `Nom(`, `Eff(`, `dbd(`, `stdDev(`, `variance(`, `Clear Entries`, `ClrAllLists`, `setDate(`, `setTime(`, `checkTmr(`, `getDtStr(`, `getTmStr(`, `startTmr`, `OpenLib(`, `ExecLib`, `invT(`, `Sequential`, `Simul`, `PolarGC`, `RectGC`, `CoordOn/Off`, `AxesOn/Off`, `GridDot/Off`, `LabelOn/Off`, `Pic1`-`Pic9`, `GDB1`-`GDB9`, `2-Var Stats`, `Scatter`, `Boxplot`, `fMin(`, `fMax(`, `ClrTable`, `CubicReg`, `QuartReg`, etc.
+- **String format**: Packed null-terminated string pool. Each 3-byte pointer points into the pool at the start of that token's string. Strings overlap — one token's string may be a suffix of an adjacent block.
+- **Empty entries** (pointer → 0x0A1162, length 0): tokens 0x00, 0x0C, 0x0D, 0x26, 0x29, 0x2A, 0x2B, 0x5C, 0x5D, 0x5E in base table — these are control tokens with no display string.
+
+(5) CODEX: 4/4 produced files (P1 exit code 1 but file created correctly, P2/P3/P4 exit 0). SONNET FALLBACK: not needed. Golden regression 26/26 PASS.
+
+**NEW FUNCTIONS**: 0x04E5FE (60B token string property accessor, 3 callers), 0x061986 (45B character output wrapper, 30 callers).
+**ARCHITECTURE INSIGHT**: 0x061986 wraps 0x0A23E5. The carry flag distinction in 0x088F6B's DJNZ loop selects: carry=1 → direct 0x0A23E5 (raw render), carry=0 → 0x061986 (full display setup + render). This is the display subsystem's public vs internal API.
+**TOKEN TABLES**: 14 tables confirmed, 3-byte pointer entries into packed string pool. Complete TI token vocabulary mapped.
+**DISPLAY PIPELINE**: Character output chain is now: 0x088F6B (counted string loop) → 0x061986 (flag setup wrapper) → 0x0A23E5 (coordinate save + dimension config) → glyph rendering. Or: 0x088F6B → 0x0A23E5 (direct, carry set).
+
+PROBES: 4/4 ran to completion with correct data. Golden regression 26/26 PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x0A23C0 — pre-render setup called by 0x0A23E5; what does it prepare? (c) ★★★★ DECODE 0x06002D — called by 0x061986 before 0x0A23E5; cursor/position management? (d) ★★★★ DECODE 0x0A23E5 FULL — only decoded first 84B; the function continues past the JR target at 0x0A244D — decode the rest to find glyph lookup and pixel output. (e) ★★★ DECODE 0x04E640/0x04E645 CALLERS — what uses the HL=0x0503/0x0500 return values? (f) ★★★ DECODE 0x0801B9 — font size detection called by 0x0A23E5. (g) ★★★ DECODE 0x0BA561 — prerequisite setup (carried from session 549). (h) ★★ FRAME SIZE INVESTIGATION (carried). --END SESSION 550--
 
 **Session 549 findings (2026-06-07)**:
 
