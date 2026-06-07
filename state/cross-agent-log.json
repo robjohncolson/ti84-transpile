@@ -17559,15 +17559,103 @@
       "timestamp": "2026-06-07T01:54:10Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "35236ab4d6db",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0802BB \u2014 String Display Routine\n\n## Context\nYou are working on a TI-84 Plus CE ROM ",
+      "status": "success",
+      "duration_seconds": 63.148,
+      "timestamp": "2026-06-07T03:03:45Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1c2274f6f8a0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x03EC5A \u2014 Jump Table Dispatcher\n\n## Context\nYou are working on a TI-84 Plus CE ROM (",
+      "status": "completed",
+      "duration_seconds": 75.698,
+      "timestamp": "2026-06-07T03:03:53Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a11d60aef861",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x02398E \u2014 Token/String Routine\n\n## Context\nYou are working on a TI-84 Plus CE ROM (e",
+      "status": "success",
+      "duration_seconds": 74.577,
+      "timestamp": "2026-06-07T03:03:54Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "97ea9d3ebe93",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Dump 0x03ECAD Jump Table \u2014 All 27 Entries\n\n## Context\nYou are working on a TI-84 Plus CE ROM",
+      "status": "success",
+      "duration_seconds": 75.529,
+      "timestamp": "2026-06-07T03:03:59Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c6e8cdd76136",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: DECODE 0x025762 \u2014 Abort/Cleanup Path on 0x02398E Failure\n\n## Context\nYou are working on the ",
+      "status": "success",
+      "duration_seconds": 62.056,
+      "timestamp": "2026-06-07T05:24:47Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "445fa03bfa62",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: DECODE 0x025758 \u2014 Validation Check Called by 0x02398E\n\n## Context\nYou are working on the TI-",
+      "status": "completed",
+      "duration_seconds": 70.353,
+      "timestamp": "2026-06-07T05:24:53Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "54ab0323c4fa",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: TRACE TYPE STRING USAGE \u2014 How Callers of 0x03EC5A Use the Returned HL Pointer\n\n## Context\nYo",
+      "status": "completed",
+      "duration_seconds": 74.213,
+      "timestamp": "2026-06-07T05:25:01Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "4923318f5961",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: MAP ALL 54 CALLERS OF 0x02398E \u2014 Categorize by Subsystem\n\n## Context\nYou are working on the ",
+      "status": "success",
+      "duration_seconds": 72.265,
+      "timestamp": "2026-06-07T05:25:01Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1467,
-    "cc_to_codex": 1467,
+    "total_calls": 1475,
+    "cc_to_codex": 1475,
     "codex_to_cc": 0,
-    "completed": 1008,
+    "completed": 1011,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 512.329
+    "avg_duration_seconds": 509.936
   }
 }

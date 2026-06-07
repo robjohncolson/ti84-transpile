@@ -8,9 +8,64 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-06 (auto-session 545 — **★★★★ 0x03EC5A JUMP TABLE DISPATCHER DECODED (12B: LD E,A; ADD A,A; ADD A,E = A×3; LD DE,0; LD E,A; ADD HL,DE; ED 27 LD HL,(HL); RET — classic 3-byte-entry table lookup, returns HL=24-bit pointer from table). ★★★★ 0x03ECAD JUMP TABLE FULLY DUMPED (27 entries × 3B = 81B, all entries point to VARIABLE TYPE NAME STRINGS at 0x03ECFE-0x03ED54: REAL/LIST/MATRX/EQU/GDB/PIC/PRGM/CPLX/WINDW/ZSTO/TABLE/STRNG/APP/AVAR/UNKN/GROUP/IMAGE — 17 unique strings, maps error offsets to the variable type involved in each error). ★★★★ 0x02398E TOKEN DISPLAY PREP ROUTINE (37B, 54 callers: PUSH IX/AF/HL, LD HL=D02611, CALL 0x025758 check, JP Z 0x025762 abort; on success: OR 0x01, store 0x0109 to D025CF via SIS, RES 1 IY+0x35 clears parser flag, RET). ★★★ 0x0802BB DISPLAY POINTER SETTER (9B, 4 callers: SIS LD (0x2688),HL stores HL to D02688 via MBASE mapping, SET 4 IY+0x4A sets display flag at D000CA, RET). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-07 (auto-session 546 — **★★★★ 0x025758 TYPE-TAG VALIDATION DECODED (10B: ED 27 LD HL,(HL) dereference → LD A,(HL) load type byte → CP 0x83 → RET with Z if type=0x83; 19 callers, called by 0x02398E with HL=D02611). ★★★★ 0x025762 ABORT/CLEANUP PATH DECODED (falls through from 0x025758; POP AF, INC D0265B counter, CALL 0x025774, POP IX, JP 0x023955; 18 JP Z callers — all from 0x023xxx token display functions). ★★★★ 0x02398E CALLER MAP COMPLETE (100 total: 54 CALL + 46 CALL NZ; distribution: Core OS 4, Error 2, Memory 4, Variable/equation 23, Math/FPU/display 30, Graph/app 37). ★★★ 0x03EC5A TYPE STRING DISPATCHER TRACED (4 callers: 0x03EC55/0x03EC79 error system, 0x0BAB88/0x0BABF2 graph/app; callers use returned HL as string pointer for display/copy). GOLDEN REGRESSION 26/26 PASS.**)
 
-> Previous: 2026-06-06 (auto-session 544 — 0x03EC8F error context formatter, 0x08356A case-switch fully mapped, 0x06B9E8 equation variable lookup, 0x03E9D4 extended error detail)
+> Previous: 2026-06-06 (auto-session 545 — 0x03EC5A jump table dispatcher, 0x03ECAD type string table, 0x02398E token display prep, 0x0802BB display pointer setter)
+
+**Session 546 findings (2026-06-07)**:
+
+(1) ★★★★ 0x025758 TYPE-TAG VALIDATION DECODED (probe-phase546-decode-025758.mjs, Codex+Opus-verified):
+- **0x025758 (10B, 0x025758-0x025761)**: 7 instructions, 19 CALL xrefs.
+- Sequence: ED 27 LD HL,(HL) → LD A,(HL) → INC HL → PUSH HL → POP IX → CP 0x83 → RET.
+- **PURPOSE**: Dereferences the 24-bit pointer at HL (e.g., D02611), reads the type byte from the pointed-to location, saves pointer+1 in IX, and compares type to 0x83. Returns Z if type matches 0x83, NZ otherwise.
+- **CALLING PATTERN**: 0x02398E loads HL=D02611, calls 0x025758. If Z (type=0x83), jumps to 0x025762 abort. If NZ (type≠0x83), continues with token display setup.
+- **CALLERS**: 19 total, all in 0x0238xx-0x025xxx range (token display subsystem). Many are variants of the 0x02398E pattern.
+- **KEY INSIGHT**: 0x83 is likely a "deleted/invalid" type marker. When the variable/token at D02611 has type 0x83, the display is aborted.
+
+(2) ★★★★ 0x025762 ABORT/CLEANUP PATH DECODED (probe-phase546-decode-025762.mjs, Codex+Opus-verified):
+- **0x025762 (~18B, 0x025762-0x025773)**: Abort handler for failed validation.
+- Sequence: POP AF → PUSH HL → LD HL,0xD0265B → INC (HL) → POP HL → CALL 0x025774 → POP IX → JP 0x023955.
+- **PURPOSE**: When validation fails (type=0x83), increments a counter at D0265B (abort/skip counter), calls 0x025774 (secondary cleanup), then jumps to 0x023955 (common return path).
+- **18 JP Z callers**: All from 0x0238xx-0x025xxx — the same token display subsystem as 0x025758.
+- **FALLS THROUGH** from 0x025758: address 0x025762 immediately follows 0x025761 (RET), confirming they are part of the same validation-abort unit.
+- **NEW RAM**: D0265B (abort/skip counter, incremented when token display validation fails).
+- **NEW CALL TARGET**: 0x025774 (secondary cleanup, likely JP (IX) — 2 bytes DD E9).
+- **NEW JP TARGET**: 0x023955 (common return path for token display functions).
+
+(3) ★★★ 0x03EC5A TYPE STRING DISPATCHER TRACED (probe-phase546-trace-type-strings.mjs, Codex, timed out on direct-ref scan but caller data complete):
+- **4 callers** of 0x03EC5A found (not many — this is a specialized dispatcher):
+  - 0x03EC55: Called with HL=0x03ED55 (different table!), followed by RET. Simple lookup-and-return.
+  - 0x03EC79: Called after CALL 0x02398E (token display prep). After return, LD DE,D00603 → CALL 0x07F974 → LDI → LD HL,D00603 → JP 0x03EAEA. Copies type string into OP2 area then jumps to error display.
+  - 0x0BAB88: Called with HL=0x0BACB3 (separate table in graph/app area). After return, LD B,(HL) → INC HL → PUSH BC → reads string bytes. Parses returned type name string character-by-character.
+  - 0x0BABF2: Called with HL=0x0BACB3 (same graph table). After return, stores flag, PUSH HL → series of CALLs. Uses string for display in graph/app context.
+- **KEY INSIGHT**: 0x03EC5A is a generic dispatcher — not just for error type strings. Different callers pass different table bases (0x03ECAD, 0x03ED55, 0x0BACB3).
+- Probe timed out (180s) during direct reference scan of type string address range — not critical, caller analysis is complete.
+
+(4) ★★★★ 0x02398E CALLER MAP COMPLETE (probe-phase546-map-02398E-callers.mjs, Codex+Opus-verified):
+- **100 total call sites** (corrects session 545's "54 callers" — that was CALL-only; CALL NZ adds 46 more).
+  - CALL 0x02398E: 54 sites
+  - CALL NZ,0x02398E: 46 sites (BIT 1,(IY+0x35) pre-check pattern)
+  - CALL Z / CALL C: 0 sites
+- **Subsystem breakdown**:
+  - Core OS / tokenizer (0x02xxxx): 4 callers
+  - Error handling / system (0x03xxxx): 2 callers
+  - Memory management (0x04xxxx): 4 callers
+  - Variable/equation system (0x05-06xxxx): 23 callers — LARGEST single subsystem
+  - Math/FPU / display (0x07-08xxxx): 30 callers — most diverse spread
+  - Graph/app/extended display (0x09-0Bxxxx): 37 callers — most total
+- **CALL NZ pattern**: 46/100 callers use `BIT 1,(IY+0x35)` / `CALL NZ` pattern, confirming bit 1 of IY+0x35 is the "token display pending" flag tested before entry.
+- **CALL pattern**: 54/100 callers use unconditional CALL, meaning they always invoke token display prep regardless of the flag state.
+
+(5) CODEX: 4/4 created probe files. P1 ran with decoder alignment issues (raw fields shown) but data correct. P2 ran with [object Object] formatting but xref data and flow analysis correct. P3 timed out at 180s during direct-reference scan but caller analysis complete. P4 ran perfectly with 100 callers and full summary. Golden regression 26/26 PASS.
+
+NEW FUNCTIONS: 0x025758 (10B type-tag validation, 19 callers), 0x025762 (~18B abort/cleanup path, 18 JP Z callers).
+NEW RAM: D0265B (abort/skip counter for token display validation failures).
+NEW CALL TARGETS: 0x025774 (secondary cleanup, likely JP (IX)), 0x023955 (common return path for token display).
+CORRECTED: 0x02398E has 100 callers (54 CALL + 46 CALL NZ), not 54 as previously counted.
+
+PROBES: 4/4 Codex created files. P1/P2/P4 ran to completion (P1/P2 formatting issues, data correct). P3 timed out at 180s (watchdog killed cleanly, caller data salvaged). Golden regression 26/26 PASS.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x025774 — secondary cleanup called by 0x025762 (likely JP (IX) pattern — what does IX point to?). (c) ★★★★ DECODE 0x023955 — common return path for token display functions (what cleanup does it do?). (d) ★★★ INVESTIGATE 0x83 TYPE TAG — what variable/token type is 0x83? Cross-reference with SDK documentation or other type checks in the ROM. (e) ★★★ DECODE 0x0BACB3 TABLE — the graph/app type string table used by 0x0BAB88/0x0BABF2 (different from error type table at 0x03ECAD). (f) ★★ FRAME SIZE INVESTIGATION (carried). --END SESSION 546--
 
 **Session 545 findings (2026-06-06)**:
 
