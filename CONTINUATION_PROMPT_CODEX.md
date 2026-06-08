@@ -25,7 +25,9 @@
 
 ---
 
-**Last updated**: 2026-06-08 (auto-session 573 — **★★★ D03028/D0302B SCROLL BUFFER CURSOR PAIR MAPPED (both 0x000000 at boot, 49+22 ROM refs across 0x0344xx-0x0358xx print subsystem — D03028=base pointer into D031F6 buffer, D0302B=offset/index; heavily used by variable-display/print-token functions with LD/ADD HL pattern). ★★★ 0x0A89FE LCD PARAMETER COMPUTATION DECODED (31B: .SIS reads LCD regs 0x2A75/0x2A77/0x2A79, adds 0x11 or 0x0C based on IY+0x51 bit 3, computes DE=HL+DE-1; 10 callers including 0x0BA571 LCD window reset; wrapper 0x0A89F2 clears bit 3 before call). ★★★ D02A65/D02A68 FONT PARAM BLOCKS CONFIRMED RUNTIME-ONLY (both 0x000000 at boot, 4 ROM refs — written by glyph renderer at 0x06F56F/0x06F58C/0x06F59C, read at 0x09F238; populated during active rendering not init). ★★★ 0x0AB3BE-0x0AECFC STRING TABLE REGION MAPPED (14654B extent, 153 strings, 2 major clusters: table[0] 0x0AB3BE=stats names "1-Var Stats"/"2-Var Stats", table[58] 0x0AEB45-0x0AECFC=76 strings including "RegEQ"/"df"/"Iterations"/"Period"/"Store EQ"/etc.; many small 1-2 byte fragments between clusters = embedded code region with coincidental printable bytes). GOLDEN REGRESSION PASS.**)
+**Last updated**: 2026-06-08 (auto-session 574 — **★★★ 0x0A1FB5 SCROLL SWAP SECOND ENTRY CALLERS FOUND (2 callers: 0x05831E=CALL, 0x08A85D=CALL NZ — session 572 only found the primary entry 0x0A1FAB caller; secondary entry used independently for secondary→primary copy direction). ★★★ 0x0BA57E LCD PARAMETER SETTER DECODED (30B: writes D02A76/A, D02A77/.SIS HL, D02A79/.SIS DE, D02A7C/B; clears IY+0x51 bit 2, sets IY+2 bit 1, calls 0x0A89F2; D02A76=31 refs, D02A7C=18 refs — extends pixel renderer workspace past D02A75). ★★★ 0x06F6E7 FONT PARAM WRITER FULLY DECODED (entry 0x06F6E7, 1 caller at 0x06F8E1; D02A65=copy of D0146E via LD A,(D0146E)/LD (D02A65),A; D02A68=copy of D01471 via memcpy 0x07F984; also writes D02AC8; multi-path function 0x06F6E7-0x06F7B9+ with parallel routines at 0x06F6FF/0x06F717/0x06F75C). ★★★ 0x0AEB45 STRING TABLE REFERENCE MAP (306 total intra-table refs across 90 distinct addresses; references concentrated in pointer tables at 0x0AE6xx-0x0AF8xx — these are descriptor tables that index into the 76-string table; 5 direct base refs; first table 0x0AB3BE has 1 ref). GOLDEN REGRESSION 26/26 PASS.**)
+
+> Previous: 2026-06-08 (auto-session 573 — D03028/D0302B scroll buffer cursor pair mapped, 0x0A89FE LCD parameter computation 31B, D02A65/D02A68 font params confirmed runtime-only, 0x0AB3BE-0x0AECFC string table region 14654B 153 strings)
 
 > Previous: 2026-06-08 (auto-session 572 — 0x0BA561 LCD window reset 29B, 0x080075 multi-byte prefix table cross-referenced, 0x08DDBF token translation table 57B, 0x0A1FAB scroll buffer swap 38B)
 
@@ -64,6 +66,50 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**Session 574 findings (2026-06-08)**:
+
+(1) ★★★ 0x0A1FB5 SCROLL SWAP SECOND ENTRY CALLERS FOUND (probe-phase574-scan-0A1FB5-callers.mjs, Codex+Opus-verified):
+- **Secondary entry 0x0A1FB5**: 2 callers found — 0x05831E (CALL nn), 0x08A85D (CALL NZ,nn = conditional).
+- **Primary entry 0x0A1FAB**: 1 caller — 0x0A1FE4 (CALL nn, the wrapper with IY+0x49/IY+0x28 flag checks).
+- **Wrapper 0x0A1FE4**: 0 external callers (it's called as a tail target only).
+- **Significance**: 0x05831E and 0x08A85D call the secondary→primary direction (D07396→D031F6 copy) independently of the wrapper. The conditional CALL NZ at 0x08A85D suggests scroll-buffer restoration gated by a flag.
+
+(2) ★★★ 0x0BA57E LCD PARAMETER SETTER DECODED (probe-phase574-decode-0BA57E.mjs, Sonnet-verified):
+- **Function**: 0x0BA57E-0x0BA59C (30 bytes, 8 instructions + RET).
+- **Flow**: RES 2,(IY+0x51) / LD (D02A76),A / .SIS LD (0x2A77),HL / .SIS LD (0x2A79),DE / LD A,B / LD (D02A7C),A / SET 1,(IY+2) / CALL 0x0A89F2 / RET.
+- **RAM writes**: D02A76 (from A, 31 ROM refs), D02A77 (from HL via .SIS, MBASE-relative), D02A79 (from DE via .SIS), D02A7C (from B, 18 ROM refs).
+- **Flags**: Clears IY+0x51 bit 2 (font flag), sets IY+2 bit 1.
+- **Sub-call**: 0x0A89F2 (LCD parameter computation wrapper from session 573).
+- **Workspace extension**: D02A76-D02A7C extends the pixel renderer workspace past D02A75 (mapped session 571). Total workspace now D02A62-D02A7C = 27 bytes.
+
+(3) ★★★ 0x06F6E7 FONT PARAM WRITER FULLY DECODED (probe-phase574-decode-06F56F.mjs, Sonnet-verified):
+- **Function entry**: 0x06F6E7 (preceded by JP 0x06AD37 at 0x06F6E3).
+- **Short path (0x06F6E7-0x06F6FB, 21B)**: SET 1,(IY+2) / LD A,(D0146E) / LD (D02A65),A / LD (D01471),A / CALL 0x07B222 / JP 0x06F7B9.
+- **D02A65 provenance confirmed**: copied from D0146E — a font metric source variable.
+- **D02A68 provenance**: copied from D01471 via memcpy helper 0x07F984 (LD HL,D01471 / LD DE,D02A68 / CALL 0x07F984).
+- **NEW RAM discovered**: D02AC8 (written at 0x06F768, compared against 0x04).
+- **Source variables**: D0146E, D01471, D007E0, D005FA, D00605 all read in the extended function region.
+- **1 caller**: 0x06F8E1 calls entry 0x06F6E7.
+- **Multi-path structure**: Parallel routines at 0x06F6FF (uses .SIS copies), 0x06F717 (calls 0x07022C + block copies), 0x06F75C (writes D02AC8, compares 0x04). All converge to 0x06F7B9.
+
+(4) ★★★ 0x0AEB45 STRING TABLE REFERENCE MAP (probe-phase574-map-0AEB45-lookup.mjs, Codex+Opus-verified):
+- **Direct base refs to 0x0AEB45**: 5 hits, all in data region 0x0AE60B-0x0AE95F (embedded in pointer/descriptor tables, not code).
+- **Intra-table refs (0x0AEB45-0x0AECFC)**: 306 total hits across 90 distinct string addresses. Most references are in pointer tables at 0x0AE6xx-0x0AF8xx.
+- **Reference pattern**: The surrounding bytes show indexed descriptor entries — each entry is ~3-5 bytes: a type/index byte + 3-byte address pointer. These are dialog/menu descriptor tables that reference string names.
+- **First table 0x0AB3BE**: 1 reference at 0x0AB53E (self-referencing from within the table region).
+- **Code-side refs**: A few LD HL,nn instructions at 0x0AF2A8 (→ 0x0AECA0), 0x0AE2BA (→ 0x0AECA1), 0x0ADC8C (→ 0x0AECFC) — these are actual code loading string pointers.
+
+(5) CODEX: 2/4 working (P1 caller scan exit 0, P4 string table scan exit 0). P2/P3 failed with wrong cpu-runtime.js factory export (classic `createCPU` error). P2+P3 redone via Sonnet fallback. All 4 probes Opus-verified (exit 0, output matches analysis). Golden regression 26/26 PASS.
+
+**FUNCTIONS DECODED**: 0x0BA57E (30B LCD parameter setter, 4 RAM writes D02A76/D02A77/D02A79/D02A7C), 0x06F6E7 (font param writer, multi-path, copies D0146E→D02A65 + D01471→D02A68).
+**NEW CALLERS FOUND**: 0x0A1FB5 secondary scroll swap entry — 0x05831E (CALL), 0x08A85D (CALL NZ).
+**STRING TABLE REFS**: 306 intra-table references, 90 distinct addresses, concentrated in descriptor tables 0x0AE6xx-0x0AF8xx.
+**NEW RAM**: D02A76 (31 refs), D02A7C (18 refs), D02AC8 (written at 0x06F768).
+**WORKSPACE EXTENDED**: Pixel renderer workspace now D02A62-D02A7C (27B, up from 20B).
+**CORRECTIONS**: Session 573 listed D02A65 write at 0x06F56F — actual address is 0x06F6EF (Sonnet found the real location via byte pattern scan).
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL -- needs human. (b) ★★ MAP 0x0A8A1D -- second function after 0x0A89FE LCD param computation (carried from 573). (c) ★★ TRACE D03028 WRITE CHAIN -- 0x03451E/0x034555 stores under DI suggest interrupt-critical buffer switching (carried from 573). (d) ★★ DECODE 0x05831E CONTEXT -- caller of secondary scroll swap 0x0A1FB5, need surrounding function to understand when secondary→primary copy triggers. (e) ★★ DECODE 0x08A85D CONTEXT -- conditional CALL NZ to 0x0A1FB5, need flag context. (f) ★★ MAP D02AC8 -- newly discovered RAM variable written at 0x06F768 with CP 0x04 guard. (g) ★★ DECODE 0x06F7B9 CONVERGENCE POINT -- all font param writer paths JP here, likely the shared tail that finalizes font setup. (h) ★ MAP D0146E/D01471 -- font metric source variables, provenance for D02A65/D02A68. --END SESSION 574--
 
 **Session 572 findings (2026-06-08)**:
 
