@@ -18428,15 +18428,147 @@
       "timestamp": "2026-06-08T03:37:55Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "45b7691d8de3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x02398E \u2014 Font ROM Helper\n\n## Context\nYou are working on the TI-84 Plus CE ROM trans",
+      "status": "partial",
+      "duration_seconds": 70.893,
+      "timestamp": "2026-06-08T04:43:54Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "3fbe61c631ec",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x09BAC9 \u2014 Input Reader\n\n## Context\nYou are working on the TI-84 Plus CE ROM transpil",
+      "status": "partial",
+      "duration_seconds": 79.059,
+      "timestamp": "2026-06-08T04:44:07Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f980c38ecd59",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x055191 \u2014 BPP Sub-Helper\n\n## Context\nYou are working on the TI-84 Plus CE ROM transp",
+      "status": "partial",
+      "duration_seconds": 83.125,
+      "timestamp": "2026-06-08T04:44:08Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f37d88425c51",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0A2695 \u2014 Tail-Call Cleanup After Glyph Blit\n\n## Context\nYou are working on the TI-8",
+      "status": "completed",
+      "duration_seconds": 94.422,
+      "timestamp": "2026-06-08T04:44:16Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9f90a339b127",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function 0x0A2537 \u2014 Row Loop Top (glyph rendering)\n\n## Context\nYou are working on",
+      "status": "completed",
+      "duration_seconds": 78.424,
+      "timestamp": "2026-06-08T05:53:49Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "cd04094c7f9a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function 0x025758 \u2014 App Header Validator\n\n## Context\nYou are working on a TI-84 P",
+      "status": "success",
+      "duration_seconds": 83.788,
+      "timestamp": "2026-06-08T05:53:58Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5186d35af013",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function 0x09BAFF \u2014 Main Token Classifier (163B)\n\n## Context\nYou are working on a",
+      "status": "success",
+      "duration_seconds": 89.338,
+      "timestamp": "2026-06-08T05:53:59Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6974d9695925",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function 0x0551FE \u2014 VRAM Fill (63B)\n\n## Context\nYou are working on a TI-84 Plus C",
+      "status": "success",
+      "duration_seconds": 98.985,
+      "timestamp": "2026-06-08T05:54:14Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8a8be5dcb7c0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0551EF \u2014 Post-Fill Cleanup + 0x055743 BPP Mode Helper\n\n## Context\n\nYou are working ",
+      "status": "completed",
+      "duration_seconds": 57.333,
+      "timestamp": "2026-06-08T07:03:45Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a304b7934e21",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x059FFF \u2014 Token Accept/Commit Handler\n\n## Context\n\nYou are working on the TI-84 Plus",
+      "status": "completed",
+      "duration_seconds": 72.352,
+      "timestamp": "2026-06-08T07:03:56Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f4cd9c564d57",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x09B9C8 \u2014 Token Pre-Classifier\n\n## Context\n\nYou are working on the TI-84 Plus CE ROM",
+      "status": "completed",
+      "duration_seconds": 71.546,
+      "timestamp": "2026-06-08T07:03:57Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "17a2666b6ccc",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0A258F-0x0A2694 \u2014 Remaining Column Blit Paths (4bpp/16bpp)\n\n## Context\n\nYou are wor",
+      "status": "completed",
+      "duration_seconds": 76.466,
+      "timestamp": "2026-06-08T07:03:58Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1546,
-    "cc_to_codex": 1546,
+    "total_calls": 1558,
+    "cc_to_codex": 1558,
     "codex_to_cc": 0,
-    "completed": 1036,
+    "completed": 1042,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 491.634
+    "avg_duration_seconds": 488.461
   }
 }
