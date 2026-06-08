@@ -8,7 +8,9 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-07 (auto-session 562 — **★★★★★ 0x0A2802 SCROLL_SETUP_AND_FILL DECODED (250B: multi-entry 0x0A2802/0x0A284E/0x0A2854, IY+0x4C bit 4 scroll direction DOWN=D031F5→D44B00/UP=D04F2D→D61E80/extended=D0457D→D58380, bit 5=large scroll→0x0A2947, interrupt-safe LD A,I/DI/LDIR/RET PO/EI, CALL 0x0800A0, cursor state save D007C4-D007C9). ★★★★ 0x08C308 BPP MODE TEST CONFIRMED (9B: PUSH HL; LD HL,D000C6; BIT 2,(HL); POP HL; RET — absolute addressing not IY-relative, session 553 label semantically correct). ★★★★ 0x0A237E TEXT BUFFER POINTER CALC (32B: NOT alternate glyph path — computes HL=D006C0+column(D00596)+row_offset(CALL 0x0A2A37 with D00595)). ★★★★ 0x0A26E4 CORRECTED: 7-ENTRY PIXEL FILL MASK TABLE (0x0A26E5-0x0A26EB: 80 C0 E0 F0 F8 FC FE — cumulative left-aligned bitmasks for 1BPP renderer, complementary to 0x0A1B14 single-bit masks). BONUS: 0x0A239E CLEAR RENDER FLAGS (12B: calls 0x0A23AB, clears IY+0x32 bits 6,2 at D000B2). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-07 (auto-session 563 — **★★★★ 0x0A2947 LARGE SCROLL HANDLER DECODED (~150B: writes 10→D02505 line count, CALL 0x0800A0 split check, .SIS 16-bit addressing, row loops via PutC 0x0A1B5B, restores cursor state from D007C4/C7/C8/C9). ★★★★ 0x0800A0 CONFIRMED = MULTI-STUB CLUSTER (BIT 3,IY+0x14 split-flag → JR Z to BIT 0,IY+0x14; non-Z path: CP A/RET, then tests IY+0x09 bit 7, CALL 0x080259, IY+0x45 bit 5, IY+0x44 bit 5; 0x0800BD=BIT 0,IY+0x14; 0x0800C2=RES 3,IY+0x14). ★★★★ 0x0A23AB RENDERING PREAMBLE (interrupt-safe register save: LD A,I/DI/EXX/PUSH, then JR to 0x0A2400; 0x0A23C0=IY+0x32 bit 2 test, H=0x1C→CALL 0x07BF3E glyph table, H=0x19→CALL 0x0A5424; writes D005A4). ★★★★ D007C4-D007C9 CURSOR SAVE MAPPED (D007C4=curRow save 3 refs, D007C5/C6=0 refs part of 3-byte ops, D007C7=D02504 page counter save 5 refs, D007C8=IY+0x12 D00092 flags save 4 refs, D007C9=IY+0x05 D00085 bit 4 save 3 refs). GOLDEN REGRESSION 26/26 PASS.**)
+
+> Previous: 2026-06-07 (auto-session 562 — 0x0A2802 scroll setup+fill 250B, 0x08C308 BPP test 9B, 0x0A237E text buffer ptr calc 32B, 0x0A26E4 pixel fill mask table 7B)
 
 > Previous: 2026-06-07 (auto-session 561 — 0x0A1F48 Y-advance complex 234B, 0x0A1A83 ROM table lookup 12B, 0x0A1A8F workspace selector 14B, 0x0800B8 flag test 5B, 0x0B4EE2 blit space 11B)
 
@@ -25,6 +27,64 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**Session 563 findings (2026-06-07)**:
+
+(1) ★★★★ 0x0A2947 LARGE SCROLL HANDLER DECODED (probe-phase563-decode-0A2947.mjs, Codex+Opus-verified):
+- Entry: `LD A,0x0A; LD (D02505),A` — writes 10 (line count) to scroll page register.
+- `LD HL,0; CALL 0x0800A0; JR Z,...` — split-flag check determines path.
+- Uses `.SIS` prefix (0x40) for 16-bit LD/PUSH operations throughout.
+- Row loop: reads from text buffer via `CALL 0x0A237E`, iterates chars via `CALL 0x0A1B5B` (PutC) with DJNZ.
+- Restore path at 0x0A2987+: `LD HL,(D02A??); LD (D0059A),HL` — restores cursor state.
+- Reads D007C4→D00595 (curRow restore), D007C7→D02504 (page restore), D007C8→D00092 (flags restore), D007C9→D00085 (display control restore with AND 0xEF mask).
+- **CALL targets**: 0x0800A0, 0x0A237E (text buffer ptr), 0x0A1B5B (PutC), 0x0A1799 (PutMap)
+- **RAM**: D02505, D00595, D007C4-C9 (cursor save), D02685, D02687, D00092, D00085, D006C0+
+
+(2) ★★★★ 0x0800A0 CONFIRMED AS MULTI-STUB FLAG CLUSTER (probe-phase563-decode-0800A0.mjs, Sonnet+Opus-verified):
+- **0x0800A0** (4B+): `BIT 3,(IY+0x14); JR Z,+23(0x0800BD)` — split-screen active test. NOT a simple RET stub.
+- **Non-Z path** (split active): `CP A` (XOR A=clear A, set Z); RET — returns Z=1 "split mode confirmed"
+- **0x0800A8**: `BIT 7,(IY+0x09)` → JR NZ back to 0x0800A6 (the CP A; RET)
+- **0x0800AE**: `CALL 0x080259` → RET Z
+- **0x0800B3**: `BIT 5,(IY+0x45)` → RET Z (known from session 561)
+- **0x0800B8**: `BIT 5,(IY+0x44)` → RET (known, 5B)
+- **0x0800BD** (Z path = no split): `BIT 0,(IY+0x14)` → RET
+- **0x0800C2**: `RES 3,(IY+0x14)` → RET (clears split flag)
+- **KEY INSIGHT**: 0x0800A0 is NOT a single 5-byte stub — it's a 29-byte multi-path entry (0x0800A0-0x0800BC) that checks split mode, then falls through to secondary tests if split is active. Session 78's one-liner was an oversimplification.
+- **IY offsets**: +0x14(D00094) bits 0,3; +0x09(D00089) bit 7; +0x45(D000C5) bit 5; +0x44(D000C4) bit 5
+
+(3) ★★★★ 0x0A23AB RENDERING PREAMBLE DECODED (probe-phase563-decode-0A23AB.mjs, Sonnet+Opus-verified):
+- **0x0A23AB** (20B preamble): `PUSH BC; LD B,A; LD A,I; JP PE,0x0A23B5; LD A,I; PUSH AF; LD A,B; DI; EXX; PUSH HL; PUSH DE; PUSH BC; EXX; PUSH HL` — interrupt-safe register save with EXX (shadow registers).
+- **JR +0x40 → 0x0A2400** — jumps PAST the blit loop at 0x0A23E5 to a later setup stage.
+- **0x0A23C0** (pre-render setup): `LD L,A; BIT 2,(IY+0x32); JR NZ,...; BIT 6,(IY+0x32)` — tests render dirty flags.
+- **Two glyph paths**: H=0x1C (28=large font height) → `CALL 0x07BF3E` (glyph table lookup); H=0x19 (25) → `CALL 0x0A5424` (alternate/small font handler?).
+- **MLT H** (ED 6C) used for row×stride multiplication.
+- **Writes D005A4** with 0x0C literal (glyph record field).
+- **RET at 0x0A23DB and 0x0A23E4** — two exit paths before the blit loop.
+- **KEY INSIGHT**: 0x0A23AB is the interrupt-safe ENTRY point (save state + DI) while 0x0A23E5 (session 552) is the interrupt-safe EXIT point (restore state + EI). The rendering pipeline: 0x0A23AB(save)→0x0A23C0(setup)→0x0A23E5(blit+restore).
+
+(4) ★★★★ D007C4-D007C9 CURSOR SAVE FULLY MAPPED (probe-phase563-map-D007C4.mjs, Sonnet+Opus-verified):
+- **15 total ROM references, 0 false positives**. 4 logical fields:
+  - D007C4 (3 refs, 3-byte pointer): `curSavePos` — mirrors D00595 cursor position. Written via `LD (D007C4),HL` (24-bit), read via `LD A,(D007C4); LD (D00595),A`.
+  - D007C5/D007C6 (0 independent refs): high bytes of 24-bit LD at D007C4.
+  - D007C7 (5 refs): `curSaveWinTop` — mirrors D02504 text window top row.
+  - D007C8 (4 refs): `curSaveScrollFlags` — mirrors D00092 (IY+0x12) scroll/cursor mode.
+  - D007C9 (3 refs): `curSaveDispCtrl` — mirrors D00085 (IY+0x05) bit 4, masked with AND 0xEF on restore.
+- **Subsystems**: 0x0Axxxx (display, 8 refs), 0x0Bxxxx (display-high, 4 refs), 0x08xxxx (OS core, 3 refs).
+- **Save sites**: 0x0A2802 (scroll setup), 0x0BA5E8 (secondary save path).
+- **Restore sites**: 0x0A2947 (large scroll restore), 0x0A2854 (scroll state-restore entry), 0x08629E (OS core restore).
+
+(5) VERIFICATION: All 4 probes ran to completion. Golden regression 26/26 PASS. No runtime/source files modified — probes are read-only ROM analysis. Codex 1/4 succeeded (P1). Sonnet 4/4 success (P1 redundant with Codex).
+
+**NEW FUNCTIONS DECODED**: 0x0A2947 (~150B large scroll handler), 0x0800A0 (29B multi-path split-flag cluster), 0x0A23AB (20B rendering preamble + setup through 0x0A23E4).
+**NEW RAM ADDRESSES**: D02505 (scroll page/line count register), D005A4 (glyph record field, 0x0C=12).
+**NEW CALLS**: 0x080259 (called from split-flag path), 0x0A5424 (small/alternate font handler from 0x0A23DC).
+**CORRECTIONS**: 0x0800A0 is a 29-byte multi-path cluster (not a 5-byte stub as session 78 implied). 0x0A23AB is the interrupt-safe entry point paired with 0x0A23E5 as the exit point.
+**D007C4-D007C9 NAMED**: curSavePos(3B), curSaveWinTop(1B), curSaveScrollFlags(1B), curSaveDispCtrl(1B).
+**IY FLAG MAP UPDATE**: +0x14 bit 3=split-screen active, +0x14 bit 0=split-screen secondary test, +0x32 bit 2=render dirty, +0x32 bit 6=render pending.
+
+PROBES: 4/4 ran to completion. Golden regression 26/26 PASS. Codex 1/4 (P1 succeeded, P2-P4 failed — service issue). Sonnet 4/4 success.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x0A2947 FULL — remaining bytes after 0x0A298C (Codex probe covered entry but disassembler had .SIS prefix issues — deeper decode of the row-reprint logic). (c) ★★★★ DECODE 0x080259 — called from 0x0800A0 split-flag path (new). (d) ★★★★ DECODE 0x0A5424 — alternate/small font handler called from 0x0A23DC (new). (e) ★★★★ DECODE 0x0A2400 — rendering target jumped to from 0x0A23AB preamble (new). (f) ★★★ DECODE 0x055316 — BPP helper (carried from 559). (g) ★★★ DECODE 0x09BAC9 — input reader (carried from 558). (h) ★★★ DECODE 0x08DB93 — pre-operation helper (carried from 558). (i) ★★★ MAP D02A62-D02A75 — pixel renderer workspace (carried from 560). (j) ★★★ MAP D031F6/D07396 SCROLL BUFFERS — initialization/trigger (carried from 561). (k) ★★ DECODE 0x0BA561 — carried from 549. --END SESSION 563--
 
 **Session 562 findings (2026-06-07)**:
 
