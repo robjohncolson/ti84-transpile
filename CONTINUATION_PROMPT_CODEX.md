@@ -25,7 +25,9 @@
 
 ---
 
-**Last updated**: 2026-06-08 (auto-session 576 — **★★★ 0x0620C4 DISPLAY DISPATCHER CONTEXT DECODED (mid-block in mode dispatcher, NOT a function entry — CALL 0x058241 gated by D02310 & 0xF0 comparison, D007E0=0x40 display refresh vs 0x49 alternate path via 0x05FE15, common exit JP 0x08C33D, no direct callers — reached by fall-through). ★★★ 0x08A850 SCROLL BUFFER REFRESH DECODED (37B: PUSH AF / CALL 0x08A875 helper / RES 2,(IY+02) / BIT 1,(IY+08) gates CALL NZ 0x0A1FB5 scroll swap / CALL 0x0A2854 post-scroll / restore IY+0D/0x0C from D00829/D0082A / POP AF / RET — 3 callers 0x05A503/0x08AD0D/0x08B058). ★★★ D0146E/D01471 FONT METRIC SOURCE VARS FULLY MAPPED (57 total refs: D0146E 36 refs 16R/12W/8A concentrated in 0x06Cxxx-0x06Fxxx rendering+font; D01471 20 refs 10R/6W/4A concentrated in 0x044xxx home screen; D0146F 1 ref confirming 24-bit access). ★★★ 0x070241 FONT RENDERING ENGINE CORE DECODED (~300B: reads D02AC8 font mode at 3 points, CP 0x04 dispatch, uses D02A8A/D02A8D workspace, 8 IY flag refs, 5 callers 0x06D617/0x06D74C/0x06D7B7/0x06F8E5 CALL + 0x06F758 JP — all in font cluster). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-08 (auto-session 577 — **★★★ 0x062055 PARENT FUNCTION FULLY DECODED (150B event loop display dispatcher: 0x080151 gate selects path, D0230F cascade CP 0x3F/0x5E with 0x06C73C/0x06C737/0x06C72D bit accumulation → D02310 & 0xF0 comparison → D007E0=0x40 main refresh CALL 0x058241 vs D007E0=0x49 alternate CALL 0x05FE15, both exit JP 0x08C33D; alternate path handles D0230F=0x3E via 0x08C721; 11 CALL targets, 5 IY flags, 10 RAM refs). ★★★ 0x08C33D EVENT LOOP CLEANUP FULLY DECODED (128B: CALL 0x0A349A+0x05C75B cleanup, RES 7 IY+0x08 scroll-dirty clear, IY+0x1F bit 5 conditional D0058C/D0058E context save/restore, 14 IY flag ops, 6 D0058C RAM refs, font render gate CALL Z 0x06F7E4, exits JP 0x08C331 = event loop return). ★★★ 0x05FE15 ALTERNATE DISPLAY HANDLER DECODED (251B: configuration/setup not buffer copy — zero LDIRs vs 0x058241's 8400B swap, 9 IY flags, 8 RAM refs incl D00839/D01170/D0116D/D02684/D00595, heavy 0x06C7xx screen-mode cascade, writes D02310=0xFF to force full refresh on next cycle, 1 caller 0x0620B6). ★★★ D02310 FULLY MAPPED (3 total refs: 1 WRITE at 0x05FF0B sets 0xFF, 1 READ at 0x0620A3 AND 0xF0 for display dispatch, 1 ADDRESS at 0x060C1D LD HL for CP comparison helper). GOLDEN REGRESSION 26/26 PASS.**)
+
+> Previous: 2026-06-08 (auto-session 576 — 0x0620C4 display dispatcher context decoded, 0x08A850 scroll buffer refresh 37B, D0146E/D01471 font metric vars 57 refs, 0x070241 font rendering engine core ~300B)
 
 > Previous: 2026-06-08 (auto-session 575 — 0x0A8A1D LCD row height helper 22B, 0x058241 OS main display refresh 423B, D02AC8 fully mapped 22 refs, 0x06F7B9 font param writer tail 5B)
 
@@ -70,6 +72,54 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**Session 577 findings (2026-06-08)**:
+
+(1) ★★★ 0x062055 PARENT FUNCTION FULLY DECODED (probe-phase577-decode-parent-062080.mjs, Sonnet-verified):
+- **Function**: 0x062055-0x0620EB (150 bytes), matches session 260's known entry.
+- **Path selector**: CALL 0x080151 at 0x062056 — Z = main display path, NZ = alternate handler.
+- **Main path (Z)**: CALL 0x063033 (init) → saves D0230F around CALL 0x08C69E → LD SP,(D007FA) → CALL 0x09DCAA → SET 7,(IY+0x0C) / RES 6,(IY+0x0C) → D0230F cascade:
+  - CP 0x3F → JR Z to 0x0620BE (display refresh)
+  - CP 0x5E → JR NZ to 0x0620BE
+  - If 0x5E: 4-level bit accumulation via CALL 0x06C73C/0x06C737/0x06C72D → compare against D02310 & 0xF0
+  - **MATCH (Z)**: D007E0=0x49, RES 4,(IY+0x01), CALL 0x05FE15, JP 0x08C33D
+  - **MISMATCH (NZ, 0x0620BE)**: D007E0=0x40, CALL 0x058241 (main refresh), JP 0x08C33D
+- **Alternate path (NZ → 0x0620CC)**: D0230F==0x3E → SET 7,(IY+0x0C). Clears IY+0x01 bit 4, CALL 0x063033 + 0x08C721, zeroes D0230F, RET.
+- **11 CALL targets**, 5 IY flag ops (IY+0x0C bits 6,7; IY+0x01 bit 4), 10 RAM refs (D0230F ×5, D007FA, D007E0 ×2, D02310, D0231A).
+
+(2) ★★★ 0x08C33D EVENT LOOP CLEANUP FULLY DECODED (probe-phase577-decode-08C33D.mjs, Sonnet-verified):
+- **Function**: 0x08C33D-0x08C3BC (128 bytes), 37 instructions.
+- **Flow**: CALL 0x0A349A + CALL 0x05C75B (cleanup) → RES 7,(IY+0x08) (scroll-dirty clear) → BIT 5,(IY+0x1F) conditional: SET→save A from D0058C + clear flag; CLEAR→zero D0058C/D0058E + CALL 0x02FCB3 → RES 7,(IY+0x16) + RES 1,(IY+0x1D) → store A to D0058C.
+- **Two parallel redraw paths** gated by IY+0x02 bit 0 and IY+0x0D bit 5: both clear IY+0x0C bit 2, test bit 3, CALL Z 0x06F7E4 (font rendering).
+- **Final**: SET 0,(IY+0x4A) → CALL 0x05C634 → CALL 0x0A27DD → result check → JP 0x08C331 (event loop return).
+- **14 IY flag ops** on IY+0x02, 0x08, 0x09, 0x0C, 0x0D, 0x16, 0x1D, 0x1F, 0x4A.
+- **6 D0058C RAM refs** (context/mode byte, 3R + 3W).
+- **11 callers** confirmed: 9 JP + 2 CALL (incl. 0x0620BA and 0x0620C8 from display dispatcher).
+
+(3) ★★★ 0x05FE15 ALTERNATE DISPLAY HANDLER DECODED (probe-phase577-decode-05FE15.mjs, Sonnet-verified):
+- **Function**: 0x05FE15-0x05FF0F (251 bytes), 80 instructions. 1 caller: 0x0620B6.
+- **Configuration/setup handler — NOT a buffer copy**: Zero LDIRs (vs 0x058241's 8400B scroll swap + 260B LDIR). Pure RAM and IY flag manipulation.
+- **Init**: Two entry points (main 0x05FE15 JR skips alternate 0x05FE17 which clears IY+0x0C bit 7). Zeros D00839, checks IY+0x02 bit 7 for cursor blink.
+- **Conditional display**: IY+0x0C bit 7 gate → calls 0x05FF09 (sets D02310=0xFF forcing full refresh next cycle).
+- **Screen geometry**: Stores to D01170/D0116D (position), adjusts D02684 with +0x14, heavy 0x06C7xx cascade (0x06C73C/0x06C737/0x06C72D screen mode selectors).
+- **Exit**: D02310=0xFF (force refresh flag) then RET.
+- **9 IY flag ops**, 8 RAM refs (D00839, D01D0C, D01170, D0116D, D02684, D02504, D00595, D02310).
+- **KEY INSIGHT**: 0x05FE15 reconfigures display parameters and forces a full refresh on the NEXT event loop iteration by writing D02310=0xFF.
+
+(4) ★★★ D02310 DISPLAY MODE BYTE FULLY MAPPED (probe-phase577-map-D02310.mjs, Sonnet-verified):
+- **3 total ROM refs**: 1 WRITE, 1 READ, 1 ADDRESS.
+- **WRITE at 0x05FF0B**: LD A,0xFF / LD (D02310),A / RET — sets display mode to 0xFF (force full refresh).
+- **READ at 0x0620A3**: LD A,(D02310) / AND 0xF0 / CP B — display dispatcher masks top nibble for mode comparison.
+- **ADDRESS at 0x060C1D**: LD HL,D02310 / CP (HL) / RET — comparison helper, compares A against D02310.
+- **LIFECYCLE**: 0x05FE15 (alternate handler) writes 0xFF to force refresh → next event loop iteration reads at 0x0620A3 and masks top nibble → if 0xF0 matches accumulated bits → D007E0=0x49 (alternate path), else → D007E0=0x40 (main refresh).
+
+(5) CODEX: 4/4 created probe files but all had broken decoder API (passed boolean `true` instead of string `'adl'`, used nonexistent `.mnemonic`/`.operands` fields). All 4 priorities completed via Sonnet fallback with correct decoder API. All probes Opus-verified (exit 0, output matches analysis). Golden regression 26/26 PASS.
+
+**FUNCTIONS DECODED**: 0x062055 (150B event loop display dispatcher, 11 CALLs), 0x08C33D (128B event loop cleanup, 14 IY flags, exits JP 0x08C331), 0x05FE15 (251B alternate display handler, config/setup not buffer copy, writes D02310=0xFF).
+**RAM MAPPED**: D02310 (3 refs: display mode force-refresh flag, lifecycle decoded), D0058C (6 refs in 0x08C33D, context/mode byte).
+**ARCHITECTURAL INSIGHT**: The event loop's display path is now fully traced: 0x062055 entry → 0x080151 gate → D0230F cascade → D02310 comparison → D007E0 mode select → CALL 0x058241 (main) or CALL 0x05FE15 (alternate) → JP 0x08C33D (cleanup) → JP 0x08C331 (loop return). The alternate handler 0x05FE15 doesn't copy buffers — it reconfigures display parameters and writes D02310=0xFF to trigger a full refresh on the next loop iteration.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★ DECODE 0x08C331 — the event loop return/preamble (0x08C33D's JP target). Is this the actual top of the event loop? What comes before 0x08C33D? Map the full loop: 0x08C331 → ... → 0x062055 → display → 0x08C33D → 0x08C331. (c) ★★★ TRACE 0x063033 — init helper called twice in 0x062055 (at 0x06205C and 0x0620DE). What does it initialize? (d) ★★ DECODE 0x06C73C/0x06C737/0x06C72D — the screen-mode bit accumulators used by both 0x062055 and 0x05FE15. These three cascading calls determine the D02310 comparison value. (e) ★★ TRACE 0x05A503 CONTEXT — one of 3 callers of 0x08A850 scroll refresh. (f) ★★ DECODE 0x070372 — glyph data prep subroutine called by font engine 0x070241. (g) ★ MAP D0230F — display state byte, 5 refs in 0x062055, controls which display path is taken. --END SESSION 577--
 
 **Session 576 findings (2026-06-08)**:
 

@@ -18956,15 +18956,59 @@
       "timestamp": "2026-06-08T19:56:17Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "b800be9e3e65",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode parent function above 0x062080 (event loop dispatcher)\n\n## Context\nYou are working on",
+      "status": "partial",
+      "duration_seconds": 95.722,
+      "timestamp": "2026-06-08T21:05:33Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "53d9cb04c796",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x05FE15 \u2014 alternate display handler (D007E0=0x49 path)\n\n## Context\nYou are working o",
+      "status": "completed",
+      "duration_seconds": 98.893,
+      "timestamp": "2026-06-08T21:05:41Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9c4586f01db2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x08C33D \u2014 event loop common exit/cleanup\n\n## Context\nYou are working on the TI-84 Pl",
+      "status": "success",
+      "duration_seconds": 103.879,
+      "timestamp": "2026-06-08T21:05:43Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5dcba3e43f7f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map D02310 \u2014 display mode byte, all ROM references\n\n## Context\nYou are working on the TI-84 ",
+      "status": "success",
+      "duration_seconds": 98.963,
+      "timestamp": "2026-06-08T21:05:44Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1594,
-    "cc_to_codex": 1594,
+    "total_calls": 1598,
+    "cc_to_codex": 1598,
     "codex_to_cc": 0,
-    "completed": 1056,
+    "completed": 1057,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 479.875
+    "avg_duration_seconds": 478.923
   }
 }
