@@ -23,7 +23,9 @@
 
 ---
 
-**Last updated**: 2026-06-08 (auto-session 570 — **★★★★ 0x05E38B TOKEN BYTE FETCHER DECODED (19B: LD DE,0/LD E,(HL)/CALL 0x080064 multi-byte check, single-byte RET NZ A=E=byte CF=0, multi-byte OR 1/SCF RET CF=1 DE=2-byte token; 13 callers). ★★★★ 0x080064 MULTI-BYTE TOKEN PREFIX CHECK DECODED (17B: CPIR scan of 11-entry table at 0x080075 [5C 5D 5E 60 61 62 63 7E BB AA EF], Z=multi-byte prefix, NZ=single-byte; 16 callers). ★★★★ 0x08DD60 TOKEN BACKWARD READER DECODED (44B: reads D0243A edit cursor, boundary check via 0x05E3EC→D02437, CALL 0x080064 for multi-byte, 4 callers). ★★★★ 0x08DD8C 2-BYTE TOKEN LOOKUP (25B: DJNZ 19-entry×3B table at 0x08DDBF, matches E+D→result A; 2 callers). ★★★★ 0x08DDA5 1-BYTE TOKEN REVERSE LOOKUP (26B: DJNZ 11-entry×3B table at 0x08DDD9 shared with 0x08DDBF, matches result→DE; 2 callers). ★★★★ 0x09BBA6 TOKEN ADVANCE+3-WAY CLASSIFY DECODED (12B: CALL 0x09BAC9 advance cursor, CP 0x3E/CP 0x00/CP 0x3F, Z=delimiter stop NZ=continue; 60 callers — most-called token function). ★★★★ 0x08DD49 TOKEN BUFFER READ DECODED (23B: boundary check D0231D, CALL 0x05E38B fetch, Z+DE=0 at end; 2 callers). GOLDEN REGRESSION PASS.**)
+**Last updated**: 2026-06-08 (auto-session 571 — **★★★ D02A62-D02A75 PIXEL RENDERER WORKSPACE FULLY MAPPED (20B = 6 fields: D02A62 VRAM cursor 24b, D02A65/D02A68 font params 3B+3B, D02A6B graph VRAM base 24b, D02A6E overflow ptr 24b, D02A71 bit shift 1B, D02A72 remaining width 1B, D02A73 glyph column 1B [hottest=7 refs], D02A74 shifted overflow 1B, D02A75 glyph width 1B; 42 refs total, primary user 0x0A18xx glyph renderer 67%). ★★★ D031F6/D07396 SCROLL DOUBLE-BUFFER PAIR MAPPED (8400B each = 40B/row × 210 rows, D052C6 third alternate buffer, swap function 0x0A1FAB with DI/EI errata workaround; 8+6 refs). ★★★ 0x05E3EC BOUNDARY CHECK HELPER DECODED (9B: LD DE,(D02437) + JP 0x04C973; 9 callers; also decoded 0x04C973 cpHLDE 6B 134 callers). ★★★ 0x05E37D TOKEN BUFFER CURSOR GUARD DECODED (14B: LD HL,(D0243D) / LD DE,(D02440) / CALL 0x04C973 / RET Z; 23 callers; D0243D=token buffer cursor 104 refs, D02440=token buffer end 56 refs — parallel pair to D0243A/D02437). GOLDEN REGRESSION PASS.**)
+
+> Previous: 2026-06-08 (auto-session 570 — 0x05E38B token byte fetcher 19B, 0x080064 multi-byte prefix check 17B, 0x08DD60 token backward reader 44B, 0x08DD8C+0x08DDA5 token lookup pair 25B+26B, 0x09BBA6 token advance+classify 12B, 0x08DD49 token buffer read 23B)
 
 > Previous: 2026-06-08 (auto-session 569 — 0x08DD45 token-type classifier 27B, 0x08DBF1 token forward scanner 25B, 0x03E1B4 error processing 37B, 0x0021xx syscall cluster 182B)
 
@@ -56,6 +58,52 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**Session 571 findings (2026-06-08)**:
+
+(1) ★★★ D02A62-D02A75 PIXEL RENDERER WORKSPACE FULLY MAPPED (probe-phase571-map-D02A62.mjs, Sonnet-verified):
+- **Workspace**: 20 bytes at D02A62-D02A75, 42 ROM references total across 6 fields.
+- **D02A62** (24-bit): VRAM cursor pointer — current pixel write position.
+- **D02A65** (3B): Font parameter block A.
+- **D02A68** (3B): Font parameter block B.
+- **D02A6B** (24-bit): Graph VRAM base pointer (used by graph plotter at 0x09F4xx-0x09F5xx).
+- **D02A6E** (24-bit): Next-byte VRAM pointer (overflow handling).
+- **D02A71** (1B): Bit shift count (X & 7).
+- **D02A72** (1B): Remaining width (overflow control).
+- **D02A73** (1B): Glyph column data — HOTTEST byte (7 references).
+- **D02A74** (1B): Shifted overflow bits.
+- **D02A75** (1B): Glyph width (5 or 7 pixels).
+- **Primary user**: glyph renderer at 0x0A18xx-0x0A1Axx (28/42 refs = 67%). Secondary user: graph plotter 0x09F4xx (exclusively D02A6B).
+
+(2) ★★★ D031F6/D07396 SCROLL DOUBLE-BUFFER PAIR MAPPED (probe-phase571-map-scroll-buffers.mjs, Sonnet-verified):
+- **D031F6** (8,400 bytes = 0x20D0): Primary scroll shadow buffer. 40 bytes/row × 210 rows (usable LCD minus status bar). 8 ROM references, all pointer loads.
+- **D07396** (8,400 bytes): Secondary scroll shadow buffer. 6 ROM references. Zeroed during system init and screen mode reset.
+- **D052C6**: Third alternate buffer (D031F6 + 0x20D0), selected when IY+0x4A bit 3 is set.
+- **Swap function at 0x0A1FAB**: Two entry points copy 0x20D0 bytes between D031F6↔D07396, interrupt-safe (DI/EI with LD A,I errata workaround).
+- **D03028/D0302B**: Pointer/offset variables tracking active secondary buffer position.
+- **Row geometry**: 40 bytes/row at 0x091777 (LD BC,0x000028 + LDIR).
+
+(3) ★★★ 0x05E3EC BOUNDARY CHECK HELPER DECODED (probe-phase571-decode-05E3EC.mjs, Sonnet-verified):
+- **Function**: 0x05E3EC-0x05E3F4 (9 bytes, 2 instructions).
+- **Flow**: LD DE,(0xD02437) / JP 0x04C973.
+- **Contract**: Loads edit buffer boundary into DE, tail-calls cpHLDE. Returns Z if HL == boundary, NZ+CF otherwise.
+- **9 callers**: 0x025B63, 0x05E248, 0x05E6B8, 0x05E6E5, 0x05E6ED, 0x06A178, 0x08D32D, 0x08DD64, 0x08DD6F. Most follow: DEC HL / CALL 0x05E3EC / LD D,0x00 / JR Z,skip.
+- **0x04C973 cpHLDE** (6B): PUSH HL / OR A / SBC HL,DE / POP HL / RET. 134 callers ROM-wide.
+
+(4) ★★★ 0x05E37D TOKEN BUFFER CURSOR GUARD DECODED (probe-phase571-decode-05E37D.mjs, Sonnet-verified):
+- **Function**: 0x05E37D-0x05E38A (14 bytes, 4 instructions).
+- **Flow**: LD HL,(0xD0243D) / LD DE,(0xD02440) / CALL 0x04C973 / RET Z.
+- **Contract**: Z = buffer exhausted (cursor == end), returns immediately. NZ = falls through into 0x05E38B (token byte fetcher).
+- **23 callers** (22 CALL + 1 JP at 0x020D10).
+- **NEW RAM**: D0243D = token buffer cursor (104 refs), D02440 = token buffer end pointer (56 refs). Parallel pair to D0243A/D02437.
+
+(5) CODEX: 1/4 (P3 exit 0 with files but no verification, P1/P2/P4 exit 1 empty). 4/4 priorities completed via Sonnet fallback. All probes Opus-verified (exit 0, output matches analysis).
+
+**NEW FUNCTIONS DECODED**: 0x05E3EC (9B boundary check helper), 0x05E37D (14B token buffer cursor guard), 0x04C973 (6B cpHLDE, 134 callers).
+**NEW RAM FULLY MAPPED**: D02A62-D02A75 (20B pixel renderer workspace, 6 fields, 42 refs), D031F6 (8400B scroll buffer 1), D07396 (8400B scroll buffer 2), D052C6 (alternate buffer), D0243D (token buffer cursor, 104 refs), D02440 (token buffer end, 56 refs), D03028/D0302B (secondary buffer position).
+**CORRECTIONS**: None.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★ DECODE 0x0BA561 — carried from 549. (c) ★★ DUMP 0x080075 TABLE CROSS-REF — map all 11 multi-byte prefix bytes to TI token class names. (d) ★★ DECODE 0x08DDBF TABLE SEMANTICS — map the 19 token triplets to TI token names/classes. (e) ★★ MAP 0x0A1FAB SWAP FUNCTION FULLY — interrupt-safe scroll buffer swap (discovered session 571). (f) ★★ DECODE D03028/D0302B — pointer/offset for active secondary buffer (discovered session 571). (g) ★★ MAP D02A65/D02A68 FONT PARAM BLOCKS — determine what the 6 bytes encode. --END SESSION 571--
 
 **Session 570 findings (2026-06-08)**:
 

@@ -18560,15 +18560,191 @@
       "timestamp": "2026-06-08T07:03:58Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "a432ab478f1f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0A26C7 \u2014 Alternate cleanup exit from 8bpp glyph blit path\n\n## Context\nYou are worki",
+      "status": "success",
+      "duration_seconds": 125.225,
+      "timestamp": "2026-06-08T08:14:35Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "bd92c762ed99",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0021C2 \u2014 Syscall target from 0x000138\n\n## Context\nYou are working on the TI-84 Plus",
+      "status": "success",
+      "duration_seconds": 127.544,
+      "timestamp": "2026-06-08T08:14:41Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9de461bd43cf",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x08DB93 \u2014 Pre-operation helper\n\n## Context\nYou are working on the TI-84 Plus CE ROM ",
+      "status": "success",
+      "duration_seconds": 131.537,
+      "timestamp": "2026-06-08T08:14:43Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f69906081c49",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Fully decode 0x09C70B \u2014 Recursive paren balancer (47B)\n\n## Context\nYou are working on the TI",
+      "status": "success",
+      "duration_seconds": 164.275,
+      "timestamp": "2026-06-08T08:15:11Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e2deada4dfc8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map 0x0021xx Syscall Cluster\n\n## Context\nYou are working on the TI-84 Plus CE ROM transpilat",
+      "status": "success",
+      "duration_seconds": 69.026,
+      "timestamp": "2026-06-08T09:24:01Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "656d9e98c4fa",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x08DD45 \u2014 Token-Type Classifier\n\n## Context\nYou are working on the TI-84 Plus CE ROM",
+      "status": "success",
+      "duration_seconds": 77.149,
+      "timestamp": "2026-06-08T09:24:03Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e4bbfe57ef92",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x03E1B4 \u2014 Error Processing Routine\n\n## Context\nYou are working on the TI-84 Plus CE ",
+      "status": "success",
+      "duration_seconds": 79.371,
+      "timestamp": "2026-06-08T09:24:07Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f07f8f2beaec",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x08DBF1 \u2014 Token Forward Scanner with Loop\n\n## Context\nYou are working on the TI-84 P",
+      "status": "success",
+      "duration_seconds": 83.336,
+      "timestamp": "2026-06-08T09:24:13Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c0912bd23b79",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x05E38B \u2014 Token Byte Fetcher (19B)\n\n## Context\nWorking in `C:/Users/rober/Downloads/",
+      "status": "complete",
+      "duration_seconds": 130.157,
+      "timestamp": "2026-06-08T11:45:50Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "540b89b0b44f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x09BBA6 \u2014 Token Advance+Classify Subroutine\n\n## Context\nWorking in `C:/Users/rober/D",
+      "status": "completed",
+      "duration_seconds": 126.78,
+      "timestamp": "2026-06-08T11:45:51Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "cb17b0a52e19",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x08DD60+0x08DD8C+0x08DDA5 \u2014 Token Classification Cluster\n\n## Context\nWorking in `C:/",
+      "status": "partial",
+      "duration_seconds": 140.122,
+      "timestamp": "2026-06-08T11:46:02Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "d42fd5d8dba9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x080064 + 0x08DD49 \u2014 Multi-Byte Token Prefix Check + Token Buffer Read\n\n## Context\nW",
+      "status": "partial",
+      "duration_seconds": 143.196,
+      "timestamp": "2026-06-08T11:46:09Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "fa406bc59d77",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 571 P2 \u2014 MAP D031F6/D07396 Scroll Buffers\n\n## Task\nMap the RAM addresses D031F6 and D",
+      "status": "blocked",
+      "duration_seconds": 100.039,
+      "timestamp": "2026-06-08T14:05:29Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "fad321cc029f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 571 P3 \u2014 DECODE 0x05E3EC Boundary Check Helper\n\n## Task\nFully decode the function at ",
+      "status": "completed",
+      "duration_seconds": 114.191,
+      "timestamp": "2026-06-08T14:05:46Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "0808c8a2d72f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 571 P1 \u2014 MAP D02A62-D02A75 Pixel Renderer Workspace\n\n## Task\nMap the RAM range D02A62",
+      "status": "completed_with_constraints",
+      "duration_seconds": 128.543,
+      "timestamp": "2026-06-08T14:05:56Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2d6a0b3b15fe",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 571 P4 \u2014 DECODE 0x05E37D (Preceding Function to Token Byte Fetcher)\n\n## Task\nFully de",
+      "status": "partial",
+      "duration_seconds": 129.085,
+      "timestamp": "2026-06-08T14:06:03Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1558,
-    "cc_to_codex": 1558,
+    "total_calls": 1574,
+    "cc_to_codex": 1574,
     "codex_to_cc": 0,
-    "completed": 1042,
+    "completed": 1044,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 488.461
+    "avg_duration_seconds": 484.683
   }
 }
