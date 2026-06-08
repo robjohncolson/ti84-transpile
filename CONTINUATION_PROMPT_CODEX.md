@@ -8,7 +8,9 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-08 (auto-session 565 — **★★★★ 0x0A2695 POST-BLIT GLYPH COLUMN HANDLER + ROW LOOP CLOSER (65B: extra-column blit via IX glyph data, IY+0x05 bit 3 inverse mode, VRAM scanline advance D0059C+0x280, row DJNZ→0x0A2537, interrupt-safe register restore EXX+EI, dual return CF=0 success/CF=1 failure; corrects 0x0A26D6 to 15B not 14B; mask table at 0x0A26E5 not 0x0A26E4). ★★★★ 0x02398E FONT APP VALIDATOR + CONFIG WRITER (37B: validates app header at D02611 via CALL 0x025758, writes 0x0109→D025CF font config, one-shot self-disable RES 1,(IY+0x35); no port I/O). ★★★★ 0x055191+0x05519F BPP GATE+INIT VERIFIED (14B gate + 95B init CONFIRMED; ROM LDIR source=0x05550C 13B display geometry {320,240,640} → D02FD9; 4 adjacent fns: 0x0551FE VRAM fill 63B, 0x05523D BPP activate 67B, 0x055280 LCD DMA 27B, 0x05529B framebuffer restore 23B). ★★★★ 0x09BAC9 CORRECTED = 8B INPUT CURSOR ADVANCE (not "input reader" — LD BC,(D0231A); INC BC; JR 0x09BABD shared tail; part of 15-fn OS input token parser cluster 0x09BAAB-0x09BC60; major token classifier at 0x09BAFF 163B; token class→D005F8/D005F9/D005FA). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-08 (auto-session 566 — **★★★★ 0x09BAFF MAIN TOKEN CLASSIFIER DECODED (167B: 15 CP/JR cascading dispatch, B register class codes 0-8/0x1A → D005F8/D005F9/D005FA, calls 0x09BAAF+0x09B9C8, exit JP 0x059FFF accept or JP 0x061D1A error). ★★★★ 0x0A2537 ROW LOOP TOP DECODED (17B: row setup PUSH BC/SET 7,D/PUSH DE, glyph byte LD A,(IX+0)/INC IX, inverse test BIT 3,(IY+0x05); first column blit 0x0A2548-0x0A258E mono/1BPP path via BIT 5,(IY+0x4A), EXX shadow VRAM, DJNZ 0x0A255F). ★★★★ 0x025758 APP HEADER VALIDATOR DECODED (27B: ED 27 indirect load, CP 0x83 magic byte, Z=match; 19 callers; abort 0x025762 increments D0265B, JP (IX), JP 0x023955 decrements+cleanup). ★★★★ 0x0551FE+0x05523D+0x05529B BPP DISPLAY CLUSTER DECODED (63B+67B+23B=153B: VRAM fill 0xFF 153598B + BPP activate palette 512B 0x055777→E30200 + framebuffer restore 76800B D52C00→D40000; all boundaries confirmed exact). GOLDEN REGRESSION 3/3 PASS.**)
+
+> Previous: 2026-06-08 (auto-session 565 — 0x0A2695 post-blit column handler+row closer 65B, 0x02398E font app validator 37B, 0x055191+0x05519F BPP gate+init verified 14B+95B, 0x09BAC9 corrected=8B input cursor advance)
 
 > Previous: 2026-06-07 (auto-session 564 — 0x0A2400 render setup/glyph param calc ~399B, 0x0A5424 small font loader 55B, 0x055316 BPP coord clipping 48B+120B, 0x080259 split-flag test 5B)
 
@@ -31,6 +33,44 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**Session 566 findings (2026-06-08)**:
+
+(1) ★★★★ 0x09BAFF MAIN TOKEN CLASSIFIER (167B, probe-phase566-decode-09BAFF.mjs, Sonnet-verified):
+- **Function**: 0x09BAFF-0x09BBA6 (167 bytes). Massive CP/JR cascading dispatch chain — the core OS input token classifier.
+- **Architecture**: (a) CALL 0x09BAAF reads next token from input buffer. (b) CALL 0x09B9C8 pre-classifies token. (c) 15 CP/JR pairs test token byte value in descending order. (d) Each branch loads B with a class code. (e) B stored to D005F8, sub-type to D005F9, secondary byte to D005FA.
+- **Token class table**: 0x5C→B=2 (matrix), 0xAA→B=4 (real/numeric), 0x62-0x63→B=0 (string), 0x5D→B=1 (list), 0x5E→B=3 (equation), 0x61→B=8 (picture), else(<0x64)→B=7 (default), 0xEF→B=0x1A (2-byte STO, reads sub-token digit 0x50-0x59), 0x5F→error JP 0x061D1A, 0xEB→redirect CALL 0x099FDA then JP 0x059FFF, 0x41-0x5B→letters accept direct, 0x72→Ans accept direct, >=0x64→reject JP 0x09BAF1.
+- **Exit paths**: JP 0x059FFF (token accepted/commit) for most classes; JP 0x061D1A (OS error handler) for token 0x5F; JP 0x09BAF1 (reject) for unrecognized tokens.
+- **External calls**: 0x09BAAF (read token), 0x09B9C8 (pre-classify), 0x07FACF (OS utility), 0x099FDA (list handler), 0x09BBA6 (sub-token check).
+
+(2) ★★★★ 0x0A2537 ROW LOOP TOP + FIRST COLUMN BLIT PATH (17B + 71B, probe-phase566-decode-0A2537.mjs, Sonnet-verified):
+- **Row loop top 0x0A2537** (17 bytes, 9 instructions): PUSH BC saves row counter. SET 7,D marks "first column" flag. PUSH DE saves column count. LD A,(IX+0)/INC IX loads glyph row byte and advances to next row. LD B,C copies column count for inner loop. BIT 3,(IY+0x05)=D00085 tests inverse video; if set, CPL inverts glyph bits.
+- **First column blit 0x0A2548-0x0A258E** (71B, mono/1BPP path): BIT 5,(IY+0x4A)=D000CA selects rendering path. Uses EXX shadow registers for VRAM pointer management. SLA C shifts glyph bit; carry selects foreground vs background color from .SIS LD DE,(0x7326AA/AC) (16-bit color reads). SRL B/INC HL bitmask walk across VRAM byte boundary. DJNZ 0x0A255F inner column loop. JP 0x0A2695 post-blit handler.
+- **Pipeline confirmed**: 0x0A23E5 (entry) → 0x0A2537 (row top) → 0x0A2548 (column blit) → 0x0A2695 (post-blit/row closer) → JP NZ,0x0A2537 (loop) → exit.
+
+(3) ★★★★ 0x025758 APP HEADER VALIDATOR (27B, probe-phase566-decode-025758.mjs, Sonnet-verified):
+- **Function**: 0x025758-0x025773 (27 bytes). Compact shared utility — validates TI app descriptor headers.
+- **Flow**: ED 27 (indirect HL load, dereferences pointer in HL). LD A,(HL) reads first byte of app descriptor. INC HL/PUSH HL/POP IX saves pointer+1 into IX for caller. CP 0x83 checks magic byte (TI app header signature). RET with Z=match, NZ=fail.
+- **19 callers** across validator table 0x0238D9-0x025744 — heavily shared utility.
+- **Abort path 0x025762** (17B): POP AF discards return address. LD HL,0x265B/INC (HL) increments error counter at D0265B. CALL 0x025774 (= JP (IX), jumps to descriptor ptr+1). POP IX. JP 0x023955.
+- **0x023955** (cleanup, 9B): Mirrors — PUSH AF/HL, LD HL,0x265B, DEC (HL) decrements error counter, POP HL/AF, RET.
+- **Signal convention**: Z flag = failure (invalid header) → caller uses JP Z to abort path. NZ = success → continues.
+
+(4) ★★★★ 0x0551FE+0x05523D+0x05529B BPP DISPLAY CLUSTER (63B+67B+23B=153B, probe-phase566-decode-0551FE.mjs, Sonnet-verified):
+- **0x0551FE VRAM FILL** (63B, 0x0551FE-0x05523C): Calls BPP gate 0x055191. Loads IY=D40000, writes 0xFF to first two bytes, LEA HL/DE from IY, LDIR 153598B (fills 16bpp frame with white). Tests BIT 2,(IY+0x46)=D000C6: if set, CALL 0x055280 LCD DMA with A=0x2D, then RES 2,(IY+0x46) exits BPP mode. Clears D026AC. Calls 0x0551EF.
+- **0x05523D BPP MODE ACTIVATE** (67B, 0x05523D-0x05527F): Calls BPP gate 0x055191. Fills VRAM D40000 with 0xFF via LD (HL),0xFF + LDIR 153599B. Copies 512B ROM palette 0x055777→E30200. Calls LCD DMA 0x055280 with A=0x27. Writes 0x00→D026AC, 0xFF→D005F4. Pushes ROM addr 0x055519, calls 0x055743. SET 2,(IY+0x46) enters BPP mode.
+- **0x05529B BPP FRAMEBUFFER RESTORE** (23B, 0x05529B-0x0552B1): Reads A from D000C6, tests BIT 2,A. If BPP mode active: LDIR 76800B D52C00→D40000. If not, skips to RET.
+- **All boundaries confirmed exact match** with session 565 estimates.
+- **ROM palette peek** (0x055777 first 32B): 00 00 42 08 84 10 C6 18 08 00 0A 00 0C 00 0E 00 11 00 13 00 15 00 17 00 19 00 1B 00 1D 00 1F 00.
+
+(5) VERIFICATION: All 4 probes exit 0. Golden regression PASS (Normal/Float/Radian 3/3). No runtime/source files modified — probes are read-only ROM analysis. Codex 0/4 (ENOENT — CLI not on this machine). Sonnet 4/4 success.
+
+**NEW FUNCTIONS DECODED**: 0x09BAFF (167B main token classifier), 0x0A2537 (17B row loop top), 0x0A2548 (71B first column blit path mono/1BPP), 0x025758 (27B app header validator), 0x025762 (17B abort path), 0x025774 (cleanup JP (IX)), 0x023955 (9B error counter cleanup), 0x0551FE (63B VRAM fill), 0x05523D (67B BPP mode activate), 0x05529B (23B framebuffer restore).
+**NEW EXTERNAL CALLS DISCOVERED**: 0x09BAAF (read token from input buffer), 0x09B9C8 (pre-classify token), 0x07FACF (OS utility from classifier), 0x099FDA (list handler), 0x059FFF (token accept/commit — major exit target), 0x061D1A (OS error handler), 0x09BAF1 (reject handler), 0x0551EF (post-fill cleanup), 0x055743 (BPP mode helper from activate).
+**NEW RAM ADDRESSES**: D000CA (IY+0x4A absolute — rendering path select bit 5), D00085 (IY+0x05 absolute — inverse video bit 3, confirmed from 565), 0x7326AA/0x7326AC (.SIS 16-bit color reads — foreground/background glyph colors).
+**CORRECTIONS**: 0x09BAFF = 167B not 163B (4 bytes longer than session 565 estimate). 0x025758 validator returns Z=match(success)/NZ=fail, but callers use JP Z for abort — so Z actually means "magic byte found = valid header" and the abort triggers on Z because the caller wants to catch the case where the validator found a valid app descriptor that then fails a secondary check, OR the convention is inverted (Z=0x83 match → app exists → continue; the JP Z abort catches the case where CP 0x83 sets Z meaning the byte WAS 0x83... need to recheck session 565's claim). Signal convention needs careful re-read of the callers.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x0A258F-0x0A2694 — remaining column blit paths (4bpp/16bpp, session 566 decoded only the mono/1BPP path 0x0A2548-0x0A258E). (c) ★★★★ DECODE 0x059FFF — token accept/commit (major exit target from classifier, all accepted tokens go here). (d) ★★★★ DECODE 0x09B9C8 — token pre-classifier (called by 0x09BAFF before the CP chain). (e) ★★★★ DECODE 0x0551EF — post-fill cleanup (called at end of 0x0551FE VRAM fill). (f) ★★★★ DECODE 0x055743 — BPP mode helper (called by 0x05523D activate). (g) ★★★ DECODE 0x08DB93 — pre-operation helper (carried from 558). (h) ★★★ MAP D02A62-D02A75 — pixel renderer workspace (carried from 560). (i) ★★★ MAP D031F6/D07396 SCROLL BUFFERS — initialization/trigger (carried from 561). (j) ★★ DECODE 0x0BA561 — carried from 549. --END SESSION 566--
 
 **Session 565 findings (2026-06-08)**:
 
