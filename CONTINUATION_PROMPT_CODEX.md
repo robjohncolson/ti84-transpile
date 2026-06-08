@@ -25,7 +25,9 @@
 
 ---
 
-**Last updated**: 2026-06-08 (auto-session 574 — **★★★ 0x0A1FB5 SCROLL SWAP SECOND ENTRY CALLERS FOUND (2 callers: 0x05831E=CALL, 0x08A85D=CALL NZ — session 572 only found the primary entry 0x0A1FAB caller; secondary entry used independently for secondary→primary copy direction). ★★★ 0x0BA57E LCD PARAMETER SETTER DECODED (30B: writes D02A76/A, D02A77/.SIS HL, D02A79/.SIS DE, D02A7C/B; clears IY+0x51 bit 2, sets IY+2 bit 1, calls 0x0A89F2; D02A76=31 refs, D02A7C=18 refs — extends pixel renderer workspace past D02A75). ★★★ 0x06F6E7 FONT PARAM WRITER FULLY DECODED (entry 0x06F6E7, 1 caller at 0x06F8E1; D02A65=copy of D0146E via LD A,(D0146E)/LD (D02A65),A; D02A68=copy of D01471 via memcpy 0x07F984; also writes D02AC8; multi-path function 0x06F6E7-0x06F7B9+ with parallel routines at 0x06F6FF/0x06F717/0x06F75C). ★★★ 0x0AEB45 STRING TABLE REFERENCE MAP (306 total intra-table refs across 90 distinct addresses; references concentrated in pointer tables at 0x0AE6xx-0x0AF8xx — these are descriptor tables that index into the 76-string table; 5 direct base refs; first table 0x0AB3BE has 1 ref). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-08 (auto-session 575 — **★★★ 0x0A8A1D LCD ROW HEIGHT HELPER DECODED (22B: CALL 0x0A89FE then adds 20px large font / 19px small font row height to DE, IY+0x51 bit 3 font selector, 3 callers in LCD text region 0x0A8A5B/0x0A8ADA/0x0A8B0F). ★★★ 0x058241 OS MAIN DISPLAY REFRESH DECODED (423B: 1 caller 0x0620C4, 5 IY flag guard checks, clears ~9 IY flags, 7 subsystem inits, .SIS LCD param writes to ports 0x07C7/0x07C8/0x07C4, LDIR 260B D0232D→D006C0, then CALL 0x0A1FB5 scroll swap 8400B D07396→D031F6, post-swap LCD window branch via IY+0x15 bit 2). ★★★ D02AC8 FULLY MAPPED (22 ROM refs across 0x06F7xx/0x06F9xx/0x0702xx/0x0703xx/0x0736xx/0x073Bxx/0x07B3xx/0x07B4xx/0x07B5xx/0x0B9Fxx/0x0BBDxx — font/display param selector, CP 0x04 guard, values 0x00/0x01/0x03/0x04 used in comparisons, concentrated in font rendering cluster 0x06Fxxx-0x07Bxxx). ★★★ 0x06F7B9 FONT PARAM WRITER TAIL DECODED (5B: RES 1,(IY+2) + RET — busy-flag clear epilogue; 2 JP convergence paths from 0x06F6FB Path A + 0x06F713 Path B; Path C at 0x06F717 inlines the RES and exits via JP 0x070241 instead). GOLDEN REGRESSION 26/26 PASS.**)
+
+> Previous: 2026-06-08 (auto-session 574 — 0x0A1FB5 scroll swap second entry 2 callers, 0x0BA57E LCD param setter 30B, 0x06F6E7 font param writer multi-path, 0x0AEB45 string table 306 refs)
 
 > Previous: 2026-06-08 (auto-session 573 — D03028/D0302B scroll buffer cursor pair mapped, 0x0A89FE LCD parameter computation 31B, D02A65/D02A68 font params confirmed runtime-only, 0x0AB3BE-0x0AECFC string table region 14654B 153 strings)
 
@@ -66,6 +68,48 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**Session 575 findings (2026-06-08)**:
+
+(1) ★★★ 0x0A8A1D LCD ROW HEIGHT HELPER DECODED (probe-phase575-map-0A8A1D.mjs, Sonnet-verified):
+- **Function**: 0x0A8A1D-0x0A8A32 (22 bytes, 9 instructions). Thin wrapper around 0x0A89FE.
+- **Flow**: CALL 0x0A89FE / LD HL,0x14 (20) / BIT 3,(IY+0x51) / JR Z,+4 / LD HL,0x13 (19) / ADD HL,DE / INC DE / EX DE,HL / RET.
+- **Purpose**: Computes "next row Y" by adding font-dependent row height (20px large, 19px small) to DE. Font size selected by IY+0x51 bit 3.
+- **On return**: DE = old_DE + row_height, HL = old_DE + 1.
+- **Callers**: 3 — all CALL at 0x0A8A5B, 0x0A8ADA, 0x0A8B0F (LCD text rendering region).
+- **No direct RAM refs** — delegates to 0x0A89FE for D02A75/D02A77/D02A79 access.
+
+(2) ★★★ 0x058241 OS MAIN DISPLAY REFRESH DECODED (probe-phase575-decode-05831E.mjs, Sonnet-verified):
+- **Function**: 0x058241-0x0583E7 (423 bytes) with extended blocks to 0x058434.
+- **1 caller**: 0x0620C4 (likely main event loop dispatcher).
+- **5 IY flag guards** (all must pass for scroll swap): BIT 4,(IY+0x34), BIT 6,(IY+0x1C), BIT 7,(IY+0x09), BIT 7,(IY+0x0C), BIT 6,(IY+0x0C).
+- **Pre-swap setup**: Clears ~9 IY flags, calls 7 subsystem initializers, .SIS LCD param writes to ports 0x07C7/0x07C8/0x07C4, LDIR 260B D0232D→D006C0, LDIR (D02687)→(D02685).
+- **Scroll swap at 0x05831E**: CALL 0x0A1FB5 (unconditional) — 8400B LDIR D07396→D031F6.
+- **Post-swap**: BIT 2,(IY+0x15) branches: set→LCD window via 0x09EF20, clear→CALL 0x0A2854. Then convergence at 0x058348, subroutine 0x0583EE with 6 CALLs + SET 2,(IY+0x44).
+- **RAM vars**: D02687 (read), D02685 (write), D0265B (write), D02506 (write), D0232D (LDIR src 260B), D006C0 (LDIR dst), D02A92 (bit 0 cleared post-swap).
+- **Significance**: This is the home-screen repaint entry — the single caller at 0x0620C4 places it in the main event loop. The 5 IY flag guards explain why display refresh requires specific OS state.
+
+(3) ★★★ D02AC8 FULLY MAPPED (probe-phase575-map-D02AC8.mjs, Codex+Opus-verified):
+- **22 references** across ROM: 0x06F769, 0x06F7CC, 0x06F99C, 0x06F9A9, 0x06F9BF, 0x070249, 0x070270, 0x0702DC, 0x070387, 0x0703B1, 0x07040F, 0x073629, 0x073B0E, 0x07B392, 0x07B39D, 0x07B3CC, 0x07B452, 0x07B535, 0x07B551, 0x0B9F07, 0x0BBDCD, 0x0BBDF7.
+- **Clusters**: Font param writer 0x06Fxxx (5 refs), font rendering engine 0x070xxx (6 refs), glyph/text layout 0x073xxx (2 refs), display computation 0x07Bxxx (6 refs), LCD/display init 0x0Bxxxx (3 refs).
+- **Value comparisons**: CP 0x04 (at 0x070270, 0x0702DC, 0x07040F, 0x07B551), CP 0x01 (at 0x06F7CC, 0x0BBDCD, 0x0BBDF7), CP 0x03 (at 0x07B396, 0x073629), FE 0x00 (at 0x073631, 0x0BBDC8).
+- **Writes**: LD (D02AC8),A at 0x06F768 (font param writer), 0x073B0D (with value from B reg), 0x07B39C (LD A,0x01 / LD (D02AC8),A), 0x07B451, 0x07B3CB, 0x0B9F06.
+- **Hypothesis confirmed**: D02AC8 is a compact enumerated font/display mode selector (values 0-4). CP 0x04 appears to be the maximum valid value. Concentrated in font rendering + display computation clusters.
+
+(4) ★★★ 0x06F7B9 FONT PARAM WRITER TAIL DECODED (probe-phase575-decode-06F7B9.mjs, Sonnet-verified):
+- **Function**: 0x06F7B9-0x06F7BD (5 bytes, 2 instructions): RES 1,(IY+2) / RET.
+- **Purpose**: Busy-flag clear epilogue. (IY+2) = grfModeFlags at D00082. All font param writer paths SET 1,(IY+2) on entry, then clear it here on exit.
+- **Convergence**: 2 JP refs — 0x06F6FB (Path A, direct copy 24B), 0x06F713 (Path B, .SIS copy 24B).
+- **Path C divergence**: 0x06F717 (69B) performs inline RES 1,(IY+2) at 0x06F754 and exits via JP 0x070241 instead of using shared tail.
+- **Pattern**: Classic busy-flag / font-write-in-progress guard. Readers can check IY+2 bit 1 to know if font params are being updated.
+
+(5) CODEX: 1/4 partially working (P3 D02AC8 scan found 22 refs but instruction display had [object Object] formatting bug — addresses valid). P1/P2/P4 Codex probes had decoder misuse (UNKNOWN/??? output). All 3 retried via Sonnet. Sonnet P1/P2/P4 all verified (exit 0, output matches analysis). Golden regression 26/26 PASS.
+
+**FUNCTIONS DECODED**: 0x0A8A1D (22B LCD row height helper, 20px/19px font-dependent), 0x058241 (423B OS main display refresh/home-screen repaint, 1 caller 0x0620C4), 0x06F7B9 (5B font param writer tail, busy-flag clear).
+**RAM MAPPED**: D02AC8 fully mapped (22 refs, font/display mode selector, values 0-4, concentrated in 0x06F-0x07B rendering cluster).
+**KEY INSIGHT**: 0x058241 is the home-screen repaint function called from 0x0620C4 (event loop dispatcher). The 5 IY flag guards and 7 subsystem inits explain the complex preconditions for display refresh.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★ DECODE 0x0620C4 CONTEXT — caller of display refresh 0x058241, likely the main event loop dispatcher. Critical for understanding the OS main loop. (c) ★★ DECODE 0x08A85D CONTEXT — conditional CALL NZ to 0x0A1FB5, need flag context (carried from 574). (d) ★★ MAP D0146E/D01471 — font metric source variables, provenance for D02A65/D02A68 (carried from 574). (e) ★★ TRACE D03028 WRITE CHAIN — 0x03451E/0x034555 stores under DI, interrupt-critical buffer switching (carried from 573). (f) ★★ DECODE 0x070241 — Path C exit target from font param writer (0x06F717 JPs here instead of shared tail). (g) ★ DECODE 0x058483 — JP NZ target from display refresh IY+0x0C bit 7 guard (alternate display path). --END SESSION 575--
 
 **Session 574 findings (2026-06-08)**:
 
