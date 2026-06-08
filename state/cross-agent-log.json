@@ -18736,15 +18736,235 @@
       "timestamp": "2026-06-08T14:06:03Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "d0d5b8890b82",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: DECODE 0x0BA561 (carried from session 549)\n\n## Context\nYou are working on the TI-84 Plus CE ",
+      "status": "success",
+      "duration_seconds": 95.051,
+      "timestamp": "2026-06-08T15:13:44Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b0657630a977",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: DUMP 0x080075 TABLE CROSS-REF \u2014 map all 11 multi-byte prefix bytes to TI token class names\n\n",
+      "status": "completed",
+      "duration_seconds": 95.029,
+      "timestamp": "2026-06-08T15:13:46Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "fdb6cd5e89de",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: DECODE 0x08DDBF TABLE SEMANTICS \u2014 map the 19 token triplets to TI token names/classes\n\n## Co",
+      "status": "success",
+      "duration_seconds": 99.959,
+      "timestamp": "2026-06-08T15:13:52Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f33960e31bf8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: MAP 0x0A1FAB SWAP FUNCTION FULLY \u2014 interrupt-safe scroll buffer swap\n\n## Context\nYou are wor",
+      "status": "success",
+      "duration_seconds": 102.775,
+      "timestamp": "2026-06-08T15:13:58Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "633aef3a2df0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 573 P4: MAP 0x0AB3BE-0x0AECxx STRING TABLE EXTENT\n\n## Context\nThis is a TI-84 Plus CE",
+      "status": "success",
+      "duration_seconds": 86.649,
+      "timestamp": "2026-06-08T16:23:25Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b947c990d93e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 573 P1: DECODE D03028/D0302B \u2014 Secondary Scroll Buffer Pointer/Offset\n\n## Context\nThi",
+      "status": "completed",
+      "duration_seconds": 95.396,
+      "timestamp": "2026-06-08T16:23:28Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "570b12fca994",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 573 P3: MAP 0x0A89FE LCD PARAMETER COMPUTATION\n\n## Context\nThis is a TI-84 Plus CE RO",
+      "status": "completed",
+      "duration_seconds": 114.285,
+      "timestamp": "2026-06-08T16:23:51Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "24e028d4e5ba",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 573 P2: MAP D02A65/D02A68 FONT PARAM BLOCKS\n\n## Context\nThis is a TI-84 Plus CE ROM t",
+      "status": "completed",
+      "duration_seconds": 124.175,
+      "timestamp": "2026-06-08T16:23:59Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "922a94f35504",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: SCAN 0x0A1FB5 CALLERS \u2014 second entry point of scroll buffer swap\n\n## Context\n\nThe scroll buf",
+      "status": "completed",
+      "duration_seconds": 51.862,
+      "timestamp": "2026-06-08T17:32:53Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e7a1ddd65458",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: MAP 0x0AEB45 STRING TABLE LOOKUP CODE \u2014 find ROM functions that index the 76-string table\n\n#",
+      "status": "success",
+      "duration_seconds": 70.326,
+      "timestamp": "2026-06-08T17:33:18Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6ab58e52edf0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: DECODE 0x0BA57E \u2014 function after LCD window reset\n\n## Context\n\nSession 572 decoded 0x0BA561-",
+      "status": "completed",
+      "duration_seconds": 76.983,
+      "timestamp": "2026-06-08T17:33:21Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "70f57c5730f0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: DECODE 0x06F56F FONT PARAM WRITER \u2014 the function that writes D02A65/D02A68\n\n## Context\n\nSess",
+      "status": "complete",
+      "duration_seconds": 101.47,
+      "timestamp": "2026-06-08T17:33:47Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "418897033c91",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 575 P1 \u2014 MAP 0x0A8A1D (second function after LCD param computation)\n\n## Context\n\nYou ",
+      "status": "completed",
+      "duration_seconds": 101.836,
+      "timestamp": "2026-06-08T18:43:33Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9ffe7a366d7b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 575 P4 \u2014 DECODE 0x06F7B9 CONVERGENCE POINT (font param writer tail)\n\n## Context\n\nYou ",
+      "status": "partial",
+      "duration_seconds": 107.262,
+      "timestamp": "2026-06-08T18:43:45Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "dbb4adeed7f1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 575 P3 \u2014 MAP D02AC8 (newly discovered RAM variable)\n\n## Context\n\nYou are working on a",
+      "status": "blocked",
+      "duration_seconds": 110.019,
+      "timestamp": "2026-06-08T18:43:46Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ccd44c137df4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 575 P2 \u2014 DECODE 0x05831E CONTEXT (caller of secondary scroll swap 0x0A1FB5)\n\n## Conte",
+      "status": "completed",
+      "duration_seconds": 119.697,
+      "timestamp": "2026-06-08T18:43:53Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "5c0f8447140c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map D0146E and D01471 \u2014 Font Metric Source Variables\n\n## Background\nSession 574 decoded the ",
+      "status": "completed",
+      "duration_seconds": 91.987,
+      "timestamp": "2026-06-08T19:55:26Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "1b3ecf8d777c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x08A85D Context \u2014 Conditional Scroll Swap Caller\n\n## Background\nSession 574 found th",
+      "status": "completed",
+      "duration_seconds": 115.463,
+      "timestamp": "2026-06-08T19:55:48Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "cd7045848103",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x070241 \u2014 Font Param Writer Path C Exit Target\n\n## Background\nSession 575 decoded 0x",
+      "status": "completed",
+      "duration_seconds": 123.404,
+      "timestamp": "2026-06-08T19:56:00Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "cce26e29bf7f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0620C4 Context \u2014 Main Event Loop Dispatcher\n\n## Background\nSession 575 discovered t",
+      "status": "completed",
+      "duration_seconds": 146.266,
+      "timestamp": "2026-06-08T19:56:17Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1574,
-    "cc_to_codex": 1574,
+    "total_calls": 1594,
+    "cc_to_codex": 1594,
     "codex_to_cc": 0,
-    "completed": 1044,
+    "completed": 1056,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 484.683
+    "avg_duration_seconds": 479.875
   }
 }
