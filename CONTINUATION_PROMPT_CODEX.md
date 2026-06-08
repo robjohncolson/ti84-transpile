@@ -25,7 +25,9 @@
 
 ---
 
-**Last updated**: 2026-06-08 (auto-session 571 — **★★★ D02A62-D02A75 PIXEL RENDERER WORKSPACE FULLY MAPPED (20B = 6 fields: D02A62 VRAM cursor 24b, D02A65/D02A68 font params 3B+3B, D02A6B graph VRAM base 24b, D02A6E overflow ptr 24b, D02A71 bit shift 1B, D02A72 remaining width 1B, D02A73 glyph column 1B [hottest=7 refs], D02A74 shifted overflow 1B, D02A75 glyph width 1B; 42 refs total, primary user 0x0A18xx glyph renderer 67%). ★★★ D031F6/D07396 SCROLL DOUBLE-BUFFER PAIR MAPPED (8400B each = 40B/row × 210 rows, D052C6 third alternate buffer, swap function 0x0A1FAB with DI/EI errata workaround; 8+6 refs). ★★★ 0x05E3EC BOUNDARY CHECK HELPER DECODED (9B: LD DE,(D02437) + JP 0x04C973; 9 callers; also decoded 0x04C973 cpHLDE 6B 134 callers). ★★★ 0x05E37D TOKEN BUFFER CURSOR GUARD DECODED (14B: LD HL,(D0243D) / LD DE,(D02440) / CALL 0x04C973 / RET Z; 23 callers; D0243D=token buffer cursor 104 refs, D02440=token buffer end 56 refs — parallel pair to D0243A/D02437). GOLDEN REGRESSION PASS.**)
+**Last updated**: 2026-06-08 (auto-session 572 — **★★★ 0x0BA561 LCD WINDOW RESET DECODED (29B: .SIS LD to LCD regs 0x26AC=0x0000/0x26AA=0xFFFF full-screen window, CALL 0x0A89FE+0x09EF20, 3 callers). ★★★ 0x080075 MULTI-BYTE PREFIX TABLE FULLY CROSS-REFERENCED (11 bytes: 0x5C=List 45 refs, 0x5D=Matrix 90 refs, 0x5E=Y-var 41 refs, 0x60=Pic 25, 0x61=GDB 28, 0x62=String 38, 0x63=Stats 30, 0x7E=Window 19, 0xBB=Extended 21, 0xAA=StatsCmds 49, 0xEF=GraphFmt 81; token name string tables found at 0x0AB3BE and 0x0AEC4A). ★★★ 0x08DDBF TOKEN TRANSLATION TABLE DECODED (19×3B=57B bidirectional bridge: maps 2-byte TI tokens ↔ compact 1-byte internal IDs, used by 0x08DD8C forward + 0x08DDA5 reverse; cross-refs to token classifiers 0x09BAxx-0x09BCxx and expression evaluators 0x0593xx-0x05A6xx). ★★★ 0x0A1FAB SCROLL BUFFER SWAP FULLY MAPPED (38B: LDIR block copy 8400B between D031F6↔D07396, NOT pointer swap; double LD A,I errata workaround + DI/EI bracket; two entry points — 0x0A1FAB=primary→secondary, 0x0A1FB5=secondary→primary; 1 caller at 0x0A1FE4). GOLDEN REGRESSION PASS.**)
+
+> Previous: 2026-06-08 (auto-session 571 — D02A62-D02A75 pixel renderer workspace 20B 6 fields, D031F6/D07396 scroll double-buffer pair 8400B each, 0x05E3EC boundary check helper 9B, 0x05E37D token buffer cursor guard 14B)
 
 > Previous: 2026-06-08 (auto-session 570 — 0x05E38B token byte fetcher 19B, 0x080064 multi-byte prefix check 17B, 0x08DD60 token backward reader 44B, 0x08DD8C+0x08DDA5 token lookup pair 25B+26B, 0x09BBA6 token advance+classify 12B, 0x08DD49 token buffer read 23B)
 
@@ -60,6 +62,44 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**Session 572 findings (2026-06-08)**:
+
+(1) ★★★ 0x0BA561 LCD WINDOW RESET DECODED (probe-phase572-decode-0BA561.mjs, Sonnet-verified):
+- **Function**: 0x0BA561-0x0BA57D (29 bytes, 11 instructions). LCD clipping/window reset.
+- **Flow**: LD HL,0x000000 / .SIS LD (0x26AC),HL / LD HL,0x00FFFF / .SIS LD (0x26AA),HL / CALL 0x0A89FE / CALL 0x09EF20 / RET.
+- **Purpose**: Resets LCD window registers to full-screen (min=0, max=0xFFFF). Uses .SIS prefix (0x40) for 16-bit port-mapped LCD register writes.
+- **LCD registers**: 0x26AC (window min) = 0x0000, 0x26AA (window max) = 0xFFFF.
+- **Sub-calls**: 0x0A89FE (LCD parameter computation), 0x09EF20 (writes 0xFFFF to 0x2AC0).
+- **3 callers**: 0x0BA532, 0x0BA849, 0x0BAB5C. Clean entry (preceded by RET at 0x0BA560).
+
+(2) ★★★ 0x080075 MULTI-BYTE PREFIX TABLE FULLY CROSS-REFERENCED (probe-phase572-dump-080075-table.mjs, Codex-verified):
+- **Table**: 11 bytes at 0x080075, used by CPIR scanner at 0x080064 (17B).
+- **Per-prefix ROM instruction cross-refs**: 0x5C=List(45), 0x5D=Matrix(90 highest), 0x5E=Y-var(41), 0x60=Pic(25), 0x61=GDB(28), 0x62=String(38), 0x63=Stats(30), 0x7E=Window(19 lowest), 0xBB=Extended(21), 0xAA=StatsCmds(49), 0xEF=GraphFmt(81).
+- **Token name string tables found**: 0x0AB3BE ("1-Var Stats", "2-Var Stats"), 0x0AEC4A ("RegEQ", "df", "Iterations", "Period", "Store EQ", "lower", "upper", "dfNumer", "dfDenom", "area", "x value", "p", "trials", "Paste", "Expr", "Variable", "start", "end", "step", "FreqList", "Store RegEQ", "repetitions", "Tail", "LEFT", "CENTER", "RIGHT").
+
+(3) ★★★ 0x08DDBF TOKEN TRANSLATION TABLE DECODED (probe-phase572-decode-08DDBF-table.mjs, Codex-verified):
+- **Table**: 19 entries x 3 bytes = 57 bytes at 0x08DDBF-0x08DDF7. Bidirectional bridge between 2-byte TI tokens and compact 1-byte internal token IDs.
+- **Forward lookup**: 0x08DD8C (25B) -- DE(prefix+second) to A(internal ID).
+- **Reverse lookup**: 0x08DDA5 (26B) -- A(internal ID) to DE(prefix+second).
+- **Key entries**: 0xF0/0x00=0x2A, 0xF1/0x00=0x24, 0x36/0xEF=0x2C, 0x06/0x00=0x2B, 0x2E/0xEF=0x20, 0x2F/0xEF=0x20, 0x33/0xEF=0x29, 0x34/0xEF=0x28, 0x24/0x00=0x22, 0x25/0x00=0x23, 0xBF/0x00=0x25, 0xC1/0x00=0x26, 0xBC/0x00=0x27, 0xB2/0x00=0x21, 0x94/0x00=0x6D, 0x95/0x00=0x6E, 0xA6/0xEF=0x6F.
+- **Cross-refs**: Internal IDs 0x20-0x2C heavily referenced in token classifiers (0x09BAxx-0x09BCxx) and expression evaluators (0x0593xx-0x05A6xx).
+
+(4) ★★★ 0x0A1FAB SCROLL BUFFER SWAP FULLY MAPPED (probe-phase572-map-0A1FAB.mjs, Sonnet-verified):
+- **Function**: 0x0A1FAB-0x0A1FD0 (38 bytes, 16 instructions). LDIR block copy between scroll buffers.
+- **Mechanism**: Block copy via LDIR (BC=0x20D0=8400 bytes), NOT pointer swap.
+- **Two entry points**: 0x0A1FAB = LD HL,D031F6 / LD DE,D07396 (primary to secondary). 0x0A1FB5 = LD DE,D031F6 / LD HL,D07396 (secondary to primary). JR +8 merges to shared tail.
+- **Interrupt safety**: Double LD A,I errata workaround at 0x0A1FBD/0x0A1FC3 (JP PE skips second if IFF2 already correct), PUSH AF saves state, DI brackets the LDIR, POP AF / RET PO returns without EI if IRQs were disabled, else EI / RET.
+- **1 caller**: CALL at 0x0A1FE4 (checks IY+0x49 bit 6 and IY+0x28 bit 4 before calling).
+
+(5) CODEX: 1/4 (P2 exit 0, P1/P3/P4 exit 1 with files but broken output). P1 decoder all `???`, P4 `[object Object]`. P2 fully working, P3 raw data correct but token names unresolved. P1+P4 redone via Sonnet fallback. All probes Opus-verified (exit 0, output matches analysis).
+
+**NEW FUNCTIONS DECODED**: 0x0BA561 (29B LCD window reset), 0x0A1FAB (38B scroll buffer swap LDIR).
+**TABLES FULLY MAPPED**: 0x080075 (11B multi-byte prefix table, cross-referenced), 0x08DDBF (57B=19x3B token translation table, bidirectional).
+**STRING TABLES FOUND**: 0x0AB3BE (stats command names), 0x0AEC4A (stats/dialog parameter names, 26+ strings).
+**CORRECTIONS**: None.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL -- needs human. (b) ★★ DECODE D03028/D0302B -- pointer/offset for active secondary buffer (carried from 571). (c) ★★ MAP D02A65/D02A68 FONT PARAM BLOCKS -- determine what the 6 bytes encode (carried from 571). (d) ★★ SCAN 0x0A1FB5 CALLERS -- second entry point of swap function may have separate callers. (e) ★★ MAP 0x0A89FE LCD PARAMETER COMPUTATION -- sub-call of 0x0BA561, reads 0x2A75 + IY+0x51. (f) ★★ MAP 0x0AB3BE-0x0AECxx STRING TABLE EXTENT -- find full bounds of the token name string region. (g) ★ DECODE 0x0BA57E -- function after LCD window reset, writes D02A76/D02A7C, calls 0x0A89F2. --END SESSION 572--
 
 **Session 571 findings (2026-06-08)**:
 
