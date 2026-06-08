@@ -8,7 +8,9 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-08 (auto-session 569 — **★★★★ 0x08DD45 TOKEN-TYPE CLASSIFIER DECODED (27B: reads D0231A cursor + D0231D boundary, CALL 0x04C973 compare, Z/DE=0 at-boundary return, else CALL 0x05E38B fetch+classify — 3-way return: Z=at-boundary, NZ+CF=0=single-byte, NZ+CF=1=multi-byte; 10 callers). ★★★★ 0x08DBF1 TOKEN FORWARD SCANNER DECODED (25B: iterative loop CALL 0x08DC1A→0x08DC0E fetch→0x08DC26 classify, RES 1 IY+0x2D each iteration, advances D0231A cursor, exits on CF; 0x08DC26 classifies: 0x2D=minus, 0x00-0x09=digits, 0x0A-0x0F=numeric tokens → Z=number, NZ=stop; 2 callers). ★★★ 0x03E1B4 ERROR PROCESSING ROUTINE DECODED (37B: interrupt-safe wrapper around CALL 0x03E187 flash unlock/reset, double LD A,I errata workaround, scratch at D00542; 4 callers including ParseInp error handler at 0x047A7E). ★★★ 0x0021xx SYSCALL CLUSTER FULLY MAPPED (8 vectors at 0x000130-0x00014C → 182B total: 0x00218A indirect dispatch 78 callers, 0x0021A7 bitwise AND 4 callers, 0x0021C2 null-check 545 callers, 0x0021CE signed 24-bit divide 3 callers, 0x002207 unsigned divide wrapper 8 callers, 0x002211 24-bit divide core 2 callers, 0x002228+0x002234 LEA helpers 0 callers). GOLDEN REGRESSION 3/3 PASS.**)
+**Last updated**: 2026-06-08 (auto-session 570 — **★★★★ 0x05E38B TOKEN BYTE FETCHER DECODED (19B: LD DE,0/LD E,(HL)/CALL 0x080064 multi-byte check, single-byte RET NZ A=E=byte CF=0, multi-byte OR 1/SCF RET CF=1 DE=2-byte token; 13 callers). ★★★★ 0x080064 MULTI-BYTE TOKEN PREFIX CHECK DECODED (17B: CPIR scan of 11-entry table at 0x080075 [5C 5D 5E 60 61 62 63 7E BB AA EF], Z=multi-byte prefix, NZ=single-byte; 16 callers). ★★★★ 0x08DD60 TOKEN BACKWARD READER DECODED (44B: reads D0243A edit cursor, boundary check via 0x05E3EC→D02437, CALL 0x080064 for multi-byte, 4 callers). ★★★★ 0x08DD8C 2-BYTE TOKEN LOOKUP (25B: DJNZ 19-entry×3B table at 0x08DDBF, matches E+D→result A; 2 callers). ★★★★ 0x08DDA5 1-BYTE TOKEN REVERSE LOOKUP (26B: DJNZ 11-entry×3B table at 0x08DDD9 shared with 0x08DDBF, matches result→DE; 2 callers). ★★★★ 0x09BBA6 TOKEN ADVANCE+3-WAY CLASSIFY DECODED (12B: CALL 0x09BAC9 advance cursor, CP 0x3E/CP 0x00/CP 0x3F, Z=delimiter stop NZ=continue; 60 callers — most-called token function). ★★★★ 0x08DD49 TOKEN BUFFER READ DECODED (23B: boundary check D0231D, CALL 0x05E38B fetch, Z+DE=0 at end; 2 callers). GOLDEN REGRESSION PASS.**)
+
+> Previous: 2026-06-08 (auto-session 569 — 0x08DD45 token-type classifier 27B, 0x08DBF1 token forward scanner 25B, 0x03E1B4 error processing 37B, 0x0021xx syscall cluster 182B)
 
 > Previous: 2026-06-08 (auto-session 568 — 0x09C70B paren balancer 47B, 0x0A26C7+0x0A26D6 twin epilogues 15B+15B, 0x08DB93 token-type guard 22B, 0x0021C2 syscall null-check 12B)
 
@@ -39,6 +41,52 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**Session 570 findings (2026-06-08)**:
+
+(1) ★★★★ 0x05E38B TOKEN BYTE FETCHER (19B, probe-phase570-decode-05E38B.mjs, Sonnet-verified):
+- **Function**: 0x05E38B-0x05E39D (19 bytes, 12 instructions). Reads token byte from buffer at (HL).
+- **Flow**: LD DE,0 / LD E,(HL) / CALL 0x080064 (multi-byte check) / LD A,E / RET NZ (single-byte: A=E=byte, CF=0). Multi-byte path: LD D,A / OR 0x01 (force NZ) / LD A,D / INC HL / LD E,(HL) / SCF / RET (CF=1, DE=2-byte token).
+- **Return contract**: NZ+CF=0 = single-byte token (A=E=byte, D=0). NZ+CF=1 = multi-byte token (D=prefix, E=second byte).
+- **Sub-call**: 0x080064 (CPIR table scan, 17B). Preceding function at 0x05E37D loads HL from D0243D, compares vs D02440 — 0x05E38B is its NZ continuation.
+- **13 callers**: 0x020D1C (JP), 0x02594D, 0x05ACF7, 0x08DD5B, 0x097116, 0x097A38, 0x09C6A6, 0x09CDE8, 0x09E585, 0x0A2A4C, 0x0A2D8F, 0x0B17EE, 0x0B97FB.
+
+(2) ★★★★ 0x080064 MULTI-BYTE TOKEN PREFIX CHECK (17B, probe-phase570-decode-080064.mjs, Sonnet-verified):
+- **Function**: 0x080064-0x080074 (17 bytes, 10 instructions). CPIR-based table lookup.
+- **Flow**: LD A,(HL) / PUSH BC,HL / LD HL,0x080075 / LD BC,0x00000B / OR A / CPIR / POP HL,BC / RET.
+- **Table at 0x080075**: 11 multi-byte token prefix bytes: `5C 5D 5E 60 61 62 63 7E BB AA EF`.
+- **Return**: Z = byte is a multi-byte prefix. NZ = single-byte token.
+- **16 callers** across 0x05Exxx, 0x06Axxx, 0x08Dxxx token parsing regions.
+
+(3) ★★★★ 0x08DD60+0x08DD8C+0x08DDA5 TOKEN CLASSIFICATION CLUSTER (44B+25B+26B, probe-phase570-decode-08DDxx-cluster.mjs, Sonnet-verified):
+- **0x08DD60** (44B): Token backward reader. Reads D0243A (edit cursor), boundary-checks via CALL 0x05E3EC (→D02437→0x04C973). At boundary: A=E=0, NZ via OR 1. Not boundary: DEC HL, reads E=(HL), checks multi-byte via 0x080064. Multi-byte: D=(HL-1), SCF, RET CF=1. **4 callers**: 0x0566DD, 0x08D310, 0x08D727, 0x091BF2.
+- **0x08DD8C** (25B): 2-byte token lookup. LD HL,0x08DDBF / LD B,0x13 / DJNZ: compares E to table[i*3+0], D to table[i*3+1]. Match: A=table[i*3+2], Z. No match: OR 1, NZ. **19-entry×3B table** at 0x08DDBF (57 bytes). **2 callers**: 0x08D9C9, 0x091239.
+- **0x08DDA5** (26B): 1-byte token reverse lookup. LD HL,0x08DDD9 / LD B,0x0B / DJNZ: matches A to table[i*3+2], returns DE from preceding 2 bytes, CF=1. No match: CF=0. **Shares table with 0x08DD8C** (last 11 entries of same 19-entry table). **2 callers**: 0x0219D4 (JP), 0x056379.
+- **NEW RAM**: D0243A (edit cursor pointer), D02437 (edit buffer boundary via 0x05E3EC).
+
+(4) ★★★★ 0x09BBA6 TOKEN ADVANCE+3-WAY CLASSIFY (12B, probe-phase570-decode-09BBA6.mjs, Sonnet-verified):
+- **Function**: 0x09BBA6-0x09BBB1 (12 bytes, 7 instructions). Most-called token function (60 callers).
+- **Flow**: CALL 0x09BAC9 (advance cursor D0231A) / CP 0x3E / RET Z / OR A / RET Z / CP 0x3F / RET.
+- **Return contract**: Z = token is delimiter (0x3E, 0x00, or 0x3F) — stop parsing. NZ = continue parsing. CF from CP 0x3F distinguishes <0x3F vs ≥0x3F.
+- **60 callers** concentrated in 0x0593xx-0x05A6xx (expression evaluator, ~35), 0x05B2xx-0x05B7xx (~6), 0x099Cxx-0x09BCxx (token classifier, ~10), plus scattered.
+- **Callee 0x09BAC9** (15B): LD BC,(D0231A) / INC BC / JR 0x09BABD (shared loader: A=(BC), stores BC back).
+- **Neighboring cluster** 0x09BB80-0x09BC60: token class setters (B=6/7/8→D005F8), guard+init, token validator (CP chain: 0xB5/0xAB/0xEB/0x41/0x62/0x21/0xAA/0x64).
+
+(5) ★★★★ 0x08DD49 TOKEN BUFFER READ (23B, probe-phase570-decode-080064.mjs, Sonnet-verified):
+- **Function**: 0x08DD49-0x08DD5F (23 bytes, 9 instructions). Boundary-checked token read.
+- **Flow**: LD DE,(D0231D) / INC DE / CALL 0x04C973 (compare HL vs DE) / JR NZ→0x08DD5B / CP A (set Z) / LD DE,0 / RET. NZ path: CALL 0x05E38B / RET.
+- **Return**: Z+DE=0 = at/past buffer boundary (no token). Otherwise: flags from 0x05E38B (NZ+CF=0 single-byte, NZ+CF=1 multi-byte).
+- **2 callers**: 0x08D79E, 0x08DC0E.
+- **Session 569 note corrected**: 0x08DD49 is 23B (not 18B as estimated).
+
+(6) CODEX: 0/4 (P1/P2/P4 exit 1, P3 exit 0 but empty output). 4/4 priorities completed via Sonnet fallback. All probes Opus-verified (exit 0, output matches analysis).
+
+**NEW FUNCTIONS DECODED**: 0x05E38B (19B token byte fetcher), 0x080064 (17B multi-byte prefix check + 11B table), 0x08DD60 (44B token backward reader), 0x08DD8C (25B 2-byte token lookup + 57B table), 0x08DDA5 (26B reverse token lookup), 0x09BBA6 (12B token advance+classify), 0x08DD49 (23B token buffer read).
+**NEW EXTERNAL CALLS DISCOVERED**: 0x05E3EC (9B, loads D02437→0x04C973 boundary compare, called by 0x08DD60).
+**NEW RAM ADDRESSES**: D0243A (edit cursor pointer, read by 0x08DD60), D02437 (edit buffer boundary, read by 0x05E3EC).
+**CORRECTIONS**: 0x08DD49 is 23B (not 18B as session 569 estimated).
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★ MAP D02A62-D02A75 — pixel renderer workspace (carried from 560). (c) ★★★ MAP D031F6/D07396 SCROLL BUFFERS — initialization/trigger (carried from 561). (d) ★★★ DECODE 0x05E3EC FULLY — boundary check helper (9B, loads D02437, tail-calls 0x04C973; discovered in session 570 from 0x08DD60). (e) ★★★ DECODE 0x05E37D — preceding function that falls into 0x05E38B (loads D0243D/D02440). (f) ★★ DECODE 0x0BA561 — carried from 549. (g) ★★ DUMP 0x080075 TABLE CROSS-REF — map all 11 multi-byte prefix bytes (5C/5D/5E/60/61/62/63/7E/BB/AA/EF) to TI token class names. (h) ★★ DECODE 0x08DDBF TABLE SEMANTICS — map the 19 token triplets to TI token names/classes. --END SESSION 570--
 
 **Session 569 findings (2026-06-08)**:
 
