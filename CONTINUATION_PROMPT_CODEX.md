@@ -20,6 +20,8 @@
 > 5. **The REAL remaining blocker is EDIT-CONTEXT ORCHESTRATION, not execution.** A typed `2` does NOT render because there is no live edit session (no populator-initialized cursor/edit buffer/descriptor for the token to land in + echo).
 >
 > **NEXT STEP for this track (orchestration/integration, NOT more decoding):** drive the home-screen populator (`0x044D3F`/`0x044DB3`, gated by MathPrint flag `D00082` bit 7 + the `D02032` gate) to completion so a live edit context (cursor + edit buffer + descriptors) exists, THEN feed the key (with `D008E0` seeded) and verify `2` reaches VRAM at `0xD40000`. The loop's recent token-machinery decodes (sessions 566-570: `D0231A` cursor, `D0231D` boundary, `D0243A` edit cursor, token classifiers) are directly relevant to this. See memory note `runtime-has-no-interpreter.md`.
+>
+> **UPDATE — ITERATION 2 (2026-06-08, `probe-edit-context.mjs`):** the populator **cannot be driven cold**. `0x044D3F` error-bails in Phase 1 within ~86 steps — `CALL 0x07F81D` (save display/cursor state) returns carry → error trampoline `0x044D3B`→`0x061D52` → longjmp (crashes on garbage SP unless `D008E0` seeded; seeding it lets the bail return cleanly to idle but still no populate). The bail is BEFORE the MathPrint/`D02032`/`D00603` gates, so seeding those does nothing. **Conclusion: the populator needs live OS display-stack context it only has when the home screen is entered via its normal flow (jump table `0x044A6E`).** REVISED NEXT STEP: drive the **home-screen ENTRY sequence** — the caller chain that reaches `0x044D3F` through the `0x044A6E` jump-table dispatch — so the display/cursor save-state is valid, rather than calling the populator standalone. Probe: `TI-84_Plus_CE/probe-edit-context.mjs`.
 
 ---
 
