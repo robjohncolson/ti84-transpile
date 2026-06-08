@@ -8,7 +8,9 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-07 (auto-session 563 — **★★★★ 0x0A2947 LARGE SCROLL HANDLER DECODED (~150B: writes 10→D02505 line count, CALL 0x0800A0 split check, .SIS 16-bit addressing, row loops via PutC 0x0A1B5B, restores cursor state from D007C4/C7/C8/C9). ★★★★ 0x0800A0 CONFIRMED = MULTI-STUB CLUSTER (BIT 3,IY+0x14 split-flag → JR Z to BIT 0,IY+0x14; non-Z path: CP A/RET, then tests IY+0x09 bit 7, CALL 0x080259, IY+0x45 bit 5, IY+0x44 bit 5; 0x0800BD=BIT 0,IY+0x14; 0x0800C2=RES 3,IY+0x14). ★★★★ 0x0A23AB RENDERING PREAMBLE (interrupt-safe register save: LD A,I/DI/EXX/PUSH, then JR to 0x0A2400; 0x0A23C0=IY+0x32 bit 2 test, H=0x1C→CALL 0x07BF3E glyph table, H=0x19→CALL 0x0A5424; writes D005A4). ★★★★ D007C4-D007C9 CURSOR SAVE MAPPED (D007C4=curRow save 3 refs, D007C5/C6=0 refs part of 3-byte ops, D007C7=D02504 page counter save 5 refs, D007C8=IY+0x12 D00092 flags save 4 refs, D007C9=IY+0x05 D00085 bit 4 save 3 refs). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-07 (auto-session 564 — **★★★★ 0x0A2400 RENDER SETUP / GLYPH PARAMETER CALCULATOR (~399B: 6-phase pipeline — width selection via IY+0x14 bit 4 split-screen, IY+0x4A bits 5/6 scroll flags, row count from D025CE+IY+0x32, column calc, VRAM pointer via 0x0A1A9D+0x0A1B1C, glyph blit inner loop with DJNZ; CALL 0x0801B9/0x04C979/0x0A1A9D/0x0A1B1C; tail-calls 0x0A2695). ★★★★ 0x0A5424 SMALL FONT GLYPH LOADER (55B: 25 bytes/glyph via LDIR, ROM table at 0x0A3AFA, workspace D005C5, zeroes D005DE; IY+0x35 bit 1 skip-init flag; CALL 0x02398E). ★★★★ 0x055316 BPP COORDINATE VALIDATION/CLIPPING (48B+~120B: IX stack frame, bounds check D02FD9/D02FD6, BIT 2,(IY+0x46)=D000C6 BPP dispatch, writes D005E9/D026AC; CALL 0x055191/0x000154). ★★★★ 0x080259 SPLIT-FLAG SECONDARY TEST (5B: BIT 3,(IY+0x01)=D00081 bit 3; RET Z/NZ). GOLDEN REGRESSION 26/26 PASS.**)
+
+> Previous: 2026-06-07 (auto-session 563 — 0x0A2947 large scroll handler ~150B, 0x0800A0 multi-stub cluster 29B, 0x0A23AB rendering preamble 20B, D007C4-D007C9 cursor save mapped)
 
 > Previous: 2026-06-07 (auto-session 562 — 0x0A2802 scroll setup+fill 250B, 0x08C308 BPP test 9B, 0x0A237E text buffer ptr calc 32B, 0x0A26E4 pixel fill mask table 7B)
 
@@ -27,6 +29,49 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**Session 564 findings (2026-06-07)**:
+
+(1) ★★★★ 0x0A2400 RENDER SETUP / GLYPH PARAMETER CALCULATOR (~399B, probe-phase564-decode-0A2400.mjs, Sonnet+Opus-verified):
+- **Entry**: 0x0A2400 (reached via JR +0x40 from 0x0A23AB preamble). **Tail-calls 0x0A2695**.
+- **Phase 1 (0x0A2400-0x0A244C)**: Width selection based on display mode. IY+0x14 bit 4 → split-screen query CALL 0x0801B9. IY+0x11 bit 3 selects column count: split: DE=0x61(97)/0xBD(189), normal: DE=0xA0(160)/0x124(292), fallback: DE=0x140(320). CALL 0x04C979 width-clip.
+- **Phase 2 (0x0A244D-0x0A2492)**: Workspace scroll flags — SET/RES bits 5,6 of IY+0x4A (D000CA) based on IY+0x14 bit 4, IY+0x4C bit 5, IY+0x0D bit 1, IY+0x3C bit 0, IY+0x02 bit 1.
+- **Phase 3 (0x0A2493-0x0A24C7)**: Row count selection — reads D025CE into B, checks IY+0x32 bits 7/6/2 to select B from {0x0E=14, 0x0C=12, ...}. Also IY+0x23 bit 0 and D0266F.
+- **Phase 4 (0x0A24C8-0x0A2506)**: Column (D register) selection based on IY+0x23 bit 0, IY+0x32 bits 6/2, E vs 0x09 threshold, D0266F.
+- **Phase 5 (0x0A2507-0x0A253A)**: VRAM pointer setup — .SIS LD from D0059C, CALL 0x0A1A9D (workspace lookup), CALL 0x0A1B1C (pixel-offset), ADD HL,BC for final VRAM address.
+- **Phase 6 (0x0A253B-0x0A258B)**: Glyph data blit inner loop — DJNZ per-byte, checks IY+0x05 bit 3 (invert), IY+0x4A bit 5 (workspace), BIT 7,D selects D026AA/D026AC stride stores.
+- **CALL targets**: 0x0801B9, 0x04C979, 0x0A1A9D, 0x0A1B1C.
+- **RAM**: D005A0, D008D5, D025CE, D0266F, D0059C, D026AA, D026AC.
+- **IY map**: +0x14 bit 4, +0x11 bit 3, +0x4A bits 5/6, +0x4C bit 5, +0x0D bit 1, +0x3C bit 0, +0x02 bit 1, +0x32 bits 2/6/7, +0x23 bit 0, +0x05 bits 1/3.
+
+(2) ★★★★ 0x0A5424 SMALL FONT GLYPH DATA LOADER (55B, probe-phase564-decode-0A5424.mjs, Sonnet+Opus-verified):
+- **Function**: 0x0A5424-0x0A545A. Counterpart to 0x07BF3E (large font).
+- **Small font = 25 bytes/glyph** (LD BC,0x000019 + LDIR). ROM glyph table at **0x0A3AFA**.
+- **Workspace**: Copies 25B glyph data to D005C5, zeroes D005DE, copies 3 more tail bytes.
+- **IY+0x35 bit 1** (D000B5): skip-init flag — if clear, skips CALL 0x02398E and uses ROM table directly.
+- **CALL 0x02398E**: conditionally called (likely font ROM bank enable or secondary table select).
+- **Returns HL = 0xD005C5** (workspace pointer for caller).
+
+(3) ★★★★ 0x055316 BPP COORDINATE VALIDATION/CLIPPING (48B+~120B, probe-phase564-decode-055316.mjs, Sonnet+Opus-verified):
+- **Function 1** (0x055316-0x055345, 48B): IX stack frame setup, CALL 0x055191, bounds check via SBC HL,DE, writes D005E9. Pointer setup helper.
+- **Function 2** (0x055346-0x0553C0+, ~120B): Range-clamping with SBC HL,BC + JP P/M. **BIT 2,(IY+0x46) = D000C6 bit 2** (BPP mode dispatch). BPP path reads D026AC, non-BPP takes alternate path. CALL 0x000154 and CALL 0x055191.
+- **BPP workspace**: D02FD9, D02FD6 (range limits), D026AC (pixel data pointer).
+- **No LCD SPI port I/O, no direct VRAM access** — clipping logic only.
+
+(4) ★★★★ 0x080259 SPLIT-FLAG SECONDARY TEST (5B, probe-phase564-decode-080259.mjs, Sonnet+Opus-verified):
+- **0x080259**: `BIT 3,(IY+0x01); RET` — tests D00081 bit 3. Returns Z=1 if clear, Z=0 if set.
+- Called from 0x0800AE in the split-screen active path of the 0x0800A0 cluster.
+- D00081 bit 3 is an as-yet-unnamed OS state flag consulted when split-screen is active.
+
+(5) VERIFICATION: All 4 probes ran to completion (exit 0). Golden regression PASS (status dots PASS, Normal/Float/Radian 3/3 PASS). No runtime/source files modified — probes are read-only ROM analysis. Codex 0/4 (all failed — exit 1). Sonnet 4/4 success.
+
+**NEW FUNCTIONS DECODED**: 0x0A2400 (~399B render setup/glyph parameter calculator), 0x0A5424 (55B small font glyph loader), 0x055316 (48B+~120B BPP coordinate clipping), 0x080259 (5B split-flag test).
+**NEW RAM ADDRESSES**: D005A0 (display-state save), D008D5 (display-state source), D025CE (row-count source), D0266F (column/scroll position), D005E9 (BPP pointer), D005C5 (small font glyph workspace), D005DE (glyph tail workspace).
+**NEW CALLS**: 0x0801B9 (split-screen query), 0x0A1A9D (workspace lookup), 0x0A1B1C (pixel-offset calc), 0x0A2695 (tail-call cleanup after blit), 0x02398E (font ROM helper), 0x055191 (BPP sub-helper), 0x000154 (OS entry).
+**NEW ROM TABLE**: 0x0A3AFA = small font glyph data (25 bytes/glyph, counterpart to 0x004000 large font at 28 bytes/glyph).
+**IY FLAG MAP UPDATE**: +0x01 bit 3 = split-screen secondary flag (D00081), +0x35 bit 1 = font init skip (D000B5), +0x46 bit 2 = BPP mode active (D000C6, already known as absolute, now confirmed as IY-relative too).
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x0A2695 — tail-call cleanup after glyph blit (new from 0x0A2400). (c) ★★★★ DECODE 0x0801B9 — split-screen query (new from 0x0A2400). (d) ★★★★ DECODE 0x0A1A9D — workspace lookup (near known 0x0A1A8F, new from 0x0A2400). (e) ★★★★ DECODE 0x02398E — font ROM helper (new from 0x0A5424). (f) ★★★★ DECODE 0x055191 — BPP sub-helper (new from 0x055316, called twice). (g) ★★★ DECODE 0x09BAC9 — input reader (carried from 558). (h) ★★★ DECODE 0x08DB93 — pre-operation helper (carried from 558). (i) ★★★ MAP D02A62-D02A75 — pixel renderer workspace (carried from 560). (j) ★★★ MAP D031F6/D07396 SCROLL BUFFERS — initialization/trigger (carried from 561). (k) ★★ DECODE 0x0BA561 — carried from 549. --END SESSION 564--
 
 **Session 563 findings (2026-06-07)**:
 

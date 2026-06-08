@@ -18296,15 +18296,147 @@
       "timestamp": "2026-06-07T22:54:43Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "8e0f76acd181",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map ROM Table at 0x0A26E4 \u2014 Glyph Property Table\n\n## Context\nYou are working on a TI-84 Plus",
+      "status": "partial",
+      "duration_seconds": 83.818,
+      "timestamp": "2026-06-08T00:04:13Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9cb6f90cce61",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x08C308 \u2014 BPP Mode Test Function\n\n## Context\nYou are working on a TI-84 Plus CE ROM ",
+      "status": "completed_with_limitations",
+      "duration_seconds": 93.015,
+      "timestamp": "2026-06-08T00:04:19Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "400cf2afb7c2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0A237E \u2014 Alternate Glyph Path\n\n## Context\nYou are working on a TI-84 Plus CE ROM (e",
+      "status": "partial",
+      "duration_seconds": 137.091,
+      "timestamp": "2026-06-08T00:05:04Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "68f2954e8b82",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0A2802 \u2014 Scroll Trigger Helper\n\n## Context\nYou are working on a TI-84 Plus CE ROM (",
+      "status": "partial",
+      "duration_seconds": 145.367,
+      "timestamp": "2026-06-08T00:05:09Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "dfa188121bd8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map D007C4-D007C9 \u2014 Cursor Save Slots\n\n## Context\nYou are working in the TI-84 Plus CE ROM t",
+      "status": "complete",
+      "duration_seconds": 90.229,
+      "timestamp": "2026-06-08T01:23:38Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "4ac59936bfaa",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0800A0 \u2014 OS Syscall for Scroll Mode\n\n## Context\nYou are working in the TI-84 Plus C",
+      "status": "success",
+      "duration_seconds": 108.931,
+      "timestamp": "2026-06-08T01:23:52Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "49630cf950d7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0A2947 \u2014 Large Scroll Handler\n\n## Context\nYou are working in the TI-84 Plus CE ROM ",
+      "status": "completed",
+      "duration_seconds": 129.895,
+      "timestamp": "2026-06-08T01:24:11Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ff20b97b035f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0A23AB \u2014 Alternate Rendering Entry\n\n## Context\nYou are working in the TI-84 Plus CE",
+      "status": "success",
+      "duration_seconds": 128.391,
+      "timestamp": "2026-06-08T01:24:14Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a47b6729fbf5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 564 P1 \u2014 Decode 0x080259 (split-flag path helper)\n\n## Context\nYou are working on a TI-84 P",
+      "status": "complete",
+      "duration_seconds": 109.861,
+      "timestamp": "2026-06-08T03:37:14Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "bee4e0e4f995",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 564 P2 \u2014 Decode 0x0A5424 (alternate/small font handler)\n\n## Context\nYou are working on a T",
+      "status": "success",
+      "duration_seconds": 133.596,
+      "timestamp": "2026-06-08T03:37:40Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "bd401afc3907",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 564 P3 \u2014 Decode 0x0A2400 (rendering setup target)\n\n## Context\nYou are working on a TI-84 P",
+      "status": "success",
+      "duration_seconds": 137.082,
+      "timestamp": "2026-06-08T03:37:45Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "76b6ff5c1666",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Session 564 P4 \u2014 Decode 0x055316 (BPP helper)\n\n## Context\nYou are working on a TI-84 Plus CE ROM t",
+      "status": "success",
+      "duration_seconds": 144.766,
+      "timestamp": "2026-06-08T03:37:55Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1534,
-    "cc_to_codex": 1534,
+    "total_calls": 1546,
+    "cc_to_codex": 1546,
     "codex_to_cc": 0,
-    "completed": 1035,
+    "completed": 1036,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 494.54
+    "avg_duration_seconds": 491.634
   }
 }
