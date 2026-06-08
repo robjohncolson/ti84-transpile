@@ -8,7 +8,9 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-08 (auto-session 567 — **★★★★ 0x0A258F-0x0A2694 COMPLETE COLUMN BLIT DECODED (262B: 3 rendering paths — BIT 6,IY+0x4A dispatch → 4bpp nibble 129B + 16bpp/8bpp 125B, 8bpp sub-path with 320B scanline stride, true 16bpp with 2B/pixel color writes, CALL 0x08C308 BPP mode test). ★★★★ 0x059FFF TOKEN ACCEPT HANDLER DECODED (25B: NOT a simple commit — post-accept validator with paren balancing, CALL 0x09BBA6 advance+classify, CP 0x29 close-paren → recursive depth scanner 0x09C70B, D0231A = token stream cursor). ★★★★ 0x09B9C8+0x09BBAA TOKEN PRE-CLASSIFIER DECODED (9B+8B=17B: guard rejects 0x3E newline + 0x00 null with error 0x8A longjmp via 0x061D2C, pre-sets flags from CP 0x3F for downstream 15-way classifier). ★★★★ 0x0551EF+0x055743 BPP HELPERS DECODED (15B+52B=67B: 0x0551EF = display geometry restore LDIR 13B ROM→D02FD9, 0x055743 = BPP-aware geometry loader with BIT 2,IY+0x46 dispatch to 16BPP table 0x05550C vs 8BPP table 0x055519, CALL 0x000138 syscall). GOLDEN REGRESSION 3/3 PASS.**)
+**Last updated**: 2026-06-08 (auto-session 568 — **★★★★ 0x09C70B PAREN BALANCER FULLY DECODED (47B: iterative scan loop with 3 exit paths — guard BIT 1 IY+0x08, scan via CALL 0x09BAC9 cursorAdvance, CP 0x29/0x3E/0x3F token classify, cursor save/restore D0231A, NOT truly recursive internally — uses JR Z loop). ★★★★ 0x0A26C7+0x0A26D6 TWIN EPILOGUES DECODED (15B+15B: identical register/interrupt restore — POP HL'/EXX/POP BC,DE,HL/EXX/POP AF/JP PO skip EI/POP BC, only differ in final return: 0x0A26C7=XOR A CF=0 done, 0x0A26D6=SCF CF=1 continue). ★★★★ 0x08DB93 TOKEN-TYPE GUARD DECODED (22B: RES 1 IY+0x2D, CALL 0x08DD45 classifier, 4 exit paths Z/C/NZ/match, SET 1 IY+0x2D only for type 0x10 multi-byte tokens). ★★★ 0x0021C2 SYSCALL NULL-CHECK DECODED (12B: PUSH HL,DE/LD DE,0/OR A/SBC HL,DE/POP DE,HL/RET — test HL==0, Z/NZ return; 0x000138 JP confirmed). GOLDEN REGRESSION 3/3 PASS.**)
+
+> Previous: 2026-06-08 (auto-session 567 — 0x0A258F complete column blit 262B 3 paths, 0x059FFF token accept handler 25B, 0x09B9C8+0x09BBAA token pre-classifier 17B, 0x0551EF+0x055743 BPP helpers 67B)
 
 > Previous: 2026-06-08 (auto-session 566 — 0x09BAFF main token classifier 167B, 0x0A2537 row loop top+first column blit 17B+71B, 0x025758 app header validator 27B, 0x0551FE+0x05523D+0x05529B BPP display cluster 153B)
 
@@ -35,6 +37,46 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**Session 568 findings (2026-06-08)**:
+
+(1) ★★★★ 0x09C70B PAREN BALANCER FULLY DECODED (47B, probe-phase568-decode-09C70B.mjs, Sonnet-verified):
+- **Function**: 0x09C70B-0x09C739 (47 bytes, 22 instructions). Called from 0x059FFF when CP 0x29 (close-paren) detected.
+- **Entry guard**: BIT 1,(IY+0x08)=D00088 — if clear, OR A + RET (paren mode inactive).
+- **Algorithm**: Save cursor D0231A → PUSH HL. Scan loop at 0x09C718: CALL 0x09BAC9 (cursorAdvance), LD (D0231A),BC. JR NC → classify. On CF=1 (end of buffer): POP HL + XOR A + RET (fail).
+- **Token classification**: CP 0x3E (open-paren "(" ) → fail (wrong nesting). CP 0x3F (end-of-expression) → fail. CP 0x29 (close-paren ")" ) → JR Z back to scan loop (consume nested close-paren). Anything else → success: POP HL, restore cursor LD (D0231A),HL, LD A,0x29, RET.
+- **NOT truly recursive**: Session 567 described as "recursive" but the function uses JR Z loop back to 0x09C718, not CALL self. True recursion happens at the caller level (0x059FFF → 0x09C70B chain).
+- **Exit paths**: A=0x29 (balanced, cursor restored), A=0x00 (unbalanced, cursor left advanced), CF=0 (paren mode inactive).
+
+(2) ★★★★ 0x0A26C7+0x0A26D6 TWIN EPILOGUES DECODED (15B+15B, probe-phase568-decode-0A26C7.mjs, Sonnet-verified):
+- **0x0A26C7** (15B, CF=0 "done" exit): POP HL/EXX/POP BC,DE,HL/EXX/POP AF/JP PO 0x0A26D3/EI/POP BC/XOR A/RET. Returns CF=0 (success/no-more-rows).
+- **0x0A26D6** (15B, CF=1 "continue" exit): Identical register restore sequence but ends with SCF/RET. Returns CF=1 (continue/more rows).
+- **Interrupt-safe pattern**: POP AF carries P/V flag from LD A,I at preamble (0x0A23AB). JP PO skips EI if interrupts were already disabled. Standard eZ80 IFF2 restore idiom.
+- **Layout**: 0x0A26C7 [CF=0 epilogue, 15B] | 0x0A26D6 [CF=1 epilogue, 15B] | 0x0A26E4 [mask table]. Contiguous.
+- **Relationship**: 8bpp path (0x0A262B) exits to 0x0A26C7, bypassing the extra-column blit and row-closer at 0x0A2695. The main post-blit handler reaches these epilogues only after all rows are complete.
+
+(3) ★★★★ 0x08DB93 TOKEN-TYPE GUARD DECODED (22B, probe-phase568-decode-08DB93.mjs, Sonnet-verified):
+- **Function**: 0x08DB93-0x08DBA8 (22 bytes, 11 instructions). Pre-operation token type classifier.
+- **Flow**: RES 1,(IY+0x2D)=D000AD (pessimistically clear type-0x10 flag). PUSH BC / CALL 0x08DD45 (token-type classifier) / POP BC. Four exit paths: RET Z (null token), RET C (error/invalid), CP 0x10 → RET NZ (not type 0x10). If type 0x10: SET 1,(IY+0x2D), OR 0x01 (force NZ), RET.
+- **Purpose**: Guards cursor operations (called by 0x08DBE1 cursor-back). Type 0x10 = multi-byte/composite token that requires different cursor movement (skip over multi-byte sequence instead of single byte).
+- **RAM**: D000AD (IY+0x2D) bit 1 = "current token is type 0x10" flag. D0231A (token cursor, used by caller).
+- **External calls**: 0x08DD45 (token-type classifier, not yet decoded).
+
+(4) ★★★ 0x0021C2 SYSCALL NULL-CHECK UTILITY (12B, probe-phase568-decode-0021C2.mjs, Sonnet-verified):
+- **Function**: 0x0021C2-0x0021CD (12 bytes, 8 instructions). Reached via JP from syscall vector at 0x000138.
+- **Logic**: PUSH HL,DE / LD DE,0 / OR A (clear CF) / SBC HL,DE (HL - 0 = HL, sets Z if HL==0) / POP DE,HL / RET. All registers preserved.
+- **Purpose**: Tests whether HL is zero. Returns Z if zero, NZ if nonzero. NOT complex app/context validation — a simple null-pointer check.
+- **Caller (0x055743)**: Loads (IX+6) into HL, calls 0x000138. NZ = "valid context pointer" → proceed to BPP mode check. Z = "null" → skip to 16BPP defaults.
+- **Nearby vectors**: 0x000130→0x00218A, 0x000134→0x0021A7, 0x000138→0x0021C2, 0x00013C→0x0021CE, 0x000140→0x002207, 0x000144→0x002211. Cluster of small utility functions in 0x0021xx region.
+
+(5) VERIFICATION: All 4 probes exit 0. Golden regression PASS (Normal/Float/Radian 3/3). No runtime/source files modified — probes are read-only ROM analysis. Codex 4/4 created files but all had broken inline decoders (ED prefix unhandled → "DB ED" output). Sonnet 4/4 rewrote all probes using ez80-decoder.js (matching proven session 565-567 pattern) and verified.
+
+**NEW FUNCTIONS DECODED**: 0x09C70B (47B paren balancer), 0x0A26C7 (15B CF=0 epilogue), 0x0A26D6 (15B CF=1 epilogue — re-confirmed from session 565 with full annotation), 0x08DB93 (22B token-type guard), 0x0021C2 (12B null-check syscall).
+**NEW EXTERNAL CALLS DISCOVERED**: 0x08DD45 (token-type classifier, called by 0x08DB93 — not yet decoded).
+**NEW RAM ADDRESSES**: D000AD (IY+0x2D bit 1 = type-0x10 token flag), D00088 (IY+0x08 bit 1 = paren-balance mode active).
+**CORRECTIONS**: 0x09C70B is NOT truly recursive (session 567 described it as recursive). It uses an iterative JR Z loop. True recursion is at the caller level.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x08DD45 — token-type classifier (called by 0x08DB93, purpose unknown). (c) ★★★ DECODE 0x03E1B4 — error processing routine (carried from 567). (d) ★★★ MAP D02A62-D02A75 — pixel renderer workspace (carried from 560). (e) ★★★ MAP D031F6/D07396 SCROLL BUFFERS — initialization/trigger (carried from 561). (f) ★★★ DECODE 0x08DBF1 — token forward scanner with loop (discovered in P3 context disassembly). (g) ★★★ DECODE 0x08DC1A — called by 0x08DBF1 in forward scan loop. (h) ★★ DECODE 0x0BA561 — carried from 549. (i) ★★ DECODE 0x09BBA6 FULLY — token advance+classify subroutine (carried from 567). (j) ★★ MAP 0x0021xx SYSCALL CLUSTER — 6 vectors at 0x000130-0x000144, all dispatch to 0x0021xx utilities. --END SESSION 568--
 
 **Session 566 findings (2026-06-08)**:
 
