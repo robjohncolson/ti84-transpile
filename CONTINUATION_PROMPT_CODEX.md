@@ -8,7 +8,9 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-07 (auto-session 564 — **★★★★ 0x0A2400 RENDER SETUP / GLYPH PARAMETER CALCULATOR (~399B: 6-phase pipeline — width selection via IY+0x14 bit 4 split-screen, IY+0x4A bits 5/6 scroll flags, row count from D025CE+IY+0x32, column calc, VRAM pointer via 0x0A1A9D+0x0A1B1C, glyph blit inner loop with DJNZ; CALL 0x0801B9/0x04C979/0x0A1A9D/0x0A1B1C; tail-calls 0x0A2695). ★★★★ 0x0A5424 SMALL FONT GLYPH LOADER (55B: 25 bytes/glyph via LDIR, ROM table at 0x0A3AFA, workspace D005C5, zeroes D005DE; IY+0x35 bit 1 skip-init flag; CALL 0x02398E). ★★★★ 0x055316 BPP COORDINATE VALIDATION/CLIPPING (48B+~120B: IX stack frame, bounds check D02FD9/D02FD6, BIT 2,(IY+0x46)=D000C6 BPP dispatch, writes D005E9/D026AC; CALL 0x055191/0x000154). ★★★★ 0x080259 SPLIT-FLAG SECONDARY TEST (5B: BIT 3,(IY+0x01)=D00081 bit 3; RET Z/NZ). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-08 (auto-session 565 — **★★★★ 0x0A2695 POST-BLIT GLYPH COLUMN HANDLER + ROW LOOP CLOSER (65B: extra-column blit via IX glyph data, IY+0x05 bit 3 inverse mode, VRAM scanline advance D0059C+0x280, row DJNZ→0x0A2537, interrupt-safe register restore EXX+EI, dual return CF=0 success/CF=1 failure; corrects 0x0A26D6 to 15B not 14B; mask table at 0x0A26E5 not 0x0A26E4). ★★★★ 0x02398E FONT APP VALIDATOR + CONFIG WRITER (37B: validates app header at D02611 via CALL 0x025758, writes 0x0109→D025CF font config, one-shot self-disable RES 1,(IY+0x35); no port I/O). ★★★★ 0x055191+0x05519F BPP GATE+INIT VERIFIED (14B gate + 95B init CONFIRMED; ROM LDIR source=0x05550C 13B display geometry {320,240,640} → D02FD9; 4 adjacent fns: 0x0551FE VRAM fill 63B, 0x05523D BPP activate 67B, 0x055280 LCD DMA 27B, 0x05529B framebuffer restore 23B). ★★★★ 0x09BAC9 CORRECTED = 8B INPUT CURSOR ADVANCE (not "input reader" — LD BC,(D0231A); INC BC; JR 0x09BABD shared tail; part of 15-fn OS input token parser cluster 0x09BAAB-0x09BC60; major token classifier at 0x09BAFF 163B; token class→D005F8/D005F9/D005FA). GOLDEN REGRESSION 26/26 PASS.**)
+
+> Previous: 2026-06-07 (auto-session 564 — 0x0A2400 render setup/glyph param calc ~399B, 0x0A5424 small font loader 55B, 0x055316 BPP coord clipping 48B+120B, 0x080259 split-flag test 5B)
 
 > Previous: 2026-06-07 (auto-session 563 — 0x0A2947 large scroll handler ~150B, 0x0800A0 multi-stub cluster 29B, 0x0A23AB rendering preamble 20B, D007C4-D007C9 cursor save mapped)
 
@@ -29,6 +31,62 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**Session 565 findings (2026-06-08)**:
+
+(1) ★★★★ 0x0A2695 POST-BLIT GLYPH COLUMN HANDLER + ROW LOOP CLOSER (65B, probe-phase565-decode-0A2695.mjs, Sonnet+Opus-verified):
+- **Function**: 0x0A2695-0x0A26D5 (65 bytes). NOT a simple cleanup — it is a multi-glyph column blit loop + VRAM scanline advance + register restore.
+- **Primary path (0x0A2695-0x0A26B3)**: POP DE recovers column count. BIT 7,D = "extra columns needed" flag. If set: RES 7,D clears flag, LD A,(IX+0) loads next glyph byte, INC IX advances pointer, BIT 3,(IY+0x05)=D00085 tests inverse mode. JP Z,0x0A2548 (normal) or CPL+JP 0x0A2548 (inverse). DJNZ loop with B=column count.
+- **Continuation (0x0A26B4-0x0A26D5)**: LD HL,(D0059C) + ADD HL,BC(0x000280) = advance VRAM by 640B (one 16bpp scanline). DEC B, JP NZ,0x0A2537 = row loop. Register restore: POP HL, EXX, POP BC/DE/HL, EXX, POP AF. JP PO,skip-EI (interrupt-safe). XOR A + RET = CF=0 success.
+- **CORRECTIONS**: 0x0A26D6 exit block is 15B not 14B (through 0x0A26E4 RET). Mask table starts at 0x0A26E5 not 0x0A26E4.
+- **Two return conventions**: CF=0 (XOR A) at 0x0A26D5 = success; CF=1 (SCF) at 0x0A26E4 = failure/early-exit.
+- **Branch targets**: 0x0A2548 (column blit), 0x0A2537 (row loop top).
+- **RAM**: D0059C (VRAM scanline pointer, read/write), D00085 (IY+0x05 bit 3 = inverse video mode).
+
+(2) ★★★★ 0x02398E FONT APP VALIDATOR + CONFIG WRITER (37B, probe-phase565-decode-02398E.mjs, Sonnet+Opus-verified):
+- **Function**: 0x02398E-0x0239B2 (37 bytes). NOT a font ROM bank switch — purely RAM state setup.
+- **Flow**: PUSH IX/AF/HL; LD HL,D02611; CALL 0x025758 (validates app header, checks for magic 0x83); JP Z,0x025762 (abort if invalid).
+- **Success path**: POP AF; OR 0x01 (set bit 0, clear Z); POP IX; LD HL,0x0109; .SIS LD (D025CF),HL; RES 1,(IY+0x35); RET.
+- **One-shot self-disable**: RES 1,(IY+0x35) clears the same flag that caused caller 0x0A5424 to invoke this function. Call once → flag cleared → never called again.
+- **D025CF = 0x0109** (265 decimal): Font/display configuration register (confirmed by session 278).
+- **Abort path** (via 0x025762): Increments error counter at D0265B, calls cleanup at 0x025774, jumps to 0x023955.
+- **Sibling functions**: Multiple similar validators packed after 0x0239B2, same pattern (PUSH/LD HL,D026xx/CALL 0x025758/config write/RES bit/RET).
+
+(3) ★★★★ 0x055191+0x05519F BPP GATE+INIT VERIFIED (14B+95B, probe-phase565-decode-055191.mjs, Sonnet+Opus-verified):
+- **Gate 0x055191** (14B, 0x055191-0x05519E): LD IY,D00080; BIT 1,(IY+0x46)=D000C6; CALL Z,0x05519F; RET. **Boundary CONFIRMED at 14B**.
+- **Init 0x05519F** (95B, 0x05519F-0x0551FD): LD IY,D00080; SET 1,(IY+0x46) marks init done; CALL 0x055316 (BPP coord validation); SUB A→D005EC=0; DEC A→D005F4=0xFF; LD (D005F0),0x05320F (ROM fn ptr); LD (D005ED),0x000FFF (from ROM 0x05323F); .SIS LD (D026AC),0; conditional on D007E0: ==0x58 → D02FD6=30, else D02FD6=0; LDIR 13B from **ROM 0x05550C** → D02FD9. **Boundary CONFIRMED at 95B**.
+- **ROM LDIR source 0x05550C**: 13 bytes = `40 01 00 F0 00 00 10 80 02 00 00 00 D4`. Interpreted as display geometry: 320 width, 240 height, 640 stride.
+- **4 adjacent functions discovered**:
+  - 0x0551FE (63B): VRAM fill — fills D40000 with 0xFF (153598B), tests/resets bit 2 D000C6
+  - 0x05523D (67B): BPP mode activate — fills VRAM, copies 512B ROM palette 0x055777→E30200, sets bit 2 D000C6
+  - 0x055280 (27B): LCD DMA trigger — writes E30018/E30028/E30010, polls E30020 ready
+  - 0x05529B (23B): BPP framebuffer restore — copies 76800B D52C00→D40000
+
+(4) ★★★★ 0x09BAC9 CORRECTED = 8B INPUT CURSOR ADVANCE (probe-phase565-decode-09BAC9.mjs, Sonnet+Opus-verified):
+- **Function**: 0x09BAC9-0x09BAD0 (8 bytes). LD BC,(D0231A); INC BC; JR 0x09BABD (shared bounds-check+read tail).
+- **NOT a keyboard hardware reader** — corrects the "input reader" label from session 558. This is the OS INPUT TOKEN PARSER layer, operating on pre-tokenized input in the D0231A-D0231D buffer.
+- **15-function cluster 0x09BAAB-0x09BC60** discovered:
+  - 0x09BAAB (30B): Advance+read with CALL 0x080051 (OS syscall)
+  - 0x09BAC9 (8B): **TARGET** — quick advance+read variant
+  - 0x09BAD1 (7B): Read from secondary pointer D02593
+  - 0x09BADF (19B): Input validation (mode test + secondary read)
+  - 0x09BAF5 (7B): Input mode nibble test (D0230E AND 0x0F)
+  - 0x09BAFF (163B): **MAIN TOKEN CLASSIFIER** — massive CP/JR chain classifying tokens 0x41-0xEF → D005F8/D005F9/D005FA
+  - 0x09BBA6 (12B): Sub-token check (tests for '>' 0x3E, '?' 0x3F)
+  - 0x09BBC9 (31B): Token validity check (cascading CP/RET Z)
+  - 0x09BBEB (40B): Complex input parse (multi-call chain)
+  - 0x09BC16 (70B+): Expression evaluator setup
+- **Key RAM**: D0231A (input buf read ptr), D0231D (input buf end ptr), D0230E (input mode byte), D005F8 (token class code), D005F9 (token sub-type), D005FA (secondary token byte), D0061A (current parse token), D0068A (expression/var ptr).
+
+(5) VERIFICATION: All 4 probes ran to completion (exit 0). Golden regression PASS (Normal/Float/Radian 3/3 PASS). No runtime/source files modified — probes are read-only ROM analysis. Codex 1/4 (P1 probe created but not run). Sonnet 4/4 success.
+
+**NEW FUNCTIONS DECODED**: 0x0A2695 (65B post-blit column handler + row closer), 0x02398E (37B font app validator), 0x055191+0x05519F boundaries VERIFIED (14B+95B), 0x09BAC9 (8B input cursor advance), 0x09BAFF (163B token classifier, discovered).
+**NEW RAM ADDRESSES**: D02611 (app descriptor ptr), D025CF (font config = 0x0109), D0265B (error counter), D005F0 (ROM fn ptr = 0x05320F), D005ED (= 0x000FFF), D005F4 (= 0xFF init), D007E0 (display mode byte), D0231A (input buf read ptr), D0231D (input buf end ptr), D0230E (input mode byte), D005F8/F9/FA (token class/subtype/secondary), D0061A (parse token), D0068A (expression ptr).
+**NEW CALLS DISCOVERED**: 0x025758 (app header validator), 0x025762 (abort path), 0x025774 (cleanup), 0x023955 (post-abort), 0x055743 (BPP mode helper).
+**NEW ROM DATA**: 0x05550C (13B display geometry table), 0x05323F (= 0x000FFF), 0x055777 (512B palette data → E30200).
+**CORRECTIONS**: 0x0A26D6 exit block = 15B (not 14B). Mask table at 0x0A26E5 (not 0x0A26E4). 0x09BAC9 = input cursor advance (not "input reader").
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★ DECODE 0x09BAFF — main token classifier (163B, new from 565, massive CP/JR dispatch chain). (c) ★★★★ DECODE 0x0A2537 — row loop top (branch target from 0x0A2695). (d) ★★★★ DECODE 0x0A2548 — column blit routine (branch target from 0x0A2695). (e) ★★★★ DECODE 0x025758 — app header validator (new from 0x02398E). (f) ★★★★ DECODE 0x0551FE — VRAM fill (63B, new adjacent to BPP cluster). (g) ★★★★ DECODE 0x05523D — BPP mode activate (67B, new adjacent). (h) ★★★ DECODE 0x08DB93 — pre-operation helper (carried from 558). (i) ★★★ MAP D02A62-D02A75 — pixel renderer workspace (carried from 560). (j) ★★★ MAP D031F6/D07396 SCROLL BUFFERS — initialization/trigger (carried from 561). (k) ★★ DECODE 0x0BA561 — carried from 549. --END SESSION 565--
 
 **Session 564 findings (2026-06-07)**:
 
