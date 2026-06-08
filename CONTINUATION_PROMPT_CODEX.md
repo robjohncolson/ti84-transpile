@@ -8,7 +8,9 @@
 >
 > 🛑 **PROBE WATCHDOG — MANDATORY (added 2026-05-31)**: Run EVERY probe through the wall-clock watchdog — `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-X.mjs` in the FOREGROUND with the Bash tool `timeout: 300000`. **NEVER** run `node <probe>` bare and **NEVER** use `run_in_background` for a probe. Root cause of the 2026-05-31 incident: a lifted block can infinite-loop *inside a single `cpu.step()`*, so the probe's own `maxSteps` never fires; the Bash-tool timeout does not cascade to the child on Windows; and a backgrounded probe escapes the tool timeout entirely. Result was probe-phase482-decode-cursor-render.mjs orphaned at ~6h / 21,800s CPU and the auto-loop hung. The watchdog spawns the probe as a child and tree-kills it at the cap (exit 124) from a parent whose event loop is free — the only enforced cap. Keep `--max-time` strictly below the Bash tool `timeout` so the watchdog reaps the child first. Golden regression takes ~14s, so 180s is generous.
 
-**Last updated**: 2026-06-07 (auto-session 561 — **★★★★★ 0x0A1F48 Y-ADVANCE COMPLEX FULLY DECODED (234B, 4 sub-functions: core flag test 10B, Y-advance worker 88B with row÷20 calc + D02685/D02687 render state + CALL 0x0A2D4C, interrupt-safe block copy 38B LDIR D031F6↔D07396 0x20D0 bytes, scroll trigger 33B + state copy 23B LDIR D006C0→D0232D 260B). ★★★★ 0x0A1A83 ROM TABLE LOOKUP (12B: ROM[0x0A26E4+A] glyph property fetch). ★★★★ 0x0A1A8F WORKSPACE PTR SELECTOR (14B: IY+0x4A bit 3 selects D031F6 vs D052C6). ★★★★ 0x0A1A9D ROW-TO-VRAM (22B: A×160×2+VRAM_BASE, calls 0x08C308 BPP check). ★★★★ 0x0A1AB3 8BPP VRAM+MASK (47B: bitmask table at 0x0A1B14). ★★★★ 0x0800B8 FLAG TEST STUB (5B: BIT 5,(IY+0x44) D000C4, OS flag query). ★★★★ 0x0B4EE2 BLIT SPACE WRAPPER (11B: LD A,0x20; CALL 0x0A23E5). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-07 (auto-session 562 — **★★★★★ 0x0A2802 SCROLL_SETUP_AND_FILL DECODED (250B: multi-entry 0x0A2802/0x0A284E/0x0A2854, IY+0x4C bit 4 scroll direction DOWN=D031F5→D44B00/UP=D04F2D→D61E80/extended=D0457D→D58380, bit 5=large scroll→0x0A2947, interrupt-safe LD A,I/DI/LDIR/RET PO/EI, CALL 0x0800A0, cursor state save D007C4-D007C9). ★★★★ 0x08C308 BPP MODE TEST CONFIRMED (9B: PUSH HL; LD HL,D000C6; BIT 2,(HL); POP HL; RET — absolute addressing not IY-relative, session 553 label semantically correct). ★★★★ 0x0A237E TEXT BUFFER POINTER CALC (32B: NOT alternate glyph path — computes HL=D006C0+column(D00596)+row_offset(CALL 0x0A2A37 with D00595)). ★★★★ 0x0A26E4 CORRECTED: 7-ENTRY PIXEL FILL MASK TABLE (0x0A26E5-0x0A26EB: 80 C0 E0 F0 F8 FC FE — cumulative left-aligned bitmasks for 1BPP renderer, complementary to 0x0A1B14 single-bit masks). BONUS: 0x0A239E CLEAR RENDER FLAGS (12B: calls 0x0A23AB, clears IY+0x32 bits 6,2 at D000B2). GOLDEN REGRESSION 26/26 PASS.**)
+
+> Previous: 2026-06-07 (auto-session 561 — 0x0A1F48 Y-advance complex 234B, 0x0A1A83 ROM table lookup 12B, 0x0A1A8F workspace selector 14B, 0x0800B8 flag test 5B, 0x0B4EE2 blit space 11B)
 
 > Previous: 2026-06-07 (auto-session 560 — 0x0A1799 pixel loop 220B fully decoded, 0x0A2013 Y-advance wrapper 31B, 0x0A2D4C row offset 11B, 0x025C33 quick newline 96B)
 
@@ -23,6 +25,60 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**Session 562 findings (2026-06-07)**:
+
+(1) ★★★★★ 0x0A2802 SCROLL_SETUP_AND_FILL DECODED (probe-phase562-decode-0A2802.mjs, Sonnet+Opus-verified):
+- **250 bytes** at 0x0A2802-0x0A28FF. **Multi-entry point function** with 3 entries:
+  - 0x0A2802 (primary scroll setup)
+  - 0x0A284E (scroll-up entry)
+  - 0x0A2854 (state-restore entry — this is the entry called from home-screen render at 0x0A2854)
+- **Scroll direction routing via IY+0x4C bit 4**:
+  - DOWN: source D031F5 (8400B scroll buffer) → D44B00 (VRAM row 30, text area top)
+  - UP: source D04F2D (720B) → D61E80 (VRAM row 215, near bottom)
+  - Extended: D0457D (3400B) → D58380 (VRAM row 152, split-screen boundary)
+- **IY+0x4C bit 5** = "large scroll" flag, dispatches to separate handler at 0x0A2947
+- **CALL 0x0800A0** — OS syscall for normal vs extended scroll mode determination
+- **Interrupt-safe**: Uses `LD A,I / DI / ... / RET PO / EI` pattern around critical fill
+- **Cursor state save**: D007C4-D007C9 (6 bytes of OS state preserved during scroll)
+- **CONNECTS TO SESSION 561**: D031F5 and 8400B count match the Y-ADVANCE COMPLEX (0x0A1F48) scroll buffer. This answers "what initiates a scroll" — it pre-fills the newly-exposed region so the subsequent LDIR can shift the visible framebuffer.
+- **CALL targets**: 0x0800A0
+- **RAM**: D007C4-D007C9 (cursor save), D02504, D031F5/D04F2D/D0457D (scroll sources), D44B00/D61E80/D58380 (VRAM destinations)
+
+(2) ★★★★ 0x08C308 BPP MODE TEST CONFIRMED (probe-phase562-decode-08C308.mjs, Sonnet+Opus-verified):
+- **9 bytes** at 0x08C308-0x08C310. `PUSH HL; LD HL,0xD000C6; BIT 2,(HL); POP HL; RET`.
+- **NOT IY-relative** — uses absolute HL addressing to test D000C6 bit 2. This is unusual for the 0x08xxxx flag-test stubs (0x0800B8 uses `BIT 5,(IY+0x44)` directly).
+- **Session 553 CORRECT semantically** (BIT 2,D000C6 = BPP mode flag) but encoding is via HL, not IY+0x46.
+- **Returns**: Z=1 when 8bpp, Z=0 when 16bpp. Completely non-destructive (PUSH/POP HL).
+
+(3) ★★★★ 0x0A237E TEXT BUFFER POINTER CALCULATOR (probe-phase562-decode-0A237E.mjs, Sonnet+Opus-verified):
+- **32 bytes** at 0x0A237E-0x0A239D. **NOT an alternate glyph path** (session 559 hypothesis corrected).
+- **Purpose**: Computes `HL = D006C0 + column(D00596) + row_offset(via CALL 0x0A2A37 with D00595)`.
+- Reads D00595 (row), calls 0x0A2A37 (row offset calculator), reads D00596 (column), returns pointer into text buffer at D006C0+ in HL.
+- **BONUS — 0x0A239E CLEAR RENDER FLAGS** (12B): Calls 0x0A23AB then clears IY+0x32 bits 6 and 2 (render dirty/pending flags at D000B2).
+- **BONUS — 0x0A23AB**: Identified as the actual alternate rendering entry, flowing into 0x0A23C0 (PRE-RENDER SETUP).
+- **CALL targets**: 0x0A2A37, 0x0A23AB
+- **RAM**: D00595, D00596, D006C0+ (text buffer)
+
+(4) ★★★★ 0x0A26E4 CORRECTED: PIXEL FILL MASK TABLE (probe-phase562-map-0A26E4.mjs, Sonnet+Opus-verified):
+- **NOT a "glyph property table"** (session 561 hypothesis corrected).
+- **7-entry pixel fill mask table** at 0x0A26E5-0x0A26EB: `80 C0 E0 F0 F8 FC FE`.
+- Each entry = `0xFF << (8-N)` for N=1..7. Cumulative left-aligned bitmasks for "fill the leftmost N pixels in a byte."
+- **1-indexed via base 0x0A26E4**: The function at 0x0A1A83 loads HL=0x0A26E4 and adds A (always 1-7). Byte at offset 0 is actually C9 (RET opcode ending prior function).
+- **Complementary to 0x0A1B14**: Single-bit position masks (80,40,20,10,08,04,02,01) vs cumulative fill masks. Together they drive the 1BPP monochrome glyph renderer.
+- **Table ends at 0x0A26EB** (7 bytes). Code resumes at 0x0A26EC with a 9-byte wrapper that reads a char from (HL) and calls string output at 0x0A26F5.
+
+(5) VERIFICATION: All 4 probes ran to completion. Golden regression 26/26 PASS (verified by Opus). No runtime/source files modified — probes are read-only ROM analysis. Codex 0/4 (all failed — service issue continuing from session 561). Sonnet 4/4 success.
+
+**NEW FUNCTIONS DECODED**: 0x0A2802 (250B scroll setup+fill), 0x08C308 (9B BPP test), 0x0A237E (32B text buffer ptr calc), 0x0A239E (12B clear render flags).
+**NEW RAM ADDRESSES**: D007C4-D007C9 (cursor save during scroll), D02504 (scroll state), D04F2D (UP scroll source 720B), D0457D (extended scroll source 3400B), D44B00/D61E80/D58380 (VRAM scroll destinations), D000B2 (IY+0x32 render flags).
+**NEW CALLS**: 0x0800A0 (OS syscall, normal vs extended scroll), 0x0A2947 (large scroll handler), 0x0A2A37 (row offset calculator from text buffer ptr calc).
+**CORRECTIONS**: 0x0A26E4 is a 7-byte pixel fill mask table (not glyph property table). 0x0A237E is a text buffer pointer calculator (not alternate glyph path). 0x08C308 uses absolute HL addressing (not IY-relative as implied).
+**IY+0x4C UPDATE**: bit 4=scroll direction (DOWN/UP), bit 5=large scroll flag.
+
+PROBES: 4/4 ran to completion. Golden regression 26/26 PASS. Codex 0/4 (service failure). Sonnet 4/4 success.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★★★ DECODE 0x0A2947 — large scroll handler (new, dispatched from 0x0A2802 via IY+0x4C bit 5). (c) ★★★★ DECODE 0x0800A0 — OS syscall (new, called from 0x0A2802 for scroll mode determination). (d) ★★★★ DECODE 0x0A23AB — alternate rendering entry (new, flows into 0x0A23C0 pre-render setup). (e) ★★★★ MAP D007C4-D007C9 — cursor save slots (new, used by scroll setup). (f) ★★★ DECODE 0x055316 — BPP helper called from 0x05519F (carried from 559). (g) ★★★ DECODE 0x09BAC9 — input reader (carried from 558). (h) ★★★ DECODE 0x08DB93 — pre-operation helper (carried from 558). (i) ★★★ MAP D02A62-D02A75 — pixel renderer workspace (carried from 560). (j) ★★★ MAP D031F6/D07396 SCROLL BUFFERS — initialization/trigger (carried from 561, partially answered by session 562: D031F5 is scroll-down source). (k) ★★ DECODE 0x0BA561 — carried from 549. --END SESSION 562--
 
 **Session 561 findings (2026-06-07)**:
 
