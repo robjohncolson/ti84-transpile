@@ -25,7 +25,9 @@
 
 ---
 
-**Last updated**: 2026-06-08 (auto-session 572 — **★★★ 0x0BA561 LCD WINDOW RESET DECODED (29B: .SIS LD to LCD regs 0x26AC=0x0000/0x26AA=0xFFFF full-screen window, CALL 0x0A89FE+0x09EF20, 3 callers). ★★★ 0x080075 MULTI-BYTE PREFIX TABLE FULLY CROSS-REFERENCED (11 bytes: 0x5C=List 45 refs, 0x5D=Matrix 90 refs, 0x5E=Y-var 41 refs, 0x60=Pic 25, 0x61=GDB 28, 0x62=String 38, 0x63=Stats 30, 0x7E=Window 19, 0xBB=Extended 21, 0xAA=StatsCmds 49, 0xEF=GraphFmt 81; token name string tables found at 0x0AB3BE and 0x0AEC4A). ★★★ 0x08DDBF TOKEN TRANSLATION TABLE DECODED (19×3B=57B bidirectional bridge: maps 2-byte TI tokens ↔ compact 1-byte internal IDs, used by 0x08DD8C forward + 0x08DDA5 reverse; cross-refs to token classifiers 0x09BAxx-0x09BCxx and expression evaluators 0x0593xx-0x05A6xx). ★★★ 0x0A1FAB SCROLL BUFFER SWAP FULLY MAPPED (38B: LDIR block copy 8400B between D031F6↔D07396, NOT pointer swap; double LD A,I errata workaround + DI/EI bracket; two entry points — 0x0A1FAB=primary→secondary, 0x0A1FB5=secondary→primary; 1 caller at 0x0A1FE4). GOLDEN REGRESSION PASS.**)
+**Last updated**: 2026-06-08 (auto-session 573 — **★★★ D03028/D0302B SCROLL BUFFER CURSOR PAIR MAPPED (both 0x000000 at boot, 49+22 ROM refs across 0x0344xx-0x0358xx print subsystem — D03028=base pointer into D031F6 buffer, D0302B=offset/index; heavily used by variable-display/print-token functions with LD/ADD HL pattern). ★★★ 0x0A89FE LCD PARAMETER COMPUTATION DECODED (31B: .SIS reads LCD regs 0x2A75/0x2A77/0x2A79, adds 0x11 or 0x0C based on IY+0x51 bit 3, computes DE=HL+DE-1; 10 callers including 0x0BA571 LCD window reset; wrapper 0x0A89F2 clears bit 3 before call). ★★★ D02A65/D02A68 FONT PARAM BLOCKS CONFIRMED RUNTIME-ONLY (both 0x000000 at boot, 4 ROM refs — written by glyph renderer at 0x06F56F/0x06F58C/0x06F59C, read at 0x09F238; populated during active rendering not init). ★★★ 0x0AB3BE-0x0AECFC STRING TABLE REGION MAPPED (14654B extent, 153 strings, 2 major clusters: table[0] 0x0AB3BE=stats names "1-Var Stats"/"2-Var Stats", table[58] 0x0AEB45-0x0AECFC=76 strings including "RegEQ"/"df"/"Iterations"/"Period"/"Store EQ"/etc.; many small 1-2 byte fragments between clusters = embedded code region with coincidental printable bytes). GOLDEN REGRESSION PASS.**)
+
+> Previous: 2026-06-08 (auto-session 572 — 0x0BA561 LCD window reset 29B, 0x080075 multi-byte prefix table cross-referenced, 0x08DDBF token translation table 57B, 0x0A1FAB scroll buffer swap 38B)
 
 > Previous: 2026-06-08 (auto-session 571 — D02A62-D02A75 pixel renderer workspace 20B 6 fields, D031F6/D07396 scroll double-buffer pair 8400B each, 0x05E3EC boundary check helper 9B, 0x05E37D token buffer cursor guard 14B)
 
@@ -100,6 +102,44 @@
 **CORRECTIONS**: None.
 
 NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL -- needs human. (b) ★★ DECODE D03028/D0302B -- pointer/offset for active secondary buffer (carried from 571). (c) ★★ MAP D02A65/D02A68 FONT PARAM BLOCKS -- determine what the 6 bytes encode (carried from 571). (d) ★★ SCAN 0x0A1FB5 CALLERS -- second entry point of swap function may have separate callers. (e) ★★ MAP 0x0A89FE LCD PARAMETER COMPUTATION -- sub-call of 0x0BA561, reads 0x2A75 + IY+0x51. (f) ★★ MAP 0x0AB3BE-0x0AECxx STRING TABLE EXTENT -- find full bounds of the token name string region. (g) ★ DECODE 0x0BA57E -- function after LCD window reset, writes D02A76/D02A7C, calls 0x0A89F2. --END SESSION 572--
+
+**Session 573 findings (2026-06-08)**:
+
+(1) ★★★ D03028/D0302B SCROLL BUFFER CURSOR PAIR MAPPED (probe-phase573-decode-D03028.mjs, Sonnet-verified):
+- **D03028** (24-bit): Base pointer into scroll buffer D031F6. Initial value 0x000000 at boot.
+- **D0302B** (24-bit): Offset/index into scroll buffer. Initial value 0x000000 at boot.
+- **ROM references**: 49 for D03028, 22 for D0302B — concentrated in 0x0344xx-0x0358xx (variable display/print-token subsystem) and 0x04C7xx (mode handler).
+- **Usage pattern**: LD HL,(D03028) + ADD HL,offset is the dominant pattern — D03028 is a cursor into the scroll buffer, D0302B tracks position. Functions at 0x034462-0x0345FA use both together for token printing into the scroll buffer.
+- **Key operations**: 0x03451E/0x034555 store D1:8A80 (D073:8A80→D07396 secondary buffer base) into D03028 under DI; 0x04C752 stores D07396 directly into D03028 on mode change.
+
+(2) ★★★ 0x0A89FE LCD PARAMETER COMPUTATION DECODED (probe-phase573-map-0A89FE.mjs, Sonnet-verified):
+- **Function**: 0x0A89FE-0x0A8A1C (31 bytes). Reads 3 LCD registers via .SIS prefix.
+- **Flow**: .SIS LD BC,(0x2A75) / LD A,0x11 / BIT 3,(IY+0x51) / JR Z,+2 / LD A,0x0C / ADD A,B / LD C,A / .SIS LD DE,(0x2A77) / .SIS LD HL,(0x2A79) / LD D,D / ADD HL,DE / DEC HL / EX DE,HL / RET.
+- **Purpose**: Computes LCD window parameters from hardware registers. Adds 0x11 (17) or 0x0C (12) to LCD reg 0x2A75 high byte based on IY+0x51 bit 3 (font size flag?). Returns BC=adjusted width param, DE=sum of 0x2A79+0x2A77-1.
+- **IY+0x51 value**: 0x00 after boot (bit 3 clear → uses 0x11 offset).
+- **10 callers**: 0x08B1D4, 0x0A81E5, 0x0A88DB, 0x0A8977, 0x0A8994, 0x0A89F6, 0x0A8A1D, 0x0A8AF2, 0x0B7465, 0x0BA571.
+- **Wrapper 0x0A89F2**: RES 3,(IY+0x51) / CALL 0x0A89FE / JP 0x02672F — clears the flag before calling, then jumps to return trampoline.
+
+(3) ★★★ D02A65/D02A68 FONT PARAM BLOCKS CONFIRMED RUNTIME-ONLY (probe-phase573-map-font-params.mjs, Sonnet-verified):
+- **D02A65** (3B) and **D02A68** (3B): Both 0x000000 after boot. Not populated during init — written during active glyph rendering only.
+- **4 ROM references total**: 0x06F56F = LD (D02A65),A (write), 0x06F58C = LD DE,D02A68 (load address for block copy), 0x06F59C = LD DE,D02A65 (load address for block copy), 0x09F238 = LD A,(D02A68) (read by graph plotter).
+- **Interpretation**: Font metric parameters — likely glyph width, height, or baseline offsets. Written by the font setup code at 0x06F5xx before rendering, read back by the pixel renderer. The block copies (LD DE,addr + likely LDIR) suggest they're copied between font contexts.
+
+(4) ★★★ 0x0AB3BE-0x0AECFC STRING TABLE REGION MAPPED (probe-phase573-map-string-tables.mjs, Codex-verified):
+- **Total extent**: 0x0AB3BE to 0x0AECFC = 14,654 bytes. 153 extractable strings.
+- **Major cluster 1** (table[0]): 0x0AB3BE-0x0AB3DF (33 bytes, 4 strings). "1-Var Stats", "2-Var Stats", ">", "<".
+- **Major cluster 2** (table[58]): 0x0AEB45-0x0AECFC (439 bytes, 76 strings). Includes: "List", "RegEQ", "df", "Iterations", "Period", "Store EQ", "lower", "upper", "dfNumer", "dfDenom", "area", "x value", "p", "trials", "Paste", "Expr", "Variable", "start", "end", "step", "FreqList", "Store RegEQ", "repetitions", "Tail", "LEFT", "CENTER", "RIGHT".
+- **Between clusters**: ~14,000 bytes of mostly eZ80 code with scattered 1-2 byte coincidental printable fragments. The region 0x0AB400-0x0AEB44 is NOT a contiguous string table — it's code with occasional embedded constants.
+- **Conclusion**: Two discrete string tables (0x0AB3BE and 0x0AEB45), NOT one continuous table. The 0x0AEB45 table is the primary token/parameter name table with 76 entries.
+
+(5) CODEX: 1/4 working (P4 string table scan). P1/P2/P3 all failed boot (wrong cpu-runtime.js factory export). All 3 redone via Sonnet fallback — Sonnet correctly copied boot pattern from golden regression probe. All probes Opus-verified (exit 0, output matches analysis).
+
+**VARIABLES MAPPED**: D03028 (scroll buffer cursor, 49 refs), D0302B (scroll buffer offset, 22 refs), D02A65 (font param A, 2 refs), D02A68 (font param B, 2 refs).
+**FUNCTIONS DECODED**: 0x0A89FE (31B LCD param computation, 10 callers), 0x0A89F2 (10B wrapper: clear flag + call + JP).
+**TABLES MAPPED**: 0x0AB3BE-0x0AECFC string table region (14654B, 2 discrete tables, 153 strings total).
+**CORRECTIONS**: None.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL -- needs human. (b) ★★ SCAN 0x0A1FB5 CALLERS -- second entry point of scroll swap may have separate callers (carried from 572). (c) ★★ DECODE 0x0BA57E -- function after LCD window reset, writes D02A76/D02A7C, calls 0x0A89F2 (carried from 572). (d) ★★ MAP 0x0A8A1D -- second function that calls 0x0A89FE, starts right after RET at 0x0A8A1C (adjacent code). (e) ★★ DECODE 0x06F56F FONT PARAM WRITER -- the function at 0x06F5xx that writes D02A65/D02A68, likely font setup. (f) ★★ MAP 0x0AEB45 STRING TABLE LOOKUP CODE -- find the ROM functions that index into the 76-string table at 0x0AEB45. (g) ★ TRACE D03028 WRITE CHAIN -- the 0x03451E/0x034555 stores under DI suggest interrupt-critical buffer switching; map the full call chain. --END SESSION 573--
 
 **Session 571 findings (2026-06-08)**:
 
