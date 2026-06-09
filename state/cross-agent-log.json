@@ -19088,15 +19088,103 @@
       "timestamp": "2026-06-09T01:44:24Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "ed503e73da3c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map D0146D \u2014 Pending Key Code Buffer (Full Reference Scan)\n\n## Context\nThis is the TI-84 Plu",
+      "status": "success",
+      "duration_seconds": 62.814,
+      "timestamp": "2026-06-09T02:53:13Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6f5bd9d19b07",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x06CF41 \u2014 MODE Key Handler\n\n## Context\nThis is the TI-84 Plus CE ROM transpilation p",
+      "status": "success",
+      "duration_seconds": 66.175,
+      "timestamp": "2026-06-09T02:53:13Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "de7487a1cc32",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0A1A36 \u2014 The REAL Key Input Handler\n\n## Context\nThis is the TI-84 Plus CE ROM trans",
+      "status": "success",
+      "duration_seconds": 76.614,
+      "timestamp": "2026-06-09T02:53:22Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7ebbd87d0a1e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x06CFAF \u2014 GRAPH Key Handler\n\n## Context\nThis is the TI-84 Plus CE ROM transpilation ",
+      "status": "completed",
+      "duration_seconds": 73.949,
+      "timestamp": "2026-06-09T02:53:23Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "0748dd8df890",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x05C5B3 \u2014 Token Inserter Function\n\n## Context\nYou are working on the TI-84 Plus CE R",
+      "status": "completed",
+      "duration_seconds": 72.833,
+      "timestamp": "2026-06-09T05:15:19Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "4da10507fbd2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x022331 \u2014 Key Processor Function\n\n## Context\nYou are working on the TI-84 Plus CE RO",
+      "status": "success",
+      "duration_seconds": 83.534,
+      "timestamp": "2026-06-09T05:15:26Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "fe5d259ab9bd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0A32F9 \u2014 Real Keyboard Matrix Scan Engine (237B)\n\n## Context\nYou are working on the",
+      "status": "success",
+      "duration_seconds": 88.519,
+      "timestamp": "2026-06-09T05:15:29Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "de51bb04c5fc",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x08C72F \u2014 Display Refresh Function\n\n## Context\nYou are working on the TI-84 Plus CE ",
+      "status": "completed",
+      "duration_seconds": 86.235,
+      "timestamp": "2026-06-09T05:15:31Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1606,
-    "cc_to_codex": 1606,
+    "total_calls": 1614,
+    "cc_to_codex": 1614,
     "codex_to_cc": 0,
-    "completed": 1062,
+    "completed": 1065,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 476.995
+    "avg_duration_seconds": 475.009
   }
 }
