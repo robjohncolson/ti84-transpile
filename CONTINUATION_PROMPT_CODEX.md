@@ -39,7 +39,9 @@
 
 ---
 
-**Last updated**: 2026-06-09 (auto-session 593 — **★★★ 0x07F8FE SECONDARY-TO-SHADOW COPY DECODED (6B: LD DE,D00603/JR 0x07F974 — copies HL→D00603 via shared 11×LDI block, called with HL=D0063A from resolver = secondary shadow→shadow writeback, 3 callers). ★★★ 0x07F7A4 LOAD-AND-CLASSIFY PREAMBLE DECODED (4B: LD A,(D005F8) — 4-byte preamble that falls through into type classifier 0x07F7A8, 25 callers; graduated API: 0x07F7A4 load+classify / 0x07F7A8 classify-only 62 callers / 0x07F7BD read-only 197 callers). ★★★★ 0x05C634 MASTER DISPLAY DISPATCHER DECODED (~257B: 40 callers, checks 22 IY flag locations across 14 unique IY offsets, 11 CALL targets including 0x0A1799 rasterizer as DEFAULT path, mode dispatch via D007E0/D00824/IY+0x0D/IY+0x51/IY+0x18/IY+0x44, graph path via 0x06F7E4, split-screen via 0x05C706). ★★★ 0x023057 GRAPH STACK FRAME + IY+0x4E GUARD DECODED (60B: PUSH IX/LD IX,0/ADD IX,SP frame, CALL 0x000578 OS check, BIT 3/4 (IY+0x4E) guard — bails to epilogue if either bit set, 1 caller from 0x06D050). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-09 (auto-session 594 — **★★★ 0x07F7D6 SIGN-BIT EXTRACTOR DECODED (9B: LD HL,D005F8 / LD A,(HL) / AND 0xC0 / LD (HL),A / RET — strips type field, keeps upper 2 sign/flag bits. Inverse of 0x07F7BD (AND 0x3F). 23 callers across 0x047xxx-0x0ABxxx). ★★★ 0x07CF8E RESOLVE EPILOGUE DECODED (15B: LD DE,D00603 / LD HL,D02B39 / LD BC,0x0037 / LDIR / RET — restores 55 bytes from scratch RAM to shadow descriptor buffer, undoing 0x07CF9D save. 1 caller at 0x07CFC6). ★★★ 0x06F7E4 GRAPH/FONT DISPLAY FUNCTION PARTIALLY DECODED (~256B: BIT 2,(IY+0x03) guard gate, BIT 0,(IY+0x02) text-vs-graph branch, heavy key-code dispatch via D0146D against 0x55/0x81/0x6B/0x79/0x61/0x6D/0x7B/0x57/0x67/0x59, 9+ CALL targets including 0x06FA60/0x06FA30/0x06FA56/0x06FB5E/0x06FCA2/0x06F717/0x07022C, IY+0x35/0x36/0x08 flags, 3 callers). ★★★ 0x05C706 SPLIT-SCREEN HANDLER ENTRY DECODED (22B of ~85B: PUSH AF / LD A,(D00824) / CP 0x49 / JR NZ branch, CALL 0x0AF877, LD IX,(D02501) / JR 0x05C755 — confirms D00824 as dispatch byte not D007E0, 2 callers). GOLDEN REGRESSION 26/26 PASS.**)
+
+> Previous: 2026-06-09 (auto-session 593 — 0x07F8FE secondary→shadow copy 6B 3 callers, 0x07F7A4 load-and-classify preamble 4B 25 callers, 0x05C634 master display dispatcher ~257B 40 callers, 0x023057 graph stack frame+guard 60B 1 caller)
 
 > Previous: 2026-06-09 (auto-session 592 — 0x07FD4A descriptor field check 6B 120 callers, 0x07F7BD primary type reader 7B 197 callers, 0x07F98B shadow→secondary copy 6B, 0x07CFA7 multi-helper orchestrator 41B 7 callers)
 
@@ -118,6 +120,55 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**CC session 594 (2026-06-09, auto-continuation)**:
+Picked priorities (b) 0x07F7D6, (c) 0x07CF8E, (d) 0x06F7E4, (e) 0x05C706 from session 593 NEXT list — 4 independent decode tasks. Skipped (a) "integrate text+cursor in browser shell" (needs human).
+Dispatched 4 Codex agents (P1 exit 0, P2 exit 1 wrong ROM path, P3 exit 0 broken disassembler, P4 exit 1 wrong ROM paths) + 4 proactive Sonnet fallbacks. All probes Opus-verified (exit 0 for working probes, raw bytes confirmed).
+
+(1) ★★★ 0x07F7D6 SIGN-BIT EXTRACTOR DECODED (probe-phase594-decode-07F7D6.mjs, Codex P1 + Sonnet P1):
+- **Function**: 0x07F7D6-0x07F7DE (9 bytes). Raw bytes: 21 F8 05 D0 7E E6 C0 77 C9.
+- **Semantics**: LD HL,D005F8 → LD A,(HL) → AND 0xC0 → LD (HL),A → RET.
+- **Purpose**: Strips the type field (lower 6 bits) from the first byte of primaryDescriptorBuffer, keeping only the upper 2 bits (sign/flag bits). Write-back modifies D005F8 in place.
+- **Inverse of 0x07F7BD**: 0x07F7BD extracts type (AND 0x3F), 0x07F7D6 extracts sign (AND 0xC0). Together they decompose the first descriptor byte into type + sign.
+- **23 callers** (21 CALL, 2 JP): 0x0479F3, 0x059681, 0x05BC78(JP), 0x05BF60(JP), 0x0631AA, 0x066445, 0x0674FC, 0x06861D, 0x07CFC2, 0x07D0D0, 0x07DBA0, 0x07DC03, 0x07DEC1, 0x07F55E, 0x098823, 0x098A58, 0x098AAA, 0x09955C, 0x099566, 0x099E5A, 0x0A9F68, 0x0AA9C2, 0x0AB609.
+- **RAM**: D005F8 read+write. Pure register, no CALL/JP targets, no IY, no ports.
+
+(2) ★★★ 0x07CF8E RESOLVE EPILOGUE DECODED (probe-phase594-decode-07CF8E.mjs, Sonnet P2):
+- **Function**: 0x07CF8E-0x07CF9C (15 bytes). Raw bytes: 11 03 06 D0 21 39 2B D0 01 37 00 00 ED B0 C9.
+- **Semantics**: LD DE,D00603 → LD HL,D02B39 → LD BC,0x0037 → LDIR → RET.
+- **Purpose**: Restores 55 (0x37) bytes from scratch buffer D02B39 back to shadow descriptor buffer D00603, undoing the save performed by setup function 0x07CF9D. Called at the END of the resolve orchestrator 0x07CFA7's sequence.
+- **Confirms**: The resolve orchestrator's 8-call sequence is: save(0x07CF9D) → ... → strip(0x07F7D6) → restore(0x07CF8E). Save/restore bracket the transformation.
+- **1 caller**: 0x07CFC6 (inside orchestrator 0x07CFA7).
+- **RAM**: D00603 (write destination), D02B39 (read source).
+
+(3) ★★★ 0x06F7E4 GRAPH/FONT DISPLAY FUNCTION PARTIALLY DECODED (probe-phase594-decode-06F7E4.mjs, Codex P3 + Sonnet P3):
+- **Function**: 0x06F7E4-~0x06F901+ (~256+ bytes). Raw bytes confirmed.
+- **Entry guard**: BIT 2,(IY+0x03) / RET Z — returns immediately if IY+0x03 bit 2 is clear (no dirty display flag).
+- **Mode branch**: BIT 0,(IY+0x02) / JR NZ — splits text mode vs graph mode path.
+- **Key-code dispatch**: Reads D0146D and compares against key codes: 0x55, 0x81, 0x6B, 0x79, 0x61, 0x6D, 0x7B, 0x57, 0x67, 0x59. Each dispatches to specific handlers.
+- **CALL targets (9+)**: 0x06FA60, 0x06FA30, 0x06FA56, 0x06FB5E, 0x06FCA2, 0x06F717, 0x07022C, 0x06F6FF, 0x06F6E7.
+- **IY flags**: IY+0x03 bit 2, IY+0x02 bit 0, IY+0x35 bit 3, IY+0x36 bit 0, IY+0x08 bit 7.
+- **RAM refs**: D0146D (key code buffer), D0232B, D014F3, D014EA.
+- **3 callers**: 0x05C6BC(CALL), 0x05C7BB(CALL), 0x020C50(JP).
+- **NOTE**: Linear decode limited by FD CB prefix (BIT/SET/RES IY+d not fully decoded in template) and conditional RET treated as terminal. Full disassembly would require enhanced decoder. Raw bytes are correct.
+
+(4) ★★★ 0x05C706 SPLIT-SCREEN HANDLER ENTRY DECODED (probe-phase594-decode-05C706.mjs, Sonnet P4):
+- **Function**: 0x05C706-0x05C71B (22 bytes decoded of ~85B total). Raw bytes confirmed.
+- **Entry**: PUSH AF → LD A,(D00824) → CP 0x49.
+- **0x49 path**: CALL 0x0AF877 → JR NZ 0x05C71C → LD IX,(D02501) → JR 0x05C755.
+- **Non-0x49 path**: branches to 0x05C72A (not decoded — linear decoder stopped at unconditional JR).
+- **CORRECTION**: Prior session 582 stated D007E0 as the dispatch byte, but THIS decode shows **D00824** (secondaryDisplayMode) is checked FIRST. D007E0-based dispatch likely occurs deeper in the function (past the 0x05C72A branch).
+- **2 callers**: 0x05C6CB(CALL), 0x05C7CF(CALL).
+- **RAM**: D00824 (read), D02501 (read via IX load).
+- **NOTE**: Only first branch decoded. Full 85B function includes additional D007E0-based dispatch per session 582 analysis.
+
+(5) CODEX: 1/4 succeeded (P1 exit 0 created working probe). P2 exit 1 wrong ROM path ("TI84CE-OS-5.8.0.0022.rom"), P3 exit 0 but broken disassembler (missing CALL NZ/Z, CP, FD CB handlers), P4 exit 1 wrong ROM paths. All 4 priorities completed via Sonnet fallback or Codex P1. All probes Opus-verified (exit 0 for P1/P2/P3/P4, output analyzed). Golden regression 26/26 PASS.
+
+**FUNCTIONS DECODED**: 0x07F7D6 (9B sign-strip, 23 callers), 0x07CF8E (15B resolve epilogue, 1 caller), 0x06F7E4 (~256B+ graph/font display, 3 callers, partial decode), 0x05C706 (22B/~85B split-screen handler entry, 2 callers, partial decode).
+**ARCHITECTURE FOUND**: The resolve orchestrator 0x07CFA7's save/restore bracket is now fully mapped: 0x07CF9D saves 55B to D02B39, then 0x07F7D6 strips sign bits, then 0x07CF8E restores. The descriptor byte at D005F8 has a clean decomposition: type = AND 0x3F (0x07F7BD, 197 callers), sign = AND 0xC0 (0x07F7D6, 23 callers). 0x06F7E4 is a MAJOR graph/font dispatch function with key-code-driven rendering (10 key comparisons, 9+ CALL targets) — NOT a simple renderer.
+**DECODER LIMITATIONS NOTED**: The hand-rolled disassembler template does not handle: (a) FD CB dd xx (BIT/SET/RES IY+d) — outputs as separate bytes, (b) conditional RET treated as terminal — truncates decode early. Both affected P3/P4 completeness. Session 593 priority (j) "fix ED-prefix mask" remains open; FD CB handling is a new related issue.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★ COMPLETE 0x06F7E4 DECODE — function is ~256B+ with 10 key-code dispatch paths, 9+ CALL targets; needs enhanced decoder or manual branch-following. (c) ★★★ COMPLETE 0x05C706 DECODE — only first 22B of ~85B decoded; branch at 0x05C72A and continuation at 0x05C755 need coverage. (d) ★★★ DECODE 0x06FA60 — key handler called from 0x06F7E4 for key codes 0x55/0x81/0x6B/0x79/0x61. (e) ★★★ DECODE 0x06FA30 — key handler called from 0x06F7E4 with A=0x01. (f) ★★★ DECODE 0x06FCA2 — called from 0x06F7E4 late in function. (g) ★★★ DECODE 0x0AF877 — called from 0x05C706 split-screen path; return value gates IX load. (h) ★★ DECODE 0x04E950 — called from 0x05C634 graph-active path (session 593 priority). (i) ★ FIX DISASSEMBLER TEMPLATE — add FD CB dd xx (BIT/SET/RES IY+d) and fix conditional RET terminal flag. (j) ★ IMPLEMENT PORT 0xDCA0 IN PERIPHERALS.JS (carried from session 593). --END SESSION 594--
 
 **CC session 593 (2026-06-09, auto-continuation)**:
 Picked priorities (b) 0x07F8FE, (d) 0x07F7A4, (h) 0x05C634, (i) 0x023057 from session 592 NEXT list — 4 independent decode tasks. Note: session 592 listed (c) 0x07CF9D, (e) 0x07F16C, (f) 0x07C8B7, (g) 0x07FE9C as priorities but all were ALREADY DECODED in sessions 530-533. Substituted (h) and (i) which were genuinely undecoded.
