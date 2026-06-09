@@ -25,7 +25,11 @@
 
 ---
 
-**Last updated**: 2026-06-08 (auto-session 577 — **★★★ 0x062055 PARENT FUNCTION FULLY DECODED (150B event loop display dispatcher: 0x080151 gate selects path, D0230F cascade CP 0x3F/0x5E with 0x06C73C/0x06C737/0x06C72D bit accumulation → D02310 & 0xF0 comparison → D007E0=0x40 main refresh CALL 0x058241 vs D007E0=0x49 alternate CALL 0x05FE15, both exit JP 0x08C33D; alternate path handles D0230F=0x3E via 0x08C721; 11 CALL targets, 5 IY flags, 10 RAM refs). ★★★ 0x08C33D EVENT LOOP CLEANUP FULLY DECODED (128B: CALL 0x0A349A+0x05C75B cleanup, RES 7 IY+0x08 scroll-dirty clear, IY+0x1F bit 5 conditional D0058C/D0058E context save/restore, 14 IY flag ops, 6 D0058C RAM refs, font render gate CALL Z 0x06F7E4, exits JP 0x08C331 = event loop return). ★★★ 0x05FE15 ALTERNATE DISPLAY HANDLER DECODED (251B: configuration/setup not buffer copy — zero LDIRs vs 0x058241's 8400B swap, 9 IY flags, 8 RAM refs incl D00839/D01170/D0116D/D02684/D00595, heavy 0x06C7xx screen-mode cascade, writes D02310=0xFF to force full refresh on next cycle, 1 caller 0x0620B6). ★★★ D02310 FULLY MAPPED (3 total refs: 1 WRITE at 0x05FF0B sets 0xFF, 1 READ at 0x0620A3 AND 0xF0 for display dispatch, 1 ADDRESS at 0x060C1D LD HL for CP comparison helper). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-08 (auto-session 578 — **★★★★ 0x08C331 EVENT LOOP TOP FULLY DECODED (140B, 40 instructions, self-loop JP 0x08C331 at 0x08C3B9: RES 5 IY+0x14 → CALL 0x05C634 + 0x06CE73 + 0x0A349A + 0x05C75B cleanup → IY+0x1F/D0058C context save/restore → text-mode BIT 0 IY+0x02 gate → font render CALL Z 0x06F7E4 → CALL 0x0A27DD key input → OR A / JR NZ key dispatch cascade CP 0xB4/0x3F/0x28/0x29/0x58/0x7F/0xFE/0xFC/0xFA; 4 external refs: OS init 0x020150, self-loop 0x08C3B9, key re-entries 0x08C3DF+0x08C449). ★★★ 0x06C72D/0x06C732/0x06C737/0x06C73C SCREEN-MODE BIT TESTERS FULLY DECODED (4 independent 5B micro-functions: BIT 5/7/6/4 of IY+0x02 + RET; 27/107/63/65 callers respectively; callers accumulate Z flag results into display-mode nibble compared against D02310 & 0xF0). ★★★ 0x063033 INIT TRAMPOLINE DECODED (13B: CALL 0x0250FA + CALL 0x09E640 + CALL Z 0x09E601 + RET; 10 callers across OS including event loop dispatcher 0x062055). ★★★ 0x070372 FONT FLAG-GUARD WRAPPER (20B: saves/clears/restores IY+0x35 bit 7 around CALL 0x07B451; 2 callers both in font engine 0x070241). ★★★ 0x07B451 FONT MODE INITIALIZER (25B: writes A→D02AC8 font mode selector + zeros D02AD4 font sub-state, IY+0x35 bit 7 conditional CALL 0x023A9E, 10 callers). GOLDEN REGRESSION 26/26 PASS.**)
+
+> Previous: 2026-06-08 (auto-session 577 — 0x062055 parent function 150B event loop display dispatcher, 0x08C33D event loop cleanup 128B, 0x05FE15 alternate display handler 251B, D02310 fully mapped 3 refs)
+
+**Previous last-updated**: 2026-06-08 (auto-session 577 — **★★★ 0x062055 PARENT FUNCTION FULLY DECODED (150B event loop display dispatcher: 0x080151 gate selects path, D0230F cascade CP 0x3F/0x5E with 0x06C73C/0x06C737/0x06C72D bit accumulation → D02310 & 0xF0 comparison → D007E0=0x40 main refresh CALL 0x058241 vs D007E0=0x49 alternate CALL 0x05FE15, both exit JP 0x08C33D; alternate path handles D0230F=0x3E via 0x08C721; 11 CALL targets, 5 IY flags, 10 RAM refs). ★★★ 0x08C33D EVENT LOOP CLEANUP FULLY DECODED (128B: CALL 0x0A349A+0x05C75B cleanup, RES 7 IY+0x08 scroll-dirty clear, IY+0x1F bit 5 conditional D0058C/D0058E context save/restore, 14 IY flag ops, 6 D0058C RAM refs, font render gate CALL Z 0x06F7E4, exits JP 0x08C331 = event loop return). ★★★ 0x05FE15 ALTERNATE DISPLAY HANDLER DECODED (251B: configuration/setup not buffer copy — zero LDIRs vs 0x058241's 8400B swap, 9 IY flags, 8 RAM refs incl D00839/D01170/D0116D/D02684/D00595, heavy 0x06C7xx screen-mode cascade, writes D02310=0xFF to force full refresh on next cycle, 1 caller 0x0620B6). ★★★ D02310 FULLY MAPPED (3 total refs: 1 WRITE at 0x05FF0B sets 0xFF, 1 READ at 0x0620A3 AND 0xF0 for display dispatch, 1 ADDRESS at 0x060C1D LD HL for CP comparison helper). GOLDEN REGRESSION 26/26 PASS.**)
 
 > Previous: 2026-06-08 (auto-session 576 — 0x0620C4 display dispatcher context decoded, 0x08A850 scroll buffer refresh 37B, D0146E/D01471 font metric vars 57 refs, 0x070241 font rendering engine core ~300B)
 
@@ -72,6 +76,52 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**Session 578 findings (2026-06-08)**:
+
+(1) ★★★★ 0x08C331 EVENT LOOP TOP FULLY DECODED (probe-phase578-decode-08C331.mjs, Sonnet-verified):
+- **Function**: 0x08C331-0x08C3BC (140 bytes, 40 instructions). **THIS IS THE EVENT LOOP TOP.**
+- **Self-loop**: `JP 0x08C331` at 0x08C3B9 — the main loop iterates by jumping back to itself.
+- **Per-iteration flow**: RES 5,(IY+0x14) → CALL 0x05C634 → CALL 0x06CE73 → CALL 0x0A349A (cleanup) → CALL 0x05C75B → RES 7,(IY+0x08) → IY+0x1F bit 5 context save/restore (D0058C/D0058E) → CALL 0x02FCB3 → RES 7,(IY+0x16) / RES 1,(IY+0x1D) → store D0058C.
+- **Two parallel redraw paths**: BIT 0,(IY+0x02) = text mode → RES 2 + BIT 3,(IY+0x0C) → CALL Z 0x06F7E4 (font render). Else BIT 5,(IY+0x0D) → same render gate.
+- **Key input**: SET 0,(IY+0x4A) → CALL 0x05C634 → CALL 0x0A27DD → OR A / JR NZ,0x08C3C3 — key dispatch.
+- **Key dispatch cascade** (at 0x08C3C3+): compares against key codes 0xB4, 0x3F, 0x28, 0x29, 0x58, 0x7F, 0xFE, 0xFC, 0xFA → routes to handlers. Many JP back to 0x08C331.
+- **4 external refs**: OS init entry 0x020150, self-loop 0x08C3B9, key re-entries 0x08C3DF + 0x08C449.
+- **15 IY flag ops** on IY+0x02, 0x08, 0x09, 0x0C, 0x0D, 0x14, 0x16, 0x1D, 0x1F, 0x4A.
+- **RAM**: D0058C (3R + 2W), D0058E (1W).
+- **ARCHITECTURAL SIGNIFICANCE**: The full event loop is now traced end-to-end: 0x08C331 (loop top) → cleanup/redraw → key read → key dispatch → handlers → JP 0x08C331. The display dispatcher (0x062055, session 577) is called WITHIN this loop. Session 577's 0x08C33D is instructions 3-17 of this loop (starting at the CALL 0x0A349A).
+
+(2) ★★★ 0x06C72D/0x06C732/0x06C737/0x06C73C SCREEN-MODE BIT TESTERS (probe-phase578-decode-screen-mode-accum.mjs, Sonnet-verified):
+- **4 independent micro-functions**, each exactly 5 bytes (BIT + RET), packed contiguously at 0x06C72D-0x06C740.
+- 0x06C72D: `BIT 5,(IY+0x02)` + RET (27 callers)
+- 0x06C732: `BIT 7,(IY+0x02)` + RET (107 callers — most-called, bonus discovery)
+- 0x06C737: `BIT 6,(IY+0x02)` + RET (63 callers)
+- 0x06C73C: `BIT 4,(IY+0x02)` + RET (65 callers)
+- **All test IY+0x02 bits 4-7** (screen-mode flags). They set Z flag only — callers branch on Z/NZ.
+- **Bit accumulation** happens in the caller (display dispatcher 0x062055): calls 0x06C73C→0x06C737→0x06C72D in sequence, accumulates Z flag results into a nibble, compares against D02310 & 0xF0 to select display path.
+- **Confirmed dispatcher callers**: 0x06208D→0x06C73C (bit 4), 0x062094→0x06C737 (bit 6), 0x06209B→0x06C72D (bit 5). Also called from 0x05FE15 alternate handler at 0x05FEC5/0x05FECF/0x05FED9.
+
+(3) ★★★ 0x063033 INIT TRAMPOLINE DECODED (probe-phase578-trace-063033.mjs, Sonnet-verified):
+- **Function**: 0x063033-0x06303F (13 bytes, 4 instructions). Tiny trampoline.
+- **Flow**: CALL 0x0250FA → CALL 0x09E640 → CALL Z,0x09E601 → RET.
+- No direct RAM refs, no IY flag ops, no port I/O — all side effects delegated to sub-calls.
+- Z-conditional third call means init behavior varies by 0x09E640 return.
+- **10 callers**: 0x04E155, 0x06205C, 0x0620DE, 0x078FFC, 0x08501D, 0x087594, 0x08AD11, 0x08B05C, 0x08C87F, 0x09E2FE.
+- **Role**: Widely-used OS init trampoline. Real work in 0x0250FA, 0x09E640, 0x09E601.
+
+(4) ★★★ 0x070372 FONT FLAG-GUARD WRAPPER + 0x07B451 FONT MODE INITIALIZER (probe-phase578-decode-070372.mjs + probe-phase578b-decode-07B451.mjs, Sonnet-verified):
+- **0x070372**: 0x070372-0x070385 (20 bytes, 8 instructions). Saves/clears/restores IY+0x35 bit 7 around CALL 0x07B451. Flag-guard wrapper, not a glyph data loader. 2 callers: 0x070267 + 0x0703AC (both in font engine 0x070241).
+- **0x07B451**: 0x07B451-0x07B469 (25 bytes, 11 instructions). Writes A → D02AC8 (font mode selector, 22 refs mapped session 575), zeros D02AD4 (font sub-state reset), IY+0x35 bit 7 gate → CALL NZ 0x023A9E. Falls through to 0x07B46B dispatcher. 10 callers.
+- **Pipeline**: 0x070241 (font engine core) → 0x070372 (flag guard) → 0x07B451 (mode init → D02AC8) → 0x07B46B+ (mode dispatcher).
+- **D02AD4**: newly mapped RAM variable — font sub-state, zeroed during mode initialization.
+
+(5) CODEX: 0/4 (all 4 created probes with broken APIs — wrong imports, wrong decoder param types, undefined field access). All 4 priorities completed via Sonnet fallback. All probes Opus-verified (exit 0, output matches analysis). Golden regression 26/26 PASS.
+
+**FUNCTIONS DECODED**: 0x08C331 (140B event loop top, self-loop, key dispatch), 0x06C72D/0x06C732/0x06C737/0x06C73C (4×5B screen-mode bit testers), 0x063033 (13B init trampoline, 10 callers), 0x070372 (20B font flag-guard), 0x07B451 (25B font mode initializer, D02AC8 writer).
+**RAM MAPPED**: D02AD4 (font sub-state, zeroed by 0x07B451), D0058C lifecycle confirmed (3R+2W in event loop top).
+**ARCHITECTURAL INSIGHT**: ★★★★ THE EVENT LOOP IS NOW FULLY TRACED END-TO-END: 0x08C331 (loop top, 140B) → cleanup/flag-clear → IY+0x1F context save/restore → display redraw (text mode: BIT 0 IY+0x02 → font render 0x06F7E4; graph mode: BIT 5 IY+0x0D → same render gate) → key input CALL 0x0A27DD → key dispatch cascade (9 key codes) → handlers → JP 0x08C331. The display dispatcher (0x062055) fits within this framework. OS init enters at 0x020150→JP 0x08C331.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★ DECODE 0x0A27DD — the key input function called from the event loop (CALL 0x0A27DD at 0x08C3A8, OR A / JR NZ dispatch). What is it? Is it _GetCSC? How does it read keyboard state? (c) ★★★ DECODE 0x08C3C3+ KEY DISPATCH CASCADE — the JR NZ target after key input. Trace the full CP chain (0xB4/0x3F/0x28/0x29/0x58/0x7F/0xFE/0xFC/0xFA) and map each handler target. (d) ★★ DECODE 0x0250FA — first call in init trampoline 0x063033, called 10× across OS. What system-level init does it perform? (e) ★★ DECODE 0x09E640/0x09E601 — the two init calls delegated by 0x063033. (f) ★★ TRACE 0x06CE73 — second CALL in event loop body (0x08C339). (g) ★ MAP D02AD4 — newly discovered font sub-state variable, zeroed by 0x07B451. --END SESSION 578--
 
 **Session 577 findings (2026-06-08)**:
 
