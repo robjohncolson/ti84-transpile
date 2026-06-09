@@ -25,7 +25,9 @@
 
 ---
 
-**Last updated**: 2026-06-08 (auto-session 578 — **★★★★ 0x08C331 EVENT LOOP TOP FULLY DECODED (140B, 40 instructions, self-loop JP 0x08C331 at 0x08C3B9: RES 5 IY+0x14 → CALL 0x05C634 + 0x06CE73 + 0x0A349A + 0x05C75B cleanup → IY+0x1F/D0058C context save/restore → text-mode BIT 0 IY+0x02 gate → font render CALL Z 0x06F7E4 → CALL 0x0A27DD key input → OR A / JR NZ key dispatch cascade CP 0xB4/0x3F/0x28/0x29/0x58/0x7F/0xFE/0xFC/0xFA; 4 external refs: OS init 0x020150, self-loop 0x08C3B9, key re-entries 0x08C3DF+0x08C449). ★★★ 0x06C72D/0x06C732/0x06C737/0x06C73C SCREEN-MODE BIT TESTERS FULLY DECODED (4 independent 5B micro-functions: BIT 5/7/6/4 of IY+0x02 + RET; 27/107/63/65 callers respectively; callers accumulate Z flag results into display-mode nibble compared against D02310 & 0xF0). ★★★ 0x063033 INIT TRAMPOLINE DECODED (13B: CALL 0x0250FA + CALL 0x09E640 + CALL Z 0x09E601 + RET; 10 callers across OS including event loop dispatcher 0x062055). ★★★ 0x070372 FONT FLAG-GUARD WRAPPER (20B: saves/clears/restores IY+0x35 bit 7 around CALL 0x07B451; 2 callers both in font engine 0x070241). ★★★ 0x07B451 FONT MODE INITIALIZER (25B: writes A→D02AC8 font mode selector + zeros D02AD4 font sub-state, IY+0x35 bit 7 conditional CALL 0x023A9E, 10 callers). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-08 (auto-session 579 — **★★★ 0x0A27DD KEY INPUT SETUP DECODED (33B, NOT _GetCSC: init-guarded wrapper — BIT 6 IY+0x1B guard → D005F5=1 → CALL 0x03D1C3 → EI → SET 0 IY+0x12 → tail-call JP 0x0A1A36 which is the real key input handler, 9 callers incl event loop 0x08C3A8). ★★★ 0x08C3C3+ KEY DISPATCH CASCADE FULLY MAPPED (~600B, 10-stage cascading filter: 0xB4 QUIT → CALL Z 0x07BF19; 0x3F/?/0x28/0x29 paren → 0x08C509 common processing; 0x58 = D007E0 mode check not a key; 0x7F boundary splits printable < 0x7F from function codes; 0xFE/0xFC format/recall → 0x08C509; 0xFA catalog = elaborate sub-dispatch on D0058E previous key; multi-char token insertion loop at 0x08C41D iterates D0065A string table up to 8 chars; all paths converge CALL 0x022331 key processor + CALL 0x08C72F display refresh → JP 0x08C331/0x08C33D). ★★★ INIT TRAMPOLINE TARGETS ALL 3 DECODED: 0x0250FA = 20B RAM block copy LDIR 23B D007E2→D007CA + 1B D007F9→D0008D (2 callers); 0x09E640 = 15B mode validator CPIR-searches D007E0 against 7-entry table [0x40,0x49,0x43,0x48,0x44,0x4A,0x4B] returns Z=valid (1+1 refs); 0x09E601 = 53B display context reinit 6 sub-calls incl 0x0A27DD + 0x044409 + 0x0A349A, saves/restores D007D6, tail-JP 0x0A2E05 (6 callers). ★★★ 0x06CE73 KEY DISPATCH PRE-PROCESSOR DECODED (12B wrapper: RES 3 IY+0x02 → CALL 0x06CE7F inner 96B → JP 0x06C8AB cursor finalizer; inner reads D0146D key code, filters CLEAR 0x85/DEL 0x87/MODE 0x8D, dispatches GRAPH 0x07 specially to 0x06CFAF, D01D45 gate for extended handling; 1 CALL caller 0x08C339 + 1 JP 0x020BC0). GOLDEN REGRESSION 26/26 PASS.**)
+
+> Previous: 2026-06-08 (auto-session 578 — ★★★★ 0x08C331 event loop top 140B fully decoded, 0x06C72D-0x06C73C screen-mode bit testers 4×5B, 0x063033 init trampoline 13B, 0x070372 font flag-guard 20B, 0x07B451 font mode initializer 25B)
 
 > Previous: 2026-06-08 (auto-session 577 — 0x062055 parent function 150B event loop display dispatcher, 0x08C33D event loop cleanup 128B, 0x05FE15 alternate display handler 251B, D02310 fully mapped 3 refs)
 
@@ -76,6 +78,72 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**Session 579 findings (2026-06-08)**:
+
+(1) ★★★ 0x0A27DD KEY INPUT SETUP DECODED (probe-phase579-decode-0A27DD.mjs, Sonnet-verified):
+- **Function**: 0x0A27DD-0x0A2801 (33 bytes). **NOT _GetCSC (0x03FA09)** and does NOT wrap it.
+- **Flow**: PUSH AF/BC/DE/HL → BIT 6,(IY+0x1B) init guard → if not set: LD (0xD005F5),1 → CALL 0x03D1C3 → EI → SET 0,(IY+0x12) → JP 0x0A1A36 (unconditional tail-call).
+- **0x0A1A36 is the real key input target** — the event loop's key scan result originates there.
+- **9 callers** including 0x08C3A8 (event loop), 0x09E610 (display context reinit).
+- **RAM**: D005F5 (key setup flag, set to 1), D005F6 (zeroed during init).
+- **IY flags**: IY+0x1B bit 6 (init guard), IY+0x12 bit 0 (set after init).
+- **Adjacent code**: 0x0A2802-0x0A282C is a separate 43B cursor/context save routine (saves D02504→D007C7, D00092→D007C8, D00085 AND 0x10→D007C9).
+
+(2) ★★★ 0x08C3C3+ KEY DISPATCH CASCADE FULLY MAPPED (probe-phase579-decode-key-dispatch.mjs, Sonnet-verified):
+- **Extent**: ~600 bytes from 0x08C3BD through 0x08C630+, 10-stage cascading filter.
+- **Dispatch table**:
+  - 0xB4 (QUIT/2nd+MODE): CALL Z,0x07BF19 — unique conditional CALL, not a jump. Then IY+40 bits 1,2 cleared, IY+52 bit 5 gate → CALL 0x02392F. If IY+40 bit 1 set → JP 0x08C331 (re-enter loop).
+  - 0x3F (?): Routes to 0x08C509 common processing path.
+  - 0x28 (left paren): Also routes to 0x08C509.
+  - 0x29 (right paren): Also routes to 0x08C509.
+  - 0x58: NOT a key code — **mode check** compares D007E0 against 0x58. If screen mode == 0x58, all keys bypass app handler.
+  - 0x7F: NOT a key code — **boundary test** CP 0x7F / JP C splits printable chars (< 0x7F) from function codes (≥ 0x7F).
+  - 0xFE (format/special): Routes to 0x08C509.
+  - 0xFC (recall/special): Routes to 0x08C509.
+  - 0xFA (catalog/2nd+8): Elaborate sub-dispatch reading D0058E (previous key), dispatches comma/period/arrow variants.
+- **Multi-character token loop** at 0x08C41D-0x08C449: DJNZ loop iterates D0065A string table up to 8 chars (B=8 counter), calls 0x05C5B3 (char handler) + 0x08C72F (display refresh) per char.
+- **Convergence**: All paths → CALL 0x022331 (key processor) + CALL 0x08C72F (display refresh) → JP 0x08C331 or 0x08C33D.
+- **13 distinct subroutines called**, 10 RAM variables (D007E0, D0058E, D0065A, D01D45, etc.).
+- **ARCHITECTURAL**: The dispatch is a filter chain, not a jump table. Early exits for special keys, then printable/function split, then mode-dependent routing.
+
+(3) ★★★ INIT TRAMPOLINE TARGETS ALL 3 DECODED (probe-phase579-decode-init-targets.mjs, Sonnet-verified):
+- **0x0250FA** — RAM BLOCK COPY (20B, 0x0250FA-0x02510D, 2 callers: 0x063033 + 0x09D1D7):
+  - LDIR copies 23 bytes from D007E2 → D007CA (OS context backup).
+  - Then LD A,(HL) / LD (D0008D),A — copies 1 extra byte.
+  - No sub-calls, no IY ops, no port I/O. Pure memory copy.
+- **0x09E640** — MODE VALIDATOR (15B, 0x09E640-0x09E64E, 1 CALL + 1 JP ref):
+  - LD A,(D007E0) → LD HL,0x09E64F → LD BC,7 → CPIR → RET.
+  - CPIR searches D007E0 value against 7-entry table: [0x40, 0x49, 0x43, 0x48, 0x44, 0x4A, 0x4B].
+  - Returns Z=1 if valid mode (mode is in the table). The init trampoline gates 0x09E601 on this result.
+  - **MODE TABLE**: 0x40=main display, 0x49=alternate display, 0x43/0x48/0x44/0x4A/0x4B = other modes.
+- **0x09E601** — DISPLAY CONTEXT REINIT (53B, 0x09E601-0x09E636, 6 callers):
+  - CALL 0x0800A0 (gate) → RET Z → BIT 2,(IY+0x14) → JR Z skip.
+  - 6 sub-calls: 0x0A21BB, 0x0A27DD (key input setup), 0x063051, 0x044409, 0x0A349A, tail-JP 0x0A2E05.
+  - Saves/restores D007D6 across reinit. Clears IY+0x02 bit 1, IY+0x14 bit 2.
+  - **KEY INSIGHT**: 0x09E601 calls 0x0A27DD (this session's P1 target), confirming the key input setup is part of display context reinitialization.
+
+(4) ★★★ 0x06CE73 KEY DISPATCH PRE-PROCESSOR DECODED (probe-phase579-trace-06CE73.mjs, Sonnet-verified):
+- **Wrapper**: 0x06CE73-0x06CE7E (12B): RES 3,(IY+0x02) → CALL 0x06CE7F → JP 0x06C8AB.
+- **Inner worker** 0x06CE7F (96B, 0x06CE7F-0x06CEDF):
+  - Reads key code from **D0146D** (not D0058E — separate key buffer).
+  - Early exit if A=0 (no key pending).
+  - RES 1,(IY+0x0D) then filter: CP 0x85 (CLEAR) → RET Z. CP 0x87 (DEL) → RET Z. CP 0x8D (MODE) → JP Z,0x06CF41.
+  - CALL 0x06C8B4 (cursor position) → RES 1,(IY+0x05).
+  - IY+0x4E bit 2 / IY+0x03 bit 2 gate → conditional CALL 0x09F1DF with HL=D02709.
+  - CALL 0x06AF6C → re-read D0146D → CP 0x07 (GRAPH) → JP Z,0x06CFAF (special GRAPH handler).
+  - IY+0x02 bit 0 (text mode) gate → D01D45 check → CALL 0x0B0BAD → IY+0x04 bit 4 / CP 0x7F boundary.
+- **Tail target** 0x06C8AB (9B): Cursor position finalizer, 5 callers.
+- **1 CALL caller** at 0x08C339 (event loop body) + 1 JP ref at 0x020BC0.
+- **ARCHITECTURAL**: This pre-processes keys BEFORE the main dispatch cascade at 0x08C3C3. It handles CLEAR/DEL/MODE/GRAPH specially, leaving other keys for the main cascade. D0146D is a separate "pending key" buffer from D0058E ("previous key").
+
+(5) CODEX: 0/4 (all 4 sandbox spawn failures, created probe files with broken decoder API — DataView instead of Buffer, all output DB ?/<missing asm>). All 4 priorities completed via Sonnet fallback. All probes Opus-verified (exit 0, output matches analysis). Golden regression 26/26 PASS.
+
+**FUNCTIONS DECODED**: 0x0A27DD (33B key input setup, NOT _GetCSC, tail-JP 0x0A1A36), 0x0250FA (20B RAM block copy LDIR 23B), 0x09E640 (15B mode validator CPIR 7-entry table), 0x09E601 (53B display context reinit, 6 sub-calls), 0x06CE73 (12B wrapper + 96B inner key dispatch pre-processor).
+**RAM MAPPED**: D005F5 (key setup flag), D005F6 (zeroed init), D0146D (pending key code buffer, distinct from D0058E), D007CA-D007E2 (23B OS context block), D0058E (previous key, used in catalog dispatch), D0065A (multi-char token string table), D02709 (conditional key handler param).
+**ARCHITECTURAL INSIGHTS**: (A) ★★★ THE KEY INPUT CHAIN HAS TWO STAGES: 0x06CE73 pre-processes (CLEAR/DEL/MODE/GRAPH filter from D0146D) THEN 0x0A27DD sets up key state THEN 0x08C3C3+ dispatches remaining keys. Two different key buffers: D0146D (pending) vs D0058E (previous). (B) ★★★ 0x09E640 MODE TABLE CONFIRMS 7 VALID OS MODES: 0x40/0x49/0x43/0x48/0x44/0x4A/0x4B — all stored in D007E0. 0x40 (main display) and 0x49 (alternate) were already known from sessions 576-578. The other 5 are new. (C) ★★★ 0x08C3C3 DISPATCH IS A FILTER CHAIN, NOT A JUMP TABLE — cascading CP instructions with early exits, mode checks (D007E0 vs 0x58), and a printable/function boundary at 0x7F. Multi-char token insertion (0x08C41D) iterates string table with DJNZ B=8.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★ DECODE 0x0A1A36 — the REAL key input handler (tail-call target of 0x0A27DD). This is where key scan results originate for the event loop. (c) ★★★ DECODE 0x06CF41 — MODE key handler (0x06CE73 inner worker dispatches MODE 0x8D here). (d) ★★★ DECODE 0x06CFAF — GRAPH key handler (0x06CE73 inner worker dispatches key 0x07 here with extensive sub-call chain). (e) ★★ DECODE 0x07BF19 — QUIT handler called by 0x08C3C3 dispatch (CALL Z conditional). (f) ★★ DECODE 0x08C509 — common key processing path (0x3F/?/0x28/0x29/0xFE/0xFC all route here). (g) ★★ MAP D0146D — pending key code buffer, distinct from D0058E. How many refs? Who writes it? (h) ★ DECODE 0x0A2E05 — tail-JP target of 0x09E601 display context reinit. --END SESSION 579--
 
 **Session 578 findings (2026-06-08)**:
 
