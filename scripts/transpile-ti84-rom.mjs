@@ -22256,6 +22256,10 @@ function walkBlocks() {
     // Phase 25X: explicit MEM_INIT coverage anchors for ParseInp reprobe.
     { pc: 0x09dee0, mode: 'adl' },
     { pc: 0x08a98f, mode: 'adl' },
+    // Session 595: home repaint 0x058241 from REAL post-init state (boot ->
+    // 0x09DD62 launch-home init) sets the edit cursors then dies at this
+    // missing block (probe-postinit-display2.mjs V2). Seed lets it continue.
+    { pc: 0x08fd56, mode: 'adl' },
     // Phase 25Z: JError/PushErrorHandler blocks for error recovery paths (session 85).
     { pc: 0x061db2, mode: 'adl' },  // JError (longjmp entry)
     { pc: 0x061dd1, mode: 'adl' },  // PopErrorHandler / error-restore stub
