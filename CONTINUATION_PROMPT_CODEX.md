@@ -25,9 +25,9 @@
 
 ---
 
-**Last updated**: 2026-06-09 (auto-session 590 — **★★★ 0x07F796 MULTIPLY-BY-9 DECODED (14B pure register arithmetic: PUSH HL/POP BC + 3×ADD HL,HL + ADD HL,BC = HL*9, overflow guards RET C, no RAM/IY/ports — confirms 9-BYTE PER-TYPE DESCRIPTOR RECORDS at D0117F base, distinct from 6-byte symbol records). ★★★ 0x061D3A E_UNDEFINED ERROR STUB DECODED (4B: LD A,0x8D + JR 0x061DB2, part of 43-entry error dispatch table 0x061D00-0x061DB1; shared handler 0x061DB2 31B saves error code→D008DF, calls 0x03E1B4, clears 4 IY flags, longjmp via LD SP,(D008E0); setjmp recovery 0x061DD1 30B restores symbol table region pointers D02590/D02593/D0258A/D0258D from stack). ★★★ 0x07FEB6 DUAL-DESCRIPTOR TYPE-REMAPPED SYMBOL SEARCH DECODED (43B: manages D005F8 primary + D00603 shadow 11-byte descriptor buffers, bidirectional type remapping via 6-entry table [0x00↔0x0C, 0x18↔0x1B, 0x19↔0x1B, 0x1C↔0x1D, 0x20↔0x1E, 0x21↔0x1F], calls 0x07FD30 swap + 0x07FEE1 search + 0x07FE24/0x07FE5A remap wrappers; classifier 0x07F7A8 15B accepts mapped types {0x0C,0x1B,0x1D,0x1E,0x1F}). ★★★ 0x09A40A CPLXOBJ SPECIAL CASE DECODED (11B: LD HL,D0204D + LD DE,D02046 + LD A,1 + RET — hardcoded bypass for type-0x2A because ROM table entry[42]=0x061DB2 is a ROM address not RAM; complex numbers have two separate 7-byte-apart float descriptors). ★★★ ROM TABLE 0x09A415 FULLY DUMPED (64×3B type descriptor address table, all D01Dxx-D022xx except entry[42]=0x061DB2 ROM). ★★★ ROM TABLE 0x09A4D5 FULLY DUMPED (64×1B offset table into D1983D-D1987A attribute block). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-09 (auto-session 591 — **★★★ 0x07F7A8 TYPE CLASSIFIER DECODED (21B not 15B — AND 0x3F mask + cascading CP checks, accepts remapped types {0x0C,0x1B,0x1D,0x1E,0x1F} via Z flag, CP A self-compare trick for range 0x1D-0x1F, 62 callers ROM-wide — heavily-used utility). ★★★ 0x07FEE1 SEARCH DISPATCHER DECODED (20B: CALL 0x08021F primary search, JR C not-found, PUSH AF/XOR A/CALL 0x07FEFC resolver/POP AF, OR (HL) merge into D005F8, 2 callers both from 0x07FEB6; BONUS not-found path at 0x07FEF5: type-0x21 retries through resolver, type-0x1C returns immediately). ★★★ 0x07FD30 11-BYTE BUFFER SWAP DECODED (20B: LD HL,D00603/LD DE,D005F8/LD B,0x0B, byte-by-byte swap loop using A+C temps with DJNZ, 72 callers ROM-wide — core symbol table primitive). ★★★ 0x07FEFC TYPE-GATED RESOLVER WITH SEARCH LOOP DECODED (59B: AND 0x3F gate accepts type-0x00/0x20 only, calls 0x07FD4A/0x07F7BD/0x07F98B/0x07CFA7/0x07F8FE, reads D005F9 type with thresholds 0xE4→0x07FE20 and 0x1D→RET NC, iterates via JR back to type-read, D00603+D0063A shadow buffers, 1 caller from 0x07FEE1). BONUS: adjacent utilities 0x07FF38 (7B CP 0x80), 0x07FF3F (7B CP 0x24), 0x07FF49 (16B wrapper→0x07FF59 deeper resolver with 0x06868A/0x08021B/0x09C4E0). GOLDEN REGRESSION 26/26 PASS.**)
 
-> Previous: 2026-06-09 (auto-session 589 — 0x0821AE post-search validator 11B, 0x061DEF setjmp trampoline 56B, 0x061E20 longjmp 7B, 0x09A39F symbol address resolver ~46B, 0x09A3D0 subfield resolver 58B, D01D0B fully mapped 11 refs)
+> Previous: 2026-06-09 (auto-session 590 — 0x07F796 multiply-by-9 14B, 0x061D3A E_UNDEFINED error stub 4B + shared handler 31B + setjmp recovery 30B, 0x07FEB6 dual-descriptor search 43B, 0x09A40A CplxObj special case 11B, ROM tables 0x09A415+0x09A4D5 fully dumped)
 
 > Previous: 2026-06-09 (auto-session 588 — 0x000138 jump table = C compiler soft-math runtime 50 vectors, 0x0021C2 null-check 12B, 0x09D49A multi-type lookup dispatcher ~116B, 0x0801D9 computable-type filter 16B 27 callers, D01D0C fully mapped 24 refs)
 
@@ -100,6 +100,48 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**CC session 591 (2026-06-09, auto-continuation)**:
+Picked priorities (b)-(e) from session 590 NEXT list — 4 independent ★★★ decode tasks.
+Dispatched 4 Codex agents in parallel (0/4 succeeded — all exit 1). All 4 completed via Sonnet fallback.
+
+(1) ★★★ 0x07F7A8 TYPE CLASSIFIER DECODED (probe-phase591-decode-07F7A8.mjs, Sonnet P1):
+- **Function**: 0x07F7A8-0x07F7BC (21 bytes, not 15B as session 590 estimated).
+- **Semantics**: AND 0x3F mask → cascading CP checks: RET Z for 0x0C, RET Z for 0x1B, JR NC for A≥0x1D → range check CP 0x20 → CP A self-compare trick (always Z) for 0x1D-0x1F. All other types rejected (NZ).
+- **Accepted types**: {0x0C, 0x1B, 0x1D, 0x1E, 0x1F} — the remapped types from the bidirectional map.
+- **62 callers** — heavily-used utility across symbol table ops (0x09xxxx), graph/equation handling (0x03Exxxx, 0x07Cxxx), and other OS subsystems. Not just 0x07FEB6.
+- **Pure register**: no CALL/JP targets, no RAM refs, no IY, no ports.
+
+(2) ★★★ 0x07FEE1 SEARCH DISPATCHER DECODED (probe-phase591-decode-07FEE1.mjs, Sonnet P2):
+- **Function**: 0x07FEE1-0x07FEF4 (20 bytes).
+- **Semantics**: CALL 0x08021F (primary symbol search) → JR C to not-found path → PUSH AF/XOR A/CALL 0x07FEFC (resolver with A=0)/POP AF → LD HL,D005F8 / OR (HL) / LD (HL),A (merge result bits into primary descriptor) → RET.
+- **Not-found path (0x07FEF5)**: CP 0x21 / JR Z → retries through PUSH AF path (type-0x21 gets special retry). CP 0x1C / RET Z (type-0x1C returns immediately — "already resolved"). Falls through to 0x07FEFC.
+- **2 callers**: both at 0x07FEC4 and 0x07FED4 inside 0x07FEB6 (dual-descriptor search).
+- **RAM**: D005F8 (primary descriptor buffer read+write).
+
+(3) ★★★ 0x07FD30 11-BYTE BUFFER SWAP DECODED (probe-phase591-decode-07FD30.mjs, Sonnet P3):
+- **Function**: 0x07FD30-0x07FD43 (20 bytes).
+- **Semantics**: LD HL,D00603 (shadow) / LD DE,D005F8 (primary) / LD B,0x0B (11 iterations) → swap loop: LD A,(DE)/LD C,(HL)/LD (HL),A/LD A,C/LD (DE),A/INC HL/INC DE/DJNZ. Clean byte-by-byte swap using A+C as temporaries.
+- **72 callers** — far more than just 0x07FEB6. Major clusters in 0x05BA-0x05BF (6), 0x0685-0x0686 (4), 0x07CD-0x07FE (16, heaviest — symbol table region), 0x0966-0x0968 (6), 0x098C-0x098D (6). Core primitive for the dual-buffer symbol table subsystem.
+- **RAM**: D005F8 (primary, 11B), D00603 (shadow, 11B). No IY, no ports.
+
+(4) ★★★ 0x07FEFC TYPE-GATED RESOLVER WITH SEARCH LOOP DECODED (probe-phase591-decode-07FEFC.mjs, Sonnet P4):
+- **Function**: 0x07FEFC-0x07FF37 (59 bytes).
+- **Entry gate**: AND 0x3F → accepts type-0x00 (zero after mask) or exactly 0x20; rejects all others via RET NZ.
+- **Main body**: CALL 0x07FD4A (check) → JP Z,0x07FAC2 (bail). Reads D005F9 (searchKey_type): ≥0xE4 → JP NC,0x07FE20; ≥0x1D → RET NC; <0x1D → CALL 0x07F7BD, check ==0x20 else bail. Then LD HL,D00603/CALL 0x07F98B, CALL 0x07CFA7, LD HL,D0063A/CALL 0x07F8FE, JR back to re-read type (iterate).
+- **CALL targets**: 0x07FD4A, 0x07F7BD, 0x07F98B, 0x07CFA7, 0x07F8FE.
+- **JP targets**: 0x07FAC2 (bail), 0x07FE20 (high-type handler).
+- **RAM**: D005F9 (searchKey_type, read-only). D00603, D0063A used via HL.
+- **1 caller**: 0x07FEE9 (from 0x07FEE1 search dispatcher).
+- **Bonus adjacent utilities discovered**: 0x07FF38 (7B: reads D005F9, CP 0x80, RET), 0x07FF3F (7B: reads D005F9, CP 0x24, RET), 0x07FF46 (3B: ED 6C/RET — possibly TST/MLT?), 0x07FF49 (16B wrapper: CALL 0x0801D3 computable-type filter, saves regs, CALL 0x07FF59), 0x07FF59 (deeper resolver: CALL 0x06868A/0x08021B/0x07F7BD/0x09C4E0, error dispatches to 0x061D22/0x061D46).
+
+(5) CODEX: 0/4 (all exit 1). All 4 priorities completed via Sonnet fallback. All probes Opus-verified (exit 0, output analyzed). Golden regression 26/26 PASS.
+
+**FUNCTIONS DECODED**: 0x07F7A8 (21B type classifier), 0x07FEE1 (20B search dispatcher), 0x07FD30 (20B 11-byte buffer swap), 0x07FEFC (59B type-gated resolver with search loop).
+**ARCHITECTURE FOUND**: Type classifier 0x07F7A8 has 62 callers — far more heavily used than just the dual-descriptor search. Buffer swap 0x07FD30 has 72 callers — a core symbol table primitive. Search dispatcher 0x07FEE1 has a not-found path with type-specific handling (0x21 retries, 0x1C returns immediately). Resolver 0x07FEFC iterates via loop reading D005F9 type with threshold-based dispatch.
+**SUB-FUNCTIONS DISCOVERED**: 0x07FD4A (called by resolver), 0x07F7BD (called by resolver, returns type in A), 0x07F98B (called with HL=D00603), 0x07CFA7 (called in resolve loop), 0x07F8FE (called with HL=D0063A), 0x07FF38 (7B CP 0x80 utility), 0x07FF3F (7B CP 0x24 utility), 0x07FF49 (16B wrapper→0x07FF59), 0x07FF59 (deeper resolver chain).
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★ DECODE 0x07FD4A — check function called by resolver 0x07FEFC (if Z → bail to 0x07FAC2). (c) ★★★ DECODE 0x07F7BD — returns type value in A, called by resolver 0x07FEFC and deeper resolver 0x07FF59 (confirmed ≠ 0x07F7A8 classifier). (d) ★★★ DECODE 0x07F98B — called with HL=D00603 (shadow descriptor), part of resolve loop. (e) ★★★ DECODE 0x07CFA7 — called in resolve loop between 0x07F98B and 0x07F8FE. (f) ★★★ DECODE 0x07F8FE — called with HL=D0063A at end of resolve loop. (g) ★★ DECODE 0x05C634 — graph fallback display manager (carried from session 583). (h) ★★ DECODE 0x023057 — graph fallback Z-path target (carried from session 583). (i) ★ IMPLEMENT PORT 0xDCA0 IN PERIPHERALS.JS — return 0x00 or configurable value. (j) ★ FIX ED-PREFIX MASK IN HAND-ROLLED DISASSEMBLER — future probes should use 0xC7 not 0xCF for LD rp,(nn) group. --END SESSION 591--
 
 **CC session 590 (2026-06-09, auto-continuation)**:
 Picked priorities (b)-(e) from session 589 NEXT list — 4 independent ★★★ decode tasks.
