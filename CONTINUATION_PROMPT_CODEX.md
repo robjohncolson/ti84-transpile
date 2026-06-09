@@ -25,7 +25,9 @@
 
 ---
 
-**Last updated**: 2026-06-09 (auto-session 582 — **★★★ 0x0A32F9 KEYBOARD SCAN ENGINE FULLY DECODED (302B total: 237B main + 65B subroutines, two-path structure split by 0x08C308 — path 1 writes 8 buffers D408A7-D41167 via 0x0A341A/0x0A342F, path 2 writes 8 buffers D4114E-D422CE via 0x0A33E6/0x0A33FB, core write loop 0x0A33FF uses ADD A shift+carry to select scan result DE vs mask BC per slot, DI/EI bracketed, NO port I/O — distributes pre-read D02ACC data, parameter table 0x0A344A is bitmask-driven not pointer-driven, 9 groups round-robin via D005F6, resets timer D005F5=6). ★★★ 0x022331 KEY PROCESSOR SUITE DECODED (21B entry + ~450B total across ~11 sub-functions: NOT a token inserter — it's an EVENT POSTING MECHANISM via central dispatch 0x0236F9 which writes event type A + D007E0 mode + D0058E context into buffer, posts event types 0x01/0x04/0x05/0x06/0x0A/0x0D, calls 0x05622E token resolver + 0x000578 guard, sub-function 0x0223CE=161B largest calls 0x0855B1 token classifier + 0x080D1D + 0x0846EA, sub-function 0x0224A3=67B master dispatcher indexes via D00826, 1 caller 0x08C532). ★★★ 0x08C72F CORRECTED: NOT DISPLAY REFRESH — INDIRECT DISPATCH TRAMPOLINE (22B: CALL 0x05622E key-to-handler + LD HL,(D007CA) function pointer + CALL 0x08C745 which is JP (HL) — mode-polymorphic post-key-action dispatcher, actual behavior depends on what current mode wrote into D007CA, sibling 0x08C746 uses D007EB instead, 7 callers). ★★★ 0x05C5B3 TOKEN CLASSIFIER DECODED (~90B front-end + 22B pair-search 0x05C60D + ~227B OS flag manager 0x05C623: NOT a token inserter — multi-stage classifier searching 105-entry table at 0x05C01D + 376-pair table 0x05C1B0 + 70-pair table 0x05C4A0, returns status codes 0xFC/0xFB/0xFA/0xFE, writes D0058E, does NOT call BufInsert 0x05E2A0, does NOT reference cursor D0231A/D0243A, 6 callers, 19 CALL targets, 13 IY offsets). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-09 (auto-session 583 — **★★★ 0x0236F9 EVENT POSTING CENTRAL DISPATCH FULLY DECODED (30B, 17 insns, 42 callers: writes 3-byte event record [event_type, D007E0 mode, D0058E context if mode==0x4E else 0x00] into buffer at HL, then reads I/O port 0xDCA0 via IN A,(C) with BC=0x00DCA0 — likely interrupt ack/mailbox, HL restored on return, fundamental OS event primitive). ★★★ 0x05622E KEY-CODE-TO-TOKEN MAPPER DECODED (22B, 4 callers 0x02233A/0x03D99C/0x05625D/0x08C730: HL=0, L=A key code, H=D0058E previous key, for 0xFE/0xFC two-byte prefixes swaps H↔L so HL=(prefix:token_id), JR NZ past RET for normal single-byte keys falls through to caller continuation). ★★★ 0x06D050 GRAPH FALLBACK DISPATCH STUB DECODED (~67B, 3 callers all conditional JPs from 0x06CFxx: BIT 0 IY+2 splits normal/display-mode, Z-path CALL 0x023057+JP 0x06AABF, NZ-path cascading BIT 5/6/3 on IY+2 with 0x06C732/0x06C737 screen-mode testers dispatching to 0x06AAF5/0x06AABB/0x06AABF+0x05C634, convergence JR 0x06D093). ★★★ 0x0855B1 TOKEN CLASSIFIER DECODED (245B across 3 blocks, 3 callers 0x0223FD/0x085562/0x087654: 3-way classifier on DE token pair — D=0xFC path classifies E in 0x3C-0x40→codes 5-9, D=0xFE path classifies E in 0x7D-0x81→codes 0-4, D<0x0A+E=0x42 path returns D as code 0-9, all other tokens SCF+RET=unclassified, extended path at 0x0855DA searches 9 ROM constants 0x00FBC8/FBC7/00C9/0054/FE06/FE08/FBF5/FC9C/FC9E via comparator 0x04C979). GOLDEN REGRESSION 26/26 PASS.**)
+
+> Previous: 2026-06-09 (auto-session 582 — 0x0A32F9 keyboard scan engine 302B, 0x022331 key processor suite ~450B event posting, 0x08C72F corrected indirect dispatch trampoline 22B, 0x05C5B3 token classifier ~424B)
 
 > Previous: 2026-06-09 (auto-session 581 — 0x03D1C3 key scan dispatcher 15B, 0x06ADC9/0x06ADD1 graph calc handlers, 0x07BF19 quit handler 37B key remapper, 0x08C509 common key processing ~140B)
 
@@ -84,6 +86,59 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**Session 583 findings (2026-06-09)**:
+
+(1) ★★★ 0x0236F9 EVENT POSTING CENTRAL DISPATCH DECODED (probe-phase583-decode-0236F9.mjs, Sonnet P1):
+- **Function**: 0x0236F9-0x023716 (30 bytes, 17 instructions).
+- **Purpose**: Writes a 3-byte event record into a buffer at HL:
+  - byte[0] = A (event type: 0x01/0x04/0x05/0x06/0x0A/0x0D and more)
+  - byte[1] = contents of D007E0 (current screen mode)
+  - byte[2] = contents of D0058E (pending key context) if mode==0x4E, else 0x00
+- HL is restored to its original value via DEC HL × 2.
+- After writing, loads BC=0x00DCA0 and reads I/O port 0xDCA0 via IN A,(C). Port 0xDCA0 is in the TI ASIC register space — likely an interrupt ack or event notification register. Result returned in A.
+- **42 CALL sites** all in the 0x022xxx-0x0236xx range (the key processor suite). Event types posted include 0x01 through 0x1E based on caller context lookback.
+- **RAM**: D007E0 (mode byte, read), D0058E (context byte, conditional read when mode==0x4E).
+- **No CALL targets** — this is a leaf function (only IN A,(C) side-effect).
+
+(2) ★★★ 0x05622E KEY-CODE-TO-TOKEN MAPPER DECODED (probe-phase583-decode-05622E.mjs, Sonnet P2):
+- **Function**: 0x05622E-0x056243 (22 bytes).
+- **Semantics**: LD HL,0 → L=A (key code) → H=D0058E (prev key byte) → if A==0xFE or A==0xFC: swap L=H, H=A → RET.
+- **Normal keys**: HL = (D0058E : keycode). For two-byte prefix keys 0xFE/0xFC: HL = (prefix : D0058E), swapping the pair.
+- **JR NZ past RET**: For non-prefix keys, JR NZ +3 targets 0x056244 which is PAST the RET at 0x056243. This means for normal keys the function falls through into whatever follows — the RET only fires for 0xFE/0xFC prefixes.
+- **4 callers**: 0x02233A (key processor suite), 0x03D99C, 0x05625D (nearby wrapper), 0x08C730 (common key processing).
+- **RAM**: D0058E (read as high byte of token pair).
+
+(3) ★★★ 0x06D050 GRAPH FALLBACK DISPATCH STUB DECODED (probe-phase583-decode-06D050.mjs, Sonnet P3):
+- **Function**: 0x06D050-0x06D093 (~67 bytes total across both paths).
+- **Structure**: BIT 0,(IY+2) splits into two paths:
+  - **Z path (normal)**: CALL 0x023057 (stack frame setup + IY+78 guard) → JP 0x06AABF (common graph action).
+  - **NZ path (display mode)**: cascading BIT tests on IY+2:
+    - BIT 5 set → CALL 0x06FBA4 + CALL 0x06AAF5 → JR 0x06D093
+    - BIT 6 set → CALL 0x06FBA4 + CALL 0x06AABB → JR 0x06D093
+    - Neither → BIT 3 IY+2 guard, CALL NZ 0x06FBA8, CALL 0x06AABF, BIT 3 IY+2 again, RET Z or CALL 0x05C634
+- **3 callers**: All conditional JPs from 0x06CFB8/0x06CFC0/0x06CFC8 (graph key dispatch cascade).
+- **IY**: IY+2 bits 0/3/5/6 (screen mode flags). Calls known screen-mode testers 0x06C732/0x06C737.
+
+(4) ★★★ 0x0855B1 TOKEN CLASSIFIER DECODED (probe-phase583-decode-0855B1.mjs, Sonnet P4):
+- **Function**: 0x0855B1-0x0855D9 (41B entry + 0x0855DA-0x085626 extended search = 245B total, 102 instructions).
+- **3-way classifier** on DE token pair:
+  - **D==0xFC**: E in 0x3C-0x40 → classification codes 5-9 via SUB 0x3C + ADD 5. E<0x3C → RET C (unclassified). E≥0x41 → fall through to SCF;RET.
+  - **D==0xFE**: E in 0x7D-0x81 → classification codes 0-4 via SUB 0x7D. E≥0x82 → SCF;RET.
+  - **D<0x0A, E==0x42**: returns D itself as code 0-9 (OR A clears carry).
+  - **All other tokens**: SCF;RET (carry = unclassified).
+- **Extended classifier (0x0855DA+)**: For D==0xFF, DECs D to 0xFE. Then searches 9 ROM constants (0x00FBC8, 0x00FBC7, 0x0000C9, 0x000054, 0x00FE06, 0x00FE08, 0x00FBF5, 0x00FC9C, 0x00FC9E) via CALL 0x04C979 (7B comparator: PUSH HL, OR A, SBC HL,DE, POP HL, RET). Each match dispatches to a specific handler.
+- **3 callers**: 0x0223FD (key processor suite), 0x085562, 0x087654.
+- **No RAM refs, no IY ops** in the main classifier body — pure register arithmetic.
+
+(5) CODEX: 4/4 created probe files but all had weak formatters (raw tag names) and broken/incomplete xref scanners. All 4 priorities completed via Sonnet fallback with correct formatInstruction, proper xref scanning, and richer analysis. All probes Opus-verified (exit 0, output matches analysis). Golden regression 26/26 PASS.
+
+**FUNCTIONS DECODED**: 0x0236F9 (30B event posting central dispatch, 42 callers), 0x05622E (22B key-code-to-token mapper, 4 callers), 0x06D050 (~67B graph fallback dispatch stub, 3 callers), 0x0855B1 (245B 3-way token classifier, 3 callers).
+**RAM MAPPED**: D007E0 (mode byte, read by 0x0236F9), D0058E (context byte, conditionally read by 0x0236F9 when mode==0x4E; read as token high byte by 0x05622E).
+**PORT I/O**: Port 0xDCA0 (read via IN A,(C) in 0x0236F9 — TI ASIC register, likely event notification/ack).
+**ARCHITECTURAL INSIGHTS**: (A) ★★★★ THE EVENT POSTING PRIMITIVE IS A LEAF: 0x0236F9 does NOT queue events or manage a buffer — it writes a fixed 3-byte record and reads a port. The "event system" is actually just a write-to-RAM-and-notify pattern. The 42 callers each provide their own buffer address in HL. The port read (0xDCA0) may be the notification mechanism or a hardware ack. (B) ★★★ 0x05622E IS A SWAP-OR-PASS-THROUGH: for single-byte tokens it sets HL=(D0058E:key) and falls PAST the RET, meaning the caller's continuation code sees HL but the function doesn't "return" in the normal sense. For two-byte prefixes 0xFE/0xFC it swaps to HL=(prefix:D0058E) and RETurns. This is a clever dual-purpose function. (C) ★★★ 0x0855B1 CLASSIFIES TOKENS INTO 10 CATEGORIES (codes 0-9) plus "unclassified" (carry set). The D==0xFC range maps to codes 5-9, D==0xFE maps to codes 0-4, and small D values (0-9) with E==0x42 pass D through directly. The extended path handles special ROM-constant token addresses.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★ DECODE THE EVENT CONSUMER — 0x0236F9 writes events but who READS them? The buffer address comes from HL at each call site. Trace the 42 caller sites to find where the buffer is defined and who reads it. This is the missing link between key posting and token insertion. (c) ★★★ DECODE 0x080D1D — called by 0x0223CE (largest key processor sub-function) alongside 0x0855B1 and 0x0846EA. May be the next stage after token classification. (d) ★★★ DECODE 0x0846EA — called twice from 0x0223CE and also from 0x06ADD1 (graph CALC Store Results). Token formatting/result handler. (e) ★★ DECODE 0x05C634 — called from 0x06D050 NZ path (graph fallback, BIT 3 IY+2 guard). OS flag/display manager entry. (f) ★★ DECODE 0x042366 — called from 0x0855B1 extended classifier at 0x0855EC. Token action handler for code 0x08 match. (g) ★★ DECODE 0x023057 — graph fallback Z-path target (stack frame setup + IY+78 guard). (h) ★ MAP PORT 0xDCA0 — what TI ASIC register is this? Cross-reference other IN/OUT instructions using port 0xDCA0 in the ROM. --END SESSION 583--
 
 **Session 581 findings (2026-06-09)**:
 
