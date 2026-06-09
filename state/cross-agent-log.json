@@ -19176,15 +19176,103 @@
       "timestamp": "2026-06-09T05:15:31Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "e171276a5aae",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x06D050 \u2014 GRAPH FALLBACK PATH\n\n## Context\nYou are working on the TI-84 Plus CE ROM t",
+      "status": "completed",
+      "duration_seconds": 78.595,
+      "timestamp": "2026-06-09T06:23:40Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a7cd50f71253",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0236F9 \u2014 EVENT POSTING CENTRAL DISPATCH\n\n## Context\nYou are working on the TI-84 Pl",
+      "status": "completed",
+      "duration_seconds": 100.005,
+      "timestamp": "2026-06-09T06:23:57Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "fa3a71927cb0",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0855B1 \u2014 TOKEN CLASSIFIER (called by key processor suite)\n\n## Context\nYou are worki",
+      "status": "completed",
+      "duration_seconds": 97.809,
+      "timestamp": "2026-06-09T06:24:01Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "40322b21f34f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x05622E \u2014 TOKEN RESOLVER/MAPPER\n\n## Context\nYou are working on the TI-84 Plus CE ROM",
+      "status": "completed",
+      "duration_seconds": 107.105,
+      "timestamp": "2026-06-09T06:24:06Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "634de4a07435",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 584 \u2014 P2: Decode 0x080D1D (key processor helper)\n\n## Context\n0x080D1D is called by 0x",
+      "status": "completed",
+      "duration_seconds": 85.492,
+      "timestamp": "2026-06-09T07:34:35Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a2a2a2e4f201",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 584 \u2014 P3: Decode 0x0846EA (token formatting/result handler)\n\n## Context\n0x0846EA is c",
+      "status": "completed",
+      "duration_seconds": 84.909,
+      "timestamp": "2026-06-09T07:34:36Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "298efc3edf56",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 584 \u2014 P1: Decode the Event Consumer (trace 0x0236F9 caller buffer addresses)\n\n## Cont",
+      "status": "success",
+      "duration_seconds": 96.611,
+      "timestamp": "2026-06-09T07:34:44Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "be39c14dd260",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 584 \u2014 P4: Map Port 0xDCA0 across the ROM\n\n## Context\nSession 583 found that 0x0236F9 ",
+      "status": "success",
+      "duration_seconds": 104.697,
+      "timestamp": "2026-06-09T07:34:57Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1614,
-    "cc_to_codex": 1614,
+    "total_calls": 1622,
+    "cc_to_codex": 1622,
     "codex_to_cc": 0,
-    "completed": 1065,
+    "completed": 1071,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 475.009
+    "avg_duration_seconds": 473.132
   }
 }

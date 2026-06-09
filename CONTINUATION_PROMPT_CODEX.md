@@ -25,7 +25,9 @@
 
 ---
 
-**Last updated**: 2026-06-09 (auto-session 583 — **★★★ 0x0236F9 EVENT POSTING CENTRAL DISPATCH FULLY DECODED (30B, 17 insns, 42 callers: writes 3-byte event record [event_type, D007E0 mode, D0058E context if mode==0x4E else 0x00] into buffer at HL, then reads I/O port 0xDCA0 via IN A,(C) with BC=0x00DCA0 — likely interrupt ack/mailbox, HL restored on return, fundamental OS event primitive). ★★★ 0x05622E KEY-CODE-TO-TOKEN MAPPER DECODED (22B, 4 callers 0x02233A/0x03D99C/0x05625D/0x08C730: HL=0, L=A key code, H=D0058E previous key, for 0xFE/0xFC two-byte prefixes swaps H↔L so HL=(prefix:token_id), JR NZ past RET for normal single-byte keys falls through to caller continuation). ★★★ 0x06D050 GRAPH FALLBACK DISPATCH STUB DECODED (~67B, 3 callers all conditional JPs from 0x06CFxx: BIT 0 IY+2 splits normal/display-mode, Z-path CALL 0x023057+JP 0x06AABF, NZ-path cascading BIT 5/6/3 on IY+2 with 0x06C732/0x06C737 screen-mode testers dispatching to 0x06AAF5/0x06AABB/0x06AABF+0x05C634, convergence JR 0x06D093). ★★★ 0x0855B1 TOKEN CLASSIFIER DECODED (245B across 3 blocks, 3 callers 0x0223FD/0x085562/0x087654: 3-way classifier on DE token pair — D=0xFC path classifies E in 0x3C-0x40→codes 5-9, D=0xFE path classifies E in 0x7D-0x81→codes 0-4, D<0x0A+E=0x42 path returns D as code 0-9, all other tokens SCF+RET=unclassified, extended path at 0x0855DA searches 9 ROM constants 0x00FBC8/FBC7/00C9/0054/FE06/FE08/FBF5/FC9C/FC9E via comparator 0x04C979). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-09 (auto-session 584 — **★★★★ EVENT SYSTEM ARCHITECTURE RESOLVED: 0x0236F9's 42 callers ALL use stack-local buffers (LEA HL,IX+disp) — NO shared RAM event queue exists. The 3-byte event record is ephemeral, written to caller's stack frame then consumed by hardware port 0xDCA0 IN A,(C). 27 distinct event types (0x01-0x1E + 2 dynamic). Port 0xDCA0 has exactly 3 IN refs in entire ROM (0x0229BA, 0x023089, 0x023713), all in key processor suite, NOT handled in peripherals.js, only port in 0xDCxx range. ★★★ 0x080D1D KEY-VALUE WRITER DECODED (16B, 6 insns, 5 callers: stores 3-byte record [type=0x5C, keycode=A, flags=0x00] at D005F9-D005FB — prepares search key for 0x0846EA). ★★★ 0x0846EA SYMBOL TABLE SEARCHER DECODED (110B, 52 insns, 235 callers: backward 3-byte-keyed record search in D005F8-D005FB descriptor region, scans from D0259D/D3FFFF toward D02590 boundary, AND 0x3F type mask, calls 0x082BE2/0x04C885, returns matched record data — fundamental OS variable/token lookup). ★★★★ PIPELINE LINK: 0x080D1D writes D005F9-D005FB (search key) → 0x0846EA reads D005F9-D005FB (searches symbol table with that key) — key processor builds search key then looks up token/variable record. GOLDEN REGRESSION 26/26 PASS.**)
+
+> Previous: 2026-06-09 (auto-session 583 — 0x0236F9 event posting central dispatch 30B, 0x05622E key-code-to-token mapper 22B, 0x06D050 graph fallback dispatch stub ~67B, 0x0855B1 token classifier 245B)
 
 > Previous: 2026-06-09 (auto-session 582 — 0x0A32F9 keyboard scan engine 302B, 0x022331 key processor suite ~450B event posting, 0x08C72F corrected indirect dispatch trampoline 22B, 0x05C5B3 token classifier ~424B)
 
@@ -86,6 +88,54 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**Session 584 findings (2026-06-09)**:
+
+(1) ★★★★ EVENT SYSTEM ARCHITECTURE RESOLVED (probe-phase584-event-consumer.mjs, Sonnet P1):
+- **All 42 callers of 0x0236F9 use stack-local buffers** (LEA HL,IX+disp). Zero fixed RAM buffer addresses. The 3-byte event record is written to the caller's stack frame, not a shared event queue.
+- **The "consumer" is the hardware port 0xDCA0** (IN A,(C)). After writing the record, the function reads port 0xDCA0 — this IS the notification mechanism. The record is ephemeral; most callers immediately tear down their stack frame after the CALL.
+- **27 distinct event types**: 0x01(1), 0x02(1), 0x03(1), 0x04(2), 0x05(2), 0x06(1), 0x09(8), 0x0A(1), 0x0C(2), 0x0D(1), 0x0E(1), 0x0F(3), 0x10(1), 0x11(1), 0x12(1), 0x13(1), 0x14(1), 0x15(2), 0x16(1), 0x17(1), 0x18(1), 0x19(1), 0x1A(1), 0x1B(1), 0x1C(1), 0x1D(1), 0x1E(1), dynamic(2).
+- **Post-call buffer reads are rare**: only 2 of 42 callers read back from the stack after the call. Some type-0x09 callers do LDIR copies to D005F8 or D02510, suggesting additional context alongside the event post.
+- **Parent functions**: ~39 function entries in 0x022xxx-0x0236xx. Most-called entry is 0x02315E (12 callers from across ROM).
+
+(2) ★★★ 0x080D1D KEY-VALUE WRITER DECODED (probe-phase584-decode-080D1D.mjs, Sonnet P2):
+- **Function**: 0x080D1D-0x080D2C (16 bytes, 6 instructions). Pure leaf function, no calls.
+- **Semantics**: Stores incoming A register to D005FA, writes constant 0x5C to D005F9, zeros D005FB via SUB A.
+- **Result**: Creates a 3-byte record at D005F9-D005FB: [type=0x5C, keycode=A, flags=0x00].
+- **5 callers**: JP 0x021688 (tail call), CALL 0x022410 (key processor 0x0223CE), CALL 0x080CBD, CALL 0x0818B3, CALL 0x087659.
+- **Pipeline link**: D005F9-D005FB is the SAME region that 0x0846EA uses as its search key. 0x080D1D prepares the search key that 0x0846EA then looks up.
+
+(3) ★★★ 0x0846EA SYMBOL TABLE SEARCHER DECODED (probe-phase584-decode-0846EA.mjs, Sonnet P3):
+- **Function**: 0x0846EA-0x084758 (110 bytes, 52 instructions).
+- **235 callers** (233 CALL + 2 JP) — fundamental OS utility.
+- **Algorithm**: Backward 3-byte-keyed record search:
+  1. Calls 0x08011F first; if Z flag set, jumps to 0x083833 (early exit).
+  2. Loads search boundary DE from D0259D. Checks D005F9 against 0x24: if match loads alt pointers from D0259A/D02590, else starts at 0xD3FFFF.
+  3. Search loop at 0x084711: reads byte at (HL), calls 0x082BE2 (AND 0x3F mask), compares HL against DE boundary (RET C if past).
+  4. Compares byte at (HL) against D005F9; on mismatch, decrements HL by 3 and loops.
+  5. On match: verifies preceding 2 bytes against D005FA and D005FB (full 3-byte key match).
+  6. On full match: reads 3 data bytes after key, calls 0x04C885, writes result byte to D005F8, returns.
+- **RAM**: D005F8-D005FB (search key input + result output), D0259D/D0259A/D02590 (search boundary pointers).
+- **3 callees**: 0x08011F, 0x082BE2, 0x04C885.
+
+(4) ★★ PORT 0xDCA0 FULLY MAPPED (probe-phase584-port-DCA0.mjs, Codex P4 + Sonnet P4):
+- **Exactly 3 IN A,(C) references** in the entire 4MB ROM, all reads (no writes):
+  - 0x0229BA (function 0x02298C, BC loaded at 0x0229B6)
+  - 0x023089 (function 0x023062, BC loaded at 0x023085)
+  - 0x023713 (function 0x0236E4 = just before 0x0236F9, BC loaded at 0x02370F)
+- **Only port in 0xDCxx range** — no other 0xDC00-0xDCFF ports referenced in the ROM.
+- **NOT handled in peripherals.js** — returns 0x00 for unhandled ports.
+- **2,790 total I/O instructions** in ROM (1,772 ED-prefixed, 1,018 direct).
+- All 3 refs are in the key processor suite (0x022xxx-0x023xxx).
+- For emulation purposes, port 0xDCA0 returning 0x00 (current behavior) may be sufficient since the value is checked but not known to gate critical paths.
+
+(5) CODEX: 2/4 succeeded (P2 exit 0 created probe, P3 exit 0 created probe, but BOTH had broken decoder API — accessed undefined `.asm` property causing TypeError crashes). P1 exit 1 (also created file with same bug). P4 exit 1 but created working probe. All 4 priorities completed via Sonnet fallback with correct decoder API. All probes Opus-verified (exit 0, output matches analysis). Golden regression 26/26 PASS.
+
+**FUNCTIONS DECODED**: 0x080D1D (16B key-value writer, 5 callers), 0x0846EA (110B symbol table searcher, 235 callers).
+**ARCHITECTURE RESOLVED**: Event posting system (0x0236F9) uses stack-local buffers consumed by hardware port 0xDCA0, NOT a software event queue. 0x080D1D→0x0846EA pipeline: key processor writes search key then looks up token/variable record.
+**PORT MAPPED**: 0xDCA0 = 3 read-only refs, only 0xDCxx port, unimplemented in peripherals.js.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★ DECODE 0x08011F — called first by 0x0846EA (235 callers), Z flag gates early exit to 0x083833. What does it check? (c) ★★★ DECODE 0x082BE2 — called inside 0x0846EA's search loop, result AND 0x3F masked. Type extraction? (d) ★★★ DECODE 0x04C885 — called on match in 0x0846EA, processes the matched record data. (e) ★★★ TRACE TYPE-0x09 EVENT CALLERS — 8 callers post type 0x09, some do LDIR to D005F8/D02510 after. What is event type 0x09? (f) ★★ DECODE 0x05C634 — graph fallback display manager (from session 583 NEXT list). (g) ★★ DECODE 0x023057 — graph fallback Z-path target (from session 583 NEXT list). (h) ★ IMPLEMENT PORT 0xDCA0 IN PERIPHERALS.JS — return 0x00 or a configurable value. Low priority since current unhandled behavior already returns 0. --END SESSION 584--
 
 **Session 583 findings (2026-06-09)**:
 
