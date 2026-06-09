@@ -19352,15 +19352,103 @@
       "timestamp": "2026-06-09T09:54:40Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "a8518748407e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function at 0x09D454\n\n## Context\nYou are working on a TI-84 Plus CE ROM transpila",
+      "status": "success",
+      "duration_seconds": 105.347,
+      "timestamp": "2026-06-09T11:04:46Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7c33dcd42c45",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function at 0x092FC7\n\n## Context\nYou are working on a TI-84 Plus CE ROM transpila",
+      "status": "success",
+      "duration_seconds": 115.116,
+      "timestamp": "2026-06-09T11:04:59Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "febcdd37d99c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function at 0x0992C3\n\n## Context\nYou are working on a TI-84 Plus CE ROM transpila",
+      "status": "success",
+      "duration_seconds": 120.343,
+      "timestamp": "2026-06-09T11:05:03Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "db1d1121c535",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function at 0x000138\n\n## Context\nYou are working on a TI-84 Plus CE ROM transpila",
+      "status": "success",
+      "duration_seconds": 125.715,
+      "timestamp": "2026-06-09T11:05:11Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a9509e9432cc",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Map D01D0C \u2014 Find All References to This Shared Variable\n\n## Context\nD01D0C is a RAM address",
+      "status": "success",
+      "duration_seconds": 106.094,
+      "timestamp": "2026-06-09T12:14:13Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "68bdb849995c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0021C2 \u2014 System Vector 0 Target\n\n## Context\n0x0021C2 is the target of jump table en",
+      "status": "success",
+      "duration_seconds": 118.2,
+      "timestamp": "2026-06-09T12:14:19Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f29a55f3f72d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x09D49A \u2014 NZ Branch from Type-0x5F Validator\n\n## Context\n0x09D454 is the TYPE-0x5F S",
+      "status": "completed",
+      "duration_seconds": 120.79,
+      "timestamp": "2026-06-09T12:14:24Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "54e9d68574fe",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0801D9 \u2014 First Call from Symbol Table Computation Dispatcher\n\n## Context\n0x0992C3 i",
+      "status": "success",
+      "duration_seconds": 148.208,
+      "timestamp": "2026-06-09T12:14:53Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1630,
-    "cc_to_codex": 1630,
+    "total_calls": 1638,
+    "cc_to_codex": 1638,
     "codex_to_cc": 0,
-    "completed": 1073,
+    "completed": 1074,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 471.311
+    "avg_duration_seconds": 469.595
   }
 }

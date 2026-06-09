@@ -25,7 +25,9 @@
 
 ---
 
-**Last updated**: 2026-06-09 (auto-session 587 — **★★★ 0x09D454 TYPE-0x5F SEARCH KEY VALIDATOR DECODED (31B, reads D005F9 CP 0x5F, checks D005FA non-zero + D007E0==0x46 mode gate, 3 RAM refs). ★★★ 0x0992C3 SYMBOL TABLE COMPUTATION DISPATCHER DECODED (67B, saves D0243A→D008D6, D0008A→D0008B, HL→D00687, calls 6 sub-functions with Z/NZ dispatch cascading through 0x0801D9/0x07F9FB/0x07FA07/0x07F7A8/0x08012D/0x05E2C0, returns carry on error). ★★★ 0x092FC7 LIST RECORD COPIER DECODED (20B, CALL 0x092FDD walker + LDIR 2B header to D008E6 + .SIS LD BC reload + LDIR body — variable-length record copy from list table D0150B to D008E6). ★★★ 0x092FDD LIST TABLE WALKER DECODED (12B, HL=D0150B, DEC A loop calling 0x04C90D to skip A-1 records). ★★★ 0x000138 SYSTEM JUMP TABLE IDENTIFIED (50 entries × 4B = 200B of consecutive JP addr, entry 0 → 0x0021C2, OS API vector table in low ROM). ★★★ 0x092FB1/0x092FC1 BRANCH TARGETS DECODED (0x092FB1: INC A + CALL 0x092FC7 + LD HL,D008F0 + .SIS LD DE,(D008E8) + RET; 0x092FC1: CALL 0x08384B + EX DE,HL + RET). DECODER NOTE: .SIS prefix (0x40) not handled by probe decoder — corrected via raw-byte verification. GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-09 (auto-session 588 — **★★★★ 0x000138 JUMP TABLE = OS MATH/UTILITY LIBRARY (50 vectors → 0x0021C2-0x0025D6, all pure register-to-register 24-bit arithmetic: division, multiply, shift, compare, negate — eZ80 C compiler soft-math runtime). ★★★ 0x0021C2 VECTOR 0 = HL NULL-CHECK (12B, PUSH HL/DE → LD DE,0 → SBC HL,DE → POP DE/HL → RET, sets Z if HL==0 without destroying regs). ★★★ 0x09D49A MULTI-TYPE SYMBOL TABLE LOOKUP DISPATCHER DECODED (~116B reachable: type-0xEB rewrites to 0x5D at D005F9; type-0x72/0xAA direct to 0x0846EA searcher; type≥0x62 extended path with 4 new CALLs 0x061DEF/0x061E20/0x09A39F/0x09A3D0; type<0x62 also to 0x0846EA; post-search 0x0821AE processing + 0x0801D9 type filter). ★★★ 0x0801D9 COMPUTABLE-TYPE FILTER DECODED (16B, 27 callers: accepts types 0x00/0x18/0x19/0x1C/0x20/0x21 via cascading CP + AND 0x3F, first gate in 0x0992C3 cascade — Z=1 allows computation to proceed). ★★★ D01D0C FULLY MAPPED (24 refs: 13W/7R/4A, single-byte counter/state variable in 0x092xxx symbol table + 0x060xxx display regions, paired with D01D0B 11 refs, D01D0D-D01D0E unused confirming single-byte). GOLDEN REGRESSION 26/26 PASS.**)
+
+> Previous: 2026-06-09 (auto-session 587 — 0x09D454 type-0x5F validator 31B, 0x0992C3 computation dispatcher 67B+, 0x092FC7 list record copier 20B, 0x000138 system jump table 50 entries)
 
 > Previous: 2026-06-09 (auto-session 586 — 0x0820CD descriptor buffer validator 32B, 0x0843B3 type-0x72 lookup setup 38B, 0x0229C5 event helper 38B+, 0x092F87/0x092F95 separate functions 14B+11B)
 
@@ -94,6 +96,58 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**CC session 588 (2026-06-09, auto-continuation)**:
+Picked priorities (b)-(e) from session 587 NEXT list — 4 independent ★★★ decode/map tasks.
+Dispatched 4 Codex agents in parallel (0/4 succeeded — all empty output or exit 1). All 4 completed via Sonnet fallback.
+
+(1) ★★★★ 0x000138 JUMP TABLE FULLY DECODED AS OS MATH/UTILITY LIBRARY (probe-phase588-decode-0021C2.mjs, Sonnet P1):
+- **Vector 0 (0x0021C2)**: 12 bytes. PUSH HL → PUSH DE → LD DE,0x000000 → OR A → SBC HL,DE → POP DE → POP HL → RET. Pure null-check: Z flag set if HL==0, preserves all registers.
+- **Full table (50 vectors)**: ALL targets in 0x0021C2-0x0025D6 are pure register-to-register math/utility routines with NO RAM refs and NO port I/O. This is the eZ80 C compiler's soft-math runtime library.
+- **Key vectors**: V0=null-check, V1=signed division (57B), V2-3=unsigned 24-bit division (HL/BC→DE rem HL), V4-5=IX/IY indexed byte read, V6-8=24-bit multiply, V9-12=compare/subtract extended, V13+=add/negate/shift/AND/OR/XOR, V43-44=arithmetic shift by count, V45=logical right shift, V46-47=IX/IY indexed byte write.
+- **Duplicate vectors**: V7&V8 share 0x00224C, V28&V29 share 0x0023AD, V36&V37 share 0x00245A.
+- **IY ref**: Only IY+3 in one vector. No RAM, no ports.
+- **ARCHITECTURE**: 0x000138 is NOT an OS API vector table — it's a compiler runtime math library. When 0x0229C5 calls 0x000138, it's calling the null-check utility, not an "event system call."
+
+(2) ★★★ 0x09D49A MULTI-TYPE SYMBOL TABLE LOOKUP DISPATCHER DECODED (probe-phase588-decode-09D49A.mjs, Sonnet P2):
+- **Function**: 0x09D49A-0x09D50E (~116B reachable code across multiple branch paths).
+- **Type dispatch logic**:
+  - Type 0xEB: Checks D005FA subfield; if zero → SCF+RET fail. If nonzero, REWRITES D005F9 from 0xEB to 0x5D and falls through to symbol table search.
+  - Type 0x72 or 0xAA: Direct to 0x0846EA (symbol table searcher) → 0x0821AE (post-processor) → LD A,(HL) → type filter check.
+  - Type ≥ 0x62 (not 0x72/0xAA): Extended path with D005FA subfield check, calls 0x061DEF/0x09A39F/0x061E20 or 0x09A3D0 for subfield-nonzero.
+  - Type < 0x62 (not 0x72/0xAA): Also goes to 0x0846EA searcher.
+- **Post-search path**: 0x0821AE → LD A,(HL) → JR Z to 0x09D4F6 (EX DE,HL → LD A,(DE) → CALL 0x0801D9 type filter → RET Z).
+- **RAM**: D005F8 (written), D005F9 (written for 0xEB→0x5D rewrite), D005FA (read twice for subfield checks).
+- **NEW CALL targets**: 0x0821AE, 0x061DEF, 0x061E20, 0x09A39F, 0x09A3D0 (5 unknown).
+- **KEY INSIGHT**: Type-0xEB entries are secretly type-0x5D with a subfield gate. For type-0x72 (from 0x0843B3), the path is: CP 0xEB NZ → CP 0x72 Z → CALL 0x0846EA → CALL 0x0821AE → type filter.
+
+(3) ★★★ 0x0801D9 COMPUTABLE-TYPE FILTER DECODED (probe-phase588-decode-0801D9.mjs, Sonnet P3):
+- **Function**: 0x0801D9-0x0801E8 (16 bytes).
+- **Call chain**: CALL 0x07F7C4 (AND 0x3F + zero check + delegate to 0x08021F) → RET Z (accepted). Then CP 0x1C → RET Z. Then AND 0x3F → CP 0x20 → RET Z. CP 0x21 → RET.
+- **0x07F7C4** (10B): AND 0x3F → RET Z (type 0x00 accepted) → CALL 0x08021F → RET C (rejected) → CP A → RET (Z=1, accepted).
+- **0x08021F** (9B): AND 0x3F → CP 0x1A → JR NC,reject → CP 0x18 → RET (Z=1 for 0x18, C=0 for 0x19).
+- **Accepted types** (Z=1): 0x00 (RealObj), 0x18 (AppObj), 0x19 (AppVarObj), 0x1C (TempProgObj), 0x20, 0x21.
+- **27 callers** across the ROM: 0x03E6D7, 0x03E7EE, 0x058872, 0x0595CD, 0x0631BE, 0x0684EB, 0x07BF97, 0x07BFBB, 0x0801F1, 0x082851, 0x092138, 0x099258, and 15 more.
+- **Role**: First gate in 0x0992C3 computation dispatcher cascade. Z=0 (rejected type) causes entire computation chain to abort.
+- **No RAM, no IY, no ports**: Pure register classification.
+
+(4) ★★★ D01D0C FULLY MAPPED (probe-phase588-map-D01D0C.mjs, Sonnet P4):
+- **24 total refs**: 13 WRITE (LD (D01D0C),A), 7 READ (LD A,(D01D0C)), 4 ADDR (LD HL,D01D0C).
+- **Region distribution**: 0x058xxx (1), 0x05Fxxx (1), 0x060xxx (6 writes), 0x092xxx (13 refs), 0x093xxx (3).
+- **Paired with D01D0B** (11 refs: 7R/1W/3A). Both read together at 0x092F81 (D01D0B) and 0x092F87 (D01D0C) — consecutive reads in same function.
+- **D01D0D-D01D0E have 0 refs** — confirms D01D0C is a SINGLE-BYTE variable, not part of a multi-byte structure.
+- **D01D0F** (10 refs, all ADDR) is a separate variable used as a buffer pointer in graph/display regions — NOT part of D01D0C.
+- **Hypothesis**: D01D0C is a single-byte counter or index (list record count/index), set by 0x060xxx display routines and read/updated by 0x092xxx symbol table/list record functions. The 4 ADDR loads suggest it's also accessed via pointer for INC (HL) or block operations.
+- **KEY WRITE sites**: 0x058BA4, 0x05FE4F, 0x0600AB, 0x06015A, 0x060444, 0x0605A5, 0x0606AE, 0x0609BF (8 display-area writers), 0x0922D2, 0x092B5D, 0x092B9A, 0x092DFE, 0x093005 (5 symbol-table writers).
+
+(5) CODEX: 0/4 (all empty output or exit 1 — `codex` CLI found but agents produced nothing). All 4 priorities completed via Sonnet fallback. All probes Opus-verified (exit 0, output analyzed). Golden regression 26/26 PASS.
+
+**FUNCTIONS DECODED**: 0x0021C2 (12B HL null-check, vector 0), 0x09D49A (~116B multi-type lookup dispatcher, 7 CALLs), 0x0801D9 (16B computable-type filter, 27 callers), 0x07F7C4 (10B type mask+delegate), 0x08021F (9B range check 0x18-0x19).
+**ARCHITECTURE FOUND**: 0x000138 jump table = C compiler soft-math runtime (50 vectors, pure register math). Type-0xEB = secretly type-0x5D with subfield gate.
+**RAM MAPPED**: D01D0C fully mapped (24 refs, single-byte counter/index, paired with D01D0B).
+**NEW CALL TARGETS**: 0x0821AE (post-search processor), 0x061DEF, 0x061E20, 0x09A39F, 0x09A3D0 (all in type≥0x62 extended path).
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★ DECODE 0x0821AE — post-search result processor called after 0x0846EA in the type-0x72/0xAA path. What does it do with the search result? (c) ★★★ DECODE 0x061DEF — called in the type≥0x62 extended symbol lookup path. (d) ★★★ DECODE 0x09A39F — called in the type≥0x62 extended path after 0x061DEF. (e) ★★★ MAP D01D0B — companion variable to D01D0C (11 refs), single write at 0x04563D. What is this paired byte? (f) ★★ DECODE 0x05C634 — graph fallback display manager (carried from session 583). (g) ★★ DECODE 0x023057 — graph fallback Z-path target (carried from session 583). (h) ★ IMPLEMENT PORT 0xDCA0 IN PERIPHERALS.JS — return 0x00 or configurable value. --END SESSION 588--
 
 **Session 586 findings (2026-06-09)**:
 
