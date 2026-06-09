@@ -25,7 +25,9 @@
 
 ---
 
-**Last updated**: 2026-06-09 (auto-session 588 — **★★★★ 0x000138 JUMP TABLE = OS MATH/UTILITY LIBRARY (50 vectors → 0x0021C2-0x0025D6, all pure register-to-register 24-bit arithmetic: division, multiply, shift, compare, negate — eZ80 C compiler soft-math runtime). ★★★ 0x0021C2 VECTOR 0 = HL NULL-CHECK (12B, PUSH HL/DE → LD DE,0 → SBC HL,DE → POP DE/HL → RET, sets Z if HL==0 without destroying regs). ★★★ 0x09D49A MULTI-TYPE SYMBOL TABLE LOOKUP DISPATCHER DECODED (~116B reachable: type-0xEB rewrites to 0x5D at D005F9; type-0x72/0xAA direct to 0x0846EA searcher; type≥0x62 extended path with 4 new CALLs 0x061DEF/0x061E20/0x09A39F/0x09A3D0; type<0x62 also to 0x0846EA; post-search 0x0821AE processing + 0x0801D9 type filter). ★★★ 0x0801D9 COMPUTABLE-TYPE FILTER DECODED (16B, 27 callers: accepts types 0x00/0x18/0x19/0x1C/0x20/0x21 via cascading CP + AND 0x3F, first gate in 0x0992C3 cascade — Z=1 allows computation to proceed). ★★★ D01D0C FULLY MAPPED (24 refs: 13W/7R/4A, single-byte counter/state variable in 0x092xxx symbol table + 0x060xxx display regions, paired with D01D0B 11 refs, D01D0D-D01D0E unused confirming single-byte). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-09 (auto-session 589 — **★★★ 0x0821AE POST-SEARCH RESULT VALIDATOR DECODED (11B, CALL 0x04C8A3 saves DE→D02AD7 match buffer, OR A/RET Z null check, CP 0xD0/RET C range filter, XOR A clamp ≥0xD0 — sanitizes 0x0846EA search results for 0x09D49A dispatcher). ★★★★ 0x061DEF SETJMP/COROUTINE TRAMPOLINE DECODED (56B, saves SP→D008E0, computes+pushes symbol table region sizes D0258D-D0258A and D02593-D02590, pushes return addresses 0x061DD1+0x061E27, JP (HL) to caller — cooperative context switch for extended symbol lookup). ★★★ 0x061E20 LONGJMP RESTORE (7B, POP BC + LD SP,(D008E0) + RET — unwinds 0x061DEF context). ★★★ 0x09A39F SYMBOL ADDRESS RESOLVER DECODED (~46B multi-exit: BIT 6,(IY+9) flag check, type==0x5C fast path returns D01464, generic path computes via 0x07F796 + base D0117F, BIT-clear path tail-calls 0x061D3A). ★★★ 0x09A3D0 TABLE-DRIVEN SUBFIELD RESOLVER DECODED (58B, ROM lookup tables at 0x09A415 3-byte entries + 0x09A4D5 1-byte offsets, base D1983D, bit-field merge top-2-bits from source, type-0x2A special case → 0x09A40A). ★★★ D01D0B FULLY MAPPED (11 refs: 7R/1W/3A, single-byte symbol table entry counter with dedicated INC helper 0x092279 + DEC helper 0x09229C, single write clears to 0 at 0x04563D via XOR A + RES 1,(IY+69), 9/11 refs in 0x092xxx symbol table region, paired with D01D0C). GOLDEN REGRESSION 26/26 PASS.**)
+
+> Previous: 2026-06-09 (auto-session 588 — 0x000138 jump table = C compiler soft-math runtime 50 vectors, 0x0021C2 null-check 12B, 0x09D49A multi-type lookup dispatcher ~116B, 0x0801D9 computable-type filter 16B 27 callers, D01D0C fully mapped 24 refs)
 
 > Previous: 2026-06-09 (auto-session 587 — 0x09D454 type-0x5F validator 31B, 0x0992C3 computation dispatcher 67B+, 0x092FC7 list record copier 20B, 0x000138 system jump table 50 entries)
 
@@ -96,6 +98,69 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**CC session 589 (2026-06-09, auto-continuation)**:
+Picked priorities (b)-(e) from session 588 NEXT list — 4 independent ★★★ decode/map tasks.
+Dispatched 4 Codex agents in parallel (P1 exit 1, P2/P3 exit 0 but broken decoder API — inst.asm undefined, inst.operands nonexistent, P4 exit 1). All 4 completed via Sonnet fallback (corrected agents used hand-rolled disassembler from probe-phase588-decode-0021C2.mjs instead of broken decodeInstruction .asm field). **NOTE**: decodeInstruction() from ez80-decoder.js returns {pc, length, nextPc, tag, target, fallthrough, terminates, mode, modePrefix} — NO .asm field. All probes must use the hand-rolled disassembler pattern from session 588 probes.
+
+(1) ★★★ 0x0821AE POST-SEARCH RESULT VALIDATOR DECODED (probe-phase589-decode-0821AE.mjs, Sonnet P1):
+- **Function**: 0x0821AE-0x0821B8 (11 bytes, 7 instructions).
+- **Semantics**: CALL 0x04C8A3 (saves DE→D02AD7 match buffer, loads A from D02AD9) → OR A / RET Z (null check) → CP 0xD0 / RET C (values 0x01-0xCF pass through) → XOR A / RET (clamp ≥0xD0 to zero).
+- **Purpose**: Post-search result sanitizer. After 0x0846EA symbol table searcher finds an entry, 0x0821AE saves the match coordinates (DE→D02AD7 last-match buffer), extracts a result byte, and validates: 0x01-0xCF valid, 0x00 or ≥0xD0 treated as "not found" (A=0). The 0xD0 threshold filters out RAM-address-space type codes.
+- **CALL targets**: 0x04C8A3 (match record store — known from session 585, 16B, saves DE to D02AD7-D02AD9).
+- **RAM**: D02AD7 (via 0x04C8A3), D02AD9 (via 0x04C8A3).
+- **No direct RAM, no IY, no ports** in 0x0821AE itself.
+
+(2) ★★★★ 0x061DEF SETJMP/COROUTINE TRAMPOLINE DECODED (probe-phase589-decode-061DEF.mjs, Sonnet P2):
+- **Function**: 0x061DEF-0x061E1F (56 bytes). Falls through into 0x061E20.
+- **Semantics**: POP DE (return addr) → PUSH HL → LD HL,(D008E0) / PUSH HL (save old SP) → LD BC,(D0258A) / LD HL,(D0258D) / SBC HL,BC / PUSH HL (symbol table region 1 size) → LD BC,(D02590) / LD HL,(D02593) / SBC HL,BC / PUSH HL (region 2 size) → PUSH 0x061DD1 (cleanup handler) → PUSH 0x061E27 (resume point) → LD (D008E0),SP (save continuation stack) → EX DE,HL / JP (HL) (jump to caller's target).
+- **Purpose**: Cooperative context switch / setjmp for extended symbol lookup. Saves full symbol table state (two region sizes + old SP) and two return addresses, then jumps to an address passed by the caller. D008E0 is the saved SP identified in the human session as critical for the home-screen longjmp fix.
+- **RAM**: D008E0 (continuation SP — same as human session finding #4), D0258A, D0258D (symbol table region 1 bounds), D02590, D02593 (region 2 bounds).
+
+(3) ★★★ 0x061E20 LONGJMP RESTORE DECODED (probe-phase589-decode-061DEF.mjs, Sonnet P2):
+- **Function**: 0x061E20-0x061E26 (7 bytes). Overlaps with tail of 0x061DEF.
+- **Semantics**: POP BC → LD SP,(D008E0) → RET.
+- **Purpose**: Unwinds 0x061DEF context — restores SP from saved frame, returns to resume point (0x061E27 pushed by 0x061DEF).
+- **RAM**: D008E0.
+- **KEY INSIGHT**: The ED-prefix decode in the hand-rolled disassembler needed a mask fix (0xCF→0xC7) to correctly decode LD BC,(nn) and LD SP,(nn). Corrected P2 agent fixed this.
+
+(4) ★★★ 0x09A39F SYMBOL ADDRESS RESOLVER DECODED (probe-phase589-decode-09A39F.mjs, Sonnet P3):
+- **Function**: 0x09A39F-0x09A3CF (~46 bytes, multi-exit with 4 paths).
+- **Path A (type==0x5C fast path)**: BIT 6,(IY+9) → if clear, JP 0x061D3A. CP 0x5C → if equal, LD HL,D01464 / RET.
+- **Path B (generic)**: LD HL,0 / LD L,A → CALL 0x07F796 (multiply/table lookup) → LD DE,D0117F / ADD HL,DE → RET. Returns computed RAM pointer.
+- **Path C (bit 6 clear)**: JP 0x061D3A (tail call).
+- **Path D (0x09A3BD)**: PUSH AF / CALL 0x07FEB6 / POP AF → CALL 0x09A3A5 (self re-entry at CP 0x5C) → EX DE,HL / JP 0x07FA0D.
+- **Purpose**: Given type byte in A, returns RAM pointer to symbol data. Type 0x5C (RealObj) has hardcoded fast path to D01464. Others compute offset via 0x07F796 + base D0117F.
+- **RAM**: D01464 (type-0x5C data area), D0117F (base for computed offsets).
+- **CALL targets**: 0x07F796, 0x07FEB6, 0x07FA0D, 0x061D3A, 0x09A3A5 (self).
+- **IY**: IY+9 bit 6 tested.
+
+(5) ★★★ 0x09A3D0 TABLE-DRIVEN SUBFIELD RESOLVER DECODED (probe-phase589-decode-09A39F.mjs, Sonnet P3):
+- **Function**: 0x09A3D0-0x09A409 (58 bytes).
+- **Semantics**: PUSH AF → LD HL,0x09A415 (3-byte ROM table) → compute A*3 → LD HL,(HL) (24-bit indirect) → POP AF → CP 0x2A → JR Z,0x09A40A (special case). Otherwise: second table 0x09A4D5 (1-byte offsets) → offset into base D1983D → bit-field merge (AND 0xC0 from source, AND 0xBF on dest, OR merge) → returns A = low 6 bits (AND 0x3F).
+- **Purpose**: Subfield accessor for subfield≠0 in extended symbol lookup. Uses two ROM lookup tables to find RAM location within D1983D-based storage. Performs packed type+value bit-field manipulation.
+- **RAM**: D1983D (base for offset computation).
+- **ROM tables**: 0x09A415 (3-byte entries), 0x09A4D5 (1-byte offsets).
+- **Relationship to 0x09A39F**: Separate functions (34-byte gap), no shared calls, completely independent logic.
+
+(6) ★★★ D01D0B FULLY MAPPED (probe-phase589-map-D01D0B.mjs, Sonnet P4):
+- **11 total refs**: 7 READ, 1 WRITE, 3 ADDR. Matches session 588's count.
+- **Single write at 0x04563D**: XOR A → LD (D01D0B),A — zeroed on init, followed by RES 1,(IY+69).
+- **Dedicated helpers**: INC at 0x092279 (LD HL,D01D0B → INC (HL) → RET), DEC at 0x09229C (LD HL,D01D0B → DEC (HL) → RET).
+- **Paired comparisons with D01D0C**: At 0x092D7D and 0x092F81, pattern is LD A,(D01D0B) → CP (HL) where HL→D01D0C. Confirms D01D0B is compared against D01D0C.
+- **Region distribution**: 9/11 refs in 0x092xxx (symbol table), 1 in 0x058xxx, 1 in 0x045xxx.
+- **D01D0A has 0 refs, D01D0D has 0 refs** — confirms isolated 2-byte pair D01D0B+D01D0C.
+- **Hypothesis**: D01D0B = count/limit byte, D01D0C = current index byte. The CP comparisons confirm a "current vs. total" or "index vs. limit" relationship.
+
+(7) CODEX: 0/4 succeeded (P1 exit 1, P2/P3 exit 0 but broken — inst.asm undefined for all opcodes, inst.operands nonexistent; P4 exit 1). All 4 priorities completed via Sonnet fallback with corrected disassembler. All probes Opus-verified (exit 0, output analyzed). Golden regression 26/26 PASS.
+
+**FUNCTIONS DECODED**: 0x0821AE (11B post-search validator), 0x061DEF (56B setjmp/coroutine trampoline), 0x061E20 (7B longjmp restore), 0x09A39F (~46B symbol address resolver, 4 paths, 5 CALLs), 0x09A3D0 (58B table-driven subfield resolver, 2 ROM tables).
+**ARCHITECTURE FOUND**: 0x061DEF/0x061E20 = cooperative context switch mechanism for extended symbol lookup — saves/restores SP via D008E0 (same mechanism as human session setjmp/longjmp finding). Type-0x5C fast path returns fixed D01464. Subfield accessor uses packed bit-field merge with D1983D base.
+**RAM MAPPED**: D01D0B fully mapped (11 refs, count/limit byte paired with D01D0C index byte, dedicated INC/DEC helpers). NEW RAM: D01464 (type-0x5C data), D0117F (symbol offset base), D1983D (subfield storage base), D0258A/D0258D/D02590/D02593 (symbol table region bounds used by setjmp).
+**NEW CALL TARGETS**: 0x07F796 (multiply/table lookup for address computation), 0x07FEB6 (helper in path D), 0x07FA0D (tail call in path D), 0x061D3A (bit-6-clear path), 0x09A40A (type-0x2A special case).
+**DECODER FIX**: ED-prefix mask 0xCF→0xC7 needed for LD rp,(nn)/LD (nn),rp in the hand-rolled disassembler. Future probes should use the corrected version.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★ DECODE 0x07F796 — multiply/table lookup called by 0x09A39F generic path for symbol address computation. (c) ★★★ DECODE 0x061D3A — target of JP when bit 6 of (IY+9) is clear in 0x09A39F. (d) ★★★ DECODE 0x07FEB6 — helper called in 0x09A39F path D before self-re-entry. (e) ★★★ DECODE 0x09A40A — type-0x2A special case in 0x09A3D0 subfield resolver. (f) ★★ DECODE 0x05C634 — graph fallback display manager (carried from session 583). (g) ★★ DECODE 0x023057 — graph fallback Z-path target (carried from session 583). (h) ★ IMPLEMENT PORT 0xDCA0 IN PERIPHERALS.JS — return 0x00 or configurable value. (i) ★ FIX ED-PREFIX MASK IN HAND-ROLLED DISASSEMBLER — future probes should use 0xC7 not 0xCF for LD rp,(nn) group. --END SESSION 589--
 
 **CC session 588 (2026-06-09, auto-continuation)**:
 Picked priorities (b)-(e) from session 587 NEXT list — 4 independent ★★★ decode/map tasks.
