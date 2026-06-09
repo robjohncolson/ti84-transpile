@@ -25,7 +25,9 @@
 
 ---
 
-**Last updated**: 2026-06-09 (auto-session 585 — **★★★ 0x08011F SYMBOL TABLE TYPE-CHECK GUARD DECODED (7B, 3 insns, 11 callers: loads D005F9 type byte, CP 0x5D, returns Z if type==0x5D — gates early-exit path 0x083833 in symbol table searcher 0x0846EA. Type 0x5D triggers special-case handler that sets A=1, calls 0x0820CD, loads DE from D0259A bypassing normal backward search). ★★★ 0x082BE2 SYMBOL TABLE RECORD REWIND DECODED (7B, 7 insns, 16 callers: 6×DEC HL + RET = HL-=6 pointer rewind — CONFIRMS 6-BYTE SYMBOL TABLE RECORDS, not 3-byte as session 584 stated. The AND 0x3F type mask is applied by caller 0x0846EA after this call, not inside). ★★★ 0x04C885 MATCH RECORD STORE DECODED (16B, 5 insns, 6 callers: stores B+DE as 3-byte record at D02AD7-D02AD9 then reloads DE — pure leaf utility. D02AD7-D02AD9 is the "last matched record data" buffer used by 0x0846EA after symbol table match). ★★★ TYPE-0x09 EVENTS TRACED (8 callers, ALL in 0x0225xx-0x0229xx OS core event subsystem: first 2 callers at 0x02262C/0x02265D do LDIR copies of 9B to D005F8 and 65B to D02510 around event post; 6 remaining callers use IX-relative stack-local buffers with no LDIR; callers 0x022896/0x0228E3 call helpers 0x092F87/0x092F95 before posting; caller 0x022765 processes token bytes 0xF5/0xF6 in DJNZ loop storing 0x2E/0x2F — likely minus/decimal editing). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-09 (auto-session 586 — **★★★ 0x0820CD DESCRIPTOR BUFFER VALIDATOR DECODED (32B, CPIR search of 8 bytes at D005F9 for zero byte, validates type-0x5D descriptor before D0259A shortcut path, 20 callers). ★★★ 0x0843B3 TYPE-0x72 LOOKUP SETUP DECODED (38B, writes 0x72 to D005F9 search key, calls 0x09D454 + 0x0992C3, stores to D0243A, computes D008D6-DE difference). ★★★ 0x0229C5 EVENT HELPER DECODED (38B+, dispatches on D008EE value 1/2, calls 0x000138 system routine, decoder had CP-immediate bug — corrected in analysis). ★★★ 0x092F87/0x092F95 SEPARATE ADJACENT FUNCTIONS DECODED (14B + 11B, NOT overlapping, both read D01D0C — 0x092F87 calls 0x092FC7 helper and returns D008F0 pointer, 0x092F95 dispatches on D01D0C zero/non-zero). 5 NEW RAM ADDRESSES MAPPED (D0243A, D008D6, D008EE, D01D0C, D008F0). GOLDEN REGRESSION 26/26 PASS.**)
+
+> Previous: 2026-06-09 (auto-session 585 — **★★★ 0x08011F SYMBOL TABLE TYPE-CHECK GUARD DECODED (7B, 3 insns, 11 callers: loads D005F9 type byte, CP 0x5D, returns Z if type==0x5D — gates early-exit path 0x083833 in symbol table searcher 0x0846EA. Type 0x5D triggers special-case handler that sets A=1, calls 0x0820CD, loads DE from D0259A bypassing normal backward search). ★★★ 0x082BE2 SYMBOL TABLE RECORD REWIND DECODED (7B, 7 insns, 16 callers: 6×DEC HL + RET = HL-=6 pointer rewind — CONFIRMS 6-BYTE SYMBOL TABLE RECORDS, not 3-byte as session 584 stated. The AND 0x3F type mask is applied by caller 0x0846EA after this call, not inside). ★★★ 0x04C885 MATCH RECORD STORE DECODED (16B, 5 insns, 6 callers: stores B+DE as 3-byte record at D02AD7-D02AD9 then reloads DE — pure leaf utility. D02AD7-D02AD9 is the "last matched record data" buffer used by 0x0846EA after symbol table match). ★★★ TYPE-0x09 EVENTS TRACED (8 callers, ALL in 0x0225xx-0x0229xx OS core event subsystem: first 2 callers at 0x02262C/0x02265D do LDIR copies of 9B to D005F8 and 65B to D02510 around event post; 6 remaining callers use IX-relative stack-local buffers with no LDIR; callers 0x022896/0x0228E3 call helpers 0x092F87/0x092F95 before posting; caller 0x022765 processes token bytes 0xF5/0xF6 in DJNZ loop storing 0x2E/0x2F — likely minus/decimal editing). GOLDEN REGRESSION 26/26 PASS.**)
 
 > Previous: 2026-06-09 (auto-session 584 — event system architecture resolved, 0x080D1D key-value writer 16B, 0x0846EA symbol table searcher 110B, port 0xDCA0 mapped)
 
@@ -90,6 +92,46 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**Session 586 findings (2026-06-09)**:
+
+(1) ★★★ 0x0820CD ALTERNATE SYMBOL TABLE PATH DECODED (probe-phase586-decode-0820CD.mjs, Sonnet P1):
+- **Function**: 0x0820CD-0x0820EC (32 bytes).
+- **Semantics**: PUSH HL → LD HL,D005F9 → LD A,(HL) → SUB 0x5D → LD D,A → LD BC,8 → XOR A → CPIR → POP HL → conditional returns.
+- **Purpose**: Searches the 8-byte descriptor area starting at D005F9 for a zero byte using CPIR (block search). Saves (type - 0x5D) in D as a type-relative offset. Returns A=0x08 if no zero found (RET NZ), otherwise computes position of zero byte and returns A=1 with D=type offset if exactly one non-zero byte found. Multiple conditional RET NZ gates.
+- **Context**: Called by the early-exit path at 0x083833 when 0x08011F detects type==0x5D. This validates the descriptor buffer content before the alternate symbol table lookup using D0259A.
+- **No subcalls**: Pure computation on the descriptor buffer.
+
+(2) ★★★ 0x0843B3 TYPE-0x72 LOOKUP SETUP DECODED (probe-phase586-decode-0843B3.mjs, Sonnet P2):
+- **Function**: 0x0843B3-0x0843D8 (38 bytes).
+- **Semantics**: LD IY,D00080 → LD HL,0x000072 → LD (D005F9),HL → CALL 0x09D454 → JR C,0x0843D9 → CALL 0x0992C3 → JR C,0x0843D9 → LD (D0243A),DE → LD HL,(D008D6) → SBC HL,DE → JR 0x0843DD.
+- **Purpose**: Sets up a symbol table search for type 0x72 by writing 0x72 to D005F9 (search key type). Calls two sub-functions (0x09D454 and 0x0992C3) with carry-flag error checks. On success, stores DE result to D0243A and computes difference HL = D008D6 - DE.
+- **KEY INSIGHT**: This is NOT a generic forward scanner. It's a specific type-0x72 entry lookup (type 0x72 = application/AppVar?). D0243A and D008D6 are new RAM addresses not previously mapped.
+- **CALL targets**: 0x09D454, 0x0992C3 (both need decoding to understand full behavior).
+
+(3) ★★★ 0x0229C5 EVENT HELPER DECODED WITH DECODER CAVEATS (probe-phase586-decode-0229C5.mjs, Sonnet P3):
+- **Function**: 0x0229C5-0x0229E9+ (38+ bytes, ends with JR 0x022A45).
+- **Semantics (corrected for decoder bugs)**: LD A,(D008EE) → CP 0x02 → JR Z,0x0229D0 → CP 0x01 → RET NZ → [fall-through for ==1] → 0x0229D0: RES 0,B → DEC HL × 2 → load 16-bit from (HL) into DE → EX DE,HL → CALL 0x000138 → RET Z → LD A,(DE) → CP 0xC1 → JR NZ,0x0229EB → LD A,0x06 → JR 0x022A45.
+- **DECODER BUGS**: Probe's hand-rolled decoder doesn't handle CP immediate (opcode 0xFE) correctly — shows them as DB 0xFE. The corrected interpretation above is based on raw bytes.
+- **Purpose**: Dispatches on D008EE value (1 or 2). For value 2, does RES 0,B then reads a 16-bit pointer from (HL-2), calls 0x000138 (likely a system routine), checks result, and on match sets A=0x06 and exits to 0x022A45.
+- **RAM**: D008EE (dispatch selector).
+- **CALL targets**: 0x000138 (system routine, needs investigation).
+
+(4) ★★★ 0x092F87 AND 0x092F95 DECODED — SEPARATE ADJACENT FUNCTIONS (probe-phase586-decode-092F87.mjs, Sonnet P4):
+- **0x092F87**: 14 bytes, 5 instructions. LD A,(D01D0C) → INC A → CALL 0x092FC7 → LD HL,0xD008F0 → RET. Reads D01D0C, increments it, calls helper 0x092FC7, returns pointer to D008F0.
+- **0x092F95**: 11 bytes, 4 instructions. LD A,(D01D0C) → OR A → JP Z,0x092FC1 → JR 0x092FB1. Reads same D01D0C, branches on zero/non-zero to two different targets.
+- **NO OVERLAP**: Despite being 14 bytes apart, they are separate functions sharing only the D01D0C RAM address.
+- **D01D0C**: Shared state variable read by both — possibly a counter or mode flag. Not previously mapped.
+- **CALL targets from 0x092F87**: 0x092FC7 (helper). **Branch targets from 0x092F95**: 0x092FC1 (zero path), 0x092FB1 (non-zero path).
+- **KEY CORRECTION**: Session 585 hypothesized these were "math/computation helpers" — they are NOT. They are small dispatcher/setup functions reading D01D0C.
+
+(5) CODEX: 0/4 (all failed — `codex` CLI not found on this machine). All 4 priorities completed via Sonnet fallback. All probes Opus-verified (exit 0, output analyzed against raw bytes). Golden regression 26/26 PASS.
+
+**FUNCTIONS DECODED**: 0x0820CD (32B descriptor buffer validator, CPIR search), 0x0843B3 (38B type-0x72 lookup setup, 2 CALLs), 0x0229C5 (38B+ event helper dispatcher on D008EE), 0x092F87 (14B D01D0C reader + helper call), 0x092F95 (11B D01D0C zero-check dispatcher).
+**NEW RAM MAPPED**: D0243A (written by 0x0843B3), D008D6 (read by 0x0843B3), D008EE (dispatch selector for 0x0229C5), D01D0C (shared by 0x092F87/0x092F95), D008F0 (pointer returned by 0x092F87).
+**ARCHITECTURE**: Type-0x5D alternate path validated — 0x0820CD uses CPIR to validate descriptor buffer before using D0259A shortcut. Type-0x72 is a distinct symbol type with its own lookup setup (0x0843B3).
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★ DECODE 0x09D454 — first call from 0x0843B3 type-0x72 lookup. (c) ★★★ DECODE 0x0992C3 — second call from 0x0843B3 type-0x72 lookup. (d) ★★★ DECODE 0x092FC7 — helper called by 0x092F87 after loading D01D0C. (e) ★★★ DECODE 0x000138 — system routine called by 0x0229C5 event helper. (f) ★★★ MAP D01D0C — find all refs to understand this shared variable (0x092F87 and 0x092F95 both read it). (g) ★★ DECODE 0x05C634 — graph fallback display manager (carried from session 583/585). (h) ★★ DECODE 0x023057 — graph fallback Z-path target (carried from session 583/585). (i) ★ IMPLEMENT PORT 0xDCA0 IN PERIPHERALS.JS — return 0x00 or configurable value. --END SESSION 586--
 
 **Session 585 findings (2026-06-09)**:
 

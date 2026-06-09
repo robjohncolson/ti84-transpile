@@ -19264,15 +19264,103 @@
       "timestamp": "2026-06-09T07:34:57Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "d01212e6030e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 585 \u2014 P3: Decode 0x04C885 (match record processor)\n\n## Context\nYou are working on a T",
+      "status": "success",
+      "duration_seconds": 68.889,
+      "timestamp": "2026-06-09T08:43:24Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a0ebdbc2b4d7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 585 \u2014 P4: Trace type-0x09 event callers\n\n## Context\nYou are working on a TI-84 Plus C",
+      "status": "success",
+      "duration_seconds": 69.002,
+      "timestamp": "2026-06-09T08:43:26Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a221e6203a1f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 585 \u2014 P1: Decode 0x08011F (symbol table pre-check)\n\n## Context\nYou are working on a T",
+      "status": "success",
+      "duration_seconds": 92.299,
+      "timestamp": "2026-06-09T08:43:44Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b94f9646d60f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 585 \u2014 P2: Decode 0x082BE2 (type mask helper)\n\n## Context\nYou are working on a TI-84 P",
+      "status": "completed",
+      "duration_seconds": 98.412,
+      "timestamp": "2026-06-09T08:43:52Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ad757370acc6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0229C5 \u2014 event subsystem helper called before type-0x09 event posting\n\n## Context\nY",
+      "status": "success",
+      "duration_seconds": 113.354,
+      "timestamp": "2026-06-09T09:54:24Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "45752c3bd4c5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0843B3 \u2014 called between type-0x09 LDIR event posts\n\n## Context\nYou are working on a",
+      "status": "success",
+      "duration_seconds": 119.32,
+      "timestamp": "2026-06-09T09:54:28Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "bfdb494ee943",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x0820CD \u2014 alternate symbol table path for type-0x5D symbols\n\n## Context\nYou are work",
+      "status": "completed",
+      "duration_seconds": 128.822,
+      "timestamp": "2026-06-09T09:54:36Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e3675772b99c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode 0x092F87 and 0x092F95 \u2014 math/computation helpers called before type-0x09 event postin",
+      "status": "complete",
+      "duration_seconds": 127.857,
+      "timestamp": "2026-06-09T09:54:40Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1622,
-    "cc_to_codex": 1622,
+    "total_calls": 1630,
+    "cc_to_codex": 1630,
     "codex_to_cc": 0,
-    "completed": 1071,
+    "completed": 1073,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 473.132
+    "avg_duration_seconds": 471.311
   }
 }
