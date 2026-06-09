@@ -29,10 +29,19 @@
 > 3. **Driving the home repaint `0x058241` (cxMain pre-handler) reaches CoorMon** (`0x0582B8`→`0x08BF22`) **but spins forever** in hot loop `0x082be2`↔`0x084711` (~123K-195K iters). `0x062055` cold does NOT write D007E0=0x40 (takes the early gate path back to idle).
 > 4. ★★★★★ **ROOT CAUSE: the spin is the SYMBOL-TABLE (VAT) SEARCHER `0x0846EA`** (loop body `0x084711`, rewind `0x082BE2` HL-=6, 235 callers). Because the VAT boundary pointers are all 0, the search walks RAM forever instead of terminating. **Forcing the VAT pointers to 0xD3FFFF (empty VAT) → search terminates in 0 iters → CoorMon proceeds and WRITES VRAM** (black 0→22525). This is the first time OS code rendered to the home screen via its own path. **HOWEVER** the output is GARBLED (solid black band rows 0-71 + an 0xAA52 color region, not recognizable text) because only the boundary was faked — the VAT *contents* and other OS data structures are not real.
 > 5. **CONCLUSION (supersedes the iteration-2 "populator/display-stack" framing): the blocker is OS RAM/VAT/system-variable INITIALIZATION, not a single entry point.** The shortcut boot (`0x000000`→`0x08C331`→`0x0802B2`→`0x0019be`) reaches idle but never runs the OS's memory/VAT init, so every OS routine that touches the VAT runs away. **NEXT STEP: find and run the real OS VAT/RAM/system-var init** (who normally writes valid values to D02590/D0259A/D0259D — a `_MemClear`/`InitVAT`-equivalent stage missing between `0x0802B2` and the event loop). Then re-drive `0x058241` and expect a clean home-screen render; then deliver the key via the timer ISR for the round-trip.
+>
+> **UPDATE — ITERATIONS 6-8 (2026-06-09, human session — ★★★ STATUS BAR RENDERS via OS code once VAT is initialized; body/cursor still open).** Probes: `probe-meminit-paint.mjs`, `probe-home-structure.mjs`, `probe-populator-vat.mjs`.
+> 1. ★★★ **OS memory/VAT init identified: `MEM_INIT` @ `0x09DEE0`** (ROM bytes CONFIRMED `21 81 a8 d1 22 87 25 d0 22 8a 25 d0`...; matches phase25w disasm). Sets `D02587`/`D0258A`/`D0258D`/`D025A0`=**0xD1A881** (tempMem/FPSbase/FPS/newDataPtr, low user-mem base) and `D0259A`/`D02590`/`D02593`/`D0259D`=**0xD3FFFF** (pTemp/OPBase/OPS/progPtr, high VAT top), heap size → `D025C5`. Called from `0x09DD62` (inside `0x09DD14`). Our shortcut boot never runs it → VAT all-zero → runaway symbol search.
+> 2. **Running `0x09DEE0` cold does NOT execute the writes** (runFrom from that address fell through to idle, pointers stayed 0 — block-entry/lift limitation; the address is mid-block). WORKAROUND: surgically seed the 8 pointers (+ D025C5) with the disasm values.
+> 3. ★★★ **MILESTONE: correct VAT + `D007E0`=0x40 + timer on → driving home repaint `0x058241` paints a CLEAN STATUS BAR.** Color **0x52AA** (CE blue-gray), rows 0-29: solid bars rows 0-1 & 12-29, **TEXT/glyph pattern in rows 2-11** (partial fill 199-231/320), blank white body below (8549 non-white px). FIRST OS-path structured render from real state (golden regression hand-seeds its text; this is the OS drawing it). The iteration-5 garbled black band was an ARTIFACT of WRONG VAT values (FPSbase/FPS forced to 0xD3FFFF instead of 0xD1A881) — correct values fix it.
+> 4. **The home BODY populator `0x044D3F` still does NOT populate** the edit context: editCursor `D0231A`/`D0243A` stay 0 in every variant (no-VAT / VAT / VAT+paint-first / VAT+MathPrint). With VAT it runs to idle (no populate); driven after a paint-first it crashes (`missing_block 0x800001`). So the entry line + cursor + edit context is a SEPARATE remaining blocker, NOT fixed by VAT init (still the iteration-2 problem: needs the proper live caller chain, not standalone).
+> 5. **NEXT:** (a) the BODY/edit-context — find how the home screen builds its entry line + cursor (cursor populator path, MathPrint vs Classic; `0x044D3F` needs its proper live caller chain). (b) Optionally drive the real MEM_INIT caller `0x09DD62`/`0x09DD14` for a fully-correct VAT incl side effects. (c) Then the keypress round-trip: with status bar + body live, deliver the key via the timer ISR (vector 0x0038) and watch `2` reach the entry line. **Quick demo available now**: boot → seed VAT (8 pointers) → drive `0x058241` → status bar renders.
 
 ---
 
-**Last updated**: 2026-06-09 (auto-session 592 — **★★★ 0x07FD4A DESCRIPTOR FIELD CHECK DECODED (6B: LD A,(D005FA)/AND A/RET — tests descriptor byte +2 for zero, Z=bail, 120 callers ROM-wide — massively-used symbol table primitive). ★★★ 0x07F7BD PRIMARY TYPE READER DECODED (7B: LD A,(D005F8)/AND 0x3F/RET — reads+masks first byte of primary descriptor buffer, 197 callers ROM-wide — THE most-called symbol table utility). ★★★ 0x07F98B SHADOW-TO-SECONDARY COPY DECODED (6B stub: LD DE,D0063A/JR 0x07F974 → 11×LDI/RET — copies 11-byte shadow descriptor D00603→D0063A, 2 callers; shared copy block 0x07F974 has 13 callers). ★★★ 0x07CFA7 MULTI-HELPER RESOLVE ORCHESTRATOR DECODED (41B: 8 CALL targets 0x07CF9D/0x07FE9C/0x07F7A4/0x07FE5A/0x07F16C/0x07C8B7/0x07F7D6/0x07CF8E, PUSH AF/POP AF save, RET NZ/JP 0x07FE24 conditional, 7 callers — intermediate resolver step in symbol table subsystem). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-09 (auto-session 593 — **★★★ 0x07F8FE SECONDARY-TO-SHADOW COPY DECODED (6B: LD DE,D00603/JR 0x07F974 — copies HL→D00603 via shared 11×LDI block, called with HL=D0063A from resolver = secondary shadow→shadow writeback, 3 callers). ★★★ 0x07F7A4 LOAD-AND-CLASSIFY PREAMBLE DECODED (4B: LD A,(D005F8) — 4-byte preamble that falls through into type classifier 0x07F7A8, 25 callers; graduated API: 0x07F7A4 load+classify / 0x07F7A8 classify-only 62 callers / 0x07F7BD read-only 197 callers). ★★★★ 0x05C634 MASTER DISPLAY DISPATCHER DECODED (~257B: 40 callers, checks 22 IY flag locations across 14 unique IY offsets, 11 CALL targets including 0x0A1799 rasterizer as DEFAULT path, mode dispatch via D007E0/D00824/IY+0x0D/IY+0x51/IY+0x18/IY+0x44, graph path via 0x06F7E4, split-screen via 0x05C706). ★★★ 0x023057 GRAPH STACK FRAME + IY+0x4E GUARD DECODED (60B: PUSH IX/LD IX,0/ADD IX,SP frame, CALL 0x000578 OS check, BIT 3/4 (IY+0x4E) guard — bails to epilogue if either bit set, 1 caller from 0x06D050). GOLDEN REGRESSION 26/26 PASS.**)
+
+> Previous: 2026-06-09 (auto-session 592 — 0x07FD4A descriptor field check 6B 120 callers, 0x07F7BD primary type reader 7B 197 callers, 0x07F98B shadow→secondary copy 6B, 0x07CFA7 multi-helper orchestrator 41B 7 callers)
 
 > Previous: 2026-06-09 (auto-session 591 — 0x07F7A8 type classifier 21B 62 callers, 0x07FEE1 search dispatcher 20B, 0x07FD30 11-byte buffer swap 20B 72 callers, 0x07FEFC type-gated resolver 59B)
 
@@ -109,6 +118,67 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**CC session 593 (2026-06-09, auto-continuation)**:
+Picked priorities (b) 0x07F8FE, (d) 0x07F7A4, (h) 0x05C634, (i) 0x023057 from session 592 NEXT list — 4 independent decode tasks. Note: session 592 listed (c) 0x07CF9D, (e) 0x07F16C, (f) 0x07C8B7, (g) 0x07FE9C as priorities but all were ALREADY DECODED in sessions 530-533. Substituted (h) and (i) which were genuinely undecoded.
+Dispatched 4 Codex agents (P1/P2 exit 0, P3/P4 exit 1) + 4 proactive Sonnet fallbacks. Sonnet P3/P4 delivered for Codex failures. All probes Opus-verified (exit 0, raw bytes confirmed). Codex P1/P2 created working probes; Sonnet P1-P4 all produced working probes independently.
+
+(1) ★★★ 0x07F8FE SECONDARY-TO-SHADOW COPY DECODED (probe-phase593-decode-07F8FE.mjs, Codex P1 + Sonnet P1):
+- **Function**: 0x07F8FE-0x07F903 (6 bytes). Raw bytes: 11 03 06 D0 18 70.
+- **Semantics**: LD DE,D00603 (shadow descriptor buffer) → JR 0x07F974 (shared 11×LDI block copy).
+- **Purpose**: With HL=D0063A from caller (resolver 0x07FEFC), copies 11 bytes from secondary shadow buffer → shadow descriptor buffer. This is the "writeback" step at the end of a resolve iteration: after the orchestrator 0x07CFA7 modifies descriptors, the resolver snapshots the result back from D0063A to D00603.
+- **CONFIRMS resolve loop cycle**: shadow→secondary snapshot (0x07F98B, session 592), orchestrator runs (0x07CFA7), secondary→shadow writeback (0x07F8FE), loop back.
+- **Part of multi-entry-point copy dispatcher**: 0x07F8FE is one of ~18 entry points in the 0x07F8xx-0x07F9xx region, each setting DE to a different descriptor buffer slot, all sharing the 11×LDI block at 0x07F974.
+- **6-slot descriptor buffer array** at 11-byte stride: D005F8, D00603, D0060E, D00619, D00624, D0062F, D0063A (7 slots including secondary shadow).
+- **3 callers**: 0x07FF32, 0x09D039, 0x0B5CC0.
+- **RAM**: D00603 (write destination via DE).
+
+(2) ★★★ 0x07F7A4 LOAD-AND-CLASSIFY PREAMBLE DECODED (probe-phase593-decode-07F7A4.mjs, Codex P2 + Sonnet P2):
+- **Function**: 0x07F7A4-0x07F7A7 (4 bytes). Raw bytes: 3A F8 05 D0.
+- **Semantics**: LD A,(D005F8) — loads the first byte of the primary descriptor buffer into A.
+- **Falls through** directly into 0x07F7A8 (type classifier, 21B decoded in session 591). No RET/JP/JR between them.
+- **Combined function 0x07F7A4-0x07F7BC**: LD A,(D005F8) → AND 0x3F → CP 0x0C/RET Z → CP 0x1B/RET Z → CP 0x1D range check → CP 0x20 range check → CP A/RET (self-compare forces Z=1 for accepted types).
+- **Graduated API confirmed**: three entry points into the same type-reading logic:
+  - 0x07F7A4 (load + classify): 25 callers — when A not yet loaded
+  - 0x07F7A8 (classify only): 62 callers — when A already contains descriptor byte
+  - 0x07F7BD (read only, no classify): 197 callers — just reads type with mask
+- **RAM**: D005F8 (read-only).
+
+(3) ★★★★ 0x05C634 MASTER DISPLAY DISPATCHER DECODED (probe-phase593-decode-05C634.mjs, Sonnet P3):
+- **Function**: 0x05C634-0x05C734 (~257 bytes). Massive multi-branch display update dispatcher.
+- **40 callers** — one of the most heavily called display functions in the ROM. Callers span: graph display (0x06Cxxx-0x06Exxx), key input (0x02xxxx), editors (0x05Axxx), statistics (0x0B0xxx-0x0BCxxx).
+- **Entry guard**: RES 2,(IY+0x0C) → BIT 5,(IY+0x0D) / BIT 3,(IY+0x0C) — skips main body if both clear.
+- **Graph-active path**: Checks IY+0x01 bit 4, IY+0x15 bit 1, IY+0x35 bit 3, IY+0x4A bit 0. Calls 0x04E950, 0x0239E3, 0x0286D0.
+- **Mode dispatch** (main body): Writes 0x23 to D00594, then cascading checks:
+  - IY+0x51 bit 0 → CALL 0x0A8ADA
+  - IY+0x18 bit 7 + D007E0==0x49 → JP 0x05CB18
+  - D00824==0x59 or IY+0x44 bit 2 → JP 0x05C9D3
+  - IY+0x0D bit 5 → CALL 0x06F7E4 (graph display)
+  - IY+0x0D bit 6 → CALL 0x05C706 (split-screen handler)
+  - **Default** → CALL 0x0A1799 (THE TEXT RASTERIZER)
+- **KEY INSIGHT**: 0x05C634 is the CENTRAL DISPLAY UPDATE FUNCTION. Every subsystem that needs a screen refresh calls it, and the default path renders text via 0x0A1799. This is THE missing link between the event loop and screen rendering.
+- **22 IY flag locations** across 14 unique offsets: 0x01, 0x05, 0x0C (heavily used — bits 2,3), 0x0D (bits 5,6), 0x12, 0x15, 0x18, 0x2A, 0x34, 0x35, 0x44, 0x4A, 0x51.
+- **11 CALL targets**: 0x04E950, 0x0239E3, 0x0286D0, 0x0A8ADA, 0x06F7E4, 0x05C706, 0x0238D2, 0x0A23E5, 0x0A1799, 0x0AF877, 0x0AE299.
+- **RAM**: D00594, D007E0 (displayMode), D00824, D00599, D02501.
+
+(4) ★★★ 0x023057 GRAPH STACK FRAME + IY+0x4E GUARD DECODED (probe-phase593-decode-023057.mjs, Sonnet P4):
+- **Function**: 0x023057-0x023092 (60 bytes).
+- **Stack frame prologue**: PUSH IX / LD IX,0 / ADD IX,SP / PUSH BC / PUSH AF — standard eZ80 stack frame.
+- **CALL 0x000578**: OS utility check, JR Z to epilogue if fails.
+- **IY+0x4E (D000CE) guard**: BIT 3,(IY+0x4E) / JR NZ epilogue, BIT 4,(IY+0x4E) / JR NZ epilogue. If either bit set, bails to epilogue without doing work.
+- **Main body** (when guard passes): saves BC/HL, stores values into IX-3/IX-2/IX-1 local frame variables, ED-prefix operations (includes port 0xDCA0 read).
+- **Epilogue at 0x02308D**: POP AF / LD SP,IX / POP IX / RET.
+- **1 caller**: 0x06D056 (inside graph fallback dispatch stub 0x06D050).
+- **Purpose**: Graph action setup with stack frame. IY+0x4E bits 3/4 are "graph busy" or "graph subsystem locked" flags. Only proceeds if the graph subsystem is available.
+- **IY refs**: IY+0x4E bits 3 and 4 (D000CE).
+
+(5) CODEX: 2/4 (P1/P2 exit 0), 2/4 (P3/P4 exit 1). Sonnet fallback P3/P4 succeeded. All probes Opus-verified (exit 0, raw bytes confirmed). Golden regression 26/26 PASS.
+
+**FUNCTIONS DECODED**: 0x07F8FE (6B secondary→shadow copy, 3 callers), 0x07F7A4 (4B load-and-classify preamble, 25 callers), 0x05C634 (~257B master display dispatcher, 40 callers), 0x023057 (60B graph stack frame + guard, 1 caller).
+**ARCHITECTURE FOUND**: 0x05C634 is THE central display update dispatcher — 40 callers, default path calls rasterizer 0x0A1799. This is the missing link between the event loop and screen rendering. The resolve loop cycle is now fully mapped: shadow→secondary (0x07F98B) → orchestrator (0x07CFA7) → secondary→shadow writeback (0x07F8FE) → loop. Descriptor buffer array has 7 slots at 11-byte stride from D005F8 through D0063A.
+**PRIORITY CORRECTIONS**: Session 592's NEXT list included (c) 0x07CF9D, (e) 0x07F16C, (f) 0x07C8B7, (g) 0x07FE9C as "undecoded" but all were decoded in sessions 530-533. Future sessions should check the full log before picking these.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★ DECODE 0x07F7D6 — called by orchestrator 0x07CFA7 (7th call, "strip" function), referenced but never formally decoded. (c) ★★★ DECODE 0x07CF8E — called by orchestrator 0x07CFA7 (8th call, "epilogue" function, LDIR D00603→D02B39 55 bytes), referenced but never formally decoded. (d) ★★★ DECODE 0x06F7E4 — graph display function called from 0x05C634 when IY+0x0D bit 5 set. (e) ★★★ DECODE 0x05C706 — split-screen handler called from 0x05C634 when IY+0x0D bit 6 set. (f) ★★★ DECODE 0x04E950 — called from 0x05C634 graph-active path. (g) ★★ DECODE 0x0239E3 — called from 0x05C634 graph-active path. (h) ★★ DECODE 0x0286D0 — called from 0x05C634 graph-active path. (i) ★ IMPLEMENT PORT 0xDCA0 IN PERIPHERALS.JS — return 0x00 or configurable value. (j) ★ FIX ED-PREFIX MASK IN HAND-ROLLED DISASSEMBLER. --END SESSION 593--
 
 **CC session 592 (2026-06-09, auto-continuation)**:
 Picked priorities (b)-(e) from session 591 NEXT list — 4 independent ★★★ decode tasks.
