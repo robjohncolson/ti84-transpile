@@ -25,9 +25,9 @@
 
 ---
 
-**Last updated**: 2026-06-08 (auto-session 580 — **★★★ 0x0A1A36 CORRECTED: NOT KEY INPUT HANDLER — register-restore epilogue POP HL/DE/BC/AF/RET (5B) + table-fill utility (44B), 3 JP callers, session 579's "tail-call JP 0x0A1A36 = real key handler" was WRONG — 0x0A27DD tail-JPs to the RET that unwinds the caller's stack frame and returns to the event loop, not to a key reader. ★★★ 0x06CF41 MULTI-KEY DISPATCHER DECODED (271B 85 insns: not just MODE — handles 0x89/0x8B/0x8D/0x1B/0x1D/0x4D/0x2F/0x05/0x4F, 27 CALL targets, 13 JP targets, D0265C RAM ref, 12 IY+ ops across 0x02/0x03/0x04/0x11/0x17/0x1D, 1 caller 0x06CE91, screen-mode bit testers 0x06C72D/0x06C732/0x06C737, exit paths 0x06AB29/0x06AB15/0x06AABF). ★★★ 0x06CFAF GRAPH KEY HANDLER DECODED (171B 48 insns: entry guard BIT 4 IY+4/RET NZ, 3-way mode check IY+4 bit 3 + IY+3 bits 6,7 → fallback 0x06D050, 23 CALL targets incl 0x07FFB3/0x07FFAF/0x0846EA/0x09AC64/0x09AC73/0x07DAF8/0x07FEB6/0x061E20/0x082957, screen-mode bit testers 0x06C732/0x06C737, 0 direct RAM refs — all state via IY flags, 1 caller 0x06CEBB). ★★★ D0146D FULLY MAPPED (101 refs: 59 READ + 42 WRITE + 0 ADDRESS, concentrated 0x06Bxxx-0x06Fxxx key subsystem, D0146E adjacent has 36 refs 14R/15W/7A, comparison D0058E 107 refs 63R/41W/3A — two parallel key buffers of similar weight). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-09 (auto-session 581 — **★★★ 0x03D1C3 KEY SCAN DISPATCHER DECODED (15B counter-gated: decrements D005F5 timer, calls 0x0A32F9 real 237B scan engine on expiry — scans one keyboard group per call round-robin across 9 groups, DI during scan, table-driven from 0x0A344A, writes to D02ACC + extended RAM D408A7-D422CE, 30 callers on adjacent 0x03D1E4 key status updater). ★★★ 0x06ADC9/0x06ADD1 GRAPH CALC HANDLERS DECODED (0x06ADC9=8B stub "Drop Points" for keys 0x89/0x8B → shared handler 0x06AD91 56B; 0x06ADD1=36B "Store Results" for key 0x8D with prompt display + graph calc pipeline 0x07FFB7/0x0846EA/0x06AB91; region 0x06AD7E-0x06AEB8 is complete graph CALC dispatch table with 14 prompt strings at 0x06AEB9-0x06AF55). ★★★ 0x07BF19 QUIT HANDLER DECODED (37B 13 insns: key remapper NOT mode changer — checks IY+2 bits via 0x06C72D/0x06C737/0x06C73C, writes mode-dependent replacement key code to D0058C: bit5→0xCC, bit6→0xAD, bit4→0xB1, default→0xFE+D0058E=0xE8, RET to event loop, 2 callers 0x08C3C5+0x021F90). ★★★ 0x08C509 COMMON KEY PROCESSING PATH DECODED (key normalization + insertion pipeline: 4-stage — remapping 0x69→0xFC/0x5B→0xFD/0x28→0xDA/0x29→0x7F, convergence CALL 0x022331 key processor + CALL 0x08C72F display refresh, post-processing auto-overwrite loop via D008D6/D0243A + CALL 0x080064 classifier + CALL 0x05C5B3 inserter, cleanup RES 2 IY+51 → JP 0x08C33D, 17 entry refs, 11 CALL targets). GOLDEN REGRESSION 26/26 PASS.**)
 
-> Previous: 2026-06-08 (auto-session 579 — 0x0A27DD key input setup 33B, 0x08C3C3+ key dispatch cascade ~600B, init trampoline 3 targets decoded, 0x06CE73 key dispatch pre-processor 12B+96B)
+> Previous: 2026-06-08 (auto-session 580 — 0x0A1A36 corrected NOT key handler, 0x06CF41 multi-key dispatcher 271B, 0x06CFAF graph key handler 171B, D0146D fully mapped 101 refs)
 
 **Previous last-updated**: 2026-06-08 (auto-session 579 — **★★★ 0x0A27DD KEY INPUT SETUP DECODED (33B, NOT _GetCSC: init-guarded wrapper — BIT 6 IY+0x1B guard → D005F5=1 → CALL 0x03D1C3 → EI → SET 0 IY+0x12 → tail-call JP 0x0A1A36 which is the real key input handler, 9 callers incl event loop 0x08C3A8). ★★★ 0x08C3C3+ KEY DISPATCH CASCADE FULLY MAPPED (~600B, 10-stage cascading filter: 0xB4 QUIT → CALL Z 0x07BF19; 0x3F/?/0x28/0x29 paren → 0x08C509 common processing; 0x58 = D007E0 mode check not a key; 0x7F boundary splits printable < 0x7F from function codes; 0xFE/0xFC format/recall → 0x08C509; 0xFA catalog = elaborate sub-dispatch on D0058E previous key; multi-char token insertion loop at 0x08C41D iterates D0065A string table up to 8 chars; all paths converge CALL 0x022331 key processor + CALL 0x08C72F display refresh → JP 0x08C331/0x08C33D). ★★★ INIT TRAMPOLINE TARGETS ALL 3 DECODED: 0x0250FA = 20B RAM block copy LDIR 23B D007E2→D007CA + 1B D007F9→D0008D (2 callers); 0x09E640 = 15B mode validator CPIR-searches D007E0 against 7-entry table [0x40,0x49,0x43,0x48,0x44,0x4A,0x4B] returns Z=valid (1+1 refs); 0x09E601 = 53B display context reinit 6 sub-calls incl 0x0A27DD + 0x044409 + 0x0A349A, saves/restores D007D6, tail-JP 0x0A2E05 (6 callers). ★★★ 0x06CE73 KEY DISPATCH PRE-PROCESSOR DECODED (12B wrapper: RES 3 IY+0x02 → CALL 0x06CE7F inner 96B → JP 0x06C8AB cursor finalizer; inner reads D0146D key code, filters CLEAR 0x85/DEL 0x87/MODE 0x8D, dispatches GRAPH 0x07 specially to 0x06CFAF, D01D45 gate for extended handling; 1 CALL caller 0x08C339 + 1 JP 0x020BC0). GOLDEN REGRESSION 26/26 PASS.**)
 
@@ -82,6 +82,54 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**Session 581 findings (2026-06-09)**:
+
+(1) ★★★ 0x03D1C3 KEY SCAN DISPATCHER DECODED (probe-phase581-decode-03D1C3.mjs, Sonnet P1):
+- **Function**: 0x03D1C3 is a 15-byte **counter-gated dispatcher**, NOT the keyboard matrix scanner itself.
+- Decrements countdown timer at D005F5; returns immediately if timer != 0 (rate limiting).
+- When timer hits zero, loads keyboard group index from D005F6 and calls **0x0A32F9** (the real 237-byte scan engine).
+- **0x0A32F9** (237B, 3 callers): disables interrupts during scan, checks display mode (BIT 2 at D000C6), uses table-driven approach (parameter table at 0x0A344A, 8 bytes/group, 9 groups), writes scan results from D02ACC into per-group RAM buffers in extended RAM (0xD408A7-0xD422CE), scans ONE group per call (round-robin cycling at D005F6), resets timer to 6 after scan.
+- **NO direct IN/OUT port instructions** in either function — hardware reads happen elsewhere (likely interrupt handler); this function distributes pre-read scan data.
+- **Adjacent 0x03D1E4** (key status flag updater): 30 callers, widely-used primitive for signaling key state via IY+3, IY+19, IY+23.
+- Does NOT call _GetCSC (0x03FA09) — they are parallel subsystems.
+
+(2) ★★★ 0x06ADC9/0x06ADD1 GRAPH CALC HANDLERS DECODED (probe-phase581-decode-06ADC9.mjs, Sonnet P2):
+- **0x06ADC9** (keys 0x89/0x8B): 8-byte stub loads HL=0x06AF46 "DROP POINTS" string + A=0xBE → falls through via JR to shared handler **0x06AD91** (56B, 16 insns).
+- **0x06ADD1** (key 0x8D): 36-byte handler loads HL=0x06AF37 "STORE RESULTS?" + A=0xBB → more complex pipeline: D026B1=3, prompt display via 0x06AE05 chain (cursor cleanup, text output 0x02315E, font setup 0x028603), saves graph window coords (.SIS 16-bit), calls 0x07FFB7 graph calc → 0x0846EA result formatting → 0x06AB91 store result. Exits JP 0x06C8AB (cursor reset to 0xFFFF sentinel).
+- **Shared 0x06AD91** (56B): common core for "light" graph CALC ops. Guards: IY+53 bit 1 (cursor), IY+23 bit 2 (busy), IY+4 bit 4 (graph active). Sets D026B1=3. Calls 0x06FBA8, 0x06AF6C, 0x06AABF.
+- **Region 0x06AD7E-0x06AEB8**: complete graph CALC dispatch table — entries for Zero/Min/Max/Intersection/Drop Points/Store Results/Guess/Upper Limit. String table at 0x06AEB9-0x06AF55 (14 prompt strings).
+- **KEY CORRECTION**: Session 580 listed 0x06ADD1 as "MODE handler" — it's actually the CALC menu's "Store Results" entry, not the MODE key handler. The dispatch at 0x06CF41 for key 0x8D goes here in GRAPH CALC context, not for the MODE key on the home screen.
+- **RAM**: D026B1 (graph CALC mode), D026B2 (graph config), D026AE (mode result storage).
+
+(3) ★★★ 0x07BF19 QUIT HANDLER DECODED (probe-phase581-decode-07BF19.mjs, Sonnet P3):
+- **Function**: 0x07BF19-0x07BF3D (37 bytes, 13 instructions).
+- **KEY INSIGHT**: QUIT is a **key remapper**, NOT a mode changer. It checks screen mode via IY+2 bits (using micro bit-testers 0x06C72D/0x06C737/0x06C73C) and writes a mode-dependent replacement key code to D0058C:
+  - Bit 5 (IY+2) → 0xCC
+  - Bit 6 (IY+2) → 0xAD
+  - Bit 4 (IY+2) → 0xB1
+  - None set (home screen) → 0xFE + D0058E=0xE8
+- **Exit**: RET to event loop. Does NOT call init trampoline (0x063033), does NOT modify D007E0, does NOT JP to 0x08C331/0x08C33D.
+- **Callers**: 2 — CALL Z at 0x08C3C5 (event loop dispatch) + JP at 0x021F90 (jump table).
+- **RAM**: D0058C (written always), D0058E (written only in default/home path).
+
+(4) ★★★ 0x08C509 COMMON KEY PROCESSING PATH DECODED (probe-phase581-decode-08C509.mjs, Sonnet P4):
+- **Block**: 0x08C509-0x08C597 (~140 bytes). Key normalization + insertion pipeline. 17 entry references.
+- **4-stage pipeline**:
+  1. **Key remapping (0x08C509-0x08C530)**: 0x69→0xFC, 0x5B→0xFD, 0x28(lparen)→0xDA+SET 7 IY+22, 0x29(rparen)→0x7F+SET 1 IY+29. Unrecognized keys pass through.
+  2. **Convergence (0x08C532)**: CALL 0x022331 (key processor — inserts/processes token) + CALL 0x08C72F (display refresh).
+  3. **Post-processing (0x08C53A-0x08C592)**: Clears IY+9 bit 4 ("key pending"). POP AF recovers original key. If parenthesis (Z set) → dispatches to multi-char token loop 0x08C41D (DJNZ B=8, D0065A string table). If BIT 7 IY+14 set (auto-overwrite mode) → character-by-character overwrite loop reading D008D6/D0243A, classifying via CALL 0x080064, inserting via CALL 0x05C5B3, looping back to 0x08C509.
+  4. **Cleanup (0x08C593-0x08C597)**: RES 2 IY+51 → JP 0x08C33D (event loop cleanup).
+- **11 CALL targets**: 0x022331 (key processor), 0x08C72F (display refresh), 0x04C973 (position compare), 0x080064 (char classifier), 0x05C5B3 (token inserter), 0x08C7AD (screen mode switch), and more.
+- **RAM**: D0058E (previous key R/W), D007E0 (screen mode R), D007FA (saved SP), D008D6/D008D9 (overwrite source pointers), D0243A (cursor/edit buffer pointer), D00085/D00802 (system flags).
+
+(5) CODEX: 0/4 (all failed with `--prompt-stdin` flag not recognized — CLI requires `--prompt` not stdin). All 4 priorities completed via Sonnet fallback. All probes created (static analysis only, not executed). Golden regression 26/26 PASS.
+
+**FUNCTIONS DECODED**: 0x03D1C3 (15B key scan dispatcher + 0x0A32F9 237B scan engine), 0x06ADC9 (8B Drop Points stub), 0x06ADD1 (36B Store Results), 0x06AD91 (56B shared CALC handler), 0x07BF19 (37B QUIT key remapper), 0x08C509 (~140B common key processing pipeline).
+**RAM MAPPED**: D005F5 (key scan timer), D005F6 (keyboard group index), D000C6 (display mode split-screen), D02ACC (scan result buffer), D408A7-D422CE (extended RAM per-group key buffers), D026B1/B2/AE (graph CALC state), D0058C (QUIT replacement key), D007FA (saved SP in key path), D008D6/D008D9 (overwrite source pointers).
+**ARCHITECTURAL INSIGHTS**: (A) ★★★ THE KEY SCAN CHAIN IS THREE LEVELS DEEP: 0x0A27DD (init-guard wrapper) → 0x03D1C3 (counter-gated dispatcher, rate-limits to every 6th call) → 0x0A32F9 (real scan engine, one group per call, 9-group round-robin). NO direct port I/O at any level — hardware reads happen in the interrupt handler, and 0x0A32F9 distributes pre-read data. (B) ★★★ SESSION 580's "MODE HANDLER" 0x06ADD1 IS ACTUALLY GRAPH CALC "STORE RESULTS" — the key code 0x8D means different things in different contexts. In the GRAPH CALC menu it's a data operation, not the MODE key. (C) ★★★ QUIT (0x07BF19) DOES NOT CHANGE MODE — it remaps the key code based on current screen mode and writes the replacement to D0058C for the next event loop iteration to process. (D) ★★★ 0x08C509 IS THE UNIVERSAL KEY CONVERGENCE POINT — 17 entry refs, all key types eventually funnel here for normalization → CALL 0x022331 → display refresh → cleanup.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★ DECODE 0x0A32F9 — the REAL keyboard matrix scan engine (237B, called by 0x03D1C3, table-driven from 0x0A344A). How does it read pre-scanned data? Where does it write results? (c) ★★★ DECODE 0x022331 — the key processor (CALL from 0x08C532 convergence point). What does it do with the normalized key code? (d) ★★ DECODE 0x06D050 — GRAPH fallback path (multiple JPs from 0x06CFAF and 0x06CF41). (e) ★★ DECODE 0x08C72F — display refresh function called after every key. (f) ★★ DECODE 0x05C5B3 — token inserter called from auto-overwrite loop. (g) ★★ DECODE 0x080064 — character classifier (distinguishes printable vs function tokens). (h) ★ DECODE 0x0A2E05 — display context reinit tail target. --END SESSION 581--
 
 **Session 580 findings (2026-06-08)**:
 
