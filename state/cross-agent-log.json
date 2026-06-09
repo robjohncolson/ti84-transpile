@@ -19440,15 +19440,103 @@
       "timestamp": "2026-06-09T12:14:53Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "d8eab1335f81",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: DECODE 0x0821AE \u2014 Post-Search Result Processor\n\n## Context\nYou are working on a TI-84 Plus C",
+      "status": "success",
+      "duration_seconds": 44.819,
+      "timestamp": "2026-06-09T13:22:56Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "bfd7c1b0b9da",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: DECODE 0x061DEF \u2014 Extended Symbol Lookup Path Handler\n\n## Context\nYou are working on a TI-84",
+      "status": "completed",
+      "duration_seconds": 45.826,
+      "timestamp": "2026-06-09T13:22:59Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "235bdba33ebb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: DECODE 0x09A39F \u2014 Extended Symbol Lookup Sub-handler\n\n## Context\nYou are working on a TI-84 ",
+      "status": "completed",
+      "duration_seconds": 46.81,
+      "timestamp": "2026-06-09T13:23:02Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6817e116e9b8",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: MAP D01D0B \u2014 Companion Variable to D01D0C\n\n## Context\nYou are working on a TI-84 Plus CE ROM",
+      "status": "success",
+      "duration_seconds": 67.908,
+      "timestamp": "2026-06-09T13:23:24Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "34a169965956",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function at 0x061D3A\n\n## Context\nYou are reverse-engineering the TI-84 Plus CE OS",
+      "status": "blocked",
+      "duration_seconds": 32.848,
+      "timestamp": "2026-06-09T14:32:42Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e5a91216dc64",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function at 0x09A40A\n\n## Context\nYou are reverse-engineering the TI-84 Plus CE OS",
+      "status": "blocked",
+      "duration_seconds": 36.986,
+      "timestamp": "2026-06-09T14:32:49Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6579c2e61b5d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function at 0x07FEB6\n\n## Context\nYou are reverse-engineering the TI-84 Plus CE OS",
+      "status": "partial",
+      "duration_seconds": 110.756,
+      "timestamp": "2026-06-09T14:34:02Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "26718df1e4da",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM function at 0x07F796\n\n## Context\nYou are reverse-engineering the TI-84 Plus CE OS",
+      "status": "completed_with_caveat",
+      "duration_seconds": 116.227,
+      "timestamp": "2026-06-09T14:34:04Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1638,
-    "cc_to_codex": 1638,
+    "total_calls": 1646,
+    "cc_to_codex": 1646,
     "codex_to_cc": 0,
-    "completed": 1074,
+    "completed": 1076,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 469.595
+    "avg_duration_seconds": 467.618
   }
 }

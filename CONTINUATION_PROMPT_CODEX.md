@@ -25,7 +25,9 @@
 
 ---
 
-**Last updated**: 2026-06-09 (auto-session 589 — **★★★ 0x0821AE POST-SEARCH RESULT VALIDATOR DECODED (11B, CALL 0x04C8A3 saves DE→D02AD7 match buffer, OR A/RET Z null check, CP 0xD0/RET C range filter, XOR A clamp ≥0xD0 — sanitizes 0x0846EA search results for 0x09D49A dispatcher). ★★★★ 0x061DEF SETJMP/COROUTINE TRAMPOLINE DECODED (56B, saves SP→D008E0, computes+pushes symbol table region sizes D0258D-D0258A and D02593-D02590, pushes return addresses 0x061DD1+0x061E27, JP (HL) to caller — cooperative context switch for extended symbol lookup). ★★★ 0x061E20 LONGJMP RESTORE (7B, POP BC + LD SP,(D008E0) + RET — unwinds 0x061DEF context). ★★★ 0x09A39F SYMBOL ADDRESS RESOLVER DECODED (~46B multi-exit: BIT 6,(IY+9) flag check, type==0x5C fast path returns D01464, generic path computes via 0x07F796 + base D0117F, BIT-clear path tail-calls 0x061D3A). ★★★ 0x09A3D0 TABLE-DRIVEN SUBFIELD RESOLVER DECODED (58B, ROM lookup tables at 0x09A415 3-byte entries + 0x09A4D5 1-byte offsets, base D1983D, bit-field merge top-2-bits from source, type-0x2A special case → 0x09A40A). ★★★ D01D0B FULLY MAPPED (11 refs: 7R/1W/3A, single-byte symbol table entry counter with dedicated INC helper 0x092279 + DEC helper 0x09229C, single write clears to 0 at 0x04563D via XOR A + RES 1,(IY+69), 9/11 refs in 0x092xxx symbol table region, paired with D01D0C). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-09 (auto-session 590 — **★★★ 0x07F796 MULTIPLY-BY-9 DECODED (14B pure register arithmetic: PUSH HL/POP BC + 3×ADD HL,HL + ADD HL,BC = HL*9, overflow guards RET C, no RAM/IY/ports — confirms 9-BYTE PER-TYPE DESCRIPTOR RECORDS at D0117F base, distinct from 6-byte symbol records). ★★★ 0x061D3A E_UNDEFINED ERROR STUB DECODED (4B: LD A,0x8D + JR 0x061DB2, part of 43-entry error dispatch table 0x061D00-0x061DB1; shared handler 0x061DB2 31B saves error code→D008DF, calls 0x03E1B4, clears 4 IY flags, longjmp via LD SP,(D008E0); setjmp recovery 0x061DD1 30B restores symbol table region pointers D02590/D02593/D0258A/D0258D from stack). ★★★ 0x07FEB6 DUAL-DESCRIPTOR TYPE-REMAPPED SYMBOL SEARCH DECODED (43B: manages D005F8 primary + D00603 shadow 11-byte descriptor buffers, bidirectional type remapping via 6-entry table [0x00↔0x0C, 0x18↔0x1B, 0x19↔0x1B, 0x1C↔0x1D, 0x20↔0x1E, 0x21↔0x1F], calls 0x07FD30 swap + 0x07FEE1 search + 0x07FE24/0x07FE5A remap wrappers; classifier 0x07F7A8 15B accepts mapped types {0x0C,0x1B,0x1D,0x1E,0x1F}). ★★★ 0x09A40A CPLXOBJ SPECIAL CASE DECODED (11B: LD HL,D0204D + LD DE,D02046 + LD A,1 + RET — hardcoded bypass for type-0x2A because ROM table entry[42]=0x061DB2 is a ROM address not RAM; complex numbers have two separate 7-byte-apart float descriptors). ★★★ ROM TABLE 0x09A415 FULLY DUMPED (64×3B type descriptor address table, all D01Dxx-D022xx except entry[42]=0x061DB2 ROM). ★★★ ROM TABLE 0x09A4D5 FULLY DUMPED (64×1B offset table into D1983D-D1987A attribute block). GOLDEN REGRESSION 26/26 PASS.**)
+
+> Previous: 2026-06-09 (auto-session 589 — 0x0821AE post-search validator 11B, 0x061DEF setjmp trampoline 56B, 0x061E20 longjmp 7B, 0x09A39F symbol address resolver ~46B, 0x09A3D0 subfield resolver 58B, D01D0B fully mapped 11 refs)
 
 > Previous: 2026-06-09 (auto-session 588 — 0x000138 jump table = C compiler soft-math runtime 50 vectors, 0x0021C2 null-check 12B, 0x09D49A multi-type lookup dispatcher ~116B, 0x0801D9 computable-type filter 16B 27 callers, D01D0C fully mapped 24 refs)
 
@@ -98,6 +100,68 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**CC session 590 (2026-06-09, auto-continuation)**:
+Picked priorities (b)-(e) from session 589 NEXT list — 4 independent ★★★ decode tasks.
+Dispatched 4 Codex agents in parallel (0/4 succeeded — all exit 1). All 4 completed via Sonnet fallback.
+
+(1) ★★★ 0x07F796 MULTIPLY-BY-9 DECODED (probe-phase590-decode-07F796.mjs, Sonnet P1):
+- **Function**: 0x07F796-0x07F7A3 (14 bytes).
+- **Semantics**: PUSH HL → POP BC (save input) → LD D,D (nop) → ADD HL,HL / RET C (×2) → LD D,D → ADD HL,HL / RET C (×4) → LD D,D → ADD HL,HL / RET C (×8) → ADD HL,BC (×8+×1=×9) → RET.
+- **Purpose**: Pure register multiply HL = HL_input × 9. Shift-and-add with overflow guards. The LD D,D (0x52) between shifts are alignment/padding no-ops.
+- **KEY INSIGHT**: Caller 0x09A39F does LD HL,0 / LD L,A / CALL 0x07F796 / LD DE,D0117F / ADD HL,DE → result = D0117F + type_byte × 9. This confirms the per-type descriptor table at D0117F has **9-byte records**, distinct from the 6-byte symbol table records (0x082BE2 DEC×6 pattern). The 9-byte records are type-level descriptors; the 6-byte records are individual symbol entries within a type's chain.
+- **No CALL/JP targets, no RAM, no IY, no ports.** Pure arithmetic.
+
+(2) ★★★ 0x061D3A E_UNDEFINED ERROR STUB + SHARED HANDLER DECODED (probe-phase590-decode-061D3A.mjs, Sonnet P2):
+- **Stub at 0x061D3A** (4 bytes): LD A,0x8D → JR 0x061DB2. Error code 0x8D = E_UNDEFINED. Part of 43-entry error dispatch table spanning 0x061D00-0x061DB1 (each 4B: LD A,code + JR 0x061DB2).
+- **Shared handler 0x061DB2** (31 bytes, 0x061DB2-0x061DD0): LD (D008DF),A (save error code) → CALL 0x03E1B4 (interrupt-safe error processing) → RES 7,(IY+75) → RES 2,(IY+18) → RES 4,(IY+36) → RES 1,(IY+73) (clear 4 OS flags) → LD SP,(D008E0) (longjmp: restore setjmp SP) → POP AF → RET.
+- **Setjmp recovery 0x061DD1** (30 bytes, 0x061DD1-0x061DEE): Restores symbol table region pointers from stack (D02590→D02593 via ADD, D0258A→D0258D via ADD), restores previous setjmp SP to D008E0, reloads error code from D008DF, RET.
+- **Full 0x061Dxx layout confirmed**: 0x061D00-0x061DB1 (43 error stubs) → 0x061DB2-0x061DD0 (shared handler 31B) → 0x061DD1-0x061DEE (setjmp recovery 30B) → 0x061DEF-0x061E1F (setjmp trampoline 49B, session 589) → 0x061E20-0x061E26 (longjmp restore 7B, session 589).
+- **Context**: When bit 6 of (IY+9) is clear in 0x09A39F → "extended lookup mode off" → JP 0x061D3A → immediate E_UNDEFINED error → longjmp back to setjmp save point.
+- **RAM**: D008DF (error code), D008E0 (setjmp SP), D02590/D02593/D0258A/D0258D (symbol table region pointers).
+- **IY flags cleared**: bit 7 IY+75, bit 2 IY+18, bit 4 IY+36, bit 1 IY+73.
+- **CALL targets**: 0x03E1B4 (known from session 569).
+
+(3) ★★★ 0x07FEB6 DUAL-DESCRIPTOR TYPE-REMAPPED SYMBOL SEARCH DECODED (probe-phase590-decode-07FEB6.mjs, Sonnet P3):
+- **Function**: 0x07FEB6-0x07FEE0 (43 bytes).
+- **Algorithm (when type is already mapped, Z from 0x07F7A8 classifier)**:
+  1. CALL 0x07FE5A reverse-remap D005F8 type byte (mapped→original)
+  2. CALL 0x07FEE1 search symbol table with original type
+  3. CALL 0x07FE24 forward-remap back (original→mapped)
+  4. CALL 0x07FD30 swap 11 bytes D005F8↔D00603
+  5. Repeat steps 1-3 on swapped-in second descriptor
+  6. CALL 0x07FD30 swap back to restore positions
+  7. RET
+- **Type mapping table (bidirectional 6-entry)**:
+  | Original | Mapped | Probable meaning |
+  | 0x00 | 0x0C | Real → Complex? |
+  | 0x18 | 0x1B | AppObj pair |
+  | 0x19 | 0x1B | AppVarObj → same |
+  | 0x1C | 0x1D | TempProgObj pair |
+  | 0x20 | 0x1E | pair |
+  | 0x21 | 0x1F | pair |
+- **Purpose**: When the symbol resolver (0x09A39F path D) needs to find paired type entries (e.g., real+complex), this helper searches both descriptor buffers with the correct type remapping. It manages two 11-byte search descriptors (primary D005F8, shadow D00603).
+- **Sub-functions discovered**: 0x07F7A8 (15B classifier), 0x07FE24/0x07FE5A (remap wrappers 11B each), 0x07FE2F/0x07FE65 (remap cores using CPIR), 0x07FD30 (20B swap loop), 0x07FEE1 (20B search dispatcher).
+- **RAM**: D005F8, D005F9, D00603, D0063A.
+- **No IY, no ports.**
+
+(4) ★★★ 0x09A40A CPLXOBJ SPECIAL CASE + ROM TABLE DUMPS (probe-phase590-decode-09A40A.mjs, Sonnet P4):
+- **Function 0x09A40A** (11 bytes): LD HL,0xD0204D → LD DE,0xD02046 → LD A,0x01 → RET.
+- **Purpose**: Hardcoded bypass for type-0x2A (CplxObj). Complex numbers have two separate float descriptors at D02046 (real part) and D0204D (imaginary part), 7 bytes apart. The normal subfield resolver can't handle this because ROM table entry[42] = 0x061DB2 (a ROM address, not RAM — it's the error handler!). So the OS special-cases it to return hardcoded addresses.
+- **ROM TABLE 0x09A415** (64×3B = 192 bytes): Per-type descriptor address table. 63 entries point to RAM (D01D61-D02270 range), entry[42] = 0x061DB2 (ROM — the error handler address, which is why type-0x2A needs special-casing). Full table dumped in probe output.
+- **ROM TABLE 0x09A4D5** (64×1B = 64 bytes): Per-type offset into D1983D-D1987A attribute block. Offsets range 0x00-0x3E. Entry[42] = 0x00 (unreachable due to special case). Full table dumped.
+- **RAM**: D02046, D0204D.
+- **No CALL/JP targets, no IY, no ports.**
+
+(5) CODEX: 0/4 (all exit 1). All 4 priorities completed via Sonnet fallback. All probes Opus-verified (exit 0, output analyzed). Golden regression 26/26 PASS.
+
+**FUNCTIONS DECODED**: 0x07F796 (14B multiply-by-9), 0x061D3A (4B E_UNDEFINED stub), 0x061DB2 (31B shared error handler), 0x061DD1 (30B setjmp recovery), 0x07FEB6 (43B dual-descriptor type-remapped search), 0x09A40A (11B CplxObj special case).
+**ARCHITECTURE FOUND**: Per-type descriptor table at D0117F has 9-byte records (not 6-byte — those are individual symbol entries). Error dispatch table at 0x061D00-0x061DB1 has 43 entries. Bidirectional type mapping for paired types (Real↔Complex, etc.) with dual-descriptor search. CplxObj (type-0x2A) stored as two 7-byte-apart float descriptors at D02046/D0204D.
+**RAM MAPPED**: D02046 (CplxObj real part), D0204D (CplxObj imaginary part), D00603 (shadow descriptor buffer 11B), D0063A (referenced in search path). Confirmed D008DF (error code), D008E0 (setjmp SP) usage in error handler.
+**SUB-FUNCTIONS DISCOVERED**: 0x07F7A8 (15B type classifier), 0x07FD30 (20B 11-byte swap), 0x07FE24/0x07FE5A (11B remap wrappers), 0x07FE2F/0x07FE65 (remap cores with CPIR), 0x07FEE1 (20B search dispatcher → 0x08021F + 0x07FEFC).
+**ROM TABLES DUMPED**: 0x09A415 (64×3B type descriptor addresses), 0x09A4D5 (64×1B attribute offsets).
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★ DECODE 0x07F7A8 — type classifier (15B, accepts mapped types {0x0C,0x1B,0x1D,0x1E,0x1F}, called by 0x07FEB6). (c) ★★★ DECODE 0x07FEE1 — search dispatcher (20B, calls 0x08021F + 0x07FEFC, called by 0x07FEB6). (d) ★★★ DECODE 0x07FD30 — 11-byte buffer swap (20B, D005F8↔D00603, called by 0x07FEB6). (e) ★★★ DECODE 0x07FEFC — resolver called by search dispatcher 0x07FEE1. (f) ★★ DECODE 0x05C634 — graph fallback display manager (carried from session 583). (g) ★★ DECODE 0x023057 — graph fallback Z-path target (carried from session 583). (h) ★ IMPLEMENT PORT 0xDCA0 IN PERIPHERALS.JS — return 0x00 or configurable value. (i) ★ FIX ED-PREFIX MASK IN HAND-ROLLED DISASSEMBLER — future probes should use 0xC7 not 0xCF for LD rp,(nn) group. --END SESSION 590--
 
 **CC session 589 (2026-06-09, auto-continuation)**:
 Picked priorities (b)-(e) from session 588 NEXT list — 4 independent ★★★ decode/map tasks.
