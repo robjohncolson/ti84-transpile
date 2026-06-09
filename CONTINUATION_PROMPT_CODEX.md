@@ -25,7 +25,9 @@
 
 ---
 
-**Last updated**: 2026-06-09 (auto-session 584 — **★★★★ EVENT SYSTEM ARCHITECTURE RESOLVED: 0x0236F9's 42 callers ALL use stack-local buffers (LEA HL,IX+disp) — NO shared RAM event queue exists. The 3-byte event record is ephemeral, written to caller's stack frame then consumed by hardware port 0xDCA0 IN A,(C). 27 distinct event types (0x01-0x1E + 2 dynamic). Port 0xDCA0 has exactly 3 IN refs in entire ROM (0x0229BA, 0x023089, 0x023713), all in key processor suite, NOT handled in peripherals.js, only port in 0xDCxx range. ★★★ 0x080D1D KEY-VALUE WRITER DECODED (16B, 6 insns, 5 callers: stores 3-byte record [type=0x5C, keycode=A, flags=0x00] at D005F9-D005FB — prepares search key for 0x0846EA). ★★★ 0x0846EA SYMBOL TABLE SEARCHER DECODED (110B, 52 insns, 235 callers: backward 3-byte-keyed record search in D005F8-D005FB descriptor region, scans from D0259D/D3FFFF toward D02590 boundary, AND 0x3F type mask, calls 0x082BE2/0x04C885, returns matched record data — fundamental OS variable/token lookup). ★★★★ PIPELINE LINK: 0x080D1D writes D005F9-D005FB (search key) → 0x0846EA reads D005F9-D005FB (searches symbol table with that key) — key processor builds search key then looks up token/variable record. GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-09 (auto-session 585 — **★★★ 0x08011F SYMBOL TABLE TYPE-CHECK GUARD DECODED (7B, 3 insns, 11 callers: loads D005F9 type byte, CP 0x5D, returns Z if type==0x5D — gates early-exit path 0x083833 in symbol table searcher 0x0846EA. Type 0x5D triggers special-case handler that sets A=1, calls 0x0820CD, loads DE from D0259A bypassing normal backward search). ★★★ 0x082BE2 SYMBOL TABLE RECORD REWIND DECODED (7B, 7 insns, 16 callers: 6×DEC HL + RET = HL-=6 pointer rewind — CONFIRMS 6-BYTE SYMBOL TABLE RECORDS, not 3-byte as session 584 stated. The AND 0x3F type mask is applied by caller 0x0846EA after this call, not inside). ★★★ 0x04C885 MATCH RECORD STORE DECODED (16B, 5 insns, 6 callers: stores B+DE as 3-byte record at D02AD7-D02AD9 then reloads DE — pure leaf utility. D02AD7-D02AD9 is the "last matched record data" buffer used by 0x0846EA after symbol table match). ★★★ TYPE-0x09 EVENTS TRACED (8 callers, ALL in 0x0225xx-0x0229xx OS core event subsystem: first 2 callers at 0x02262C/0x02265D do LDIR copies of 9B to D005F8 and 65B to D02510 around event post; 6 remaining callers use IX-relative stack-local buffers with no LDIR; callers 0x022896/0x0228E3 call helpers 0x092F87/0x092F95 before posting; caller 0x022765 processes token bytes 0xF5/0xF6 in DJNZ loop storing 0x2E/0x2F — likely minus/decimal editing). GOLDEN REGRESSION 26/26 PASS.**)
+
+> Previous: 2026-06-09 (auto-session 584 — event system architecture resolved, 0x080D1D key-value writer 16B, 0x0846EA symbol table searcher 110B, port 0xDCA0 mapped)
 
 > Previous: 2026-06-09 (auto-session 583 — 0x0236F9 event posting central dispatch 30B, 0x05622E key-code-to-token mapper 22B, 0x06D050 graph fallback dispatch stub ~67B, 0x0855B1 token classifier 245B)
 
@@ -88,6 +90,52 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**Session 585 findings (2026-06-09)**:
+
+(1) ★★★ 0x08011F SYMBOL TABLE TYPE-CHECK GUARD DECODED (probe-phase585-decode-08011F.mjs, Sonnet P1):
+- **Function**: 0x08011F-0x080126 (7 bytes, 3 instructions).
+- **Semantics**: LD A,(D005F9) → CP 0x5D → RET. Sets Z flag if type byte == 0x5D.
+- **Context**: Called as the FIRST thing by 0x0846EA (symbol table searcher, 235 callers). Z flag gates early-exit jump to 0x083833.
+- **Early exit path 0x083833**: LD A,0x01 → PUSH AF → CALL 0x0820CD → INC A → JR to 0x083856 which does LD DE,(D0259A). This bypasses the normal backward search for type-0x5D symbols (likely "program" type vs 0x5C "variable" type).
+- **11 callers**: 10 CALL + 1 JP (BCALL dispatch at 0x0204C4). Callers in key processing (0x03F08A), token handling (0x04A283/0x04A2B6/0x04A3BA), display (0x05A53D/0x05D24E), symbol table internals (0x083895/0x0846EA), graph (0x09A1AC/0x09A967).
+- **RAM**: D005F9 (search key type byte from 0x080D1D's 3-byte record).
+
+(2) ★★★ 0x082BE2 SYMBOL TABLE RECORD REWIND DECODED (probe-phase585-decode-082BE2.mjs, Sonnet P2):
+- **Function**: 0x082BE2-0x082BE8 (7 bytes, 7 instructions).
+- **Semantics**: 6×DEC HL + RET. Pure pointer rewind: HL -= 6.
+- **KEY INSIGHT**: CONFIRMS SYMBOL TABLE USES 6-BYTE RECORDS. Session 584 described "3-byte-keyed record search" but the actual record stride is 6 bytes (3-byte key + 3-byte data). 0x082BE2 moves HL back one full record. The AND 0x3F type mask mentioned in session 584 is applied by 0x0846EA at the call site, NOT by this function.
+- **16 callers**: Concentrated in 0x08xxxx symbol table management area (0x082602, 0x082668, 0x0826E2, 0x082784, 0x0827AC, 0x08340B, 0x083866, 0x084712, 0x084F85) plus scattered callers in 0x028B84, 0x03F251, 0x06B75E, 0x07F027, 0x0A5F30, 0x0B39C1, 0x0B91B3.
+- **Pure**: No RAM refs, no port I/O, no subcalls. Leaf function.
+
+(3) ★★★ 0x04C885 MATCH RECORD STORE DECODED (probe-phase585-decode-04C885.mjs, Sonnet P3):
+- **Function**: 0x04C885-0x04C894 (16 bytes, 5 instructions).
+- **Semantics**: LD A,B → LD (D02AD7),DE → LD (D02AD9),A → LD DE,(D02AD7) → RET.
+- **Purpose**: Stores matched record's 3 data bytes (B + DE) as a 3-byte value at D02AD7-D02AD9, then reloads DE from that buffer (round-trip for consistency).
+- **D02AD7-D02AD9**: "Last matched record data" buffer. After 0x0846EA finds a symbol table match, this buffer holds the match result. The caller reads back from here.
+- **6 callers**: 5 CALL (0x0450B8, 0x06BA0C, 0x082C05, 0x084744 inside 0x0846EA, 0x0B1146) + 1 JP (0x021D6C BCALL dispatch).
+- **Pure leaf**: No subcalls. Input: B (high byte) + DE (low 2 bytes). Output: DE reloaded, D02AD7-D02AD9 written.
+
+(4) ★★★ TYPE-0x09 EVENT CALLERS TRACED (probe-phase585-trace-type09.mjs, Sonnet P4):
+- **8 type-0x09 callers confirmed**, ALL in 0x0225xx-0x0229xx (OS core event posting subsystem):
+  - 0x02262C: LDIR 9B to D005F8 + 65B to D02510 before posting. Calls 0x0229C5 first.
+  - 0x02265D: LDIR 65B from stack→D02510 + 9B from stack→D005F8 AFTER posting (restore buffers).
+  - 0x022765: End of DJNZ loop processing token bytes (CP 0xF6→store 0x2E, CP 0xF5→store 0x2F — minus/decimal editing).
+  - 0x022790: Small helper at 0x02277E: stores A to (IX-1), loads HL=1, posts type-0x09.
+  - 0x02283D: Uses ED 17 (LD pair indirect), stores to IX-relative frame, unwinds stack after.
+  - 0x022896: Calls 0x092F87 before posting. Preceded by CALL 0x0229C5.
+  - 0x0228E3: Calls 0x092F95 before posting. Similar IX-relative pattern.
+  - 0x02294F: Stores 0x02 to (IX-1), EX DE,HL, similar pattern.
+- **First 2 callers share a function** starting ~0x0225DB that saves/restores D005F8 (9B search key area) and D02510 (65B buffer) around the event post.
+- **Hypothesis**: Type-0x09 is a generic "editing operation state-change notification" — signals the expression editing subsystem that buffer state has changed (D005F8 search key + D02510 expression buffer).
+
+(5) CODEX: 1/4 succeeded (P2 exit 0 but probe had broken decoder API — TypeError on undefined .mnemonic). P1/P3/P4 exit 1. All 4 files created by Codex had broken decoder API. All 4 priorities completed via Sonnet fallback with correct decoder API. All probes Opus-verified (exit 0, output matches analysis). Golden regression 26/26 PASS.
+
+**FUNCTIONS DECODED**: 0x08011F (7B type-check guard, 11 callers), 0x082BE2 (7B record rewind HL-=6, 16 callers), 0x04C885 (16B record store B+DE→D02AD7, 6 callers).
+**ARCHITECTURE CONFIRMED**: Symbol table uses 6-byte records (3B key + 3B data), not 3-byte as session 584 stated. Type 0x5D gets special-case handling bypassing normal search.
+**EVENT SYSTEM**: Type-0x09 is the most frequent event type (8 callers), all in OS core editing subsystem, with D005F8/D02510 buffer save/restore around event posts.
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★ DECODE 0x0820CD — called by early-exit path 0x083833 when type==0x5D. What does it do to set up the alternate symbol table path? (c) ★★★ DECODE 0x0843B3 — called between the two type-0x09 LDIR event posts at 0x02264C. What does it do with the D005F8/D02510 buffers? (d) ★★★ DECODE 0x0229C5 — called by type-0x09 callers 0x022623 and 0x02288D before event posting. Helper for the event subsystem? (e) ★★★ DECODE 0x092F87/0x092F95 — called by type-0x09 callers 0x022878/0x0228CC before posting. Math/computation helpers? (f) ★★ DECODE 0x05C634 — graph fallback display manager (from session 583 NEXT list). (g) ★★ DECODE 0x023057 — graph fallback Z-path target (from session 583 NEXT list). (h) ★ IMPLEMENT PORT 0xDCA0 IN PERIPHERALS.JS — return 0x00 or configurable value. --END SESSION 585--
 
 **Session 584 findings (2026-06-09)**:
 
