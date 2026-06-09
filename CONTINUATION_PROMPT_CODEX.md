@@ -22,10 +22,19 @@
 > **NEXT STEP for this track (orchestration/integration, NOT more decoding):** drive the home-screen populator (`0x044D3F`/`0x044DB3`, gated by MathPrint flag `D00082` bit 7 + the `D02032` gate) to completion so a live edit context (cursor + edit buffer + descriptors) exists, THEN feed the key (with `D008E0` seeded) and verify `2` reaches VRAM at `0xD40000`. The loop's recent token-machinery decodes (sessions 566-570: `D0231A` cursor, `D0231D` boundary, `D0243A` edit cursor, token classifiers) are directly relevant to this. See memory note `runtime-has-no-interpreter.md`.
 >
 > **UPDATE — ITERATION 2 (2026-06-08, `probe-edit-context.mjs`):** the populator **cannot be driven cold**. `0x044D3F` error-bails in Phase 1 within ~86 steps — `CALL 0x07F81D` (save display/cursor state) returns carry → error trampoline `0x044D3B`→`0x061D52` → longjmp (crashes on garbage SP unless `D008E0` seeded; seeding it lets the bail return cleanly to idle but still no populate). The bail is BEFORE the MathPrint/`D02032`/`D00603` gates, so seeding those does nothing. **Conclusion: the populator needs live OS display-stack context it only has when the home screen is entered via its normal flow (jump table `0x044A6E`).** REVISED NEXT STEP: drive the **home-screen ENTRY sequence** — the caller chain that reaches `0x044D3F` through the `0x044A6E` jump-table dispatch — so the display/cursor save-state is valid, rather than calling the populator standalone. Probe: `TI-84_Plus_CE/probe-edit-context.mjs`.
+>
+> **UPDATE — ITERATIONS 3-5 (2026-06-09, human session — ROOT CAUSE FOUND: missing OS VAT/RAM init).** New probes (run via watchdog): `probe-interactive-irq.mjs`, `probe-home-paint.mjs`, `probe-vat-stall.mjs`, `probe-home-paint-verify.mjs`.
+> 1. **The boot-to-idle reaches a BARE idle, NOT a live home screen.** At idle: VRAM is uniform white (0 black pixels), `D007E0`=**0x00** (invalid display mode — validator 0x09E640 wants 0x40/0x49/0x43/0x48/0x44/0x4A/0x4B), `D007CA`=0, MathPrint `D00082`=0, and **all VAT pointers (D02590/D02593/D0258A/D0258D/D0259A/D0259D) = 0x000000**. The home-screen application context (cxMain) was never launched.
+> 2. **The interrupt path works** (cpu-runtime implements IM-wake-from-HALT). Enabling the timer (`peripherals.setTimerEnabled(true)`) + a seeded key: the timer IRQ vectors to **0x0038** (im=1, NOT IM2 yet), wakes the `EI;HALT` idle, and `_GetCSC` reads+consumes the key (D00080 bit3 cleared). BUT the digit is **silently discarded** — dispatcher `0x099921`/token-proc `0x03E1B4` never fire — because there is no active home-screen context to dispatch into. (Also: key pre-processor `0x06CE73` reads `D0146D`, a SEPARATE pending-key buffer never seeded by these probes.)
+> 3. **Driving the home repaint `0x058241` (cxMain pre-handler) reaches CoorMon** (`0x0582B8`→`0x08BF22`) **but spins forever** in hot loop `0x082be2`↔`0x084711` (~123K-195K iters). `0x062055` cold does NOT write D007E0=0x40 (takes the early gate path back to idle).
+> 4. ★★★★★ **ROOT CAUSE: the spin is the SYMBOL-TABLE (VAT) SEARCHER `0x0846EA`** (loop body `0x084711`, rewind `0x082BE2` HL-=6, 235 callers). Because the VAT boundary pointers are all 0, the search walks RAM forever instead of terminating. **Forcing the VAT pointers to 0xD3FFFF (empty VAT) → search terminates in 0 iters → CoorMon proceeds and WRITES VRAM** (black 0→22525). This is the first time OS code rendered to the home screen via its own path. **HOWEVER** the output is GARBLED (solid black band rows 0-71 + an 0xAA52 color region, not recognizable text) because only the boundary was faked — the VAT *contents* and other OS data structures are not real.
+> 5. **CONCLUSION (supersedes the iteration-2 "populator/display-stack" framing): the blocker is OS RAM/VAT/system-variable INITIALIZATION, not a single entry point.** The shortcut boot (`0x000000`→`0x08C331`→`0x0802B2`→`0x0019be`) reaches idle but never runs the OS's memory/VAT init, so every OS routine that touches the VAT runs away. **NEXT STEP: find and run the real OS VAT/RAM/system-var init** (who normally writes valid values to D02590/D0259A/D0259D — a `_MemClear`/`InitVAT`-equivalent stage missing between `0x0802B2` and the event loop). Then re-drive `0x058241` and expect a clean home-screen render; then deliver the key via the timer ISR for the round-trip.
 
 ---
 
-**Last updated**: 2026-06-09 (auto-session 591 — **★★★ 0x07F7A8 TYPE CLASSIFIER DECODED (21B not 15B — AND 0x3F mask + cascading CP checks, accepts remapped types {0x0C,0x1B,0x1D,0x1E,0x1F} via Z flag, CP A self-compare trick for range 0x1D-0x1F, 62 callers ROM-wide — heavily-used utility). ★★★ 0x07FEE1 SEARCH DISPATCHER DECODED (20B: CALL 0x08021F primary search, JR C not-found, PUSH AF/XOR A/CALL 0x07FEFC resolver/POP AF, OR (HL) merge into D005F8, 2 callers both from 0x07FEB6; BONUS not-found path at 0x07FEF5: type-0x21 retries through resolver, type-0x1C returns immediately). ★★★ 0x07FD30 11-BYTE BUFFER SWAP DECODED (20B: LD HL,D00603/LD DE,D005F8/LD B,0x0B, byte-by-byte swap loop using A+C temps with DJNZ, 72 callers ROM-wide — core symbol table primitive). ★★★ 0x07FEFC TYPE-GATED RESOLVER WITH SEARCH LOOP DECODED (59B: AND 0x3F gate accepts type-0x00/0x20 only, calls 0x07FD4A/0x07F7BD/0x07F98B/0x07CFA7/0x07F8FE, reads D005F9 type with thresholds 0xE4→0x07FE20 and 0x1D→RET NC, iterates via JR back to type-read, D00603+D0063A shadow buffers, 1 caller from 0x07FEE1). BONUS: adjacent utilities 0x07FF38 (7B CP 0x80), 0x07FF3F (7B CP 0x24), 0x07FF49 (16B wrapper→0x07FF59 deeper resolver with 0x06868A/0x08021B/0x09C4E0). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-09 (auto-session 592 — **★★★ 0x07FD4A DESCRIPTOR FIELD CHECK DECODED (6B: LD A,(D005FA)/AND A/RET — tests descriptor byte +2 for zero, Z=bail, 120 callers ROM-wide — massively-used symbol table primitive). ★★★ 0x07F7BD PRIMARY TYPE READER DECODED (7B: LD A,(D005F8)/AND 0x3F/RET — reads+masks first byte of primary descriptor buffer, 197 callers ROM-wide — THE most-called symbol table utility). ★★★ 0x07F98B SHADOW-TO-SECONDARY COPY DECODED (6B stub: LD DE,D0063A/JR 0x07F974 → 11×LDI/RET — copies 11-byte shadow descriptor D00603→D0063A, 2 callers; shared copy block 0x07F974 has 13 callers). ★★★ 0x07CFA7 MULTI-HELPER RESOLVE ORCHESTRATOR DECODED (41B: 8 CALL targets 0x07CF9D/0x07FE9C/0x07F7A4/0x07FE5A/0x07F16C/0x07C8B7/0x07F7D6/0x07CF8E, PUSH AF/POP AF save, RET NZ/JP 0x07FE24 conditional, 7 callers — intermediate resolver step in symbol table subsystem). GOLDEN REGRESSION 26/26 PASS.**)
+
+> Previous: 2026-06-09 (auto-session 591 — 0x07F7A8 type classifier 21B 62 callers, 0x07FEE1 search dispatcher 20B, 0x07FD30 11-byte buffer swap 20B 72 callers, 0x07FEFC type-gated resolver 59B)
 
 > Previous: 2026-06-09 (auto-session 590 — 0x07F796 multiply-by-9 14B, 0x061D3A E_UNDEFINED error stub 4B + shared handler 31B + setjmp recovery 30B, 0x07FEB6 dual-descriptor search 43B, 0x09A40A CplxObj special case 11B, ROM tables 0x09A415+0x09A4D5 fully dumped)
 
@@ -100,6 +109,52 @@
 > Previous: 2026-06-07 (auto-session 555 — small font=same table, BPP cluster 0x052Axx decoded, D014FE mapped, IY+0x4A fully mapped)
 
 > Previous: 2026-06-07 (auto-session 552 — 0x04C979 width clipping, 0x0A26D6 renderer exit, 0x07BF3E glyph table, 0x0A23E5 blit loop)
+
+**CC session 592 (2026-06-09, auto-continuation)**:
+Picked priorities (b)-(e) from session 591 NEXT list — 4 independent ★★★ decode tasks.
+Dispatched 4 Codex agents in parallel (1/4 exit 0 = P4, 3/4 exit 1). All 4 probes created (Codex P4 worked, P1-P3 via Sonnet fallback). All probes Opus-verified (exit 0, output analyzed against raw bytes).
+
+(1) ★★★ 0x07FD4A DESCRIPTOR FIELD CHECK DECODED (probe-phase592-decode-07FD4A.mjs, Sonnet P1):
+- **Function**: 0x07FD4A-0x07FD4F (6 bytes). Raw bytes: 3A FA 05 D0 A7 C9.
+- **Semantics**: LD A,(D005FA) → AND A → RET. Loads descriptor byte at offset +2 (D005FA = D005F8+2), tests if zero via AND A which sets Z flag.
+- **Purpose**: When Z is set (byte is zero), the resolver at 0x07FEFC bails to 0x07FAC2. D005FA is the 3rd byte of the 11-byte primary descriptor buffer — likely a "valid/present" flag or length byte.
+- **120 callers** — one of the most-called functions in the ROM. Heavy clusters in 0x05xxxx (equation editing), 0x068xxx-0x069xxx (graph subsystem), 0x07Cxxx-0x07Fxxx (symbol table core), 0x09xxxx (computation/lookup), 0x0Axxxx (display/rendering).
+- **Pure register**: no CALL/JP targets, no IY, no ports. RAM: D005FA read-only.
+
+(2) ★★★ 0x07F7BD PRIMARY TYPE READER DECODED (probe-phase592-decode-07F7BD.mjs, Sonnet P2):
+- **Function**: 0x07F7BD-0x07F7C3 (7 bytes). Raw bytes: 3A F8 05 D0 E6 3F C9.
+- **Semantics**: LD A,(D005F8) → AND 0x3F → RET. Reads the FIRST byte of the primary descriptor buffer (D005F8) and masks to the low 6 bits, returning the type code in A.
+- **Purpose**: THE primary type-reading utility. The 0x3F mask extracts the type field from the first descriptor byte, which also carries flags in the upper 2 bits. Resolver 0x07FEFC calls this and checks if result == 0x20.
+- **197 callers** — the MOST-called function discovered so far in the symbol table subsystem (more than 0x07F7A8's 62 or 0x07FD30's 72). Heavy clusters in 0x03Dxxx-0x04Bxxx (home screen/equation), 0x058xxx-0x05Fxxx (display/editing), 0x063xxx-0x06Exxx (mode/graph), 0x07Cxxx-0x086xxx (symbol table core, densest), 0x09xxxx (computation/lookup).
+- **Confirms**: the type classifier 0x07F7A8 (which also does AND 0x3F) uses the SAME mask and operates on the same field, but with a multi-compare filter. 0x07F7BD is the raw reader; 0x07F7A8 is the classifier built on top.
+- **Pure register**: no CALL/JP targets, no IY, no ports. RAM: D005F8 read-only.
+
+(3) ★★★ 0x07F98B SHADOW-TO-SECONDARY COPY DECODED (probe-phase592-decode-07F98B.mjs, Sonnet P3):
+- **Function**: 0x07F98B-0x07F990 (6 bytes). Raw bytes: 11 3A 06 D0 18 E3.
+- **Semantics**: LD DE,D0063A (secondary shadow buffer) → JR 0x07F974 (shared 11×LDI block copy).
+- **Shared copy block at 0x07F974** (23 bytes): 11× `ED A0` (LDI) → C9 (RET). With HL=D00603 (set by caller 0x07FEFC) and DE=D0063A: copies 11 bytes from shadow descriptor buffer to secondary shadow buffer.
+- **CONFIRMS triple-buffer architecture**: primary (D005F8), shadow (D00603), secondary shadow (D0063A). The swap at 0x07FD30 exchanges primary↔shadow, then 0x07F98B snapshots shadow→secondary for rollback/comparison during resolve iterations.
+- **2 callers for 0x07F98B**: 0x07FF26 (inside 0x07FF49 wrapper from session 591), 0x08C219.
+- **13 callers for shared block 0x07F974**: diverse usage across the ROM for 11-byte block copies.
+- **RAM**: D0063A (write destination), D00603 (read source via HL from caller).
+
+(4) ★★★ 0x07CFA7 MULTI-HELPER RESOLVE ORCHESTRATOR DECODED (probe-phase592-decode-07CFA7.mjs, Codex P4):
+- **Function**: 0x07CFA7-0x07CFCF (41 bytes). Raw bytes verified.
+- **Semantics**: CALL 0x07CF9D → CALL 0x07FE9C → CALL 0x07F7A4 → PUSH AF → CALL 0x07FE5A (reverse-remap) → LD A,0x04 → CALL 0x07F16C → CALL 0x07C8B7 → CALL 0x07F7D6 → CALL 0x07CF8E → POP AF → RET NZ → JP 0x07FE24 (forward-remap).
+- **Purpose**: Orchestrates 8 helper calls in the resolve loop. Saves/restores AF across a remap+resolve+unremap sequence. If the result is NZ (not-found/failed), returns to caller; if Z (success), jumps to forward-remap 0x07FE24 to restore the type mapping.
+- **KEY INSIGHT**: the A=0x04 constant before CALL 0x07F16C suggests a "search mode" or "operation type" parameter — mode 4 may be "resolve indirect reference" or "follow type chain".
+- **7 callers**: 0x021E48 (JP), 0x067794, 0x067AF3, 0x07D272 (JP), 0x07FF2A, 0x09D56F, 0x09D587.
+- **CALL targets (8)**: 0x07CF9D, 0x07FE9C, 0x07F7A4, 0x07FE5A, 0x07F16C, 0x07C8B7, 0x07F7D6, 0x07CF8E.
+- **JP targets (1)**: 0x07FE24 (forward-remap, known from session 590).
+- **RAM**: none directly in this function (all via sub-calls).
+
+(5) CODEX: 1/4 (P4 exit 0 created working probe). P1/P2/P3 exit 1. P1/P2/P3 completed via Sonnet fallback. All probes Opus-verified (exit 0, output analyzed against raw bytes). Golden regression 26/26 PASS.
+
+**FUNCTIONS DECODED**: 0x07FD4A (6B descriptor field check, 120 callers), 0x07F7BD (7B primary type reader, 197 callers), 0x07F98B (6B shadow→secondary copy, 2 callers + shared 0x07F974 13 callers), 0x07CFA7 (41B multi-helper resolve orchestrator, 7 callers).
+**ARCHITECTURE FOUND**: Primary type reader 0x07F7BD (197 callers) is THE most-called symbol table function — even more than the type classifier 0x07F7A8 (62). Descriptor field check 0x07FD4A (120 callers) tests D005FA (byte +2) for zero — a "present/valid" gate. Triple-buffer architecture confirmed: D005F8 (primary) ↔ D00603 (shadow) → D0063A (secondary shadow for snapshot/rollback). Resolve orchestrator 0x07CFA7 passes mode constant A=0x04 to 0x07F16C.
+**SUB-FUNCTIONS DISCOVERED**: 0x07CF9D (called by orchestrator), 0x07FE9C (called by orchestrator), 0x07F7A4 (called by orchestrator — 3 bytes before type classifier 0x07F7A8), 0x07F16C (called with A=0x04 mode), 0x07C8B7 (called in resolve sequence), 0x07F7D6 (called in resolve sequence), 0x07CF8E (called in resolve sequence).
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★ DECODE 0x07F8FE — called with HL=D0063A at end of resolve loop (carried from session 591). (c) ★★★ DECODE 0x07CF9D — first call in orchestrator 0x07CFA7, likely setup/init. (d) ★★★ DECODE 0x07F7A4 — 3 bytes before type classifier 0x07F7A8, called by orchestrator (possibly preamble or separate entry point). (e) ★★★ DECODE 0x07F16C — called with A=0x04 "mode" parameter by orchestrator, purpose unclear. (f) ★★★ DECODE 0x07C8B7 — called in resolve sequence by orchestrator. (g) ★★★ DECODE 0x07FE9C — called second in orchestrator sequence. (h) ★★ DECODE 0x05C634 — graph fallback display manager (carried from session 583). (i) ★★ DECODE 0x023057 — graph fallback Z-path target (carried from session 583). (j) ★ IMPLEMENT PORT 0xDCA0 IN PERIPHERALS.JS — return 0x00 or configurable value. (k) ★ FIX ED-PREFIX MASK IN HAND-ROLLED DISASSEMBLER — future probes should use 0xC7 not 0xCF for LD rp,(nn) group. --END SESSION 592--
 
 **CC session 591 (2026-06-09, auto-continuation)**:
 Picked priorities (b)-(e) from session 590 NEXT list — 4 independent ★★★ decode tasks.
