@@ -25,7 +25,9 @@
 
 ---
 
-**Last updated**: 2026-06-09 (auto-session 586 — **★★★ 0x0820CD DESCRIPTOR BUFFER VALIDATOR DECODED (32B, CPIR search of 8 bytes at D005F9 for zero byte, validates type-0x5D descriptor before D0259A shortcut path, 20 callers). ★★★ 0x0843B3 TYPE-0x72 LOOKUP SETUP DECODED (38B, writes 0x72 to D005F9 search key, calls 0x09D454 + 0x0992C3, stores to D0243A, computes D008D6-DE difference). ★★★ 0x0229C5 EVENT HELPER DECODED (38B+, dispatches on D008EE value 1/2, calls 0x000138 system routine, decoder had CP-immediate bug — corrected in analysis). ★★★ 0x092F87/0x092F95 SEPARATE ADJACENT FUNCTIONS DECODED (14B + 11B, NOT overlapping, both read D01D0C — 0x092F87 calls 0x092FC7 helper and returns D008F0 pointer, 0x092F95 dispatches on D01D0C zero/non-zero). 5 NEW RAM ADDRESSES MAPPED (D0243A, D008D6, D008EE, D01D0C, D008F0). GOLDEN REGRESSION 26/26 PASS.**)
+**Last updated**: 2026-06-09 (auto-session 587 — **★★★ 0x09D454 TYPE-0x5F SEARCH KEY VALIDATOR DECODED (31B, reads D005F9 CP 0x5F, checks D005FA non-zero + D007E0==0x46 mode gate, 3 RAM refs). ★★★ 0x0992C3 SYMBOL TABLE COMPUTATION DISPATCHER DECODED (67B, saves D0243A→D008D6, D0008A→D0008B, HL→D00687, calls 6 sub-functions with Z/NZ dispatch cascading through 0x0801D9/0x07F9FB/0x07FA07/0x07F7A8/0x08012D/0x05E2C0, returns carry on error). ★★★ 0x092FC7 LIST RECORD COPIER DECODED (20B, CALL 0x092FDD walker + LDIR 2B header to D008E6 + .SIS LD BC reload + LDIR body — variable-length record copy from list table D0150B to D008E6). ★★★ 0x092FDD LIST TABLE WALKER DECODED (12B, HL=D0150B, DEC A loop calling 0x04C90D to skip A-1 records). ★★★ 0x000138 SYSTEM JUMP TABLE IDENTIFIED (50 entries × 4B = 200B of consecutive JP addr, entry 0 → 0x0021C2, OS API vector table in low ROM). ★★★ 0x092FB1/0x092FC1 BRANCH TARGETS DECODED (0x092FB1: INC A + CALL 0x092FC7 + LD HL,D008F0 + .SIS LD DE,(D008E8) + RET; 0x092FC1: CALL 0x08384B + EX DE,HL + RET). DECODER NOTE: .SIS prefix (0x40) not handled by probe decoder — corrected via raw-byte verification. GOLDEN REGRESSION 26/26 PASS.**)
+
+> Previous: 2026-06-09 (auto-session 586 — 0x0820CD descriptor buffer validator 32B, 0x0843B3 type-0x72 lookup setup 38B, 0x0229C5 event helper 38B+, 0x092F87/0x092F95 separate functions 14B+11B)
 
 > Previous: 2026-06-09 (auto-session 585 — **★★★ 0x08011F SYMBOL TABLE TYPE-CHECK GUARD DECODED (7B, 3 insns, 11 callers: loads D005F9 type byte, CP 0x5D, returns Z if type==0x5D — gates early-exit path 0x083833 in symbol table searcher 0x0846EA. Type 0x5D triggers special-case handler that sets A=1, calls 0x0820CD, loads DE from D0259A bypassing normal backward search). ★★★ 0x082BE2 SYMBOL TABLE RECORD REWIND DECODED (7B, 7 insns, 16 callers: 6×DEC HL + RET = HL-=6 pointer rewind — CONFIRMS 6-BYTE SYMBOL TABLE RECORDS, not 3-byte as session 584 stated. The AND 0x3F type mask is applied by caller 0x0846EA after this call, not inside). ★★★ 0x04C885 MATCH RECORD STORE DECODED (16B, 5 insns, 6 callers: stores B+DE as 3-byte record at D02AD7-D02AD9 then reloads DE — pure leaf utility. D02AD7-D02AD9 is the "last matched record data" buffer used by 0x0846EA after symbol table match). ★★★ TYPE-0x09 EVENTS TRACED (8 callers, ALL in 0x0225xx-0x0229xx OS core event subsystem: first 2 callers at 0x02262C/0x02265D do LDIR copies of 9B to D005F8 and 65B to D02510 around event post; 6 remaining callers use IX-relative stack-local buffers with no LDIR; callers 0x022896/0x0228E3 call helpers 0x092F87/0x092F95 before posting; caller 0x022765 processes token bytes 0xF5/0xF6 in DJNZ loop storing 0x2E/0x2F — likely minus/decimal editing). GOLDEN REGRESSION 26/26 PASS.**)
 
@@ -132,6 +134,54 @@
 **ARCHITECTURE**: Type-0x5D alternate path validated — 0x0820CD uses CPIR to validate descriptor buffer before using D0259A shortcut. Type-0x72 is a distinct symbol type with its own lookup setup (0x0843B3).
 
 NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★ DECODE 0x09D454 — first call from 0x0843B3 type-0x72 lookup. (c) ★★★ DECODE 0x0992C3 — second call from 0x0843B3 type-0x72 lookup. (d) ★★★ DECODE 0x092FC7 — helper called by 0x092F87 after loading D01D0C. (e) ★★★ DECODE 0x000138 — system routine called by 0x0229C5 event helper. (f) ★★★ MAP D01D0C — find all refs to understand this shared variable (0x092F87 and 0x092F95 both read it). (g) ★★ DECODE 0x05C634 — graph fallback display manager (carried from session 583/585). (h) ★★ DECODE 0x023057 — graph fallback Z-path target (carried from session 583/585). (i) ★ IMPLEMENT PORT 0xDCA0 IN PERIPHERALS.JS — return 0x00 or configurable value. --END SESSION 586--
+
+**CC session 587 (2026-06-09, auto-continuation)**:
+Picked priorities (b)-(e) from session 586 NEXT list — 4 independent ★★★ decode tasks.
+Dispatched 4 Codex agents in parallel (all 4 succeeded — first session with 4/4 Codex success).
+
+(1) ★★★ 0x09D454 TYPE-0x5F SEARCH KEY VALIDATOR DECODED (probe-phase587-decode-09D454.mjs, Codex P1):
+- **Function**: 0x09D454-0x09D472 (31 bytes).
+- **Semantics**: LD A,(D005F9) → CP 0x5F → JR NZ,0x09D49A → LD A,(D005FA) → OR A → JP Z,0x09D50D → LD A,(D007E0) → CP 0x46 → JP NZ,0x09D50D → LD HL,0x05F9 → RET NC.
+- **Purpose**: Validates the search key at D005F9. Checks type==0x5F, D005FA non-zero, and D007E0==0x46 (mode check). Only falls through to HL=0x05F9 when ALL three conditions met. Otherwise jumps to 0x09D49A (type mismatch) or 0x09D50D (subfield/mode mismatch).
+- **Context**: First call from 0x0843B3 (type-0x72 lookup setup). Since 0x0843B3 writes 0x72 to D005F9 before calling, the CP 0x5F test will ALWAYS fail → JR 0x09D49A. So for type-0x72, this function always takes the NZ branch.
+- **RAM**: D005F9 (search key type), D005FA (search key subfield), D007E0 (mode byte).
+- **No subcalls**: Pure validation, no CALL instructions.
+
+(2) ★★★ 0x0992C3 SYMBOL TABLE COMPUTATION DISPATCHER DECODED (probe-phase587-decode-0992C3.mjs, Codex P2):
+- **Function**: 0x0992C3-0x099305+ (67+ bytes, continues beyond RET C at 0x099305).
+- **Semantics**: PUSH AF → LD DE,(D0243A) → LD (D008D6),DE → LD A,(D0008A) → LD (D0008B),A → POP AF → LD (D00687),HL → CALL 0x0801D9 → Z-dispatch → ...
+- **Purpose**: Saves D0243A→D008D6, D0008A→D0008B, HL→D00687, then cascading dispatch through 6 sub-functions: 0x0801D9 (first check), 0x07F9FB (cleanup), 0x07FA07, 0x07F7A8, 0x08012D, 0x05E2C0 (final call with A=0x08). Returns carry on error.
+- **KEY INSIGHT**: D0243A is SAVED to D008D6 at entry — the "compare pointer" from session 586 is a snapshot of D0243A before this computation runs. The 6 sub-functions are all in the 0x07Fxxx-0x080xxx range (symbol table/error handling area).
+- **RAM**: D0243A, D008D6, D0008A, D0008B, D00687 (5 addresses).
+- **CALL targets**: 0x0801D9, 0x07F9FB, 0x07FA07, 0x07F7A8, 0x08012D, 0x05E2C0.
+- **Branch targets**: 0x0992A4, 0x0992E9, 0x0992F9, 0x09934A, 0x0993DA.
+
+(3) ★★★ 0x092FC7 LIST RECORD COPIER DECODED (probe-phase587-decode-092FC7.mjs, Codex P3 — .SIS prefix corrected via raw-byte verification):
+- **Function**: 0x092FC7-0x092FDC (20 bytes, corrected from probe's 26B due to .SIS misparse).
+- **Semantics (corrected)**: CALL 0x092FDD → LD DE,D008E6 → LD BC,2 → LDIR → .SIS LD BC,(D008E6) → LDIR → RET.
+- **Purpose**: Variable-length record copy from list table to D008E6. First copies 2-byte header (record size) via LDIR, then reloads that value as BC and copies the body. The .SIS prefix (0x40) uses 16-bit MBASE-relative addressing to read BC from D008E6.
+- **0x092FDD sub-function** (12 bytes): LD HL,D0150B → DEC A loop calling 0x04C90D + ADD HL,DE to skip A-1 records. Returns HL pointing to the Ath record in the list table.
+- **0x092FB1** (non-zero path, 16 bytes corrected): INC A → CALL 0x092FC7 → LD HL,D008F0 → .SIS LD DE,(D008E8) → ADD HL,DE → RET.
+- **0x092FC1** (zero path, 6 bytes): CALL 0x08384B → EX DE,HL → RET.
+- **CALL targets**: 0x092FDD, 0x04C90D, 0x08384B.
+- **RAM**: D008E6 (STAT struct / copy destination), D0150B (list table base), D008F0, D008E8.
+- **DECODER CAVEAT**: Probe decoder does NOT handle .SIS prefix (0x40). All .SIS instructions verified against raw ROM bytes.
+
+(4) ★★★ 0x000138 SYSTEM JUMP TABLE IDENTIFIED (probe-phase587-decode-000138.mjs, Codex P4):
+- **NOT a function**: 0x000138 is the start of a flat jump table in low ROM. 50 consecutive entries, each a 4-byte `JP addr` instruction.
+- **Table layout**: Entry N at 0x000138 + 4*N. Entry 0 (0x000138) → JP 0x0021C2. Entry 1 (0x00013C) → JP 0x0021CE. ... Entry 49 (0x0001FC) → JP 0x0025D6.
+- **Purpose**: OS system call vector table. Fixed addresses for stable API entry points. When 0x0229C5 does `CALL 0x000138`, it's calling vector 0 → 0x0021C2.
+- **KEY ARCHITECTURE**: This is the eZ80 equivalent of a syscall table. The JP instructions provide one level of indirection so the actual implementation addresses can change across OS versions while the vector addresses remain fixed.
+- **Targets range**: 0x0021C2-0x0025D6 (all in the 0x002xxx boot/system area).
+- **Notable duplicate entries**: 0x000154 and 0x000158 both → 0x00224C; 0x0001A8 and 0x0001AC both → 0x0023AD; 0x0001C4 and 0x0001C8 both → 0x00245A.
+
+(5) CODEX: 4/4 succeeded (codex v0.135.0 — all 4 agents produced valid probe files). ROM path error in all 4 probes fixed via Sonnet fallback agent (used 'ROM.rom' instead of 'TI-84_Plus_CE/ROM.rom'). All probes Opus-verified (exit 0, output analyzed + raw-byte crosscheck for .SIS prefix). Golden regression 26/26 PASS.
+
+**FUNCTIONS DECODED**: 0x09D454 (31B type-0x5F validator), 0x0992C3 (67B+ computation dispatcher, 6 subcalls), 0x092FC7 (20B list record copier, .SIS prefix), 0x092FDD (12B list table walker), 0x092FB1 (16B non-zero branch), 0x092FC1 (6B zero branch).
+**ARCHITECTURE FOUND**: 0x000138 = OS system jump table (50 entries, 200B). Vector 0 → 0x0021C2.
+**NEW RAM MAPPED**: D0008A, D0008B (saved by 0x0992C3), D00687 (HL save target), D0150B (list table base used by 0x092FDD), D008E8 (read via .SIS by 0x092FB1).
+
+NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★ DECODE 0x0021C2 — system vector 0 target, called by 0x0229C5 event helper via jump table 0x000138. What is this fundamental OS routine? (c) ★★★ DECODE 0x09D49A — NZ branch from 0x09D454 (taken for type≠0x5F, which includes type-0x72). The actual code path for type-0x72 lookups. (d) ★★★ DECODE 0x0801D9 — first call from 0x0992C3 computation dispatcher. (e) ★★★ MAP D01D0C — find all refs to understand this shared variable (0x092F87 and 0x092F95 both read it). Carried from session 586. (f) ★★ DECODE 0x05C634 — graph fallback display manager (carried from session 583/585). (g) ★★ DECODE 0x023057 — graph fallback Z-path target (carried from session 583/585). (h) ★ IMPLEMENT PORT 0xDCA0 IN PERIPHERALS.JS — return 0x00 or configurable value. --END SESSION 587--
 
 **Session 585 findings (2026-06-09)**:
 
