@@ -20441,15 +20441,103 @@
       "timestamp": "2026-06-10T17:44:58Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "9eabede18fff",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 609 P2 \u2014 INVESTIGATE D000A3 BIT 3 SEMANTICS\n\n## Context\n\nThis is the TI-84 Plus CE RO",
+      "status": "success",
+      "duration_seconds": 79.274,
+      "timestamp": "2026-06-10T18:33:52Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "21d290903afb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 609 P1 \u2014 TEST D000A3 BIT 3 FIX FOR MULTI-KEY INTERACTIVE USE\n\n## Context\n\nThis is the",
+      "status": "completed",
+      "duration_seconds": 85.212,
+      "timestamp": "2026-06-10T18:33:57Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9488f7f1d730",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 609 P3 \u2014 VRAM PEAK CAPTURE AT STEP ~271K (Entry Line '2' Glyph)\n\n## Context\n\nTI-84 Pl",
+      "status": "success",
+      "duration_seconds": 91.406,
+      "timestamp": "2026-06-10T18:34:07Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ad3618732a8c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 609 P4 \u2014 DECODE 0x090917 WALKER LOOP CALLERS\n\n## Context\n\nTI-84 Plus CE ROM transpila",
+      "status": "success",
+      "duration_seconds": 95.801,
+      "timestamp": "2026-06-10T18:34:13Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "282c7b23de30",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 610 \u2014 P1: Decode Walker Caller Loop at 0x090888\n\n## Context\n\nThis is a TI-84 Plus CE ",
+      "status": "success",
+      "duration_seconds": 63.722,
+      "timestamp": "2026-06-10T21:54:06Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "44578eb81334",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 610 \u2014 P3: Post-Key1 Snapshot + Re-arm D007CA Hybrid\n\n## Context\n\nThis is a TI-84 Plus",
+      "status": "success",
+      "duration_seconds": 60.102,
+      "timestamp": "2026-06-10T21:54:06Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "01d356da4411",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 610 \u2014 P2: Trace Key1 vs Key2 Edit Buffer State\n\n## Context\n\nThis is a TI-84 Plus CE R",
+      "status": "success",
+      "duration_seconds": 77.505,
+      "timestamp": "2026-06-10T21:54:22Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2f6c7a7a13e9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 610 \u2014 P4: Investigate 0x0907D6 SET 3 Conditional\n\n## Context\n\nThis is a TI-84 Plus CE",
+      "status": "success",
+      "duration_seconds": 91.892,
+      "timestamp": "2026-06-10T21:54:40Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1729,
-    "cc_to_codex": 1729,
+    "total_calls": 1737,
+    "cc_to_codex": 1737,
     "codex_to_cc": 0,
-    "completed": 1121,
+    "completed": 1122,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 450.247
+    "avg_duration_seconds": 448.545
   }
 }
