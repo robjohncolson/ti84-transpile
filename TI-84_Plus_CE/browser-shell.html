@@ -1783,6 +1783,18 @@ $('btnBoot').addEventListener('click', async () => {
     kbd.handleKeyDown(e);
     const scanCode = getScanCodeForPcCode(e.code);
     if (scanCode != null) {
+      function rearmCxMain() {
+        if (!cpu?.memory || !romBytes) return;
+        for (let i = 0; i < 21; i++) {
+          cpu.memory[0xD007CA + i] = romBytes[0x0585D3 + i];
+        }
+        cpu.memory[0xD0008D] = romBytes[0x0585D3 + 21];
+        log('Re-armed D007CA for next keypress');
+      }
+
+      if (isColdbootRuntime() && scanCode != null) {
+        rearmCxMain();
+      }
       peripherals?.setKeyPressed?.(cpu?.memory, scanCode);
     }
     writeTranslatedKeyEvent(e.code);
