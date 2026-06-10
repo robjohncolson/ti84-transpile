@@ -20353,15 +20353,103 @@
       "timestamp": "2026-06-10T15:05:05Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "99a740388660",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 607 \u2014 P3: TRACE KEY2 RUNAWAY AT 0x090927\n\n## Goal\nTrace key2's execution to understan",
+      "status": "completed",
+      "duration_seconds": 111.406,
+      "timestamp": "2026-06-10T16:15:41Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "50270a3262c7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 607 \u2014 P1: POST-WIPE STATE CAPTURE PROBE\n\n## Goal\nBuild a probe that captures the full",
+      "status": "completed",
+      "duration_seconds": 117.937,
+      "timestamp": "2026-06-10T16:15:43Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "97062ccf674e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 607 \u2014 P4: DECODE 0x08DDxx CLUSTER (Key2-Only Blocks)\n\n## Goal\nDecode the 7 blocks at ",
+      "status": "blocked",
+      "duration_seconds": 140.062,
+      "timestamp": "2026-06-10T16:16:12Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e1f7d705bab4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 607 \u2014 P2: DECODE 0x04E07B (Memory Management Function)\n\n## Goal\nStatic-decode the fun",
+      "status": "completed",
+      "duration_seconds": 160.309,
+      "timestamp": "2026-06-10T16:16:28Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6dd64c8c5c35",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 608 P3 \u2014 Trace the Stack Leak in Key2 Runaway\n\n## Goal\nCreate a probe `TI-84_Plus_CE/",
+      "status": "blocked",
+      "duration_seconds": 28.933,
+      "timestamp": "2026-06-10T17:44:00Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c332f1179cfb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 608 P4 \u2014 VRAM Peak Capture with Fine-Grained Sampling\n\n## Goal\nCreate a probe `TI-84_",
+      "status": "completed",
+      "duration_seconds": 56.665,
+      "timestamp": "2026-06-10T17:44:31Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a9e505e28222",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 608 P1 \u2014 Selective State Zeroing for Multi-Key Dispatch\n\n## Goal\nCreate a probe `TI-8",
+      "status": "success",
+      "duration_seconds": 84.276,
+      "timestamp": "2026-06-10T17:44:51Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2bd6400ceb54",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 608 P2 \u2014 Decode 0x08F3DC (Cursor-Advance Function)\n\n## Goal\nCreate a probe `TI-84_Plu",
+      "status": "success",
+      "duration_seconds": 89.858,
+      "timestamp": "2026-06-10T17:44:58Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1721,
-    "cc_to_codex": 1721,
+    "total_calls": 1729,
+    "cc_to_codex": 1729,
     "codex_to_cc": 0,
-    "completed": 1117,
+    "completed": 1121,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 451.881
+    "avg_duration_seconds": 450.247
   }
 }
