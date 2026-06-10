@@ -20133,15 +20133,147 @@
       "timestamp": "2026-06-10T04:34:24Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "b0b59a177f5a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 602 \u2014 Priority 2: DECODE 0x055B8F and 0x058DCD (Pre-Convergence Functions)\n\n## Contex",
+      "status": "blocked",
+      "duration_seconds": 42.8,
+      "timestamp": "2026-06-10T05:43:29Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e41191e4445a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 602 \u2014 Priority 1: FIND THE D007CA RE-ARM MECHANISM\n\n## Context\n\nThis is a TI-84 Plus ",
+      "status": "blocked",
+      "duration_seconds": 73.457,
+      "timestamp": "2026-06-10T05:43:58Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "924d9579e60b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 602 \u2014 Priority 3: INVESTIGATE THE '8' GLYPH AT ENTRY LINE\n\n## Context\n\nThis is a TI-8",
+      "status": "completed",
+      "duration_seconds": 81.001,
+      "timestamp": "2026-06-10T05:44:13Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "0c803184c352",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 602 \u2014 Priority 4: FIND WHAT ZEROES VRAM AFTER THE PEAK\n\n## Context\n\nThis is a TI-84 P",
+      "status": "implemented",
+      "duration_seconds": 100.12,
+      "timestamp": "2026-06-10T05:44:34Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "54e8252e99a1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 603 \u2014 P4: Update phase602-vram-lifecycle.md with actual probe results\n\n## Context\n\nYo",
+      "status": "blocked",
+      "duration_seconds": 37.666,
+      "timestamp": "2026-06-10T11:33:56Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f145c02205d1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 603 \u2014 P3: Investigate the double wipe (0x0018F8 fires twice)\n\n## Context\n\nYou are wor",
+      "status": "blocked",
+      "duration_seconds": 60.05,
+      "timestamp": "2026-06-10T11:34:17Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "8c14e528b33e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 603 \u2014 P1: Trace call chain from cxMain (0x0585E9) to bulk wipe 0x0018F8\n\n## Context\n\n",
+      "status": "completed",
+      "duration_seconds": 78.823,
+      "timestamp": "2026-06-10T11:34:32Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6c4af9d7d44d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 603 \u2014 P2: Test context restore fix after bulk wipe\n\n## Context\n\nYou are working on th",
+      "status": "completed",
+      "duration_seconds": 84.732,
+      "timestamp": "2026-06-10T11:34:40Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c32d7f988acd",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 604 P2: Decode 0x013D9F \u2014 the second wipe's unique caller\n\n## Context\n\nIn the TI-84 P",
+      "status": "success",
+      "duration_seconds": 84.839,
+      "timestamp": "2026-06-10T12:44:55Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "391090ffa5e2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 604 P4: Peak-VRAM capture strategy \u2014 capture display at step ~264,500 before second w",
+      "status": "completed",
+      "duration_seconds": 91.89,
+      "timestamp": "2026-06-10T12:45:06Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "6b88d441b42f",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 604 P3: Trace the 0x02AF0F + 0x002696 loop (14 iterations in wipe call chain)\n\n## Con",
+      "status": "completed",
+      "duration_seconds": 101.428,
+      "timestamp": "2026-06-10T12:45:14Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b02c74caad3a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 604 P1: Decode 0x0158xx chain and 0x001872 (immediate callers of bulk wipe 0x0018F8)\n",
+      "status": "completed",
+      "duration_seconds": 139.587,
+      "timestamp": "2026-06-10T12:45:48Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1701,
-    "cc_to_codex": 1701,
+    "total_calls": 1713,
+    "cc_to_codex": 1713,
     "codex_to_cc": 0,
-    "completed": 1107,
+    "completed": 1113,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 456.175
+    "avg_duration_seconds": 453.55
   }
 }
