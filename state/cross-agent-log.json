@@ -19913,15 +19913,125 @@
       "timestamp": "2026-06-09T21:29:13Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "9f68023d7451",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 596 P2: Seed 0x08F941 + 0x090251, retranspile, verify\n\n## Context\nThe TI-84 Plus CE R",
+      "status": "completed",
+      "duration_seconds": 36.953,
+      "timestamp": "2026-06-09T22:45:30Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2c2b5ae83d40",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 596 P3: Decode key addresses from pass-2 trace suspects\n\n## Context\nThe TI-84 Plus CE",
+      "status": "blocked",
+      "duration_seconds": 50.63,
+      "timestamp": "2026-06-09T22:45:46Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "93462d8bd579",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 596 P1: Ring-buffer trace pass 2 to find reset-path block\n\n## Context\nThe TI-84 Plus ",
+      "status": "completed",
+      "duration_seconds": 78.349,
+      "timestamp": "2026-06-09T22:46:09Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b5877d6ae9a6",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 597 P3: Decode 0x0AF877 \u2014 split-screen path helper\n\n## Context\n\nTI-84 Plus CE ROM tra",
+      "status": "completed",
+      "duration_seconds": 53.083,
+      "timestamp": "2026-06-09T23:54:35Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7fca61081977",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 597 P1: Disassemble 0x040D11 \u2014 the actual key handler called by 0x030300\n\n## Context\n",
+      "status": "success",
+      "duration_seconds": 59.372,
+      "timestamp": "2026-06-09T23:54:38Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "584c86356363",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 597 P4: Decode 0x06FA60 \u2014 key handler from graph/font display function\n\n## Context\n\nT",
+      "status": "completed",
+      "duration_seconds": 58.541,
+      "timestamp": "2026-06-09T23:54:42Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "09e9659b913b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 597 P2: Dynamic trace probe \u2014 keypress flow through 0x030300/0x040D11\n\n## Context\n\nTh",
+      "status": "completed",
+      "duration_seconds": 89.094,
+      "timestamp": "2026-06-09T23:55:10Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "effef56eac80",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 598 P1: Extended character path completion probe\n\n## Context\nThe TI-84 Plus CE ROM tr",
+      "status": "completed",
+      "duration_seconds": 86.108,
+      "timestamp": "2026-06-10T01:06:07Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "697980507fcf",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 598 P3: Static decode of 0x058EDA (key classifier) + 0x0587E9 (convergence point)\n\n##",
+      "status": "completed",
+      "duration_seconds": 88.686,
+      "timestamp": "2026-06-10T01:06:13Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b78843a17885",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 598 P2: Command key dispatch \u2014 verify 0x099921 is reached\n\n## Context\nThe TI-84 Plus ",
+      "status": "completed",
+      "duration_seconds": 96.425,
+      "timestamp": "2026-06-10T01:06:19Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1681,
-    "cc_to_codex": 1681,
+    "total_calls": 1691,
+    "cc_to_codex": 1691,
     "codex_to_cc": 0,
-    "completed": 1094,
+    "completed": 1102,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 460.735
+    "avg_duration_seconds": 458.423
   }
 }
