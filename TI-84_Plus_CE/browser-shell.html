@@ -72,6 +72,12 @@ button.active { background: #2a5a2a; border-color: #4a8a4a; }
       </label>
       <span class="control-note" style="margin-bottom: 0;">CoorMon: re-enters 0x08C331 each frame. Coldboot: full boot + timer-driven event loop. Reset or Boot to apply.</span>
     </div>
+    <div class="controls" style="align-items: center;">
+      <label style="color: #999; font-size: 12px; cursor: pointer; user-select: none;">
+        <input id="preserveDisplay" type="checkbox" checked style="vertical-align: middle; margin-right: 3px;" />
+        Preserve Display (VRAM snapshot/restore between keypresses)
+      </label>
+    </div>
     <div class="controls">
       <button id="btnShowMode" disabled>MODE</button>
       <button id="btnShowPlot" disabled>Y=/Plot</button>
@@ -459,6 +465,7 @@ const CUSTOM_TEXT_MAX_LEN = 20;
 const CUSTOM_TEXT_BUFFER_LEN = 27;
 const LCD_VRAM_BASE = 0xD40000;
 const LCD_VRAM_BYTES = 320 * 240 * 2;
+const LCD_VRAM_PIXELS = 320 * 240;
 const ROM_FONT_BASE = 0x003D6E;
 const ROM_FONT_GLYPH_BYTES = 0x1C;
 const ROM_FONT_ROW_BYTES = 2;
@@ -578,6 +585,42 @@ function isColdbootRuntime() {
 
 function isCoorMonRuntime() {
   return runtimeMode === RUNTIME_MODE_COORMON;
+}
+
+// --- VRAM Snapshot/Restore (preserves display between keypresses in coldboot mode) ---
+let vramSnapshot = null;
+let vramSnapshotPeak = 0;
+const VRAM_SNAPSHOT_SAMPLE_INTERVAL = 5000; // sample every N blocks
+const VRAM_SNAPSHOT_THRESHOLD = 100;        // minimum non-white pixels to consider "has content"
+
+function countVRAMPixels() {
+  if (!cpu?.memory) return 0;
+  let count = 0;
+  for (let i = 0; i < LCD_VRAM_PIXELS; i++) {
+    const off = LCD_VRAM_BASE + (i << 1);
+    const word = cpu.memory[off] | (cpu.memory[off + 1] << 8);
+    if (word !== 0xFFFF) count++;
+  }
+  return count;
+}
+
+function captureVRAMSnapshot() {
+  if (!cpu?.memory) return;
+  vramSnapshot = new Uint8Array(LCD_VRAM_BYTES);
+  for (let i = 0; i < LCD_VRAM_BYTES; i++) {
+    vramSnapshot[i] = cpu.memory[LCD_VRAM_BASE + i];
+  }
+}
+
+function restoreVRAMSnapshot() {
+  if (!cpu?.memory || !vramSnapshot) return;
+  for (let i = 0; i < vramSnapshot.length; i++) {
+    cpu.memory[LCD_VRAM_BASE + i] = vramSnapshot[i];
+  }
+}
+
+function isPreserveDisplayEnabled() {
+  return $('preserveDisplay')?.checked === true;
 }
 
 function syncAutoRunButton() {
@@ -1803,8 +1846,45 @@ $('btnBoot').addEventListener('click', async () => {
     const mappedKey = KEY_MAP[e.code];
     if (mappedKey && !autoRunning && executor) {
       const stepCount = isColdbootRuntime() ? COLDBOOT_FRAME_STEPS : KEY_BURST_STEPS;
-      runSteps(stepCount);
-      flashStatus(`Key: ${mappedKey.label} → ${stepCount} steps`);
+      const useVramPreserve = isColdbootRuntime() && isPreserveDisplayEnabled();
+
+      if (useVramPreserve) {
+        // Run with VRAM peak tracking via onBlock callback
+        vramSnapshotPeak = 0;
+        let blockCount = 0;
+        const opts = getColdbootRunOptions(stepCount);
+        opts.onBlock = (pc) => {
+          blockCount++;
+          if (blockCount % VRAM_SNAPSHOT_SAMPLE_INTERVAL === 0) {
+            const px = countVRAMPixels();
+            if (px > vramSnapshotPeak) {
+              vramSnapshotPeak = px;
+              captureVRAMSnapshot();
+            }
+          }
+        };
+        const result = executor.runFrom(lastPc, lastMode, opts);
+        totalSteps += result.steps;
+        lastPc = result.lastPc;
+        lastMode = result.lastMode;
+
+        // If VRAM was wiped (current < threshold but peak was significant), restore
+        const currentPx = countVRAMPixels();
+        if (currentPx < VRAM_SNAPSHOT_THRESHOLD && vramSnapshotPeak > VRAM_SNAPSHOT_THRESHOLD && vramSnapshot) {
+          restoreVRAMSnapshot();
+          log(`<span class="info">VRAM restored: peak=${vramSnapshotPeak}px, post-run=${currentPx}px</span>`);
+        }
+
+        updateRegs();
+        syncLCDState();
+        if (lcd) lcd.renderFrame();
+        updateKeyStateDisplay();
+        updateKeyboardOverlay();
+        setStatus(`Key: ${mappedKey.label} → ${result.steps} steps (peak ${vramSnapshotPeak}px)`);
+      } else {
+        runSteps(stepCount);
+        flashStatus(`Key: ${mappedKey.label} → ${stepCount} steps`);
+      }
     }
   };
   kbdUp = (e) => {

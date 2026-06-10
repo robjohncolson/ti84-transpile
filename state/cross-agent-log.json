@@ -20529,15 +20529,103 @@
       "timestamp": "2026-06-10T21:54:40Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "c69325559571",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 611 \u2014 Priority 1: Capture VRAM at Peak During Each Key\n\n## Task\nBuild a probe that ca",
+      "status": "success",
+      "duration_seconds": 64.519,
+      "timestamp": "2026-06-10T22:44:00Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "21ad8248c516",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 611 \u2014 Priority 2: Integrate D007CA Re-Arm into Browser Shell\n\n## Task\nAdd the proven ",
+      "status": "completed",
+      "duration_seconds": 65.439,
+      "timestamp": "2026-06-10T22:44:02Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7a91cd4c9d8d",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 611 \u2014 Priority 3: Investigate Why VRAM=0 at Halt\n\n## Task\nBuild a probe that traces W",
+      "status": "completed",
+      "duration_seconds": 79.245,
+      "timestamp": "2026-06-10T22:44:18Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c2bb034e28ae",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 611 \u2014 Priority 4: Decode Token Reader Caller Loop (0x08F454 and 0x08EB9A)\n\n## Task\nDe",
+      "status": "complete",
+      "duration_seconds": 85.534,
+      "timestamp": "2026-06-10T22:44:26Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "e19d130e581a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 612 P3: Add VRAM Snapshot to Browser Shell\n\n## Context\nIn the TI-84 Plus CE ROM trans",
+      "status": "blocked",
+      "duration_seconds": 38.651,
+      "timestamp": "2026-06-10T23:33:54Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9909556794c3",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 612 P1: Intercept Second 0x0018F8 Wipe \u2014 Parameter Investigation\n\n## Context\nIn the T",
+      "status": "completed",
+      "duration_seconds": 73.644,
+      "timestamp": "2026-06-10T23:34:23Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "9e5770c9190a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 612 P2: Decode Outer Loop at 0x08F3B8\n\n## Context\nIn the TI-84 Plus CE ROM transpilat",
+      "status": "completed",
+      "duration_seconds": 86.897,
+      "timestamp": "2026-06-10T23:34:38Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7c81dee3bde4",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 612 P4: Multi-Key Test Probe (Programmatic Browser Shell Test)\n\n## Context\nIn the TI-",
+      "status": "completed_with_tooling_limitations",
+      "duration_seconds": 103.953,
+      "timestamp": "2026-06-10T23:35:01Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1737,
-    "cc_to_codex": 1737,
+    "total_calls": 1745,
+    "cc_to_codex": 1745,
     "codex_to_cc": 0,
-    "completed": 1122,
+    "completed": 1126,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 448.545
+    "avg_duration_seconds": 446.831
   }
 }
