@@ -1,0 +1,448 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const ROM_PATH = path.join(__dirname, 'ROM.rom');
+const START = 0x040d11;
+const MAX_BYTES = 400;
+
+const KNOWN_TARGETS = new Map([
+  [0x099921, '38-entry command dispatcher'],
+  [0x03e1b4, 'token processor'],
+  [0x030300, 'key handler caller'],
+  [0x03fa09, '_GetCSC'],
+  [0x02fd8f, 'warm entry'],
+  [0x02fe89, 'event loop relay'],
+  [0x040d11, 'THIS FUNCTION'],
+]);
+
+const CC = ['NZ', 'Z', 'NC', 'C', 'PO', 'PE', 'P', 'M'];
+const RP = ['BC', 'DE', 'HL', 'SP'];
+const RP2 = ['BC', 'DE', 'HL', 'AF'];
+const R = ['B', 'C', 'D', 'E', 'H', 'L', '(HL)', 'A'];
+const ALU = ['ADD A', 'ADC A', 'SUB', 'SBC A', 'AND', 'XOR', 'OR', 'CP'];
+
+const rom = fs.readFileSync(ROM_PATH);
+
+function hex(value, width) {
+  return value.toString(16).toUpperCase().padStart(width, '0');
+}
+
+function romOffset(addr) {
+  return addr & 0x3fffff;
+}
+
+function readU24(offset) {
+  return rom[offset] | (rom[offset + 1] << 8) | (rom[offset + 2] << 16);
+}
+
+function readS8(offset) {
+  const value = rom[offset];
+  return value & 0x80 ? value - 0x100 : value;
+}
+
+function bytesAt(offset, len) {
+  return Array.from(rom.subarray(offset, offset + len), (b) => hex(b, 2)).join(' ');
+}
+
+function annotateAddress(value) {
+  const known = KNOWN_TARGETS.get(value);
+  if (known) return `$${hex(value, 6)} <${known}>`;
+  if (value >= 0xd00000 && value <= 0xd70000) return `$${hex(value, 6)} [RAM]`;
+  return `$${hex(value, 6)}`;
+}
+
+function relTarget(addr, offset, len) {
+  return (addr + len + readS8(offset + len - 1)) & 0xffffff;
+}
+
+function decodeIyOffset(base) {
+  const d = readS8(base + 2);
+  const op = rom[base + 3];
+  const bit = (op >> 3) & 7;
+  const dStr = d >= 0 ? `+$${hex(d, 2)}` : `-$${hex(-d, 2)}`;
+  if ((op & 0xc7) === 0x46) return { len: 4, text: `BIT ${bit},(IY${dStr})` };
+  if ((op & 0xc7) === 0xc6) return { len: 4, text: `SET ${bit},(IY${dStr})` };
+  if ((op & 0xc7) === 0x86) return { len: 4, text: `RES ${bit},(IY${dStr})` };
+  return { len: 4, text: `IY CB ${hex(d & 0xff, 2)} ${hex(op, 2)}` };
+}
+
+function decodeEd(offset, addr, sis) {
+  const op = rom[offset + 1];
+  const immBytes = sis ? 2 : 3;
+  const readAddr = () => (sis
+    ? rom[offset + 2] | (rom[offset + 3] << 8)
+    : readU24(offset + 2));
+
+  const block = {
+    0x40: 'IN B,(C)', 0x41: 'OUT (C),B', 0x42: 'SBC HL,BC',
+    0x43: `LD (${annotateAddress(readAddr())}),BC`,
+    0x44: 'NEG', 0x45: 'RETN', 0x46: 'IM 0', 0x47: 'LD I,A',
+    0x48: 'IN C,(C)', 0x49: 'OUT (C),C', 0x4a: 'ADC HL,BC',
+    0x4b: `LD BC,(${annotateAddress(readAddr())})`,
+    0x4d: 'RETI', 0x4f: 'LD R,A',
+    0x50: 'IN D,(C)', 0x51: 'OUT (C),D', 0x52: 'SBC HL,DE',
+    0x53: `LD (${annotateAddress(readAddr())}),DE`,
+    0x56: 'IM 1', 0x57: 'LD A,I',
+    0x58: 'IN E,(C)', 0x59: 'OUT (C),E', 0x5a: 'ADC HL,DE',
+    0x5b: `LD DE,(${annotateAddress(readAddr())})`,
+    0x5e: 'IM 2', 0x5f: 'LD A,R',
+    0x60: 'IN H,(C)', 0x61: 'OUT (C),H', 0x62: 'SBC HL,HL',
+    0x67: 'RRD',
+    0x68: 'IN L,(C)', 0x69: 'OUT (C),L', 0x6a: 'ADC HL,HL',
+    0x6f: 'RLD',
+    0x72: 'SBC HL,SP',
+    0x73: `LD (${annotateAddress(readAddr())}),SP`,
+    0x78: 'IN A,(C)', 0x79: 'OUT (C),A', 0x7a: 'ADC HL,SP',
+    0x7b: `LD SP,(${annotateAddress(readAddr())})`,
+    0x7e: 'STMIX',
+    0xa0: 'LDI', 0xa1: 'CPI', 0xa2: 'INI', 0xa3: 'OUTI',
+    0xa8: 'LDD', 0xa9: 'CPD', 0xaa: 'IND', 0xab: 'OUTD',
+    0xb0: 'LDIR', 0xb1: 'CPIR', 0xb2: 'INIR', 0xb3: 'OTIR',
+    0xb8: 'LDDR', 0xb9: 'CPDR', 0xba: 'INDR', 0xbb: 'OTDR',
+  };
+
+  // OUT0 (n),r  /  IN0 r,(n)
+  if (op === 0x39 || op === 0x31 || op === 0x29 || op === 0x21 || op === 0x19 || op === 0x11 || op === 0x09 || op === 0x01) {
+    const r = (op >> 3) & 7;
+    const port = rom[offset + 2];
+    return { len: 3, text: `OUT0 ($${hex(port, 2)}),${R[r]}` };
+  }
+  if (op === 0x38 || op === 0x30 || op === 0x28 || op === 0x20 || op === 0x18 || op === 0x10 || op === 0x08 || op === 0x00) {
+    const r = (op >> 3) & 7;
+    const port = rom[offset + 2];
+    return { len: 3, text: `IN0 ${R[r]},($${hex(port, 2)})` };
+  }
+
+  const len = [0x43, 0x4b, 0x53, 0x5b, 0x73, 0x7b].includes(op) ? 2 + immBytes : 2;
+  return { len, text: block[op] ?? `ED $${hex(op, 2)}` };
+}
+
+function decodeCb(offset) {
+  const op = rom[offset + 1];
+  const r = op & 7;
+  const bit = (op >> 3) & 7;
+  if ((op & 0xc0) === 0x00) {
+    const ops = ['RLC', 'RRC', 'RL', 'RR', 'SLA', 'SRA', 'SLL', 'SRL'];
+    return { len: 2, text: `${ops[bit]} ${R[r]}` };
+  }
+  if ((op & 0xc0) === 0x40) return { len: 2, text: `BIT ${bit},${R[r]}` };
+  if ((op & 0xc0) === 0x80) return { len: 2, text: `RES ${bit},${R[r]}` };
+  if ((op & 0xc0) === 0xc0) return { len: 2, text: `SET ${bit},${R[r]}` };
+  return { len: 2, text: `CB $${hex(op, 2)}` };
+}
+
+function decode(offset, addr) {
+  let prefix = '';
+  let sis = false;
+  let consumedPrefix = 0;
+  const first = rom[offset];
+
+  if ([0x40, 0x49, 0x52, 0x5b].includes(first)) {
+    sis = true;
+    prefix = '.SIS ';
+    consumedPrefix = 1;
+  }
+
+  const base = offset + consumedPrefix;
+  const op = rom[base];
+  const immBytes = sis ? 2 : 3;
+  const readAddr = (at) => (sis
+    ? rom[at] | (rom[at + 1] << 8)
+    : readU24(at));
+
+  const withPrefix = (decoded) => ({
+    ...decoded,
+    len: decoded.len + consumedPrefix,
+    text: `${prefix}${decoded.text}`,
+  });
+
+  if (op === 0xed) return withPrefix(decodeEd(base, addr + consumedPrefix, sis));
+  if (op === 0xcb) return withPrefix(decodeCb(base));
+  if (op === 0xdd || op === 0xfd) {
+    const ix = op === 0xdd ? 'IX' : 'IY';
+    const next = rom[base + 1];
+
+    if (op === 0xfd && next === 0xcb) return withPrefix(decodeIyOffset(base));
+    if (op === 0xdd && next === 0xcb) {
+      const d = readS8(base + 2);
+      const cbop = rom[base + 3];
+      const bit = (cbop >> 3) & 7;
+      const dStr = d >= 0 ? `+$${hex(d, 2)}` : `-$${hex(-d, 2)}`;
+      if ((cbop & 0xc7) === 0x46) return withPrefix({ len: 4, text: `BIT ${bit},(IX${dStr})` });
+      if ((cbop & 0xc7) === 0xc6) return withPrefix({ len: 4, text: `SET ${bit},(IX${dStr})` });
+      if ((cbop & 0xc7) === 0x86) return withPrefix({ len: 4, text: `RES ${bit},(IX${dStr})` });
+      return withPrefix({ len: 4, text: `IX CB ${hex(d & 0xff, 2)} ${hex(cbop, 2)}` });
+    }
+
+    if (next === 0x36) {
+      const d = readS8(base + 2);
+      const dStr = d >= 0 ? `+$${hex(d, 2)}` : `-$${hex(-d, 2)}`;
+      return withPrefix({ len: 4, text: `LD (${ix}${dStr}),$${hex(rom[base + 3], 2)}` });
+    }
+    if ((next & 0xc7) === 0x46) {
+      const r = (next >> 3) & 7;
+      const d = readS8(base + 2);
+      const dStr = d >= 0 ? `+$${hex(d, 2)}` : `-$${hex(-d, 2)}`;
+      return withPrefix({ len: 3, text: `LD ${R[r]},(${ix}${dStr})` });
+    }
+    if ((next & 0xf8) === 0x70) {
+      const r = next & 7;
+      const d = readS8(base + 2);
+      const dStr = d >= 0 ? `+$${hex(d, 2)}` : `-$${hex(-d, 2)}`;
+      return withPrefix({ len: 3, text: `LD (${ix}${dStr}),${R[r]}` });
+    }
+    if ((next & 0xc7) === 0x86) {
+      const aluOp = (next >> 3) & 7;
+      const d = readS8(base + 2);
+      const dStr = d >= 0 ? `+$${hex(d, 2)}` : `-$${hex(-d, 2)}`;
+      return withPrefix({ len: 3, text: `${ALU[aluOp]},(${ix}${dStr})` });
+    }
+    if (next === 0x34) {
+      const d = readS8(base + 2);
+      const dStr = d >= 0 ? `+$${hex(d, 2)}` : `-$${hex(-d, 2)}`;
+      return withPrefix({ len: 3, text: `INC (${ix}${dStr})` });
+    }
+    if (next === 0x35) {
+      const d = readS8(base + 2);
+      const dStr = d >= 0 ? `+$${hex(d, 2)}` : `-$${hex(-d, 2)}`;
+      return withPrefix({ len: 3, text: `DEC (${ix}${dStr})` });
+    }
+    if (next === 0x23) return withPrefix({ len: 2, text: `INC ${ix}` });
+    if (next === 0x2b) return withPrefix({ len: 2, text: `DEC ${ix}` });
+    if (next === 0x21) return withPrefix({ len: 2 + immBytes, text: `LD ${ix},${annotateAddress(readAddr(base + 2))}` });
+    if (next === 0x22) return withPrefix({ len: 2 + immBytes, text: `LD (${annotateAddress(readAddr(base + 2))}),${ix}` });
+    if (next === 0x2a) return withPrefix({ len: 2 + immBytes, text: `LD ${ix},(${annotateAddress(readAddr(base + 2))})` });
+    if (next === 0x09) return withPrefix({ len: 2, text: `ADD ${ix},BC` });
+    if (next === 0x19) return withPrefix({ len: 2, text: `ADD ${ix},DE` });
+    if (next === 0x29) return withPrefix({ len: 2, text: `ADD ${ix},${ix}` });
+    if (next === 0x39) return withPrefix({ len: 2, text: `ADD ${ix},SP` });
+    if (next === 0xe5) return withPrefix({ len: 2, text: `PUSH ${ix}` });
+    if (next === 0xe1) return withPrefix({ len: 2, text: `POP ${ix}` });
+    if (next === 0xe9) return withPrefix({ len: 2, text: `JP (${ix})`, terminal: true });
+    if (next === 0xe3) return withPrefix({ len: 2, text: `EX (SP),${ix}` });
+    if (next === 0xf9) return withPrefix({ len: 2, text: `LD SP,${ix}` });
+    return withPrefix({ len: 2, text: `${ix} $${hex(next, 2)}` });
+  }
+
+  if (op === 0x00) return withPrefix({ len: 1, text: 'NOP' });
+  if (op === 0x02) return withPrefix({ len: 1, text: 'LD (BC),A' });
+  if (op === 0x0a) return withPrefix({ len: 1, text: 'LD A,(BC)' });
+  if (op === 0x12) return withPrefix({ len: 1, text: 'LD (DE),A' });
+  if (op === 0x1a) return withPrefix({ len: 1, text: 'LD A,(DE)' });
+  if (op === 0x22) return withPrefix({ len: 1 + immBytes, text: `LD (${annotateAddress(readAddr(base + 1))}),HL` });
+  if (op === 0x2a) return withPrefix({ len: 1 + immBytes, text: `LD HL,(${annotateAddress(readAddr(base + 1))})` });
+  if (op === 0x32) return withPrefix({ len: 1 + immBytes, text: `LD (${annotateAddress(readAddr(base + 1))}),A` });
+  if (op === 0x3a) return withPrefix({ len: 1 + immBytes, text: `LD A,(${annotateAddress(readAddr(base + 1))})` });
+
+  if ((op & 0xcf) === 0x01) return withPrefix({ len: 1 + immBytes, text: `LD ${RP[(op >> 4) & 3]},${annotateAddress(readAddr(base + 1))}` });
+  if ((op & 0xcf) === 0x03) return withPrefix({ len: 1, text: `INC ${RP[(op >> 4) & 3]}` });
+  if ((op & 0xcf) === 0x0b) return withPrefix({ len: 1, text: `DEC ${RP[(op >> 4) & 3]}` });
+  if ((op & 0xcf) === 0x09) return withPrefix({ len: 1, text: `ADD HL,${RP[(op >> 4) & 3]}` });
+
+  if ((op & 0xc7) === 0x04) return withPrefix({ len: 1, text: `INC ${R[(op >> 3) & 7]}` });
+  if ((op & 0xc7) === 0x05) return withPrefix({ len: 1, text: `DEC ${R[(op >> 3) & 7]}` });
+  if ((op & 0xc7) === 0x06) return withPrefix({ len: 2, text: `LD ${R[(op >> 3) & 7]},$${hex(rom[base + 1], 2)}` });
+
+  if (op >= 0x40 && op <= 0x7f) {
+    if (op === 0x76) return withPrefix({ len: 1, text: 'HALT' });
+    return withPrefix({ len: 1, text: `LD ${R[(op >> 3) & 7]},${R[op & 7]}` });
+  }
+
+  if (op >= 0x80 && op <= 0xbf) return withPrefix({ len: 1, text: `${ALU[(op >> 3) & 7]} ${R[op & 7]}` });
+
+  if ((op & 0xc7) === 0xc0) return withPrefix({ len: 1, text: `RET ${CC[(op >> 3) & 7]}` });
+  if ((op & 0xc7) === 0xc2) return withPrefix({ len: 1 + immBytes, text: `JP ${CC[(op >> 3) & 7]},${annotateAddress(readAddr(base + 1))}` });
+  if ((op & 0xc7) === 0xc4) return withPrefix({ len: 1 + immBytes, text: `CALL ${CC[(op >> 3) & 7]},${annotateAddress(readAddr(base + 1))}` });
+  if ((op & 0xc7) === 0xc6) return withPrefix({ len: 2, text: `${ALU[(op >> 3) & 7]} $${hex(rom[base + 1], 2)}` });
+
+  if ((op & 0xcf) === 0xc1) return withPrefix({ len: 1, text: `POP ${RP2[(op >> 4) & 3]}` });
+  if ((op & 0xcf) === 0xc5) return withPrefix({ len: 1, text: `PUSH ${RP2[(op >> 4) & 3]}` });
+
+  if ((op & 0xc7) === 0xc7) return withPrefix({ len: 1, text: `RST $${hex(op & 0x38, 2)}` });
+
+  const simple = {
+    0x07: 'RLCA',
+    0x08: "EX AF,AF'",
+    0x0f: 'RRCA',
+    0x10: `DJNZ $${hex(relTarget(addr, base, 2), 6)}`,
+    0x17: 'RLA',
+    0x18: `JR $${hex(relTarget(addr, base, 2), 6)}`,
+    0x1f: 'RRA',
+    0x20: `JR NZ,$${hex(relTarget(addr, base, 2), 6)}`,
+    0x27: 'DAA',
+    0x28: `JR Z,$${hex(relTarget(addr, base, 2), 6)}`,
+    0x2f: 'CPL',
+    0x30: `JR NC,$${hex(relTarget(addr, base, 2), 6)}`,
+    0x37: 'SCF',
+    0x38: `JR C,$${hex(relTarget(addr, base, 2), 6)}`,
+    0x3f: 'CCF',
+    0xc3: `JP ${annotateAddress(readAddr(base + 1))}`,
+    0xc9: 'RET',
+    0xcd: `CALL ${annotateAddress(readAddr(base + 1))}`,
+    0xd3: `OUT ($${hex(rom[base + 1], 2)}),A`,
+    0xd9: 'EXX',
+    0xdb: `IN A,($${hex(rom[base + 1], 2)})`,
+    0xe3: 'EX (SP),HL',
+    0xe9: 'JP (HL)',
+    0xeb: 'EX DE,HL',
+    0xf3: 'DI',
+    0xf9: 'LD SP,HL',
+    0xfb: 'EI',
+  };
+
+  if (Object.hasOwn(simple, op)) {
+    const len = [0x10, 0x18, 0x20, 0x28, 0x30, 0x38, 0xd3, 0xdb].includes(op)
+      ? 2
+      : [0xc3, 0xcd].includes(op)
+        ? 1 + immBytes
+        : 1;
+    return withPrefix({ len, text: simple[op], terminal: [0x18, 0xc3, 0xc9, 0xe9].includes(op) });
+  }
+
+  return withPrefix({ len: 1, text: `DB $${hex(op, 2)}` });
+}
+
+function scanXrefs(pattern) {
+  const refs = [];
+  for (let i = 0; i <= rom.length - pattern.length; i++) {
+    let match = true;
+    for (let j = 0; j < pattern.length; j++) {
+      if (rom[i + j] !== pattern[j]) {
+        match = false;
+        break;
+      }
+    }
+    if (match) refs.push(i);
+  }
+  return refs;
+}
+
+// Collect decoded rows
+const rows = [];
+const callTargets = new Set();
+const jpTargets = new Set();
+const ramRefs = new Set();
+const iyOffsets = new Set();
+let offset = romOffset(START);
+let addr = START;
+const end = Math.min(offset + MAX_BYTES, rom.length);
+let unconditionalCount = 0;
+
+while (offset < end) {
+  const decoded = decode(offset, addr);
+  const raw = bytesAt(offset, decoded.len);
+  rows.push({ addr, raw, ...decoded });
+
+  // Extract CALL targets
+  const callMatch = decoded.text.match(/^(?:\.SIS )?CALL (?:NZ,|Z,|NC,|C,|PO,|PE,|P,|M,)?.*\$([0-9A-F]{6})/);
+  if (callMatch) callTargets.add(parseInt(callMatch[1], 16));
+
+  // Extract JP targets
+  const jpMatch = decoded.text.match(/^(?:\.SIS )?JP (?:NZ,|Z,|NC,|C,|PO,|PE,|P,|M,)?.*\$([0-9A-F]{6})/);
+  if (jpMatch && !decoded.text.includes('(HL)') && !decoded.text.includes('(IX)') && !decoded.text.includes('(IY)')) {
+    jpTargets.add(parseInt(jpMatch[1], 16));
+  }
+
+  // Extract JR/DJNZ targets
+  const jrMatch = decoded.text.match(/^(?:\.SIS )?(?:JR|DJNZ) (?:NZ,|Z,|NC,|C,)?\$([0-9A-F]{6})/);
+  if (jrMatch) jpTargets.add(parseInt(jrMatch[1], 16));
+
+  // Extract RAM refs (D0xxxx range)
+  const ramMatches = decoded.text.matchAll(/\$([0-9A-F]{6})/g);
+  for (const m of ramMatches) {
+    const v = parseInt(m[1], 16);
+    if (v >= 0xd00000 && v <= 0xd70000) ramRefs.add(v);
+  }
+
+  // Extract IY offsets
+  const iyMatches = decoded.text.matchAll(/\(IY([+-]\$[0-9A-F]{2})\)/g);
+  for (const m of iyMatches) iyOffsets.add(m[1]);
+
+  // Track unconditional terminators for stop heuristic
+  if (decoded.terminal) {
+    unconditionalCount++;
+    if (unconditionalCount >= 2 && (offset - romOffset(START)) >= 40) break;
+  } else {
+    unconditionalCount = 0;
+  }
+
+  offset += decoded.len;
+  addr += decoded.len;
+}
+
+// Find callers of 0x040D11 in the ROM
+const addrBytes = [START & 0xff, (START >> 8) & 0xff, (START >> 16) & 0xff];
+const callRefs = scanXrefs([0xcd, ...addrBytes]);
+const jpRefs = scanXrefs([0xc3, ...addrBytes]);
+
+console.log(`Probe phase597: static decode of ROM function $${hex(START, 6)}`);
+console.log(`ROM: ${ROM_PATH}`);
+console.log(`Decode window: ${MAX_BYTES} bytes max`);
+console.log('');
+console.log('=== Disassembly ===');
+for (const row of rows) {
+  const knownNote = KNOWN_TARGETS.has(row.addr) ? `  ; <-- ${KNOWN_TARGETS.get(row.addr)}` : '';
+  console.log(`${hex(row.addr, 6)}  ${row.raw.padEnd(16)}  ${row.text}${knownNote}`);
+}
+
+console.log('');
+console.log('=== CALL targets ===');
+for (const t of [...callTargets].sort((a, b) => a - b)) {
+  const known = KNOWN_TARGETS.get(t);
+  console.log(`  $${hex(t, 6)}${known ? ` <${known}>` : ''}`);
+}
+if (callTargets.size === 0) console.log('  (none)');
+
+console.log('');
+console.log('=== JP/JR targets ===');
+for (const t of [...jpTargets].sort((a, b) => a - b)) {
+  const known = KNOWN_TARGETS.get(t);
+  const inRange = t >= START && t < START + MAX_BYTES ? ' [within function]' : '';
+  console.log(`  $${hex(t, 6)}${known ? ` <${known}>` : ''}${inRange}`);
+}
+if (jpTargets.size === 0) console.log('  (none)');
+
+console.log('');
+console.log('=== RAM references (D0xxxx) ===');
+for (const r of [...ramRefs].sort((a, b) => a - b)) {
+  console.log(`  $${hex(r, 6)}`);
+}
+if (ramRefs.size === 0) console.log('  (none)');
+
+console.log('');
+console.log('=== IY offsets ===');
+for (const o of [...iyOffsets].sort()) {
+  console.log(`  IY${o}`);
+}
+if (iyOffsets.size === 0) console.log('  (none)');
+
+console.log('');
+console.log('=== Callers of $040D11 in ROM ===');
+for (const ref of callRefs) console.log(`  ${hex(ref, 6)}  CALL $${hex(START, 6)}`);
+for (const ref of jpRefs) console.log(`  ${hex(ref, 6)}  JP   $${hex(START, 6)}`);
+if (callRefs.length + jpRefs.length === 0) console.log('  (none found)');
+
+console.log('');
+console.log('=== Key question: is 0x099921 reachable? ===');
+if (callTargets.has(0x099921) || jpTargets.has(0x099921)) {
+  console.log('  YES - 0x099921 (38-entry command dispatcher) is a direct target!');
+} else {
+  console.log('  NO - 0x099921 is NOT a direct CALL/JP target from this function.');
+  console.log('  Check the CALL targets above for indirect reachability.');
+}
+
+console.log('');
+console.log('=== Summary ===');
+const functionSize = offset - romOffset(START);
+console.log(`Function start: $${hex(START, 6)}`);
+console.log(`Decoded size: ${functionSize} bytes`);
+console.log(`Boundary: ${rows.at(-1)?.terminal ? `${rows.at(-1).text} at $${hex(rows.at(-1).addr, 6)}` : `max decode window (${MAX_BYTES} bytes)`}`);
+console.log(`CALL targets: ${callTargets.size}`);
+console.log(`JP/JR targets: ${jpTargets.size}`);
+console.log(`RAM refs: ${ramRefs.size}`);
+console.log(`IY offsets: ${iyOffsets.size}`);
+console.log(`Callers: ${callRefs.length + jpRefs.length} (${callRefs.length} CALL, ${jpRefs.length} JP)`);

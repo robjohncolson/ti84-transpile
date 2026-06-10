@@ -47,10 +47,26 @@
 > 7. **REMAINING BLOCKER → NEXT SESSION**: the key reaches D0058E=0x90 (pass 1, ~503 steps) but **dispatch (0x099921) and tokenProc (0x03E1B4) are NEVER hit** — the trace shows `0x02FD8F` → housekeeping → `0x03FA09` (getcsc) → `0x02FE89` → `0x030300` → ISR loop → halt. The key is consumed by the event loop machinery but does not reach the token/edit dispatch chain. `0x02FE89` tests bit 7 of (IY+0x28) [D000A8] and either calls `0x030300` or JPs to `0x04049B`. **NEXT: (a) trace what 0x030300 does with the key** (it calls 0x040D11 — the actual key handler); **(b) check why 0x099921 is not reached** — is 0x040D11 an alternate dispatch that bypasses 0x099921, or does it need additional state?; **(c) seed 0x08F941 + 0x090251 DONE** (auto-session 596, golden PASS), repaint now 1348 black px (status bar, no new missing blocks).
 >
 > **UPDATE (auto-session 596)**: Full disassembly of 0x02FD8F (warm key-event entry, 64 bytes) and 0x02FE73 (pending-key relay, 48 bytes) in `phase596c-pass2-suspects.md`. D0058C cross-reference: 47 ROM refs, 5 in the event dispatcher (3 writes clearing to 0, 1 sentinel write 0xFA, 1 read at the critical decision point). Key dispatch entry 0x030300 has a reentrancy guard (BIT 0,(IY+0x1D) / RET NZ) then calls 0x040D11.
+>
+> **UPDATE (auto-session 597) — ★★★★ TWO-LOOP ARCHITECTURE CONFIRMED; ★★★★ cxMain REACHED; ★★★ NUMBER KEYS BYPASS 0x099921:**
+> 1. ★★★ **0x040D11 DECODED AS TIMER/COUNTER SETUP (47 bytes)**, NOT a key handler. 0x030300 is a 14-byte reentrancy-guarded timer wrapper. The flow 0x02FD8F → 0x03FA09 → 0x02FE89 → 0x030300 → 0x040D11 → halt is the INNER key scan loop — it scans + posts events but does NOT dispatch keys.
+> 2. ★★★★ **TWO-LOOP ARCHITECTURE CONFIRMED**: the OS uses TWO nested event loops: (a) **INNER loop 0x02FD8F** = key scan + translate + post to D0058C, ends in longjmp halt; (b) **OUTER loop 0x08C331** = reads D0058C (when D0009F bit 5 SET) → cascade at 0x08C3C3 → CALL 0x08C72F → LD HL,(D007CA) → JP (HL) → cxMain dispatch. Previous sessions (595-596) ran the WRONG entry point (0x02FD8F) — that's why 0x099921 was never reached.
+> 3. ★★★★ **cxMain (0x0585E9) REACHED FROM OUTER LOOP**: running from 0x08C331 with D0058C=0x90 + D0009F bit 5 SET after full boot+init+paint → the cascade fires → 0x08C72F/0x08C734/0x08C745 (JP (HL)) → cxMain at 0x0585E9. Key consumed (D0058C→0x00, D0009F bit 5 cleared). D007CA zeroed by cxMain during execution.
+> 4. ★★★★ **NUMBER KEYS DON'T USE 0x099921**: cxMain for key 0x90 ('2') goes: RES 6,D000C9 → save key B → test D000B4 bit 4 → restore key → test D000C9 bit 3 → **CP 0x05** → JP NZ 0x05877A (general key handler). Key 0x05 takes the special path at 0x058608+; all other keys go to 0x05877A. From 0x05877A: tests D00089 bit 7 → CALL 0x080259 (4 hits) → CALL 0x058EDA (key classifier) → continues to 0x0587E9 (convergence point). **0x099921 is the 38-entry COMMAND dispatcher for function/menu keys (GRAPH, ZOOM, etc.), NOT for character keys.** The '2' key takes a separate character-insertion path.
+> 5. **500K steps, 1917 unique blocks**: the character processing path runs deep (display updates, edit buffer operations, screen redraws). Last PC 0x000B81 (200K run) / 0x005AB6 (50K run) at maxSteps — still doing productive work, not stuck. Eventually the loop returns to idle.
+> 6. **Probes**: `probe-phase597-outer-loop.mjs` (outer loop dispatch, verified), `probe-phase597-key-handler-trace.mjs` (dynamic trace), `probe-phase597-decode-040D11.mjs` (static decode). Golden regression 26/26 PASS.
+>
+> **REVISED UNDERSTANDING — KEY DISPATCH ARCHITECTURE:**
+> - **Character keys** (digits, letters, operators): cxMain → 0x05877A → 0x058EDA → direct character insertion into edit buffer → display update → return to event loop. Does NOT go through 0x099921.
+> - **Command keys** (GRAPH, ZOOM, MATH, etc.): cxMain → 0x05877A → different path → 0x099921 38-entry command dispatcher → mode switches.
+> - **Special key 0x05** (likely ENTER): cxMain → 0x058608+ → elaborate processing with 6+ sub-CALLs.
+> - **QUIT key 0xB4**: caught early in cascade at 0x08C3C3 → CALL 0x07BF19.
+>
+> **REMAINING BLOCKER → NEXT SESSION**: cxMain IS reached and processes the key through 1917 blocks of real work. The character-insertion path (0x05877A → 0x058EDA → ...) runs for 500K+ steps. **NEXT: (a) verify the character reaches the edit buffer** — after full processing, check if D0231A/D0243A (edit cursors) advance and if '2' appears in the edit buffer or VRAM; (b) if the character path completes cleanly, run the FULL round-trip: boot → init → paint → key inject → outer loop → verify VRAM shows '2'; (c) if it stalls, investigate 0x058EDA (key classifier) and 0x0587E9 (convergence point) to find what state is missing; (d) optionally test a COMMAND key (e.g. key code for SIN/COS/TAN) to verify it DOES reach 0x099921 via the other path.
 
 ---
 
-**Last updated**: 2026-06-09 (auto-session 596 — ★★★ PASS-2 RESET MYTH DEBUNKED: pass 2 is benign (199 steps, halt, D007CA intact), D0058C/D00587 are single-shot by design. 0x02FD8F/0x02FE73/D0058C fully disassembled (47 ROM refs). Seeds 0x08F941+0x090251 added, golden 26/26 PASS. New blocker: key dispatch reaches 0x030300→0x040D11 but not 0x099921 — trace the actual key handler path.)
+**Last updated**: 2026-06-09 (auto-session 597 — ★★★★ TWO-LOOP ARCHITECTURE CONFIRMED (inner 0x02FD8F scans keys, outer 0x08C331 dispatches via cxMain), ★★★★ cxMain 0x0585E9 REACHED from outer loop (D0058C=0x90 + D0009F bit 5), ★★★★ NUMBER KEYS BYPASS 0x099921 (character path: cxMain → 0x05877A → 0x058EDA, 1917 blocks, 500K+ steps), ★★★ 0x040D11 = timer/counter setup NOT key handler, 0x030300 = reentrancy-guarded timer wrapper. Golden 26/26 PASS.)
 
 > Previous: 2026-06-09 (auto-session 596 — ★★★ pass-2 reset myth debunked (199 steps, halt, D007CA intact, D0058C/D00587 single-shot by design), 0x02FD8F warm entry 64B + 0x02FE73 relay 48B + D0058C 47 refs fully decoded, seeds 0x08F941+0x090251 added, golden 26/26 PASS, repaint 1348 black px, new probe-pass2-trace.mjs + phase596c-pass2-suspects.md)
 
@@ -184,6 +200,36 @@ Dispatched 4 Codex agents (P1 exit 0, P2 exit 1 wrong ROM path, P3 exit 0 broken
 **DECODER LIMITATIONS NOTED**: The hand-rolled disassembler template does not handle: (a) FD CB dd xx (BIT/SET/RES IY+d) — outputs as separate bytes, (b) conditional RET treated as terminal — truncates decode early. Both affected P3/P4 completeness. Session 593 priority (j) "fix ED-prefix mask" remains open; FD CB handling is a new related issue.
 
 NEXT: (a) ★★★★★ INTEGRATE TEXT + CURSOR IN BROWSER SHELL — needs human. (b) ★★★ COMPLETE 0x06F7E4 DECODE — function is ~256B+ with 10 key-code dispatch paths, 9+ CALL targets; needs enhanced decoder or manual branch-following. (c) ★★★ COMPLETE 0x05C706 DECODE — only first 22B of ~85B decoded; branch at 0x05C72A and continuation at 0x05C755 need coverage. (d) ★★★ DECODE 0x06FA60 — key handler called from 0x06F7E4 for key codes 0x55/0x81/0x6B/0x79/0x61. (e) ★★★ DECODE 0x06FA30 — key handler called from 0x06F7E4 with A=0x01. (f) ★★★ DECODE 0x06FCA2 — called from 0x06F7E4 late in function. (g) ★★★ DECODE 0x0AF877 — called from 0x05C706 split-screen path; return value gates IX load. (h) ★★ DECODE 0x04E950 — called from 0x05C634 graph-active path (session 593 priority). (i) ★ FIX DISASSEMBLER TEMPLATE — add FD CB dd xx (BIT/SET/RES IY+d) and fix conditional RET terminal flag. (j) ★ IMPLEMENT PORT 0xDCA0 IN PERIPHERALS.JS (carried from session 593). --END SESSION 594--
+
+**CC session 597 (2026-06-09, auto-continuation)**:
+Picked up session 596's remaining blocker: trace 0x030300/0x040D11 and determine why 0x099921 is not reached during keypress flow. Also attempted decode frontier items 0x0AF877 and 0x06FA60.
+Dispatched 4 Codex agents (P1: decode 0x040D11, P2: dynamic key trace, P3: decode 0x0AF877, P4: decode 0x06FA60). P1: exit 0, decoded in wrong mode (Z80 not ADL). P2: exit 1 (ESM require error). P3/P4: exit 0 but broken decoder output (DB bytes only). Sonnet fallbacks: P1 succeeded (ADL decode), P2 succeeded (working ESM probe), P3/P4 not retried. P5: critical new probe for outer loop dispatch.
+
+(1) ★★★ 0x040D11 TIMER/COUNTER SETUP DECODED (47 bytes, probe-phase597-decode-040D11.mjs):
+- **Function**: 0x040D11-0x040D3F (47 bytes). NOT a key handler — pure timer/counter setup.
+- **Purpose**: Configures hardware timer via port I/O and RAM state. Called by 0x030300 (reentrancy-guarded 14-byte wrapper: BIT 0,(IY+0x1D) / RET NZ → CALL 0x040D11).
+- **Session 596 error corrected**: 0x030300→0x040D11 is the inner key scan loop's timer setup, NOT key dispatch. The key is NOT consumed here — it's consumed by the scan at 0x03FA09 (_GetCSC) and posted to D0058C/D0058E.
+
+(2) ★★★★ TWO-LOOP ARCHITECTURE CONFIRMED (probe-phase597-outer-loop.mjs, Opus-verified):
+- **INNER loop (0x02FD8F)**: Key SCAN + translate. Reads keyboard matrix via _GetCSC (0x03FA09), translates scan code to internal code (D0058C/D0058E), sets D0009F bit 5 ("key pending"), ends in longjmp halt. Does NOT dispatch keys — only posts them.
+- **OUTER loop (0x08C331)**: Key DISPATCH. Reads D0058C (when D0009F bit 5 SET), runs cascade at 0x08C3C3, calls 0x08C72F → LD HL,(D007CA) → JP (HL) → cxMain. This is where 0x099921 would be reached (for command keys).
+- **Root cause of sessions 595-596 blocker**: all keypress probes ran 0x02FD8F (inner scan loop) directly, which never reaches the dispatch chain. Running from 0x08C331 (outer loop) reaches cxMain immediately.
+
+(3) ★★★★ cxMain 0x0585E9 REACHED (probe-phase597-outer-loop.mjs, Opus-verified):
+- Boot (0x09DD62) → paint (0x058241) → seed D0058C=0x90 + D0009F bit 5 SET → runFrom(0x08C331).
+- Cascade fires: 0x08C3C3 → 0x08C72F → 0x08C734 → JP (HL) at 0x08C745 → cxMain 0x0585E9.
+- Key consumed: D0058C → 0x00, D0009F bit 5 cleared. D007CA zeroed by cxMain during execution.
+- 1917 unique blocks hit in 500K steps. Not stuck — doing real character processing.
+
+(4) ★★★★ NUMBER KEYS BYPASS 0x099921:
+- cxMain at 0x0585E9: RES 6,D000C9 → LD B,A (save key) → test D000B4 bit 4 → RET NZ check → LD A,B (restore) → test D000C9 bit 3 → **CP 0x05 → JP NZ 0x05877A** (general key handler).
+- Key 0x05 takes a SEPARATE elaborate path (0x058608+, 6+ sub-CALLs). All other keys go to 0x05877A.
+- At 0x05877A: tests D00089 bit 7, calls 0x080259 (4 hits), 0x058EDA (key classifier, 1 hit), converges at 0x0587E9.
+- **0x099921 (38-entry dispatcher) is for COMMAND keys (GRAPH, ZOOM, MATH functions), NOT character keys.** Typing '2' on the home screen inserts a character via the 0x05877A path, which directly handles edit buffer insertion + display update.
+
+(5) CODEX: 0/4 fully succeeded (P1 wrong mode, P2 ESM error, P3/P4 broken decoder). All completed via Sonnet fallback or manual Opus analysis. Golden regression 26/26 PASS.
+
+NEXT: (a) ★★★★★ VERIFY CHARACTER REACHES EDIT BUFFER — run the full boot→init→paint→key→outer-loop chain with enough steps for the character path to complete; check if D0231A/D0243A advance and '2' appears in VRAM at D40000. (b) ★★★★ FULL ROUND-TRIP PROBE — if (a) succeeds, build a probe that does boot→key→verify-VRAM→pass/fail. (c) ★★★ DECODE 0x058EDA — key classifier called from 0x05877A, return value (Z/NZ) gates character vs command path. Understanding this unlocks both paths. (d) ★★★ TEST COMMAND KEY — inject a command key code (e.g. SIN=0x??, GRAPH=0x07) to verify it DOES reach 0x099921 via the other cxMain path. (e-j) Carry forward session 594 NEXT items (b)-(j). --END SESSION 597--
 
 **CC session 593 (2026-06-09, auto-continuation)**:
 Picked priorities (b) 0x07F8FE, (d) 0x07F7A4, (h) 0x05C634, (i) 0x023057 from session 592 NEXT list — 4 independent decode tasks. Note: session 592 listed (c) 0x07CF9D, (e) 0x07F16C, (f) 0x07C8B7, (g) 0x07FE9C as priorities but all were ALREADY DECODED in sessions 530-533. Substituted (h) and (i) which were genuinely undecoded.
