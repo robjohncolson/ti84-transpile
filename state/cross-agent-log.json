@@ -20265,15 +20265,103 @@
       "timestamp": "2026-06-10T12:45:48Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "5328f527aca7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 605 \u2014 P4: OS State Restoration \u2014 Multi-Key Dispatch with Full State Restore\n\n## Conte",
+      "status": "blocked",
+      "duration_seconds": 79.086,
+      "timestamp": "2026-06-10T13:54:19Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "add6d76afd2e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 605 \u2014 P1: Test IY+0x42 Bit 7 Bypass to Prevent Wipe\n\n## Context\n\nThe TI-84 Plus CE OS",
+      "status": "completed",
+      "duration_seconds": 89.174,
+      "timestamp": "2026-06-10T13:54:24Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "f344fdf8dce2",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 605 \u2014 P2: Test Port 0x03 Bit 4 Bypass to Prevent Wipe\n\n## Context\n\nThe TI-84 Plus CE ",
+      "status": "completed",
+      "duration_seconds": 103.097,
+      "timestamp": "2026-06-10T13:54:39Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "0ac955109a11",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 605 \u2014 P3: Decode 0x0158BC (Intermediate Function Between Guard and Wipe)\n\n## Context\n",
+      "status": "completed",
+      "duration_seconds": 156.542,
+      "timestamp": "2026-06-10T13:55:35Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "72d8bf685e1a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Decode ROM address 0x048BFB (first wipe caller)\n\n## Context\nIn the TI-84 Plus CE ROM transpi",
+      "status": "success",
+      "duration_seconds": 47.147,
+      "timestamp": "2026-06-10T15:04:02Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "acf99e8dfa25",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Build onBlock wipe hook for automatic state restoration\n\n## Context\nIn the TI-84 Plus CE ROM",
+      "status": "success",
+      "duration_seconds": 72.029,
+      "timestamp": "2026-06-10T15:04:29Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "20e45cac81f5",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Capture VRAM bitmap at peak during key processing\n\n## Context\nIn the TI-84 Plus CE ROM trans",
+      "status": "completed",
+      "duration_seconds": 105.2,
+      "timestamp": "2026-06-10T15:05:04Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "7f09513bbeba",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate why first key takes 276K steps but subsequent keys take ~196K\n\n## Context\nIn the",
+      "status": "success",
+      "duration_seconds": 104.445,
+      "timestamp": "2026-06-10T15:05:05Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1713,
-    "cc_to_codex": 1713,
+    "total_calls": 1721,
+    "cc_to_codex": 1721,
     "codex_to_cc": 0,
-    "completed": 1113,
+    "completed": 1117,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 453.55
+    "avg_duration_seconds": 451.881
   }
 }
