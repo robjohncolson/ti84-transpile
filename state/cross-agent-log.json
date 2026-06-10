@@ -20023,15 +20023,125 @@
       "timestamp": "2026-06-10T01:06:19Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "04b934941263",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 599 P1: Instrument outer loop to find WHEN edit cursors / VRAM zero\n\n## Context\n\nIn a",
+      "status": "completed",
+      "duration_seconds": 60.61,
+      "timestamp": "2026-06-10T02:14:00Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2dedbf4c7e3c",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 599 P2: Static decode of 0x058b73 (real key type classifier)\n\n## Context\n\nIn auto-ses",
+      "status": "success",
+      "duration_seconds": 61.798,
+      "timestamp": "2026-06-10T02:14:03Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "c9ec04c8c021",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-session 599 P3: Decode 0x05899d (command handler entry) + trace GRAPH through it\n\n## Context\n",
+      "status": "completed",
+      "duration_seconds": 103.196,
+      "timestamp": "2026-06-10T02:14:46Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "61a811e651e1",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Examine post-key VRAM for typed '2' character glyph\n\n## Context\nThe TI-84 Plus CE ROM transp",
+      "status": "blocked",
+      "duration_seconds": 54.497,
+      "timestamp": "2026-06-10T03:23:22Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "55216fe9c223",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Static decode of 0x058d54 \u2014 the REAL type classifier\n\n## Context\nIn the TI-84 Plus CE ROM tr",
+      "status": "completed",
+      "duration_seconds": 76.373,
+      "timestamp": "2026-06-10T03:23:46Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "cc47fdface68",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Static decode of block 0x0018F8 \u2014 the bulk mem-clear\n\n## Context\nIn the TI-84 Plus CE ROM tr",
+      "status": "success",
+      "duration_seconds": 87.02,
+      "timestamp": "2026-06-10T03:23:59Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "b253a583857e",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Investigate D007CA re-arming after cxMain zeroes it\n\n## Context\nIn the TI-84 Plus CE ROM tra",
+      "status": "completed",
+      "duration_seconds": 92.033,
+      "timestamp": "2026-06-10T03:24:05Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "942b53f93167",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Verify the '2' glyph in VRAM at the expected cursor position\n\n## Context\nThis is a TI-84 Plu",
+      "status": "blocked",
+      "duration_seconds": 26.313,
+      "timestamp": "2026-06-10T04:33:13Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "a5afb23e2740",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: D007CA re-arm tracking during FIRST keypress (276K-step path)\n\n## Context\nThis is a TI-84 Pl",
+      "status": "completed",
+      "duration_seconds": 100.064,
+      "timestamp": "2026-06-10T04:34:23Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "17bd5945a11b",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Task: Trace the type code origin before convergence 0x0587E9\n\n## Context\nThis is a TI-84 Plus CE R",
+      "status": "completed_with_limitations",
+      "duration_seconds": 99.147,
+      "timestamp": "2026-06-10T04:34:24Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1691,
-    "cc_to_codex": 1691,
+    "total_calls": 1701,
+    "cc_to_codex": 1701,
     "codex_to_cc": 0,
-    "completed": 1102,
+    "completed": 1107,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 458.423
+    "avg_duration_seconds": 456.175
   }
 }
