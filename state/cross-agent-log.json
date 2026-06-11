@@ -20617,15 +20617,59 @@
       "timestamp": "2026-06-10T23:35:01Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "db0b4f2dfe61",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 613 \u2014 Priority 2: Verify Browser Shell VRAM Snapshot Logic\n\n## Context\n\nAuto-session ",
+      "status": "blocked",
+      "duration_seconds": 41.921,
+      "timestamp": "2026-06-11T01:14:40Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "2a9901e95eb7",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 613 \u2014 Priority 4: Map D000C4 (IY+0x68) Semantics\n\n## Context\n\nIn the TI-84 Plus CE RO",
+      "status": "blocked",
+      "duration_seconds": 46.308,
+      "timestamp": "2026-06-11T01:14:48Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "0d42c710daa9",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 613 \u2014 Priority 3: Decode 0x08F5E1 (Outer Loop Exit Target)\n\n## Context\n\nIn the TI-84 ",
+      "status": "blocked",
+      "duration_seconds": 48.183,
+      "timestamp": "2026-06-11T01:14:48Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ec367cb92242",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 613 \u2014 Priority 1: Decode Caller 0x000862 (Second VRAM Wipe)\n\n## Context\n\nIn the TI-84",
+      "status": "blocked",
+      "duration_seconds": 59.792,
+      "timestamp": "2026-06-11T01:14:56Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1745,
-    "cc_to_codex": 1745,
+    "total_calls": 1749,
+    "cc_to_codex": 1749,
     "codex_to_cc": 0,
     "completed": 1126,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 446.831
+    "avg_duration_seconds": 445.921
   }
 }
