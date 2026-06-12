@@ -442,7 +442,12 @@ const RUNTIME_MODE_COLDBOOT = 'coldboot';
 const STEPS_PER_FRAME = 2000;
 const COORMON_FRAME_STEPS = 50000;
 const COLDBOOT_FRAME_STEPS = 50000;
-const COLDBOOT_EVENT_LOOP_ENTRY = 0x003A73;
+const COLDBOOT_EVENT_LOOP_ENTRY = 0x08C331;
+const COLDBOOT_WARM_IDLE_ENTRY = 0x0019BE;
+const COLDBOOT_HALT_IDLE = 0x0019B5;
+const COLDBOOT_LAUNCH_HOME_INIT = 0x09DD62;
+const COLDBOOT_HOME_REPAINT = 0x058241;
+const COLDBOOT_KEY_BURST_STEPS = 300000;
 const KEY_BURST_STEPS = 2000;
 const KEYBOARD_IRQ_ENABLE_HIGH_PORT = 0x5006;
 const KEYBOARD_IRQ_ENABLE_HIGH_BIT = 0x08; // bit 3 of the high byte = interrupt 19 overall
@@ -603,6 +608,7 @@ function countVRAMPixels() {
   }
   return count;
 }
+window.countVRAMPixels = countVRAMPixels;
 
 function captureVRAMSnapshot() {
   if (!cpu?.memory) return;
@@ -645,7 +651,7 @@ function startAutoRunLoop() {
 function getColdbootRunOptions(stepBudget = COLDBOOT_FRAME_STEPS) {
   return {
     maxSteps: stepBudget,
-    maxLoopIterations: 10000,
+    maxLoopIterations: 500000,
     diHaltBypass: true,
     diHaltBypassEntry: COLDBOOT_EVENT_LOOP_ENTRY,
   };
@@ -1614,15 +1620,32 @@ function runCoorMonFrame(stepBudget = COORMON_FRAME_STEPS) {
   }
 }
 
+function prepareColdbootEventFrame() {
+  if (!cpu?.memory) return;
+  const mem = cpu.memory;
+  peripherals?.setTimerEnabled?.(true);
+  cpu.halted = false;
+  cpu.iff1 = 1;
+  cpu.iff2 = 1;
+  cpu.f = 0x40;
+  cpu.madl = 1;
+  cpu.mbase = 0xD0;
+  cpu._ix = 0xD1A860;
+  cpu._iy = 0xD00080;
+  cpu.sp = SCREEN_STACK_TOP - 24;
+  fillSentinel(mem, cpu.sp, 24);
+  cpu.sp = (cpu.sp - 3) & 0xFFFFFF;
+  evalWrite24(mem, cpu.sp, COLDBOOT_HALT_IDLE);
+  evalWrite24(mem, 0xD008E0, cpu.sp);
+  lastPc = COLDBOOT_EVENT_LOOP_ENTRY;
+  lastMode = 'adl';
+}
+
 function initializeColdbootRuntime() {
   if (!executor || !cpu?.memory) return;
   runtimeMode = RUNTIME_MODE_COLDBOOT;
   totalSteps = 0;
   const mem = cpu.memory;
-  const cpuSnapshotFields = [
-    'a', 'f', '_bc', '_de', '_hl', '_a2', '_f2', '_bc2', '_de2', '_hl2',
-    'sp', '_ix', '_iy', 'i', 'im', 'iff1', 'iff2', 'madl', 'mbase', 'halted', 'cycles',
-  ];
 
   // Phase 1: Z80 cold boot
   log(`<span class="info">--- Coldboot Phase 1: Z80 cold boot (0x000000, 20K steps) ---</span>`);
@@ -1658,67 +1681,62 @@ function initializeColdbootRuntime() {
   totalSteps += p3.steps;
   log(`<span class="info">--- Phase 3 done: ${p3.steps} steps, ${p3.termination} at 0x${hex(p3.lastPc, 6)} ---</span>`);
 
-  const cpuSnapshot = Object.fromEntries(
-    cpuSnapshotFields.map((field) => [field, cpu[field]]),
-  );
-  const lcdSnapshot = executor.lcdMmio
-    ? { upbase: executor.lcdMmio.upbase, control: executor.lcdMmio.control }
-    : null;
-
-  peripherals = createPeripheralBus({ pllDelay: 2, timerInterrupt: true });
-  executor = createExecutor(PRELIFTED_BLOCKS, mem, { peripherals });
-  cpu = executor.cpu;
-  for (const field of cpuSnapshotFields) {
-    cpu[field] = cpuSnapshot[field];
-  }
-  if (lcdSnapshot && executor.lcdMmio) {
-    executor.lcdMmio.upbase = lcdSnapshot.upbase;
-    executor.lcdMmio.control = lcdSnapshot.control;
-  }
-
-  // Set up event loop CPU state
+  // Phase 4: warm idle continuation. This is the stage the shortcut browser
+  // recipe skipped, leaving VAT and cxMain state at zero.
   cpu.halted = false;
   cpu.iff1 = 1;
   cpu.iff2 = 1;
-  cpu.f = 0x40;
-  cpu.madl = 1;
-  cpu.mbase = 0xD0;
-  cpu._ix = 0xD1A860;
   cpu._iy = 0xD00080;
+  cpu.mbase = 0xD0;
   cpu.sp = SCREEN_STACK_TOP - SCREEN_RENDER_STACK_BYTES;
   fillSentinel(mem, cpu.sp, SCREEN_RENDER_STACK_BYTES);
+  log(`<span class="info">--- Coldboot Phase 4: Warm idle continuation (0x${hex(COLDBOOT_WARM_IDLE_ENTRY, 6)}, 1.5M step cap) ---</span>`);
+  const p4 = executor.runFrom(COLDBOOT_WARM_IDLE_ENTRY, 'adl', { maxSteps: 1500000, maxLoopIterations: 100000 });
+  totalSteps += p4.steps;
+  log(`<span class="info">--- Phase 4 done: ${p4.steps} steps, ${p4.termination} at 0x${hex(p4.lastPc, 6)} ---</span>`);
 
-  // Initialize OS event loop RAM
-  mem[0xD02AD7] = 0xBE;
-  mem[0xD02AD8] = 0x19;
-  mem[0xD02AD9] = 0x00;
-  mem[0xD0009B] |= 0x40;
+  // Phase 5: real launch-home init. It runs MEM_INIT and installs the live
+  // home context that the event loop needs for key dispatch.
+  peripherals?.setTimerEnabled?.(false);
+  cpu.halted = false;
+  cpu.iff1 = 1;
+  cpu.iff2 = 1;
+  cpu._iy = 0xD00080;
+  cpu.mbase = 0xD0;
+  cpu.sp = SCREEN_STACK_TOP - 24;
+  fillSentinel(mem, cpu.sp, 24);
+  evalWrite24(mem, cpu.sp, COLDBOOT_WARM_IDLE_ENTRY);
+  evalWrite24(mem, 0xD008E0, cpu.sp);
+  log(`<span class="info">--- Coldboot Phase 5: Launch-home init (0x${hex(COLDBOOT_LAUNCH_HOME_INIT, 6)}, 300K step cap) ---</span>`);
+  const p5 = executor.runFrom(COLDBOOT_LAUNCH_HOME_INIT, 'adl', { maxSteps: 300000, maxLoopIterations: 30000 });
+  totalSteps += p5.steps;
+  log(`<span class="info">--- Phase 5 done: ${p5.steps} steps, ${p5.termination} at 0x${hex(p5.lastPc, 6)} ---</span>`);
 
-  // Flash self-test pass gate (0x001713 checks this via CALL 0x0008BB)
-  mem[0x020100] = 0x5A;
-  mem[0x020101] = 0xA5;
-  mem[0x020102] = 0x00;
-
-  // System flag clear gate (0x001713 checks LD A,(0xD177BA); OR A; RET NZ)
-  mem[0xD177BA] = 0x00;
+  // Phase 6: repaint home once so the browser starts from the same post-paint
+  // state used by the multi-key probes.
+  peripherals?.setTimerEnabled?.(true);
+  prepareColdbootEventFrame();
+  log(`<span class="info">--- Coldboot Phase 6: Home repaint (0x${hex(COLDBOOT_HOME_REPAINT, 6)}, 300K step cap) ---</span>`);
+  const p6 = executor.runFrom(COLDBOOT_HOME_REPAINT, 'adl', { maxSteps: 300000, maxLoopIterations: 30000 });
+  totalSteps += p6.steps;
+  log(`<span class="info">--- Phase 6 done: ${p6.steps} steps, ${p6.termination} at 0x${hex(p6.lastPc, 6)}; D007CA=0x${hex(evalRead24(mem, 0xD007CA), 6)}, VAT=0x${hex(evalRead24(mem, 0xD02590), 6)}, VRAM=${countVRAMPixels()}px ---</span>`);
 
   lastPc = COLDBOOT_EVENT_LOOP_ENTRY;
   lastMode = 'adl';
 
-  kbd = createKeyboardManager(peripherals);
   updateRegs();
   syncLCDState();
   if (lcd) lcd.renderFrame();
   updateKeyStateDisplay();
   updateKeyboardOverlay();
 
-  setStatus('Coldboot complete. OS event loop is running with DI+HALT bypass.');
-  log(`<span class="info">--- Coldboot seeded (entry=0x${hex(COLDBOOT_EVENT_LOOP_ENTRY, 6)}, SP=0x${hex(cpu.sp, 6)}, IY=0xD00080, iff1=1, timerInterrupt=true, diHaltBypass=true) ---</span>`);
-  startAutoRunLoop();
+  setStatus('Coldboot complete. OS event loop is ready.');
+  log(`<span class="info">--- Coldboot seeded (entry=0x${hex(COLDBOOT_EVENT_LOOP_ENTRY, 6)}, halt=0x${hex(COLDBOOT_HALT_IDLE, 6)}, SP=0x${hex(cpu.sp, 6)}, IY=0xD00080, timerInterrupt=true) ---</span>`);
 }
 
 function runColdbootFrame(stepBudget = COLDBOOT_FRAME_STEPS) {
   if (!executor || !cpu?.memory) return;
+  prepareColdbootEventFrame();
   const result = executor.runFrom(lastPc, lastMode, getColdbootRunOptions(stepBudget));
   totalSteps += result.steps;
   lastPc = result.lastPc;
@@ -1729,12 +1747,15 @@ function runColdbootFrame(stepBudget = COLDBOOT_FRAME_STEPS) {
   updateKeyStateDisplay();
   updateKeyboardOverlay();
   setStatus(`Coldboot: ${result.steps} steps, ${result.termination} | Total: ${totalSteps} | PC=0x${hex(lastPc, 6)}`);
+  return result;
 }
 
 function autoRunFrame(session = autoRunSession) {
   if (!autoRunning || session !== autoRunSession || !executor) return;
   if (isColdbootRuntime()) {
     runSteps(COLDBOOT_FRAME_STEPS);
+    if (session === autoRunSession) stopAutoRunLoop();
+    return;
   } else {
     runSteps(isCoorMonRuntime() ? COORMON_FRAME_STEPS : STEPS_PER_FRAME);
   }
@@ -1845,11 +1866,12 @@ $('btnBoot').addEventListener('click', async () => {
     updateKeyboardOverlay();
     const mappedKey = KEY_MAP[e.code];
     if (mappedKey && !autoRunning && executor) {
-      const stepCount = isColdbootRuntime() ? COLDBOOT_FRAME_STEPS : KEY_BURST_STEPS;
+      const stepCount = isColdbootRuntime() ? COLDBOOT_KEY_BURST_STEPS : KEY_BURST_STEPS;
       const useVramPreserve = isColdbootRuntime() && isPreserveDisplayEnabled();
 
       if (useVramPreserve) {
         // Run with VRAM peak tracking via onBlock callback
+        prepareColdbootEventFrame();
         vramSnapshotPeak = 0;
         let blockCount = 0;
         const opts = getColdbootRunOptions(stepCount);
