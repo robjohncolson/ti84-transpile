@@ -1,1 +1,12 @@
 .gitnexus
+
+# Generated artifacts — regenerate with scripts/transpile-ti84-rom.mjs (the .gz IS committed)
+TI-84_Plus_CE/ROM.transpiled.js
+
+# Session-local state, never committed (docs always said so; now enforced)
+logs/
+state/cross-agent/
+.ti84_codex_loop.lock
+.auto-session-*.md
+probe*.stderr.txt
+eng.traineddata

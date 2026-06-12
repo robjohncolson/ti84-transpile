@@ -26,8 +26,9 @@ A research project that lifts the TI-84 Plus CE OS ROM (eZ80 machine code) into 
 | `TI-84_Plus_CE/phase*-report.md` | One report per phase (~126 reports) |
 | `TI-84_Plus_CE/keyboard-matrix.md`, `PHASE25_SPEC.md`, `PHASE25G_SPEC.md`, `AUTO_FRONTIER_SPEC.md` | Specs |
 | `scripts/transpile-ti84-rom.mjs` | Lift the ROM to JS (~2s) |
-| `scripts/auto-continuation.bat` | Launcher for the auto-continuation schtask |
-| `.auto-continuation-prompt.md` | Wrapper prompt the schtask pipes into headless Claude |
+| `scripts/auto-continuation-codex.ps1` | Active launcher for the auto-continuation schtask (Codex tick supervisor: lock + timeout + golden-regression commit gate) |
+| `.auto-continuation-codex-prompt.md` | Single-tick prompt the schtask pipes into headless Codex |
+| `scripts/auto-continuation.bat` + `.auto-continuation-prompt.md` | RETIRED Claude launcher + prompt (kept for reference; retired 2026-06-11 to save Claude credits) |
 
 ## How To Regenerate
 
@@ -52,7 +53,7 @@ When the user says "go for it", "keep going", or invokes the auto-continuation l
 2. **Default to parallel Codex dispatch**: Use the cross-agent.py runner for any file-writing, probe-running, or disassembly work. CC focuses on investigation, analysis, and orchestration. Give Codex self-contained prompts with exact addresses, reference commits, file paths, and calling-convention details — it has NO conversation context. **Default posture: spawn 3-4 Codex agents in parallel** for independent priorities. Only serialize when a task depends on another task's output.
 3. **At every pause** (after a phase completes, before picking the next target): run `/context` AND **update `CONTINUATION_PROMPT_CODEX.md`** with what just ran (artifacts, findings, next-phase priorities). Keep the "last updated" header current. Both steps are non-negotiable — the file is the only handoff mechanism.
 4. **Continue or stop based on context**: < 70% of 1M → proceed to next priority without asking. ≥ 70% → make sure `CONTINUATION_PROMPT_CODEX.md` is fully up-to-date, then stop and hand off.
-5. **Auto-continuation schtask**: `\TI84-AutoContinuation` fires `scripts/auto-continuation.bat` every 1h (daily trigger at midnight, then repeats hourly). Disable with `schtasks /change /tn \TI84-AutoContinuation /disable` if a human session is editing this file. Re-enable with `/enable`. Change interval with `schtasks /change /tn \TI84-AutoContinuation /ri <minutes>`. Logs in `logs/` (gitignored).
+5. **Auto-continuation schtask**: `\TI84-AutoContinuation` fires `scripts/auto-continuation-codex.ps1` — a headless **Codex** tick (the Claude launcher is retired; task currently **Disabled** pending user re-enable). One fire = one Codex tick: one priority from CONTINUATION_PROMPT_CODEX.md, wrapper-owned golden-regression gate, commit/push only on PASS. Disable with `schtasks /change /tn \TI84-AutoContinuation /disable` if a human session is editing the handoff file. Re-enable with `/enable`. Change interval via elevated PowerShell `Set-ScheduledTask` (`schtasks /change /ri` hangs on a password prompt). Logs in `logs/` (gitignored).
 
 **Do NOT** ask for approval between reasonable next-phase targets. The user delegated that judgment. Only stop for: (a) context ≥ 70%, (b) genuinely ambiguous fork, (c) destructive operation not previously authorized.
 
