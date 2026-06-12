@@ -17,7 +17,11 @@
 param(
     [string]$PromptFile = '',
     [switch]$SkipGit,
-    [int]$TimeoutMinutes = 25
+    [int]$TimeoutMinutes = 40,
+    # Per-invocation override; global config.toml stays at "low" so the
+    # OLD_APP 15-min loop keeps its cheap-tick economics. Research ticks
+    # here get gpt-5.5 at xhigh (quota is otherwise underused).
+    [string]$ReasoningEffort = 'xhigh'
 )
 
 $ErrorActionPreference = 'Continue'
@@ -95,6 +99,7 @@ try {
     $q = '"'
     $cmdLine = $q + $codexCmd + $q + ' exec --cd ' + $q + $ProjectDir + $q +
         ' --dangerously-bypass-approvals-and-sandbox --color never' +
+        ' -c model_reasoning_effort=' + $q + $ReasoningEffort + $q +
         ' --output-last-message ' + $q + $LastMsgFile + $q +
         ' - < ' + $q + $PromptFile + $q + ' > ' + $q + $LogFile + $q + ' 2>&1'
     $runnerCmd = Join-Path $env:TEMP "ti84-codex-run-$Stamp.cmd"
@@ -143,7 +148,9 @@ try {
                 if ($summary.Length -gt 400) { $summary = $summary.Substring(0, 400) + '...' }
             }
             $msg = "feat: codex auto-session $Stamp (golden regression PASS)`n`n$summary`n`nCommitted by auto-continuation-codex.ps1 (wrapper-verified 26/26 gate)."
-            Set-Content -Path $msgFile -Value $msg -Encoding UTF8
+            # WriteAllText = UTF-8 without BOM; Set-Content -Encoding UTF8 writes a
+            # BOM that git keeps in the commit subject (mojibake on GitHub).
+            [System.IO.File]::WriteAllText($msgFile, $msg)
             & git commit -F $msgFile 2>&1 | ForEach-Object { Write-Log "git: $_" }
             Remove-Item $msgFile -Force -ErrorAction SilentlyContinue
             & git push origin master 2>&1 | ForEach-Object { Write-Log "git push: $_" }
