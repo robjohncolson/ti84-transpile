@@ -448,10 +448,17 @@ const COLDBOOT_HALT_IDLE = 0x0019B5;
 const COLDBOOT_LAUNCH_HOME_INIT = 0x09DD62;
 const COLDBOOT_HOME_REPAINT = 0x058241;
 const COLDBOOT_KEY_BURST_STEPS = 300000;
+const COLDBOOT_EOL_KEY_BURST_STEPS = 350000;
 const KEY_BURST_STEPS = 2000;
 const KEYBOARD_IRQ_ENABLE_HIGH_PORT = 0x5006;
 const KEYBOARD_IRQ_ENABLE_HIGH_BIT = 0x08; // bit 3 of the high byte = interrupt 19 overall
+const KEY_PENDING_ADDR = 0xD0058C;
+const KEY_GETKEY_ADDR = 0xD0058D;
 const KEY_EVENT_BUFFER_ADDR = 0xD0058E;
+const KEY_AVAILABLE_FLAG_ADDR = 0xD00080;
+const KEY_AVAILABLE_FLAG_MASK = 0x08;
+const KEY_DISPATCH_FLAGS_ADDR = 0xD0009F;
+const KEY_DISPATCH_PENDING_MASK = 0x20;
 const MODIFIER_STATE_ADDR = 0xD00092; // IY(0xD00080) + 0x12
 const MODIFIER_ALPHA_MASK = 0x10;
 const MODIFIER_2ND_MASK = 0x20;
@@ -471,6 +478,28 @@ const CUSTOM_TEXT_BUFFER_LEN = 27;
 const LCD_VRAM_BASE = 0xD40000;
 const LCD_VRAM_BYTES = 320 * 240 * 2;
 const LCD_VRAM_PIXELS = 320 * 240;
+const TOKEN_OUTPUT_GATE_ADDR = 0xD02A28;
+const TOKEN_OUTPUT_GATE_ENTRY = 0x08F5E1;
+const TOKEN_OUTPUT_GATE_TEST_ENTRY = 0x090992;
+const TOKEN_BUFFER_A_ADDR = 0xD001B8;
+const TOKEN_BUFFER_B_ADDR = 0xD001D3;
+const EOL_TUPLE_SAVE_ENTRY = 0x08F54B;
+const KEY_CLEANUP_ENTRY = 0x0018F8;
+const EOL_PC_CODE = 'Escape';
+const TOKEN_BUFFER_SNAPSHOT_FIELDS = Object.freeze([
+  ['D001B8', TOKEN_BUFFER_A_ADDR, 8],
+  ['D001D3', TOKEN_BUFFER_B_ADDR, 8],
+]);
+const EOL_TUPLE_SNAPSHOT_FIELDS = Object.freeze([
+  ['D02A29', 0xD02A29, 2],
+  ['D02A2B', 0xD02A2B, 2],
+  ['D02A1B', 0xD02A1B, 2],
+  ['D0059A', 0xD0059A, 1],
+  ['D01150', 0xD01150, 2],
+  ['D0243D', 0xD0243D, 3],
+  ['D02A40', 0xD02A40, 3],
+  ['D02A28', TOKEN_OUTPUT_GATE_ADDR, 1],
+]);
 const ROM_FONT_BASE = 0x003D6E;
 const ROM_FONT_GLYPH_BYTES = 0x1C;
 const ROM_FONT_ROW_BYTES = 2;
@@ -625,6 +654,144 @@ function restoreVRAMSnapshot() {
   }
 }
 
+function readMemoryFieldValue(mem, addr, len) {
+  let value = 0;
+  for (let i = 0; i < len; i++) value |= mem[addr + i] << (i * 8);
+  return value >>> 0;
+}
+
+function captureMemoryFields(fields) {
+  if (!cpu?.memory) return null;
+  return fields.map(([name, addr, len]) => ({
+    name,
+    addr,
+    len,
+    bytes: cpu.memory.slice(addr, addr + len),
+  }));
+}
+
+function restoreMemoryFields(snapshot) {
+  if (!cpu?.memory || !snapshot) return false;
+  for (const field of snapshot) {
+    cpu.memory.set(field.bytes, field.addr);
+  }
+  return true;
+}
+
+function memoryFieldSnapshotHasSignal(snapshot) {
+  return !!snapshot?.some((field) => field.bytes.some((byte) => byte !== 0));
+}
+
+function getSnapshotFieldValue(snapshot, name) {
+  const field = snapshot?.find((item) => item.name === name);
+  if (!field) return 0;
+  let value = 0;
+  for (let i = 0; i < field.bytes.length; i++) value |= field.bytes[i] << (i * 8);
+  return value >>> 0;
+}
+
+function createColdbootPersistenceState() {
+  const mem = cpu?.memory;
+  const initialTokenA = mem?.[TOKEN_BUFFER_A_ADDR] ?? 0;
+  const initialTokenB = mem?.[TOKEN_BUFFER_B_ADDR] ?? 0;
+  return {
+    blockCount: 0,
+    gateHooks: 0,
+    wipeCount: 0,
+    lastTokenA: initialTokenA,
+    lastTokenB: initialTokenB,
+    tokenSnapshot: initialTokenA !== 0 || initialTokenB !== 0
+      ? captureMemoryFields(TOKEN_BUFFER_SNAPSHOT_FIELDS)
+      : null,
+    tokenSnapshotBlock: 0,
+    tokenRestored: false,
+    tupleSnapshot: null,
+    tupleSnapshotBlock: 0,
+    tupleHits: 0,
+    tupleRestored: false,
+    tupleRestorePending: false,
+    tupleRestoreBlock: 0,
+  };
+}
+
+function observeColdbootPersistenceBlock(state, pc) {
+  if (!cpu?.memory || !state) return;
+  const mem = cpu.memory;
+  const addr = pc & 0xFFFFFF;
+  state.blockCount++;
+
+  if (state.tupleRestorePending && state.tupleSnapshot) {
+    state.tupleRestored = restoreMemoryFields(state.tupleSnapshot);
+    state.tupleRestoreBlock = state.blockCount;
+    state.tupleRestorePending = false;
+  }
+
+  if (addr === TOKEN_OUTPUT_GATE_ENTRY || addr === TOKEN_OUTPUT_GATE_TEST_ENTRY) {
+    mem[TOKEN_OUTPUT_GATE_ADDR] = 1;
+    state.gateHooks++;
+  }
+
+  if (mem[TOKEN_BUFFER_A_ADDR] !== state.lastTokenA || mem[TOKEN_BUFFER_B_ADDR] !== state.lastTokenB) {
+    state.lastTokenA = mem[TOKEN_BUFFER_A_ADDR];
+    state.lastTokenB = mem[TOKEN_BUFFER_B_ADDR];
+    if (state.lastTokenA !== 0 || state.lastTokenB !== 0) {
+      state.tokenSnapshot = captureMemoryFields(TOKEN_BUFFER_SNAPSHOT_FIELDS);
+      state.tokenSnapshotBlock = state.blockCount;
+    }
+  }
+
+  if (addr === EOL_TUPLE_SAVE_ENTRY) {
+    const snapshot = captureMemoryFields(EOL_TUPLE_SNAPSHOT_FIELDS);
+    if (memoryFieldSnapshotHasSignal(snapshot)) {
+      state.tupleSnapshot = snapshot;
+      state.tupleSnapshotBlock = state.blockCount;
+      state.tupleHits++;
+    }
+  }
+
+  if (addr === KEY_CLEANUP_ENTRY) {
+    state.wipeCount++;
+    if (state.wipeCount === 2 && state.tupleSnapshot) state.tupleRestorePending = true;
+  }
+}
+
+function finalizeColdbootPersistenceState(state) {
+  if (!cpu?.memory || !state) return state;
+
+  if (state.tokenSnapshot && (cpu.memory[TOKEN_BUFFER_A_ADDR] === 0 || cpu.memory[TOKEN_BUFFER_B_ADDR] === 0)) {
+    state.tokenRestored = restoreMemoryFields(state.tokenSnapshot);
+  }
+
+  if (state.tupleRestorePending && state.tupleSnapshot) {
+    state.tupleRestored = restoreMemoryFields(state.tupleSnapshot);
+    state.tupleRestoreBlock = state.blockCount;
+    state.tupleRestorePending = false;
+  }
+
+  return state;
+}
+
+function getColdbootKeyBurstStepsForCode(code) {
+  return code === EOL_PC_CODE
+    ? Math.max(COLDBOOT_KEY_BURST_STEPS, COLDBOOT_EOL_KEY_BURST_STEPS)
+    : COLDBOOT_KEY_BURST_STEPS;
+}
+
+function getColdbootPersistenceDiagnostics() {
+  if (!cpu?.memory) return null;
+  const mem = cpu.memory;
+  return {
+    tokenGate: mem[TOKEN_OUTPUT_GATE_ADDR],
+    tokenA: mem[TOKEN_BUFFER_A_ADDR],
+    tokenB: mem[TOKEN_BUFFER_B_ADDR],
+    tuple: Object.fromEntries(EOL_TUPLE_SNAPSHOT_FIELDS.map(([name, addr, len]) => [
+      name,
+      readMemoryFieldValue(mem, addr, len),
+    ])),
+  };
+}
+window.getColdbootPersistenceDiagnostics = getColdbootPersistenceDiagnostics;
+
 function isPreserveDisplayEnabled() {
   return $('preserveDisplay')?.checked === true;
 }
@@ -687,6 +854,22 @@ function writeCoorMonKeyEventFromState() {
   const scanCode = getActiveCoorMonScanCode() & 0xFF;
   cpu.memory[KEY_EVENT_BUFFER_ADDR] = scanCode;
   return scanCode;
+}
+
+function getColdbootInternalKeyCode(code, scanCode) {
+  if (code === EOL_PC_CODE) return scanCode & 0xFF;
+  const modifier = getKeyboardModifierIndex(cpu?.memory);
+  return scanCodeToKeyCode[modifier]?.[scanCode] || (scanCode & 0xFF);
+}
+
+function seedColdbootPendingKey(code, scanCode) {
+  if (!cpu?.memory) return;
+  const keyCode = getColdbootInternalKeyCode(code, scanCode) & 0xFF;
+  cpu.memory[KEY_PENDING_ADDR] = keyCode;
+  cpu.memory[KEY_GETKEY_ADDR] = keyCode;
+  cpu.memory[KEY_EVENT_BUFFER_ADDR] = keyCode;
+  cpu.memory[KEY_AVAILABLE_FLAG_ADDR] = (cpu.memory[KEY_AVAILABLE_FLAG_ADDR] | KEY_AVAILABLE_FLAG_MASK) & 0xFF;
+  cpu.memory[KEY_DISPATCH_FLAGS_ADDR] |= KEY_DISPATCH_PENDING_MASK;
 }
 
 function writeTranslatedKeyEvent(code) {
@@ -1844,7 +2027,8 @@ $('btnBoot').addEventListener('click', async () => {
   };
   kbdDown = (e) => {
     if (isEditableTarget(e)) return;
-    kbd.handleKeyDown(e);
+    const useDirectEolKey = isColdbootRuntime() && e.code === EOL_PC_CODE;
+    if (!useDirectEolKey) kbd.handleKeyDown(e);
     const scanCode = getScanCodeForPcCode(e.code);
     if (scanCode != null) {
       function rearmCxMain() {
@@ -1858,15 +2042,16 @@ $('btnBoot').addEventListener('click', async () => {
 
       if (isColdbootRuntime() && scanCode != null) {
         rearmCxMain();
+        seedColdbootPendingKey(e.code, scanCode);
       }
-      peripherals?.setKeyPressed?.(cpu?.memory, scanCode);
+      if (!useDirectEolKey) peripherals?.setKeyPressed?.(cpu?.memory, scanCode);
     }
     writeTranslatedKeyEvent(e.code);
     updateKeyStateDisplay();
     updateKeyboardOverlay();
     const mappedKey = KEY_MAP[e.code];
     if (mappedKey && !autoRunning && executor) {
-      const stepCount = isColdbootRuntime() ? COLDBOOT_KEY_BURST_STEPS : KEY_BURST_STEPS;
+      const stepCount = isColdbootRuntime() ? getColdbootKeyBurstStepsForCode(e.code) : KEY_BURST_STEPS;
       const useVramPreserve = isColdbootRuntime() && isPreserveDisplayEnabled();
 
       if (useVramPreserve) {
@@ -1874,8 +2059,10 @@ $('btnBoot').addEventListener('click', async () => {
         prepareColdbootEventFrame();
         vramSnapshotPeak = 0;
         let blockCount = 0;
+        const persistenceState = createColdbootPersistenceState();
         const opts = getColdbootRunOptions(stepCount);
         opts.onBlock = (pc) => {
+          observeColdbootPersistenceBlock(persistenceState, pc);
           blockCount++;
           if (blockCount % VRAM_SNAPSHOT_SAMPLE_INTERVAL === 0) {
             const px = countVRAMPixels();
@@ -1889,12 +2076,19 @@ $('btnBoot').addEventListener('click', async () => {
         totalSteps += result.steps;
         lastPc = result.lastPc;
         lastMode = result.lastMode;
+        finalizeColdbootPersistenceState(persistenceState);
 
         // If VRAM was wiped (current < threshold but peak was significant), restore
         const currentPx = countVRAMPixels();
         if (currentPx < VRAM_SNAPSHOT_THRESHOLD && vramSnapshotPeak > VRAM_SNAPSHOT_THRESHOLD && vramSnapshot) {
           restoreVRAMSnapshot();
           log(`<span class="info">VRAM restored: peak=${vramSnapshotPeak}px, post-run=${currentPx}px</span>`);
+        }
+        if (persistenceState.tokenRestored) {
+          log(`<span class="info">Token buffers restored: D001B8=0x${hex(cpu.memory[TOKEN_BUFFER_A_ADDR], 2)}, D001D3=0x${hex(cpu.memory[TOKEN_BUFFER_B_ADDR], 2)}</span>`);
+        }
+        if (persistenceState.tupleRestored) {
+          log(`<span class="info">EOL tuple restored: D02A29=0x${hex(getSnapshotFieldValue(persistenceState.tupleSnapshot, 'D02A29'), 4)}, wipes=${persistenceState.wipeCount}</span>`);
         }
 
         updateRegs();
