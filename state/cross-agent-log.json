@@ -20661,15 +20661,48 @@
       "timestamp": "2026-06-11T01:14:56Z",
       "files_changed": [],
       "depth": 0
+    },
+    {
+      "call_id": "2ba4007cbc6a",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 614 \u2014 Priority 2: Decode D02A28 Gate Semantics\n\n## Context\n\nThe TI-84 Plus CE ROM tra",
+      "status": "blocked",
+      "duration_seconds": 68.003,
+      "timestamp": "2026-06-11T02:03:32Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "69c86c4c14eb",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 614 \u2014 Priority 3: Decode 0x08F696 Alternate Exit Path\n\n## Context\n\nThe TI-84 Plus CE ",
+      "status": "blocked",
+      "duration_seconds": 67.721,
+      "timestamp": "2026-06-11T02:03:34Z",
+      "files_changed": [],
+      "depth": 0
+    },
+    {
+      "call_id": "ee2666a4df13",
+      "direction": "cc-to-codex",
+      "task_type": "implement",
+      "prompt_summary": "# Auto-Session 614 \u2014 Priority 1: Dynamic Wipe Interception Hook\n\n## Context\n\nThe TI-84 Plus CE ROM t",
+      "status": "completed",
+      "duration_seconds": 87.452,
+      "timestamp": "2026-06-11T02:03:49Z",
+      "files_changed": [],
+      "depth": 0
     }
   ],
   "summary": {
-    "total_calls": 1749,
-    "cc_to_codex": 1749,
+    "total_calls": 1752,
+    "cc_to_codex": 1752,
     "codex_to_cc": 0,
-    "completed": 1126,
+    "completed": 1127,
     "failed": 260,
     "refused": 0,
-    "avg_duration_seconds": 445.921
+    "avg_duration_seconds": 445.285
   }
 }
