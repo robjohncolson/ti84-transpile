@@ -46,6 +46,12 @@ button.active { background: #2a5a2a; border-color: #4a8a4a; }
 .status { background: #1e3a1e; border: 1px solid #2a5a2a; padding: 8px; margin-bottom: 12px; border-radius: 4px; color: #7ddf7d; font-size: 12px; }
 .status.error { background: #3a1e1e; border-color: #5a2a2a; color: #df7d7d; }
 .status.burst { background: #3a3416; border-color: #8a7b2a; color: #f0d86a; }
+details.dev-tools { margin-bottom: 12px; border: 1px solid #333; border-radius: 4px; background: #0d0d1a; }
+details.dev-tools > summary { cursor: pointer; padding: 8px 10px; color: #6cb4ee; font-size: 12px; user-select: none; list-style: none; }
+details.dev-tools > summary::before { content: '\25B8'; display: inline-block; margin-right: 6px; transition: transform 0.1s; }
+details.dev-tools[open] > summary::before { transform: rotate(90deg); }
+details.dev-tools[open] > summary { border-bottom: 1px solid #333; margin-bottom: 8px; }
+details.dev-tools > *:not(summary) { margin-left: 8px; margin-right: 8px; }
 </style>
 </head>
 <body>
@@ -78,6 +84,8 @@ button.active { background: #2a5a2a; border-color: #4a8a4a; }
         Preserve Display (VRAM snapshot/restore between keypresses)
       </label>
     </div>
+    <details class="dev-tools">
+    <summary>Developer tools — screen probes, expression eval, graph, fonts</summary>
     <div class="controls">
       <button id="btnShowMode" disabled>MODE</button>
       <button id="btnShowPlot" disabled>Y=/Plot</button>
@@ -241,6 +249,7 @@ button.active { background: #2a5a2a; border-color: #4a8a4a; }
     </div>
     <canvas id="fontDemoCanvas" width="320" height="48"></canvas>
     <div id="fontDemoStatus" class="control-note">Uses direct char-code indexing from ROM base 0x003D6E.</div>
+    </details>
     <div id="status" class="status">Ready. Click Boot to start.</div>
     <div class="regs" id="regs">
       <span class="label">A=</span><span class="val" id="rA">00</span>
@@ -8198,6 +8207,22 @@ $('graphInput').addEventListener('keydown', (e) => {
     $('btnGraph').click();
   }
 });
+
+// ---- Demo auto-boot ----
+// On first load, boot straight into the coldboot OS event loop so the home
+// screen renders with no clicks. The headless verify probe sets its own
+// checkboxes and clicks Boot too; the second click no-ops on the disabled
+// button, so the probe still observes the same single coldboot run.
+// Researchers can Reset and pick a different mode afterward.
+(function autoBootDemo() {
+  if (window.__autoBooted) return;
+  window.__autoBooted = true;
+  $('coldbootMode').checked = true;
+  $('coormonMode').checked = false;
+  setStatus('Booting the TI-84 OS — the home screen will appear in a few seconds...');
+  // Defer one tick so the status paints before the heavy ROM load + boot.
+  setTimeout(() => { if (!shellBooted) $('btnBoot').click(); }, 50);
+})();
 
 </script>
 </body>
