@@ -1891,17 +1891,47 @@ function initializeColdbootRuntime() {
   evalWrite24(mem, cpu.sp, COLDBOOT_WARM_IDLE_ENTRY);
   evalWrite24(mem, 0xD008E0, cpu.sp);
   log(`<span class="info">--- Coldboot Phase 5: Launch-home init (0x${hex(COLDBOOT_LAUNCH_HOME_INIT, 6)}, 300K step cap) ---</span>`);
-  const p5 = executor.runFrom(COLDBOOT_LAUNCH_HOME_INIT, 'adl', { maxSteps: 300000, maxLoopIterations: 30000 });
+  // VAT/context replay: the OS bulk-clear at 0x001879 zeroes the VAT pointers
+  // partway through Phase 5. Capture them at the first pre-clear hit and replay
+  // them before the Phase 6 repaint, otherwise the symbol-table search at
+  // 0x084711 walks zeroed bounds and runs away (the old browser max-step bug).
+  // Proven by probe-phase655-browser-vat-replay.mjs; regression-guarded by
+  // probe-browser-shell-replay-verify.mjs (run it after any edit here).
+  const COLDBOOT_VAT_FIELDS = [
+    0xD007CA, 0xD008E0, 0xD02587, 0xD0258A, 0xD0258D, 0xD02590,
+    0xD02593, 0xD0259A, 0xD0259D, 0xD025A0, 0xD025C5,
+  ];
+  let coldbootVatSnapshot = null;
+  const p5 = executor.runFrom(COLDBOOT_LAUNCH_HOME_INIT, 'adl', {
+    maxSteps: 300000,
+    maxLoopIterations: 30000,
+    onBlock(pc) {
+      if (coldbootVatSnapshot || (pc & 0xFFFFFF) !== 0x001879) return;
+      if (evalRead24(mem, 0xD02590) === 0) return; // VAT not live yet
+      coldbootVatSnapshot = COLDBOOT_VAT_FIELDS.map((addr) => [addr, evalRead24(mem, addr)]);
+    },
+  });
   totalSteps += p5.steps;
-  log(`<span class="info">--- Phase 5 done: ${p5.steps} steps, ${p5.termination} at 0x${hex(p5.lastPc, 6)} ---</span>`);
+  log(`<span class="info">--- Phase 5 done: ${p5.steps} steps, ${p5.termination} at 0x${hex(p5.lastPc, 6)}${coldbootVatSnapshot ? ' (VAT snapshot captured)' : ' (no VAT snapshot!)'} ---</span>`);
 
   // Phase 6: repaint home once so the browser starts from the same post-paint
   // state used by the multi-key probes.
+  if (coldbootVatSnapshot) {
+    for (const [addr, value] of coldbootVatSnapshot) evalWrite24(mem, addr, value);
+  }
   peripherals?.setTimerEnabled?.(true);
   prepareColdbootEventFrame();
   log(`<span class="info">--- Coldboot Phase 6: Home repaint (0x${hex(COLDBOOT_HOME_REPAINT, 6)}, 300K step cap) ---</span>`);
   const p6 = executor.runFrom(COLDBOOT_HOME_REPAINT, 'adl', { maxSteps: 300000, maxLoopIterations: 30000 });
   totalSteps += p6.steps;
+  // Exposed for the headless verification probe (phase666); harmless in the UI.
+  window.__coldbootPhase6 = {
+    steps: p6.steps,
+    termination: p6.termination,
+    lastPc: p6.lastPc,
+    vram: countVRAMPixels(),
+    vatSnapshotCaptured: Boolean(coldbootVatSnapshot),
+  };
   log(`<span class="info">--- Phase 6 done: ${p6.steps} steps, ${p6.termination} at 0x${hex(p6.lastPc, 6)}; D007CA=0x${hex(evalRead24(mem, 0xD007CA), 6)}, VAT=0x${hex(evalRead24(mem, 0xD02590), 6)}, VRAM=${countVRAMPixels()}px ---</span>`);
 
   lastPc = COLDBOOT_EVENT_LOOP_ENTRY;

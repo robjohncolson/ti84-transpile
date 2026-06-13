@@ -132,11 +132,31 @@ try {
     Write-Log "golden regression: pass=$goldenPass ($goldenTail)"
     Remove-Item $goldenLog -Force -ErrorAction SilentlyContinue
 
+    # --- 4b. Browser-shell gate: the golden probe does NOT exercise
+    # browser-shell.html, so if a tick edited the live demo, run its own
+    # regression and fold the result into the commit gate.
+    $browserPass = $true
+    Set-Location $ProjectDir
+    $shellChanged = & git status --porcelain -- TI-84_Plus_CE/browser-shell.html
+    if ($shellChanged) {
+        $browserLog = Join-Path $env:TEMP "ti84-browser-$Stamp.log"
+        $browserCmd = 'node scripts\run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-browser-shell-replay-verify.mjs > "' + $browserLog + '" 2>&1'
+        $bproc = Start-Process -FilePath $env:ComSpec `
+            -ArgumentList '/d', '/c', $browserCmd `
+            -WorkingDirectory $ProjectDir -PassThru -WindowStyle Hidden
+        $bFinished = $bproc.WaitForExit(300000)
+        if ($bFinished) { $bproc.WaitForExit() } else { & taskkill /PID $bproc.Id /T /F 2>$null }
+        $browserPass = ($bFinished -and $bproc.ExitCode -eq 0)
+        $browserTail = (Get-Content $browserLog -Tail 2 -ErrorAction SilentlyContinue) -join ' | '
+        Write-Log "browser-shell regression: pass=$browserPass (shell edited this tick) ($browserTail)"
+        Remove-Item $browserLog -Force -ErrorAction SilentlyContinue
+    }
+
     # --- 5. Git: commit on PASS, revert on FAIL ------------------------------
     if ($SkipGit) {
         Write-Log 'skipGit: leaving worktree untouched, no commit/revert'
     }
-    elseif ($goldenPass) {
+    elseif ($goldenPass -and $browserPass) {
         Set-Location $ProjectDir
         & git add -A 2>$null
         $staged = & git diff --cached --name-only
@@ -160,7 +180,7 @@ try {
         }
     }
     else {
-        Write-Log 'GOLDEN REGRESSION FAILED - reverting tracked changes, NO commit'
+        Write-Log "REGRESSION GATE FAILED (golden=$goldenPass browser=$browserPass) - reverting tracked changes, NO commit"
         Set-Location $ProjectDir
         & git checkout -- . 2>&1 | ForEach-Object { Write-Log "git revert: $_" }
     }
