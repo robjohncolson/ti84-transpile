@@ -1,0 +1,100 @@
+{
+  "RAM_BASE": "0x004A0A00",
+  "fields": {
+    "D0231A": {
+      "before": "3e a8 d2",
+      "after": "3e a8 d2",
+      "changed": false
+    },
+    "D0243A": {
+      "before": "cc a8 d1",
+      "after": "cd a8 d1",
+      "changed": true
+    },
+    "D0231D": {
+      "before": "3d a8 d2",
+      "after": "3d a8 d2",
+      "changed": false
+    },
+    "D0243D": {
+      "before": "3e a8 d2",
+      "after": "3e a8 d2",
+      "changed": false
+    },
+    "D02434": {
+      "before": "00 00 00 cc a8 d1 cc a8 d1 3e a8 d2 3e a8 d2 00",
+      "after": "00 00 00 cc a8 d1 cd a8 d1 3e a8 d2 3e a8 d2 00",
+      "changed": true
+    },
+    "D02440": {
+      "before": "3e a8 d2 00 00 00 00 00 00",
+      "after": "3e a8 d2 00 00 00 00 00 00",
+      "changed": false
+    },
+    "D02317": {
+      "before": "3e a8 d2 3e a8 d2 3d a8",
+      "after": "3e a8 d2 3e a8 d2 3d a8",
+      "changed": false
+    },
+    "D0231F": {
+      "before": "d2 00 00",
+      "after": "d2 00 00",
+      "changed": false
+    },
+    "D02A28": {
+      "before": "00",
+      "after": "00",
+      "changed": false
+    },
+    "D02A29": {
+      "before": "00 00",
+      "after": "0c 00",
+      "changed": true
+    },
+    "D02A2B": {
+      "before": "00 00 00",
+      "after": "00 00 00",
+      "changed": false
+    },
+    "D02A40": {
+      "before": "3e a8 d2",
+      "after": "3e a8 d2",
+      "changed": false
+    },
+    "D0058C": {
+      "before": "00",
+      "after": "00",
+      "changed": false
+    },
+    "D0058E": {
+      "before": "00",
+      "after": "00",
+      "changed": false
+    },
+    "D00082": {
+      "before": "12",
+      "after": "12",
+      "changed": false
+    },
+    "D007CA": {
+      "before": "e9 85 05",
+      "after": "e9 85 05",
+      "changed": false
+    },
+    "D007E0": {
+      "before": "40",
+      "after": "40",
+      "changed": false
+    },
+    "D000A3": {
+      "before": "0a",
+      "after": "08",
+      "changed": true
+    },
+    "D0301B": {
+      "before": "5a a5 5a 00",
+      "after": "5a a5 5a 00",
+      "changed": false
+    }
+  }
+}
