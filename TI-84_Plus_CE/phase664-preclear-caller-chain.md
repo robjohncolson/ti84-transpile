@@ -1,0 +1,11921 @@
+# Phase 664: Pre-Clear Caller Chain Into 0x001879
+
+Probe: `probe-phase664-preclear-caller-chain.mjs`  
+Run: `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-phase664-preclear-caller-chain.mjs`
+
+## Summary
+
+- PASS: browser coldboot no-AutoRun Digit2 route completed with pre-clear instrumentation.
+- Route: total blocks=299956, cxMain hits=2, key-handler hits=2, token/tail hits=0, low-path hits=60889, cleanup hits=3.
+- First clear: 0x001879 block 13138; first clear tail: 0x0018F8 block 13139.
+- Pre-clear first-hit sequence: 0x08C331#1 -> 0x05C634#2 -> 0x000038#3 -> 0x0006F3#4 -> 0x000704#5 -> 0x000710#6 -> 0x001713#7 -> 0x0008BB#8 -> 0x001717#9 -> 0x001718#10 -> 0x00171E#11 -> 0x0067F8#12 -> 0x001C4F#13 -> 0x001CA6#14 -> 0x001CC0#15 -> 0x001CCA#16 -> 0x001CCE#17 -> 0x001CD5#18 -> 0x001CE5#19 -> 0x001C54#20 -> 0x006808#21 -> 0x001C33#22 -> 0x001C4A#13027 -> 0x0158D2#13028 -> 0x0158DA#13029 -> 0x0158EC#13030 -> 0x0158EE#13031 -> 0x0158F8#13032 -> 0x001872#13137 -> 0x001879#13138 -> 0x0018F8#13139.
+- Finding: The first destructive clear is selected by the low-ROM interrupt/guard route before token/tail: 0x08C331 enters 0x05C634 -> 0x000038, the reduced ISR reaches 0x0067F8 -> 0x001C4F -> 0x006808 -> repeated 0x001C33 guard checks, and the first exit from that guard loop is 0x001C4A#13027 -> 0x0158D2 -> 0x0158F8 -> 0x001872 -> 0x001879#13138 -> 0x0018F8#13139. The route is live at entry (0x006808#21, 0x001C33#22) and still clears before any token/tail hooks fire.
+- No browser-shell, runtime, transpiler, scheduler, or golden-regression-relevant source files were modified.
+
+## Dynamic Pre-Clear Samples
+
+| Target | Hits | First block | Previous PC | AF | IX | SP | Stack0 | Return hints | Route fields | Recent IO | Recent tail |
+| --- | ---: | ---: | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 0x08C331 | 2 | 1 |  | 0x1040 | 0xD1A860 | 0xD1A863 | 0x0019B5 | 0x0019B5 | D0058E=0x90 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 |  | 0x08C331 |
+| 0x05C634 | 5 | 2 | 0x08C331 | 0x1040 | 0xD1A860 | 0xD1A860 | 0x08C339 | 0x08C339, 0x0019B5 | D0058E=0x90 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 |  | 0x08C331 -> 0x05C634 |
+| 0x000038 | 43 | 3 | 0x05C634 | 0x1054 | 0xD1A860 | 0xD1A85D | 0x05C67C | 0x05C67C, 0x08C339, 0x0019B5 | D0058E=0x90 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 |  | 0x08C331 -> 0x05C634 -> 0x000038 |
+| 0x0006F3 | 43 | 4 | 0x000038 | 0x007C | 0xD1A860 | 0xD1A857 | 0xD00080 | 0xD00080, 0xD1A860, 0x05C67C, 0x08C339, 0x0019B5 | D0058E=0x90 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 |  | 0x08C331 -> 0x05C634 -> 0x000038 -> 0x0006F3 |
+| 0x000704 | 43 | 5 | 0x0006F3 | 0xD07C | 0xD1A860 | 0xD1A857 | 0xD00080 | 0xD00080, 0xD1A860, 0x05C67C, 0x08C339, 0x0019B5 | D0058E=0x90 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 |  | 0x08C331 -> 0x05C634 -> 0x000038 -> 0x0006F3 -> 0x000704 |
+| 0x000710 | 43 | 6 | 0x000704 | 0xD042 | 0xD1A860 | 0xD1A857 | 0xD00080 | 0xD00080, 0xD1A860, 0x05C67C, 0x08C339, 0x0019B5 | D0058E=0x90 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 |  | 0x08C331 -> 0x05C634 -> 0x000038 -> 0x0006F3 -> 0x000704 -> 0x000710 |
+| 0x001713 | 432 | 7 | 0x000710 | 0xD042 | 0xD1A860 | 0xD1A851 | 0x000719 | 0x000719, 0xD1A8A1, 0xD00080, 0xD1A860, 0x05C67C, 0x08C339 | D0058E=0x90 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 |  | 0x08C331 -> 0x05C634 -> 0x000038 -> 0x0006F3 -> 0x000704 -> 0x000710 -> 0x001713 |
+| 0x0008BB | 434 | 8 | 0x001713 | 0xD042 | 0xD1A860 | 0xD1A84E | 0x001717 | 0x001717, 0x000719, 0xD1A8A1, 0xD00080, 0xD1A860, 0x05C67C | D0058E=0x90 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 |  | 0x08C331 -> 0x05C634 -> 0x000038 -> 0x0006F3 -> 0x000704 -> 0x000710 -> 0x001713 -> 0x0008BB |
+| 0x001717 | 432 | 9 | 0x0008BB | 0xD042 | 0xD1A860 | 0xD1A851 | 0x000719 | 0x000719, 0xD1A8A1, 0xD00080, 0xD1A860, 0x05C67C, 0x08C339 | D0058E=0x90 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 |  | 0x08C331 -> 0x05C634 -> 0x000038 -> 0x0006F3 -> 0x000704 -> 0x000710 -> 0x001713 -> 0x0008BB -> 0x001717 |
+| 0x001718 | 432 | 10 | 0x001717 | 0xD042 | 0xD1A860 | 0xD1A851 | 0x000719 | 0x000719, 0xD1A8A1, 0xD00080, 0xD1A860, 0x05C67C, 0x08C339 | D0058E=0x90 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 |  | 0x08C331 -> 0x05C634 -> 0x000038 -> 0x0006F3 -> 0x000704 -> 0x000710 -> 0x001713 -> 0x0008BB -> 0x001717 -> 0x001718 |
+| 0x00171E | 43 | 11 | 0x001718 | 0x0044 | 0xD1A860 | 0xD1A851 | 0x000719 | 0x000719, 0xD1A8A1, 0xD00080, 0xD1A860, 0x05C67C, 0x08C339 | D0058E=0x90 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 |  | 0x08C331 -> 0x05C634 -> 0x000038 -> 0x0006F3 -> 0x000704 -> 0x000710 -> 0x001713 -> 0x0008BB -> 0x001717 -> 0x001718 -> 0x00171E |
+| 0x0067F8 | 43 | 12 | 0x00171E | 0x0044 | 0xD1A860 | 0xD1A84B | 0x001727 | 0x001727, 0x020000, 0x000719, 0xD1A8A1, 0xD00080, 0xD1A860 | D0058E=0x90 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 |  | 0x08C331 -> 0x05C634 -> 0x000038 -> 0x0006F3 -> 0x000704 -> 0x000710 -> 0x001713 -> 0x0008BB -> 0x001717 -> 0x001718 -> 0x00171E -> 0x0067F8 |
+| 0x001C4F | 98 | 13 | 0x0067F8 | 0x0044 | 0xD1A848 | 0xD1A845 | 0x006808 | 0x006808, 0xD1A860, 0x001727, 0x020000, 0x000719, 0xD1A8A1 | D0058E=0x90 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 |  | 0x05C634 -> 0x000038 -> 0x0006F3 -> 0x000704 -> 0x000710 -> 0x001713 -> 0x0008BB -> 0x001717 -> 0x001718 -> 0x00171E -> 0x0067F8 -> 0x001C4F |
+| 0x001CA6 | 335 | 14 | 0x001C4F | 0x0044 | 0xD1A848 | 0xD1A842 | 0x001C54 | 0x001C54, 0x006808, 0xD1A860, 0x001727, 0x020000, 0x000719 | D0058E=0x90 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 |  | 0x000038 -> 0x0006F3 -> 0x000704 -> 0x000710 -> 0x001713 -> 0x0008BB -> 0x001717 -> 0x001718 -> 0x00171E -> 0x0067F8 -> 0x001C4F -> 0x001CA6 |
+| 0x001CC0 | 292 | 15 | 0x001CA6 | 0x0F02 | 0xD1A83F | 0xD1A83C | 0x020000 | 0x020000, 0xD1A848, 0x001C54, 0x006808, 0xD1A860, 0x001727 | D0058E=0x90 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 |  | 0x0006F3 -> 0x000704 -> 0x000710 -> 0x001713 -> 0x0008BB -> 0x001717 -> 0x001718 -> 0x00171E -> 0x0067F8 -> 0x001C4F -> 0x001CA6 -> 0x001CC0 |
+| 0x001CCA | 290 | 16 | 0x001CC0 | 0x0F02 | 0xD1A83F | 0xD1A83C | 0x020000 | 0x020000, 0xD1A848, 0x001C54, 0x006808, 0xD1A860, 0x001727 | D0058E=0x90 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 |  | 0x000704 -> 0x000710 -> 0x001713 -> 0x0008BB -> 0x001717 -> 0x001718 -> 0x00171E -> 0x0067F8 -> 0x001C4F -> 0x001CA6 -> 0x001CC0 -> 0x001CCA |
+| 0x001CCE | 49 | 17 | 0x001CCA | 0x0F42 | 0xD1A83F | 0xD1A83C | 0x020000 | 0x020000, 0xD1A848, 0x001C54, 0x006808, 0xD1A860, 0x001727 | D0058E=0x90 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 |  | 0x000710 -> 0x001713 -> 0x0008BB -> 0x001717 -> 0x001718 -> 0x00171E -> 0x0067F8 -> 0x001C4F -> 0x001CA6 -> 0x001CC0 -> 0x001CCA -> 0x001CCE |
+| 0x001CD5 | 49 | 18 | 0x001CCE | 0x0044 | 0xD1A83F | 0xD1A83C | 0x020000 | 0x020000, 0xD1A848, 0x001C54, 0x006808, 0xD1A860, 0x001727 | D0058E=0x90 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 |  | 0x001713 -> 0x0008BB -> 0x001717 -> 0x001718 -> 0x00171E -> 0x0067F8 -> 0x001C4F -> 0x001CA6 -> 0x001CC0 -> 0x001CCA -> 0x001CCE -> 0x001CD5 |
+| 0x001CE5 | 94 | 19 | 0x001CD5 | 0x0944 | 0xD1A83F | 0xD1A83C | 0x090000 | 0x090000, 0xD1A848, 0x001C54, 0x006808, 0xD1A860, 0x001727 | D0058E=0x90 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 |  | 0x0008BB -> 0x001717 -> 0x001718 -> 0x00171E -> 0x0067F8 -> 0x001C4F -> 0x001CA6 -> 0x001CC0 -> 0x001CCA -> 0x001CCE -> 0x001CD5 -> 0x001CE5 |
+| 0x001C54 | 98 | 20 | 0x001CE5 | 0x090C | 0xD1A848 | 0xD1A845 | 0x006808 | 0x006808, 0xD1A860, 0x001727, 0x020000, 0x000719, 0xD1A8A1 | D0058E=0x90 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 |  | 0x001717 -> 0x001718 -> 0x00171E -> 0x0067F8 -> 0x001C4F -> 0x001CA6 -> 0x001CC0 -> 0x001CCA -> 0x001CCE -> 0x001CD5 -> 0x001CE5 -> 0x001C54 |
+| 0x006808 | 43 | 21 | 0x001C54 | 0x090C | 0xD1A848 | 0xD1A848 | 0xD1A860 | 0xD1A860, 0x001727, 0x020000, 0x000719, 0xD1A8A1, 0xD00080 | D0058E=0x90 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 |  | 0x001718 -> 0x00171E -> 0x0067F8 -> 0x001C4F -> 0x001CA6 -> 0x001CC0 -> 0x001CCA -> 0x001CCE -> 0x001CD5 -> 0x001CE5 -> 0x001C54 -> 0x006808 |
+| 0x001C33 | 290 | 22 | 0x006808 | 0x090C | 0xD1A848 | 0xD1A845 | 0x006810 | 0x006810, 0xD1A860, 0x001727, 0x020000, 0x000719, 0xD1A8A1 | D0058E=0x90 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 |  | 0x00171E -> 0x0067F8 -> 0x001C4F -> 0x001CA6 -> 0x001CC0 -> 0x001CCA -> 0x001CCE -> 0x001CD5 -> 0x001CE5 -> 0x001C54 -> 0x006808 -> 0x001C33 |
+| 0x001C4A | 7 | 13027 | 0x001C33 | 0xFF42 | 0x000000 | 0xD1A875 | 0x0158D2 | 0x0158D2, 0x0158EC, 0x0013DA, 0x008000, 0x008000 | D0058E=0x00 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 | 0x0003:read:0xEE@0x001988 0x0007:write:0x02@0x000658 0x0009:write:0x02@0x000658 0x5014:read:0x10@0x03CFCF 0x5015:read:0x00@0x03CFA4 0x5016:read:0x00@0x03CF7D | 0x001C38 -> 0x001C44 -> 0x001C7D -> 0x001CA6 -> 0x001CC0 -> 0x001CCA -> 0x001CE4 -> 0x001C81 -> 0x001C82 -> 0x001C48 -> 0x001C33 -> 0x001C4A |
+| 0x0158D2 | 5 | 13028 | 0x001C4A | 0xFF90 | 0x000000 | 0xD1A878 | 0x0158EC | 0x0158EC, 0x0013DA, 0x008000, 0x008000 | D0058E=0x00 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 | 0x0003:read:0xEE@0x001988 0x0007:write:0x02@0x000658 0x0009:write:0x02@0x000658 0x5014:read:0x10@0x03CFCF 0x5015:read:0x00@0x03CFA4 0x5016:read:0x00@0x03CF7D | 0x001C44 -> 0x001C7D -> 0x001CA6 -> 0x001CC0 -> 0x001CCA -> 0x001CE4 -> 0x001C81 -> 0x001C82 -> 0x001C48 -> 0x001C33 -> 0x001C4A -> 0x0158D2 |
+| 0x0158DA | 5 | 13029 | 0x0158D2 | 0xFF90 | 0x000000 | 0xD1A878 | 0x0158EC | 0x0158EC, 0x0013DA, 0x008000, 0x008000 | D0058E=0x00 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 | 0x0003:read:0xEE@0x001988 0x0007:write:0x02@0x000658 0x0009:write:0x02@0x000658 0x5014:read:0x10@0x03CFCF 0x5015:read:0x00@0x03CFA4 0x5016:read:0x00@0x03CF7D | 0x001C7D -> 0x001CA6 -> 0x001CC0 -> 0x001CCA -> 0x001CE4 -> 0x001C81 -> 0x001C82 -> 0x001C48 -> 0x001C33 -> 0x001C4A -> 0x0158D2 -> 0x0158DA |
+| 0x0158EC | 5 | 13030 | 0x0158DA | 0xFF6A | 0x000000 | 0xD1A87B | 0x0013DA | 0x0013DA, 0x008000, 0x008000 | D0058E=0x00 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 | 0x0003:read:0xEE@0x001988 0x0007:write:0x02@0x000658 0x0009:write:0x02@0x000658 0x5014:read:0x10@0x03CFCF 0x5015:read:0x00@0x03CFA4 0x5016:read:0x00@0x03CF7D | 0x001CA6 -> 0x001CC0 -> 0x001CCA -> 0x001CE4 -> 0x001C81 -> 0x001C82 -> 0x001C48 -> 0x001C33 -> 0x001C4A -> 0x0158D2 -> 0x0158DA -> 0x0158EC |
+| 0x0158EE | 5 | 13031 | 0x0158EC | 0xFF6A | 0x000000 | 0xD1A87B | 0x0013DA | 0x0013DA, 0x008000, 0x008000 | D0058E=0x00 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 | 0x0003:read:0xEE@0x001988 0x0007:write:0x02@0x000658 0x0009:write:0x02@0x000658 0x5014:read:0x10@0x03CFCF 0x5015:read:0x00@0x03CFA4 0x5016:read:0x00@0x03CF7D | 0x001CC0 -> 0x001CCA -> 0x001CE4 -> 0x001C81 -> 0x001C82 -> 0x001C48 -> 0x001C33 -> 0x001C4A -> 0x0158D2 -> 0x0158DA -> 0x0158EC -> 0x0158EE |
+| 0x0158F8 | 5 | 13032 | 0x0158EE | 0xFF6A | 0x000000 | 0xD1A87B | 0x0013DA | 0x0013DA, 0x008000, 0x008000 | D0058E=0x00 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x00 D0301B=0x000000 | 0x0003:read:0xEE@0x001988 0x0007:write:0x02@0x000658 0x0009:write:0x02@0x000658 0x5014:read:0x10@0x03CFCF 0x5015:read:0x00@0x03CFA4 0x5016:read:0x00@0x03CF7D | 0x001CCA -> 0x001CE4 -> 0x001C81 -> 0x001C82 -> 0x001C48 -> 0x001C33 -> 0x001C4A -> 0x0158D2 -> 0x0158DA -> 0x0158EC -> 0x0158EE -> 0x0158F8 |
+| 0x001872 | 3 | 13137 | 0x0158F8 | 0x0044 | 0x000000 | 0xD1A87B | 0x0013E8 | 0x0013E8, 0x008000, 0x008000 | D0058E=0x00 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x7F D0301B=0x000000 | 0x0003:read:0xEE@0x001988 0x0007:write:0x02@0x000658 0x0009:write:0x42@0x001853 0x5014:read:0x10@0x03CFCF 0x5015:read:0x00@0x03CFA4 0x5016:read:0x00@0x03CF7D | 0x001CE4 -> 0x001C81 -> 0x001C82 -> 0x001C48 -> 0x001C33 -> 0x001C4A -> 0x0158D2 -> 0x0158DA -> 0x0158EC -> 0x0158EE -> 0x0158F8 -> 0x001872 |
+| 0x001879 | 3 | 13138 | 0x001872 | 0xEE54 | 0x000000 | 0xD1A87B | 0x0013E8 | 0x0013E8, 0x008000, 0x008000 | D0058E=0x00 D007CA=0x0585E9 D008E0=0xD1A863 VAT=0xD3FE81/0xD3FECD D177BA=0x7F D0301B=0x000000 | 0x0003:read:0xEE@0x001872 0x0007:write:0x02@0x000658 0x0009:write:0x42@0x001853 0x5014:read:0x10@0x03CFCF 0x5015:read:0x00@0x03CFA4 0x5016:read:0x00@0x03CF7D | 0x001C81 -> 0x001C82 -> 0x001C48 -> 0x001C33 -> 0x001C4A -> 0x0158D2 -> 0x0158DA -> 0x0158EC -> 0x0158EE -> 0x0158F8 -> 0x001872 -> 0x001879 |
+| 0x0018F8 | 3 | 13139 | 0x001879 | 0x5200 | 0x000000 | 0xD1A87B | 0x0013E8 | 0x0013E8, 0x008000, 0x008000 | D0058E=0x00 D007CA=0x000000 D008E0=0x000000 VAT=0x000000/0x000000 D177BA=0x7F D0301B=0x000000 | 0x0003:read:0xEE@0x001872 0x0007:write:0x02@0x000658 0x0009:write:0x52@0x001879 0x5014:read:0x10@0x03CFCF 0x5015:read:0x00@0x03CFA4 0x5016:read:0x00@0x03CF7D | 0x001C82 -> 0x001C48 -> 0x001C33 -> 0x001C4A -> 0x0158D2 -> 0x0158DA -> 0x0158EC -> 0x0158EE -> 0x0158F8 -> 0x001872 -> 0x001879 -> 0x0018F8 |
+
+## Static Decode Windows
+
+### 0x08C320..0x08C360 warm route entry
+
+| Address | Bytes | Instruction |
+| --- | --- | --- |
+| 0x08C320 | 0x0F | RRCA {"pc":574240,"length":1,"nextPc":574241,"tag":"rrca","mode":"adl","modePrefix":null} |
+| 0x08C321 | 0xCD 0x28 0xC3 0x08 | CALL 0x08C328 |
+| 0x08C325 | 0x77 | LD (HL),A |
+| 0x08C326 | 0x23 | INC HL |
+| 0x08C327 | 0xC9 | RET |
+| 0x08C328 | 0xFE 0x0A | CP 0x0A |
+| 0x08C32A | 0x38 0x02 | JR C,0x08C32E |
+| 0x08C32C | 0xC6 0x07 | ADD 0x07 |
+| 0x08C32E | 0xC6 0x30 | ADD 0x30 |
+| 0x08C330 | 0xC9 | RET |
+| 0x08C331 | 0xFD 0xCB 0x14 0xAE | RES 5,(IY+20) |
+| 0x08C335 | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x08C339 | 0xCD 0x73 0xCE 0x06 | CALL 0x06CE73 |
+| 0x08C33D | 0xCD 0x9A 0x34 0x0A | CALL 0x0A349A |
+| 0x08C341 | 0xCD 0x5B 0xC7 0x05 | CALL 0x05C75B |
+| 0x08C345 | 0xFD 0xCB 0x08 0xBE | RES 7,(IY+8) |
+| 0x08C349 | 0xFD 0xCB 0x1F 0x6E | BIT 5,(IY+31) |
+| 0x08C34D | 0x28 0x0A | JR Z,0x08C359 |
+| 0x08C34F | 0x3A 0x8C 0x05 0xD0 | LD A,(0xD0058C) |
+| 0x08C353 | 0xFD 0xCB 0x1F 0xAE | RES 5,(IY+31) |
+| 0x08C357 | 0x18 0x0D | JR 0x08C366 |
+| 0x08C359 | 0xAF | XOR A |
+| 0x08C35A | 0x32 0x8C 0x05 0xD0 | LD (0xD0058C),A |
+| 0x08C35E | 0x32 0x8E 0x05 0xD0 | LD (0xD0058E),A |
+
+### 0x05C620..0x05C660 caller after 0x08C331
+
+| Address | Bytes | Instruction |
+| --- | --- | --- |
+| 0x05C620 | 0xF6 0x01 | OR 0x01 |
+| 0x05C622 | 0xC9 | RET |
+| 0x05C623 | 0x21 0x94 0x05 0xD0 | LD HL,0xD00594 |
+| 0x05C627 | 0x35 | DEC (HL) |
+| 0x05C628 | 0xC0 | RET NZ |
+| 0x05C629 | 0xF3 | DI |
+| 0x05C62A | 0xFD 0xCB 0x0C 0x5E | BIT 3,(IY+12) |
+| 0x05C62E | 0xCA 0x6C 0xC7 0x05 | JP Z,0x05C76C |
+| 0x05C632 | 0x18 0x48 | JR 0x05C67C |
+| 0x05C634 | 0xFD 0xCB 0x0C 0x96 | RES 2,(IY+12) |
+| 0x05C638 | 0xFD 0xCB 0x0D 0x6E | BIT 5,(IY+13) |
+| 0x05C63C | 0x28 0x3E | JR Z,0x05C67C |
+| 0x05C63E | 0xFD 0xCB 0x0C 0x5E | BIT 3,(IY+12) |
+| 0x05C642 | 0x28 0x38 | JR Z,0x05C67C |
+| 0x05C644 | 0xF5 | PUSH AF |
+| 0x05C645 | 0xFD 0xCB 0x01 0x66 | BIT 4,(IY+1) |
+| 0x05C649 | 0x20 0x28 | JR NZ,0x05C673 |
+| 0x05C64B | 0xFD 0xCB 0x15 0x4E | BIT 1,(IY+21) |
+| 0x05C64F | 0x28 0x08 | JR Z,0x05C659 |
+| 0x05C651 | 0xCD 0x50 0xE9 0x04 | CALL 0x04E950 |
+| 0x05C655 | 0xFD 0xCB 0x15 0x8E | RES 1,(IY+21) |
+| 0x05C659 | 0xFD 0xCB 0x12 0x8E | RES 1,(IY+18) |
+| 0x05C65D | 0x3E 0x03 | LD A,0x03 |
+| 0x05C65F | 0xFD 0xCB 0x35 0x5E | BIT 3,(IY+53) |
+
+### 0x000030..0x000050 interrupt vector window
+
+| Address | Bytes | Instruction |
+| --- | --- | --- |
+| 0x000030 | 0xF3 | DI |
+| 0x000031 | 0xED 0x7E | STMIX {"pc":49,"length":2,"nextPc":51,"tag":"stmix","mode":"adl","modePrefix":null} |
+| 0x000033 | 0x5B 0xC3 0x20 0x01 0x02 | JP 0x020120 |
+| 0x000038 | 0x08 | EX-AF {"pc":56,"length":1,"nextPc":57,"tag":"ex-af","mode":"adl","modePrefix":null} |
+| 0x000039 | 0xD9 | EXX {"pc":57,"length":1,"nextPc":58,"tag":"exx","mode":"adl","modePrefix":null} |
+| 0x00003A | 0xDD 0xE5 | PUSH IX |
+| 0x00003C | 0xFD 0xE5 | PUSH IY |
+| 0x00003E | 0xFD 0x21 0x80 0x00 0xD0 | LD IY,0xD00080 |
+| 0x000043 | 0xC3 0xF3 0x06 0x00 | JP 0x0006F3 |
+| 0x000047 | 0xE5 | PUSH HL |
+| 0x000048 | 0xC5 | PUSH BC |
+| 0x000049 | 0xCD 0xBB 0x08 0x00 | CALL 0x0008BB |
+| 0x00004D | 0xC1 | POP BC |
+| 0x00004E | 0xE1 | POP HL |
+| 0x00004F | 0xC2 0xB5 0x19 0x00 | JP NZ,0x0019B5 |
+
+### 0x0006E8..0x000724 vector setup into ISR gate
+
+| Address | Bytes | Instruction |
+| --- | --- | --- |
+| 0x0006E8 | 0x39 | ADD-PAIR {"pc":1768,"length":1,"nextPc":1769,"tag":"add-pair","dest":"hl","src":"sp","mode":"adl","modePrefix":null} |
+| 0x0006E9 | 0x07 | RLCA {"pc":1769,"length":1,"nextPc":1770,"tag":"rlca","mode":"adl","modePrefix":null} |
+| 0x0006EA | 0x3E 0xFD | LD A,0xFD |
+| 0x0006EC | 0xED 0x39 0x0A | OUT0 (0x0A),A |
+| 0x0006EF | 0xC3 0xCA 0x12 0x00 | JP 0x0012CA |
+| 0x0006F3 | 0xED 0x38 0x06 | IN0 A,(0x06) |
+| 0x0006F6 | 0xCB 0x57 | BIT 2,A |
+| 0x0006F8 | 0x28 0x0A | JR Z,0x000704 |
+| 0x0006FA | 0x3E 0x03 | LD A,0x03 |
+| 0x0006FC | 0xED 0x39 0x06 | OUT0 (0x06),A |
+| 0x0006FF | 0xFE 0x03 | CP 0x03 |
+| 0x000701 | 0x28 0x01 | JR Z,0x000704 |
+| 0x000703 | 0xCF | RST {"pc":1795,"length":1,"nextPc":1796,"tag":"rst","target":8,"fallthrough":1796,"terminates":true,"mode":"adl","modePrefix":null} |
+| 0x000704 | 0xFD 0xCB 0x1B 0xF6 | SET 6,(IY+27) |
+| 0x000708 | 0xED 0x6E | LD-A-MB {"pc":1800,"length":2,"nextPc":1802,"tag":"ld-a-mb","mode":"adl","modePrefix":null} |
+| 0x00070A | 0xFE 0xD0 | CP 0xD0 |
+| 0x00070C | 0xC2 0xB5 0x19 0x00 | JP NZ,0x0019B5 |
+| 0x000710 | 0x2A 0xD7 0x2A 0xD0 | LD HL,(0xD02AD7) |
+| 0x000714 | 0xE5 | PUSH HL |
+| 0x000715 | 0xCD 0x13 0x17 0x00 | CALL 0x001713 |
+| 0x000719 | 0xC2 0xBE 0x19 0x00 | JP NZ,0x0019BE |
+| 0x00071D | 0xC3 0x0C 0x01 0x02 | JP 0x02010C |
+| 0x000721 | 0xCD 0x00 0x3D 0x01 | CALL 0x013D00 |
+
+### 0x001710..0x001724 reduced/full ISR selector
+
+| Address | Bytes | Instruction |
+| --- | --- | --- |
+| 0x001710 | 0xC1 | POP BC |
+| 0x001711 | 0xF1 | POP AF |
+| 0x001712 | 0xC9 | RET |
+| 0x001713 | 0xCD 0xBB 0x08 0x00 | CALL 0x0008BB |
+| 0x001717 | 0xC0 | RET NZ |
+| 0x001718 | 0x3A 0xBA 0x77 0xD1 | LD A,(0xD177BA) |
+| 0x00171C | 0xB7 | OR A |
+| 0x00171D | 0xC0 | RET NZ |
+| 0x00171E | 0x01 0x00 0x00 0x02 | LD BC,0x020000 |
+| 0x001722 | 0xC5 | PUSH BC |
+| 0x001723 | 0xCD 0xF8 0x67 0x00 | CALL 0x0067F8 |
+
+### 0x0067E8..0x006824 reduced ISR cleanup selector
+
+| Address | Bytes | Instruction |
+| --- | --- | --- |
+| 0x0067E8 | 0xC9 | RET |
+| 0x0067E9 | 0x01 0x00 0x00 0x00 | LD BC,0x000000 |
+| 0x0067ED | 0x46 | LD B,(HL) |
+| 0x0067EE | 0x23 | INC HL |
+| 0x0067EF | 0x4E | LD C,(HL) |
+| 0x0067F0 | 0x21 0x00 0x01 0x00 | LD HL,0x000100 |
+| 0x0067F4 | 0xB7 | OR A |
+| 0x0067F5 | 0xED 0x42 | SBC-PAIR {"pc":26613,"length":2,"nextPc":26615,"tag":"sbc-pair","src":"bc","mode":"adl","modePrefix":null} |
+| 0x0067F7 | 0xC9 | RET |
+| 0x0067F8 | 0xDD 0xE5 | PUSH IX |
+| 0x0067FA | 0xDD 0x21 0x00 0x00 0x00 | LD IX,0x000000 |
+| 0x0067FF | 0xDD 0x39 | ADD-PAIR {"pc":26623,"length":2,"nextPc":26625,"tag":"add-pair","dest":"ix","src":"sp","mode":"adl","modePrefix":null} |
+| 0x006801 | 0xDD 0x27 0x06 | LD-PAIR-INDEXED {"pc":26625,"length":3,"nextPc":26628,"tag":"ld-pair-indexed","pair":"hl","indexRegister":"ix","displacement":6,"mode":"adl","modePrefix":null} |
+| 0x006804 | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x006808 | 0x11 0xC0 0x80 0x00 | LD DE,0x0080C0 |
+| 0x00680C | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x006810 | 0x20 0x12 | JR NZ,0x006824 |
+| 0x006812 | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x006816 | 0xED 0x38 0x03 | IN0 A,(0x03) |
+| 0x006819 | 0xA6 | AND (HL) |
+| 0x00681A | 0x23 | INC HL |
+| 0x00681B | 0xBE | CP (HL) |
+| 0x00681C | 0x20 0x06 | JR NZ,0x006824 |
+| 0x00681E | 0x21 0x01 0x00 0x00 | LD HL,0x000001 |
+| 0x006822 | 0x18 0x04 | JR 0x006828 |
+
+### 0x001C30..0x001C60 guard loop entry/exit
+
+| Address | Bytes | Instruction |
+| --- | --- | --- |
+| 0x001C30 | 0x00 | NOP |
+| 0x001C31 | 0xC1 | POP BC |
+| 0x001C32 | 0xC9 | RET |
+| 0x001C33 | 0x7E | LD A,(HL) |
+| 0x001C34 | 0xFE 0xFF | CP 0xFF |
+| 0x001C36 | 0x28 0x12 | JR Z,0x001C4A |
+| 0x001C38 | 0x23 | INC HL |
+| 0x001C39 | 0xBA | CP D |
+| 0x001C3A | 0x20 0x08 | JR NZ,0x001C44 |
+| 0x001C3C | 0x7E | LD A,(HL) |
+| 0x001C3D | 0xE6 0xF0 | AND 0xF0 |
+| 0x001C3F | 0xBB | CP E |
+| 0x001C40 | 0x20 0x02 | JR NZ,0x001C44 |
+| 0x001C42 | 0x2B | DEC HL |
+| 0x001C43 | 0xC9 | RET |
+| 0x001C44 | 0xCD 0x7D 0x1C 0x00 | CALL 0x001C7D |
+| 0x001C48 | 0x30 0xE9 | JR NC,0x001C33 |
+| 0x001C4A | 0x3E 0xFF | LD A,0xFF |
+| 0x001C4C | 0xCB 0x7F | BIT 7,A |
+| 0x001C4E | 0xC9 | RET |
+| 0x001C4F | 0x23 | INC HL |
+| 0x001C50 | 0xCD 0xA6 0x1C 0x00 | CALL 0x001CA6 |
+| 0x001C54 | 0xC9 | RET |
+| 0x001C55 | 0x21 0x01 0x00 0x3B | LD HL,0x3B0001 |
+| 0x001C59 | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C5D | 0xC0 | RET NZ |
+| 0x001C5E | 0xC5 | PUSH BC |
+| 0x001C5F | 0xE5 | PUSH HL |
+
+### 0x001C78..0x001CF0 guard loop body
+
+| Address | Bytes | Instruction |
+| --- | --- | --- |
+| 0x001C78 | 0x33 | INC SP |
+| 0x001C79 | 0x1C | INC E |
+| 0x001C7A | 0x00 | NOP |
+| 0x001C7B | 0xC9 | RET |
+| 0x001C7C | 0x23 | INC HL |
+| 0x001C7D | 0xCD 0xA6 0x1C 0x00 | CALL 0x001CA6 |
+| 0x001C81 | 0xD8 | RET C |
+| 0x001C82 | 0x09 | ADD-PAIR {"pc":7298,"length":1,"nextPc":7299,"tag":"add-pair","dest":"hl","src":"bc","mode":"adl","modePrefix":null} |
+| 0x001C83 | 0xC9 | RET |
+| 0x001C84 | 0xDD 0xE5 | PUSH IX |
+| 0x001C86 | 0xDD 0x21 0x00 0x00 0x00 | LD IX,0x000000 |
+| 0x001C8B | 0xDD 0x39 | ADD-PAIR {"pc":7307,"length":2,"nextPc":7309,"tag":"add-pair","dest":"ix","src":"sp","mode":"adl","modePrefix":null} |
+| 0x001C8D | 0xC5 | PUSH BC |
+| 0x001C8E | 0xDD 0x2F 0xFD | LD-INDEXED-PAIR {"pc":7310,"length":3,"nextPc":7313,"tag":"ld-indexed-pair","pair":"hl","indexRegister":"ix","displacement":-3,"mode":"adl","modePrefix":null} |
+| 0x001C91 | 0xCD 0x7C 0x1C 0x00 | CALL 0x001C7C |
+| 0x001C95 | 0xDD 0x07 0xFD | LD-PAIR-INDEXED {"pc":7317,"length":3,"nextPc":7320,"tag":"ld-pair-indexed","pair":"bc","indexRegister":"ix","displacement":-3,"mode":"adl","modePrefix":null} |
+| 0x001C98 | 0xB7 | OR A |
+| 0x001C99 | 0xED 0x42 | SBC-PAIR {"pc":7321,"length":2,"nextPc":7323,"tag":"sbc-pair","src":"bc","mode":"adl","modePrefix":null} |
+| 0x001C9B | 0xE5 | PUSH HL |
+| 0x001C9C | 0xC1 | POP BC |
+| 0x001C9D | 0xDD 0x27 0xFD | LD-PAIR-INDEXED {"pc":7325,"length":3,"nextPc":7328,"tag":"ld-pair-indexed","pair":"hl","indexRegister":"ix","displacement":-3,"mode":"adl","modePrefix":null} |
+| 0x001CA0 | 0xDD 0xF9 | LD-SP-PAIR {"pc":7328,"length":2,"nextPc":7330,"tag":"ld-sp-pair","pair":"ix","mode":"adl","modePrefix":null} |
+| 0x001CA2 | 0xDD 0xE1 | POP IX |
+| 0x001CA4 | 0xC9 | RET |
+| 0x001CA5 | 0x23 | INC HL |
+| 0x001CA6 | 0xDD 0xE5 | PUSH IX |
+| 0x001CA8 | 0xDD 0x21 0x00 0x00 0x00 | LD IX,0x000000 |
+| 0x001CAD | 0xDD 0x39 | ADD-PAIR {"pc":7341,"length":2,"nextPc":7343,"tag":"add-pair","dest":"ix","src":"sp","mode":"adl","modePrefix":null} |
+| 0x001CAF | 0xC5 | PUSH BC |
+| 0x001CB0 | 0x01 0x00 0x00 0x00 | LD BC,0x000000 |
+| 0x001CB4 | 0x7E | LD A,(HL) |
+| 0x001CB5 | 0x23 | INC HL |
+| 0x001CB6 | 0xE6 0x0F | AND 0x0F |
+| 0x001CB8 | 0xFE 0x0D | CP 0x0D |
+| 0x001CBA | 0x20 0x04 | JR NZ,0x001CC0 |
+| 0x001CBC | 0x4E | LD C,(HL) |
+| 0x001CBD | 0x23 | INC HL |
+| 0x001CBE | 0x18 0x25 | JR 0x001CE5 |
+| 0x001CC0 | 0xFE 0x0E | CP 0x0E |
+| 0x001CC2 | 0x20 0x06 | JR NZ,0x001CCA |
+| 0x001CC4 | 0x46 | LD B,(HL) |
+| 0x001CC5 | 0x23 | INC HL |
+| 0x001CC6 | 0x4E | LD C,(HL) |
+| 0x001CC7 | 0x23 | INC HL |
+| 0x001CC8 | 0x18 0x1B | JR 0x001CE5 |
+| 0x001CCA | 0xFE 0x0F | CP 0x0F |
+| 0x001CCC | 0x20 0x16 | JR NZ,0x001CE4 |
+| 0x001CCE | 0x7E | LD A,(HL) |
+| 0x001CCF | 0xB7 | OR A |
+| 0x001CD0 | 0x28 0x03 | JR Z,0x001CD5 |
+| 0x001CD2 | 0x37 | SCF {"pc":7378,"length":1,"nextPc":7379,"tag":"scf","mode":"adl","modePrefix":null} |
+| 0x001CD3 | 0x18 0x11 | JR 0x001CE6 |
+| 0x001CD5 | 0x23 | INC HL |
+| 0x001CD6 | 0x7E | LD A,(HL) |
+| 0x001CD7 | 0xDD 0x77 0xFF | LD-IXD-REG {"pc":7383,"length":3,"nextPc":7386,"tag":"ld-ixd-reg","indexRegister":"ix","displacement":-1,"src":"a","mode":"adl","modePrefix":null} |
+| 0x001CDA | 0xDD 0x07 0xFD | LD-PAIR-INDEXED {"pc":7386,"length":3,"nextPc":7389,"tag":"ld-pair-indexed","pair":"bc","indexRegister":"ix","displacement":-3,"mode":"adl","modePrefix":null} |
+| 0x001CDD | 0x23 | INC HL |
+| 0x001CDE | 0x46 | LD B,(HL) |
+| 0x001CDF | 0x23 | INC HL |
+| 0x001CE0 | 0x4E | LD C,(HL) |
+| 0x001CE1 | 0x23 | INC HL |
+| 0x001CE2 | 0x18 0x01 | JR 0x001CE5 |
+| 0x001CE4 | 0x4F | LD C,A |
+| 0x001CE5 | 0xB7 | OR A |
+| 0x001CE6 | 0xDD 0xF9 | LD-SP-PAIR {"pc":7398,"length":2,"nextPc":7400,"tag":"ld-sp-pair","pair":"ix","mode":"adl","modePrefix":null} |
+| 0x001CE8 | 0xDD 0xE1 | POP IX |
+| 0x001CEA | 0xC9 | RET |
+| 0x001CEB | 0x11 0x30 0x03 0x00 | LD DE,0x000330 |
+| 0x001CEF | 0xCD 0x55 0x1C 0x00 | CALL 0x001C55 |
+
+### 0x0158D0..0x015905 cleanup relay
+
+| Address | Bytes | Instruction |
+| --- | --- | --- |
+| 0x0158D0 | 0x1C | INC E |
+| 0x0158D1 | 0x00 | NOP |
+| 0x0158D2 | 0x20 0x06 | JR NZ,0x0158DA |
+| 0x0158D4 | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x0158D8 | 0x18 0x03 | JR 0x0158DD |
+| 0x0158DA | 0xB7 | OR A |
+| 0x0158DB | 0xED 0x62 | SBC-PAIR {"pc":88283,"length":2,"nextPc":88285,"tag":"sbc-pair","src":"hl","mode":"adl","modePrefix":null} |
+| 0x0158DD | 0xC9 | RET |
+| 0x0158DE | 0xFD 0x21 0x80 0x00 0xD0 | LD IY,0xD00080 |
+| 0x0158E3 | 0xFD 0xCB 0x42 0x7E | BIT 7,(IY+66) |
+| 0x0158E7 | 0xC0 | RET NZ |
+| 0x0158E8 | 0xCD 0xBC 0x58 0x01 | CALL 0x0158BC |
+| 0x0158EC | 0x38 0x0A | JR C,0x0158F8 |
+| 0x0158EE | 0x28 0x08 | JR Z,0x0158F8 |
+| 0x0158F0 | 0xFD 0xCB 0x42 0xFE | SET 7,(IY+66) |
+| 0x0158F4 | 0x3E 0x01 | LD A,0x01 |
+| 0x0158F6 | 0xB7 | OR A |
+| 0x0158F7 | 0xC9 | RET |
+| 0x0158F8 | 0xAF | XOR A |
+| 0x0158F9 | 0xC9 | RET |
+| 0x0158FA | 0x22 0x95 0x05 0xD0 | LD (0xD00595),HL |
+| 0x0158FE | 0x24 | INC H |
+| 0x0158FF | 0xCD 0xC6 0x59 0x00 | CALL 0x0059C6 |
+| 0x015903 | 0xC9 | RET |
+| 0x015904 | 0xC5 | PUSH BC |
+
+### 0x001860..0x001885 port gate to clear setup
+
+| Address | Bytes | Instruction |
+| --- | --- | --- |
+| 0x001860 | 0x05 | DEC B |
+| 0x001861 | 0x9E | SBC (HL) |
+| 0x001862 | 0xED 0x38 0x09 | IN0 A,(0x09) |
+| 0x001865 | 0xCB 0xF7 | SET 6,A |
+| 0x001867 | 0xED 0x39 0x09 | OUT0 (0x09),A |
+| 0x00186A | 0xFD 0xCB 0x42 0xBE | RES 7,(IY+66) |
+| 0x00186E | 0xCD 0xDE 0x58 0x01 | CALL 0x0158DE |
+| 0x001872 | 0xED 0x38 0x03 | IN0 A,(0x03) |
+| 0x001875 | 0xCB 0x67 | BIT 4,A |
+| 0x001877 | 0x20 0x36 | JR NZ,0x0018AF |
+| 0x001879 | 0xED 0x38 0x09 | IN0 A,(0x09) |
+| 0x00187C | 0xCB 0xE7 | SET 4,A |
+| 0x00187E | 0xED 0x39 0x09 | OUT0 (0x09),A |
+| 0x001881 | 0x21 0x00 0x00 0xD0 | LD HL,0xD00000 |
+
+## Direct 24-bit References To Chain Targets
+
+| Target | PC | Kind | Bytes | Decoded |
+| --- | --- | --- | --- | --- |
+| 0x001C4F | 0x00030C | JP | 0xC3 0x4F 0x1C 0x00 | JP 0x001C4F |
+| 0x001C33 | 0x000314 | JP | 0xC3 0x33 0x1C 0x00 | JP 0x001C33 |
+| 0x001C4F | 0x0008FB | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x0067F8 | 0x001723 | CALL | 0xCD 0xF8 0x67 0x00 | CALL 0x0067F8 |
+| 0x001C4F | 0x001733 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C33 | 0x00173B | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C4F | 0x001740 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C33 | 0x001C59 | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C33 | 0x001C77 | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C4F | 0x001CF5 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C33 | 0x001CFD | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C4F | 0x001D03 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C4F | 0x001D17 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C33 | 0x001D1F | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C4F | 0x001D25 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C4F | 0x001EE5 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C4F | 0x001F34 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C33 | 0x001F3C | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C4F | 0x001F42 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C4F | 0x001F5B | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C33 | 0x001F63 | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C4F | 0x001F69 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C4F | 0x001F77 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C33 | 0x001F7F | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C4F | 0x001F85 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C4F | 0x001FB4 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C4F | 0x00639A | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C33 | 0x0063A2 | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C4F | 0x0063A8 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C33 | 0x0063B0 | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C4F | 0x0063B9 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C33 | 0x0063D3 | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C33 | 0x006497 | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C33 | 0x0064B6 | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C4F | 0x00652F | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C33 | 0x006537 | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C4F | 0x00653D | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x0067F8 | 0x006574 | CALL | 0xCD 0xF8 0x67 0x00 | CALL 0x0067F8 |
+| 0x001C33 | 0x0065D7 | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C4F | 0x006619 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C33 | 0x006621 | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C4F | 0x006627 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x0067F8 | 0x006651 | CALL | 0xCD 0xF8 0x67 0x00 | CALL 0x0067F8 |
+| 0x001C33 | 0x0066A0 | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C4F | 0x006712 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C33 | 0x00671A | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C4F | 0x006720 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C33 | 0x006728 | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C4F | 0x00672F | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C33 | 0x006747 | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C33 | 0x00679C | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C4F | 0x006804 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C33 | 0x00680C | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C4F | 0x006812 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C4F | 0x006837 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C33 | 0x00683F | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C4F | 0x006845 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C4F | 0x006864 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C33 | 0x00686C | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C4F | 0x006875 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C33 | 0x00687D | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C4F | 0x006883 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C33 | 0x0139BF | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x0067F8 | 0x01467A | CALL | 0xCD 0xF8 0x67 0x00 | CALL 0x0067F8 |
+| 0x001C4F | 0x0158C6 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x001C33 | 0x0158CE | CALL | 0xCD 0x33 0x1C 0x00 | CALL 0x001C33 |
+| 0x001C4F | 0x0158D4 | CALL | 0xCD 0x4F 0x1C 0x00 | CALL 0x001C4F |
+| 0x05C634 | 0x0208A8 | JP | 0xC3 0x34 0xC6 0x05 | JP 0x05C634 |
+| 0x05C634 | 0x0257E8 | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x026988 | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x028944 | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x028977 | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x028C39 | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x028CFF | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x03D95F | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x03E162 | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x0409E9 | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x055719 | JP | 0xC3 0x34 0xC6 0x05 | JP 0x05C634 |
+| 0x05C634 | 0x05A22E | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x06CD2D | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x06D08F | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x06D0AE | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x06DEDB | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x06DFD2 | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x06E0E1 | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x06E1AD | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x06E349 | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x06E63D | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x06E696 | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x06E6CE | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x06EDA1 | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x06EDFA | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x074422 | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x074610 | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x074817 | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x08C335 | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x08C3A4 | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x090F03 | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x092305 | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x09EBF6 | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x0B0C8B | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x0B0CFF | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x0B82E0 | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x0B9887 | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x0B9A58 | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x0B9C64 | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+| 0x05C634 | 0x0BC389 | CALL | 0xCD 0x34 0xC6 0x05 | CALL 0x05C634 |
+
+## Reduced Raw Summary
+
+```json
+{
+  "scenario": "no-autorun-digit2",
+  "key": "Digit2",
+  "replayOk": true,
+  "errors": [],
+  "route": {
+    "label": "no-autorun-digit2:Digit2",
+    "totalBlocks": 299956,
+    "tokenHookHits": 0,
+    "lowPathHits": 60889,
+    "cleanupHits": 3,
+    "cxMainHits": 2,
+    "keyHandlerHits": 2,
+    "preclearCounts": {
+      "loop08c331": 2,
+      "pre05c634": 5,
+      "pre000038": 43,
+      "pre0006f3": 43,
+      "pre000704": 43,
+      "pre000710": 43,
+      "pre001713": 432,
+      "pre0008bb": 434,
+      "pre001717": 432,
+      "pre001718": 432,
+      "pre00171e": 43,
+      "pre0067f8": 43,
+      "pre001c4f": 98,
+      "pre001ca6": 335,
+      "pre001cc0": 292,
+      "pre001cca": 290,
+      "pre001cce": 49,
+      "pre001cd5": 49,
+      "pre001ce5": 94,
+      "pre001c54": 98,
+      "pre006808": 43,
+      "gate001c33": 290,
+      "gate001c4a": 7,
+      "gate0158d2": 5,
+      "gate0158da": 5,
+      "gate0158ec": 5,
+      "gate0158ee": 5,
+      "gate0158f8": 5,
+      "gate001872": 3,
+      "clear001879": 3,
+      "cleanup0018f8": 3
+    },
+    "startFields": {
+      "D00587": 0,
+      "D0058C": 0,
+      "D0058D": 0,
+      "D0058E": 0,
+      "D00080": 0,
+      "D0009F": 0,
+      "D007CA": 361961,
+      "D008E0": 0,
+      "D02A28": 0,
+      "D001B8": 0,
+      "D001D3": 0,
+      "D02A29": 0,
+      "D02A2B": 0,
+      "D02A1B": 0,
+      "D0059A": 0,
+      "D01150": 0,
+      "D0243D": 13805589,
+      "D0301B": 0,
+      "D177BA": 0,
+      "D02A40": 0,
+      "VAT_D02590": 13893249,
+      "VAT_D0259D": 13893325
+    },
+    "endFields": {
+      "D00587": 0,
+      "D0058C": 0,
+      "D0058D": 0,
+      "D0058E": 0,
+      "D00080": 0,
+      "D0009F": 0,
+      "D007CA": 0,
+      "D008E0": 0,
+      "D02A28": 0,
+      "D001B8": 0,
+      "D001D3": 0,
+      "D02A29": 0,
+      "D02A2B": 0,
+      "D02A1B": 0,
+      "D0059A": 0,
+      "D01150": 0,
+      "D0243D": 0,
+      "D0301B": 0,
+      "D177BA": 127,
+      "D02A40": 0,
+      "VAT_D02590": 0,
+      "VAT_D0259D": 0
+    },
+    "firstBlocks": [
+      "0x08C331",
+      "0x05C634",
+      "0x000038",
+      "0x0006F3",
+      "0x000704",
+      "0x000710",
+      "0x001713",
+      "0x0008BB",
+      "0x001717",
+      "0x001718",
+      "0x00171E",
+      "0x0067F8",
+      "0x001C4F",
+      "0x001CA6",
+      "0x001CC0",
+      "0x001CCA",
+      "0x001CCE",
+      "0x001CD5",
+      "0x001CE5",
+      "0x001C54",
+      "0x006808",
+      "0x001C33",
+      "0x001C38",
+      "0x001C3C",
+      "0x001C44",
+      "0x001C7D",
+      "0x001CA6",
+      "0x001CC0",
+      "0x001CCA",
+      "0x001CE4",
+      "0x001C81",
+      "0x001C82",
+      "0x001C48",
+      "0x001C33",
+      "0x001C38",
+      "0x001C3C",
+      "0x001C44",
+      "0x001C7D",
+      "0x001CA6",
+      "0x001CC0",
+      "0x001CCA",
+      "0x001CE4",
+      "0x001C81",
+      "0x001C82",
+      "0x001C48",
+      "0x001C33",
+      "0x001C38",
+      "0x001C3C",
+      "0x001C44",
+      "0x001C7D",
+      "0x001CA6",
+      "0x001CC0",
+      "0x001CCA",
+      "0x001CE4",
+      "0x001C81",
+      "0x001C82",
+      "0x001C48",
+      "0x001C33",
+      "0x001C38",
+      "0x001C3C",
+      "0x001C44",
+      "0x001C7D",
+      "0x001CA6",
+      "0x001CC0"
+    ],
+    "hotBlocks": [
+      {
+        "pc": "0x000A92",
+        "count": 33289
+      },
+      {
+        "pc": "0x000BFE",
+        "count": 32258
+      },
+      {
+        "pc": "0x0021C2",
+        "count": 20182
+      },
+      {
+        "pc": "0x006D5D",
+        "count": 20176
+      },
+      {
+        "pc": "0x006D64",
+        "count": 20176
+      },
+      {
+        "pc": "0x006CDF",
+        "count": 20166
+      },
+      {
+        "pc": "0x006D0F",
+        "count": 20166
+      },
+      {
+        "pc": "0x006D38",
+        "count": 20160
+      },
+      {
+        "pc": "0x006D4F",
+        "count": 20160
+      },
+      {
+        "pc": "0x006CF7",
+        "count": 20156
+      },
+      {
+        "pc": "0x005AE8",
+        "count": 6224
+      },
+      {
+        "pc": "0x005B16",
+        "count": 6224
+      },
+      {
+        "pc": "0x005B4B",
+        "count": 6224
+      },
+      {
+        "pc": "0x005AB6",
+        "count": 5835
+      },
+      {
+        "pc": "0x000B72",
+        "count": 3870
+      },
+      {
+        "pc": "0x000B7C",
+        "count": 3101
+      }
+    ]
+  },
+  "firstSamples": {
+    "loop08c331": {
+      "block": 1,
+      "target": "loop08c331",
+      "pc": "0x08C331",
+      "previousPc": null,
+      "routeFields": {
+        "D00587": 26,
+        "D0058C": 144,
+        "D0058D": 144,
+        "D0058E": 144,
+        "D00080": 8,
+        "D0009F": 32,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805589,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x08C331",
+        "sp": "0xD1A863",
+        "ix": "0xD1A860",
+        "iy": "0xD00080",
+        "a": "0x10",
+        "f": "0x40",
+        "af": "0x1040",
+        "bc": "0x000000",
+        "de": "0xD2A815",
+        "hl": "0xD1A8A3",
+        "flags": {
+          "s": false,
+          "z": true,
+          "h": false,
+          "pv": false,
+          "n": false,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x08"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x00"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x20"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0xFD",
+        "0xCB",
+        "0x14",
+        "0xAE",
+        "0xCD",
+        "0x34",
+        "0xC6",
+        "0x05",
+        "0xCD",
+        "0x73",
+        "0xCE",
+        "0x06",
+        "0xCD",
+        "0x9A",
+        "0x34",
+        "0x0A"
+      ],
+      "recentBlocks": [
+        "0x08C331"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A863",
+          "value": "0x0019B5"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A866",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A869",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A86C",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A86F",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A872",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A875",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A878",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A87B",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A87E",
+          "value": "0x000000"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A881",
+          "value": "0x000000"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A884",
+          "value": "0x000000"
+        }
+      ],
+      "returnHints": [
+        "0x0019B5"
+      ],
+      "ioTail": [],
+      "lastIoByPort": {}
+    },
+    "pre05c634": {
+      "block": 2,
+      "target": "pre05c634",
+      "pc": "0x05C634",
+      "previousPc": "0x08C331",
+      "routeFields": {
+        "D00587": 26,
+        "D0058C": 144,
+        "D0058D": 144,
+        "D0058E": 144,
+        "D00080": 8,
+        "D0009F": 32,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805589,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x05C634",
+        "sp": "0xD1A860",
+        "ix": "0xD1A860",
+        "iy": "0xD00080",
+        "a": "0x10",
+        "f": "0x40",
+        "af": "0x1040",
+        "bc": "0x000000",
+        "de": "0xD2A815",
+        "hl": "0xD1A8A3",
+        "flags": {
+          "s": false,
+          "z": true,
+          "h": false,
+          "pv": false,
+          "n": false,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x08"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x00"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x20"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0xFD",
+        "0xCB",
+        "0x0C",
+        "0x96",
+        "0xFD",
+        "0xCB",
+        "0x0D",
+        "0x6E",
+        "0x28",
+        "0x3E",
+        "0xFD",
+        "0xCB",
+        "0x0C",
+        "0x5E",
+        "0x28",
+        "0x38"
+      ],
+      "recentBlocks": [
+        "0x08C331",
+        "0x05C634"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A860",
+          "value": "0x08C339"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A863",
+          "value": "0x0019B5"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A866",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A869",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A86C",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A86F",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A872",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A875",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A878",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A87B",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A87E",
+          "value": "0x000000"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A881",
+          "value": "0x000000"
+        }
+      ],
+      "returnHints": [
+        "0x08C339",
+        "0x0019B5"
+      ],
+      "ioTail": [],
+      "lastIoByPort": {}
+    },
+    "pre000038": {
+      "block": 3,
+      "target": "pre000038",
+      "pc": "0x000038",
+      "previousPc": "0x05C634",
+      "routeFields": {
+        "D00587": 26,
+        "D0058C": 144,
+        "D0058D": 144,
+        "D0058E": 144,
+        "D00080": 8,
+        "D0009F": 32,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805589,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x000038",
+        "sp": "0xD1A85D",
+        "ix": "0xD1A860",
+        "iy": "0xD00080",
+        "a": "0x10",
+        "f": "0x54",
+        "af": "0x1054",
+        "bc": "0x000000",
+        "de": "0xD2A815",
+        "hl": "0xD1A8A3",
+        "flags": {
+          "s": false,
+          "z": true,
+          "h": true,
+          "pv": true,
+          "n": false,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x08"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x00"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x20"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0x08",
+        "0xD9",
+        "0xDD",
+        "0xE5",
+        "0xFD",
+        "0xE5",
+        "0xFD",
+        "0x21",
+        "0x80",
+        "0x00",
+        "0xD0",
+        "0xC3",
+        "0xF3",
+        "0x06",
+        "0x00",
+        "0xE5"
+      ],
+      "recentBlocks": [
+        "0x08C331",
+        "0x05C634",
+        "0x000038"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A85D",
+          "value": "0x05C67C"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A860",
+          "value": "0x08C339"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A863",
+          "value": "0x0019B5"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A866",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A869",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A86C",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A86F",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A872",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A875",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A878",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A87B",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A87E",
+          "value": "0x000000"
+        }
+      ],
+      "returnHints": [
+        "0x05C67C",
+        "0x08C339",
+        "0x0019B5"
+      ],
+      "ioTail": [],
+      "lastIoByPort": {}
+    },
+    "pre0006f3": {
+      "block": 4,
+      "target": "pre0006f3",
+      "pc": "0x0006F3",
+      "previousPc": "0x000038",
+      "routeFields": {
+        "D00587": 26,
+        "D0058C": 144,
+        "D0058D": 144,
+        "D0058E": 144,
+        "D00080": 8,
+        "D0009F": 32,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805589,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x0006F3",
+        "sp": "0xD1A857",
+        "ix": "0xD1A860",
+        "iy": "0xD00080",
+        "a": "0x00",
+        "f": "0x7C",
+        "af": "0x007C",
+        "bc": "0x00A008",
+        "de": "0x0080C0",
+        "hl": "0xD1A889",
+        "flags": {
+          "s": false,
+          "z": true,
+          "h": true,
+          "pv": true,
+          "n": false,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x08"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x00"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x20"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0xED",
+        "0x38",
+        "0x06",
+        "0xCB",
+        "0x57",
+        "0x28",
+        "0x0A",
+        "0x3E",
+        "0x03",
+        "0xED",
+        "0x39",
+        "0x06",
+        "0xFE",
+        "0x03",
+        "0x28",
+        "0x01"
+      ],
+      "recentBlocks": [
+        "0x08C331",
+        "0x05C634",
+        "0x000038",
+        "0x0006F3"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A857",
+          "value": "0xD00080"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A85A",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A85D",
+          "value": "0x05C67C"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A860",
+          "value": "0x08C339"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A863",
+          "value": "0x0019B5"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A866",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A869",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A86C",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A86F",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A872",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A875",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A878",
+          "value": "0xFFFFFF"
+        }
+      ],
+      "returnHints": [
+        "0xD00080",
+        "0xD1A860",
+        "0x05C67C",
+        "0x08C339",
+        "0x0019B5"
+      ],
+      "ioTail": [],
+      "lastIoByPort": {}
+    },
+    "pre000704": {
+      "block": 5,
+      "target": "pre000704",
+      "pc": "0x000704",
+      "previousPc": "0x0006F3",
+      "routeFields": {
+        "D00587": 26,
+        "D0058C": 144,
+        "D0058D": 144,
+        "D0058E": 144,
+        "D00080": 8,
+        "D0009F": 32,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805589,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x000704",
+        "sp": "0xD1A857",
+        "ix": "0xD1A860",
+        "iy": "0xD00080",
+        "a": "0xD0",
+        "f": "0x7C",
+        "af": "0xD07C",
+        "bc": "0x00A008",
+        "de": "0x0080C0",
+        "hl": "0xD1A889",
+        "flags": {
+          "s": false,
+          "z": true,
+          "h": true,
+          "pv": true,
+          "n": false,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x08"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x00"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x20"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0xFD",
+        "0xCB",
+        "0x1B",
+        "0xF6",
+        "0xED",
+        "0x6E",
+        "0xFE",
+        "0xD0",
+        "0xC2",
+        "0xB5",
+        "0x19",
+        "0x00",
+        "0x2A",
+        "0xD7",
+        "0x2A",
+        "0xD0"
+      ],
+      "recentBlocks": [
+        "0x08C331",
+        "0x05C634",
+        "0x000038",
+        "0x0006F3",
+        "0x000704"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A857",
+          "value": "0xD00080"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A85A",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A85D",
+          "value": "0x05C67C"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A860",
+          "value": "0x08C339"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A863",
+          "value": "0x0019B5"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A866",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A869",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A86C",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A86F",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A872",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A875",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A878",
+          "value": "0xFFFFFF"
+        }
+      ],
+      "returnHints": [
+        "0xD00080",
+        "0xD1A860",
+        "0x05C67C",
+        "0x08C339",
+        "0x0019B5"
+      ],
+      "ioTail": [],
+      "lastIoByPort": {}
+    },
+    "pre000710": {
+      "block": 6,
+      "target": "pre000710",
+      "pc": "0x000710",
+      "previousPc": "0x000704",
+      "routeFields": {
+        "D00587": 26,
+        "D0058C": 144,
+        "D0058D": 144,
+        "D0058E": 144,
+        "D00080": 8,
+        "D0009F": 32,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805589,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x000710",
+        "sp": "0xD1A857",
+        "ix": "0xD1A860",
+        "iy": "0xD00080",
+        "a": "0xD0",
+        "f": "0x42",
+        "af": "0xD042",
+        "bc": "0x00A008",
+        "de": "0x0080C0",
+        "hl": "0xD1A889",
+        "flags": {
+          "s": false,
+          "z": true,
+          "h": false,
+          "pv": false,
+          "n": true,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x08"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x40"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x20"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0x2A",
+        "0xD7",
+        "0x2A",
+        "0xD0",
+        "0xE5",
+        "0xCD",
+        "0x13",
+        "0x17",
+        "0x00",
+        "0xC2",
+        "0xBE",
+        "0x19",
+        "0x00",
+        "0xC3",
+        "0x0C",
+        "0x01"
+      ],
+      "recentBlocks": [
+        "0x08C331",
+        "0x05C634",
+        "0x000038",
+        "0x0006F3",
+        "0x000704",
+        "0x000710"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A857",
+          "value": "0xD00080"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A85A",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A85D",
+          "value": "0x05C67C"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A860",
+          "value": "0x08C339"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A863",
+          "value": "0x0019B5"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A866",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A869",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A86C",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A86F",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A872",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A875",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A878",
+          "value": "0xFFFFFF"
+        }
+      ],
+      "returnHints": [
+        "0xD00080",
+        "0xD1A860",
+        "0x05C67C",
+        "0x08C339",
+        "0x0019B5"
+      ],
+      "ioTail": [],
+      "lastIoByPort": {}
+    },
+    "pre001713": {
+      "block": 7,
+      "target": "pre001713",
+      "pc": "0x001713",
+      "previousPc": "0x000710",
+      "routeFields": {
+        "D00587": 26,
+        "D0058C": 144,
+        "D0058D": 144,
+        "D0058E": 144,
+        "D00080": 8,
+        "D0009F": 32,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805589,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x001713",
+        "sp": "0xD1A851",
+        "ix": "0xD1A860",
+        "iy": "0xD00080",
+        "a": "0xD0",
+        "f": "0x42",
+        "af": "0xD042",
+        "bc": "0x00A008",
+        "de": "0x0080C0",
+        "hl": "0xD1A8A1",
+        "flags": {
+          "s": false,
+          "z": true,
+          "h": false,
+          "pv": false,
+          "n": true,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x08"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x40"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x20"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0xCD",
+        "0xBB",
+        "0x08",
+        "0x00",
+        "0xC0",
+        "0x3A",
+        "0xBA",
+        "0x77",
+        "0xD1",
+        "0xB7",
+        "0xC0",
+        "0x01",
+        "0x00",
+        "0x00",
+        "0x02",
+        "0xC5"
+      ],
+      "recentBlocks": [
+        "0x08C331",
+        "0x05C634",
+        "0x000038",
+        "0x0006F3",
+        "0x000704",
+        "0x000710",
+        "0x001713"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A851",
+          "value": "0x000719"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A854",
+          "value": "0xD1A8A1"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A857",
+          "value": "0xD00080"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A85A",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A85D",
+          "value": "0x05C67C"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A860",
+          "value": "0x08C339"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A863",
+          "value": "0x0019B5"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A866",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A869",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A86C",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A86F",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A872",
+          "value": "0xFFFFFF"
+        }
+      ],
+      "returnHints": [
+        "0x000719",
+        "0xD1A8A1",
+        "0xD00080",
+        "0xD1A860",
+        "0x05C67C",
+        "0x08C339"
+      ],
+      "ioTail": [],
+      "lastIoByPort": {}
+    },
+    "pre0008bb": {
+      "block": 8,
+      "target": "pre0008bb",
+      "pc": "0x0008BB",
+      "previousPc": "0x001713",
+      "routeFields": {
+        "D00587": 26,
+        "D0058C": 144,
+        "D0058D": 144,
+        "D0058E": 144,
+        "D00080": 8,
+        "D0009F": 32,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805589,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x0008BB",
+        "sp": "0xD1A84E",
+        "ix": "0xD1A860",
+        "iy": "0xD00080",
+        "a": "0xD0",
+        "f": "0x42",
+        "af": "0xD042",
+        "bc": "0x00A008",
+        "de": "0x0080C0",
+        "hl": "0xD1A8A1",
+        "flags": {
+          "s": false,
+          "z": true,
+          "h": false,
+          "pv": false,
+          "n": true,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x08"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x40"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x20"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0x2A",
+        "0x00",
+        "0x01",
+        "0x02",
+        "0x01",
+        "0x5A",
+        "0xA5",
+        "0x00",
+        "0xB7",
+        "0x52",
+        "0xED",
+        "0x42",
+        "0xC9",
+        "0x2A",
+        "0x05",
+        "0x01"
+      ],
+      "recentBlocks": [
+        "0x08C331",
+        "0x05C634",
+        "0x000038",
+        "0x0006F3",
+        "0x000704",
+        "0x000710",
+        "0x001713",
+        "0x0008BB"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A84E",
+          "value": "0x001717"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A851",
+          "value": "0x000719"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A854",
+          "value": "0xD1A8A1"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A857",
+          "value": "0xD00080"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A85A",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A85D",
+          "value": "0x05C67C"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A860",
+          "value": "0x08C339"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A863",
+          "value": "0x0019B5"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A866",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A869",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A86C",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A86F",
+          "value": "0xFFFFFF"
+        }
+      ],
+      "returnHints": [
+        "0x001717",
+        "0x000719",
+        "0xD1A8A1",
+        "0xD00080",
+        "0xD1A860",
+        "0x05C67C"
+      ],
+      "ioTail": [],
+      "lastIoByPort": {}
+    },
+    "pre001717": {
+      "block": 9,
+      "target": "pre001717",
+      "pc": "0x001717",
+      "previousPc": "0x0008BB",
+      "routeFields": {
+        "D00587": 26,
+        "D0058C": 144,
+        "D0058D": 144,
+        "D0058E": 144,
+        "D00080": 8,
+        "D0009F": 32,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805589,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x001717",
+        "sp": "0xD1A851",
+        "ix": "0xD1A860",
+        "iy": "0xD00080",
+        "a": "0xD0",
+        "f": "0x42",
+        "af": "0xD042",
+        "bc": "0x00A55A",
+        "de": "0x0080C0",
+        "hl": "0x000000",
+        "flags": {
+          "s": false,
+          "z": true,
+          "h": false,
+          "pv": false,
+          "n": true,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x08"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x40"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x20"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0xC0",
+        "0x3A",
+        "0xBA",
+        "0x77",
+        "0xD1",
+        "0xB7",
+        "0xC0",
+        "0x01",
+        "0x00",
+        "0x00",
+        "0x02",
+        "0xC5",
+        "0xCD",
+        "0xF8",
+        "0x67",
+        "0x00"
+      ],
+      "recentBlocks": [
+        "0x08C331",
+        "0x05C634",
+        "0x000038",
+        "0x0006F3",
+        "0x000704",
+        "0x000710",
+        "0x001713",
+        "0x0008BB",
+        "0x001717"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A851",
+          "value": "0x000719"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A854",
+          "value": "0xD1A8A1"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A857",
+          "value": "0xD00080"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A85A",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A85D",
+          "value": "0x05C67C"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A860",
+          "value": "0x08C339"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A863",
+          "value": "0x0019B5"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A866",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A869",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A86C",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A86F",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A872",
+          "value": "0xFFFFFF"
+        }
+      ],
+      "returnHints": [
+        "0x000719",
+        "0xD1A8A1",
+        "0xD00080",
+        "0xD1A860",
+        "0x05C67C",
+        "0x08C339"
+      ],
+      "ioTail": [],
+      "lastIoByPort": {}
+    },
+    "pre001718": {
+      "block": 10,
+      "target": "pre001718",
+      "pc": "0x001718",
+      "previousPc": "0x001717",
+      "routeFields": {
+        "D00587": 26,
+        "D0058C": 144,
+        "D0058D": 144,
+        "D0058E": 144,
+        "D00080": 8,
+        "D0009F": 32,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805589,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x001718",
+        "sp": "0xD1A851",
+        "ix": "0xD1A860",
+        "iy": "0xD00080",
+        "a": "0xD0",
+        "f": "0x42",
+        "af": "0xD042",
+        "bc": "0x00A55A",
+        "de": "0x0080C0",
+        "hl": "0x000000",
+        "flags": {
+          "s": false,
+          "z": true,
+          "h": false,
+          "pv": false,
+          "n": true,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x08"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x40"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x20"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0x3A",
+        "0xBA",
+        "0x77",
+        "0xD1",
+        "0xB7",
+        "0xC0",
+        "0x01",
+        "0x00",
+        "0x00",
+        "0x02",
+        "0xC5",
+        "0xCD",
+        "0xF8",
+        "0x67",
+        "0x00",
+        "0xC1"
+      ],
+      "recentBlocks": [
+        "0x08C331",
+        "0x05C634",
+        "0x000038",
+        "0x0006F3",
+        "0x000704",
+        "0x000710",
+        "0x001713",
+        "0x0008BB",
+        "0x001717",
+        "0x001718"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A851",
+          "value": "0x000719"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A854",
+          "value": "0xD1A8A1"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A857",
+          "value": "0xD00080"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A85A",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A85D",
+          "value": "0x05C67C"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A860",
+          "value": "0x08C339"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A863",
+          "value": "0x0019B5"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A866",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A869",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A86C",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A86F",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A872",
+          "value": "0xFFFFFF"
+        }
+      ],
+      "returnHints": [
+        "0x000719",
+        "0xD1A8A1",
+        "0xD00080",
+        "0xD1A860",
+        "0x05C67C",
+        "0x08C339"
+      ],
+      "ioTail": [],
+      "lastIoByPort": {}
+    },
+    "pre00171e": {
+      "block": 11,
+      "target": "pre00171e",
+      "pc": "0x00171E",
+      "previousPc": "0x001718",
+      "routeFields": {
+        "D00587": 26,
+        "D0058C": 144,
+        "D0058D": 144,
+        "D0058E": 144,
+        "D00080": 8,
+        "D0009F": 32,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805589,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x00171E",
+        "sp": "0xD1A851",
+        "ix": "0xD1A860",
+        "iy": "0xD00080",
+        "a": "0x00",
+        "f": "0x44",
+        "af": "0x0044",
+        "bc": "0x00A55A",
+        "de": "0x0080C0",
+        "hl": "0x000000",
+        "flags": {
+          "s": false,
+          "z": true,
+          "h": false,
+          "pv": true,
+          "n": false,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x08"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x40"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x20"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0x01",
+        "0x00",
+        "0x00",
+        "0x02",
+        "0xC5",
+        "0xCD",
+        "0xF8",
+        "0x67",
+        "0x00",
+        "0xC1",
+        "0x2D",
+        "0xC9",
+        "0x11",
+        "0x30",
+        "0x03",
+        "0x00"
+      ],
+      "recentBlocks": [
+        "0x08C331",
+        "0x05C634",
+        "0x000038",
+        "0x0006F3",
+        "0x000704",
+        "0x000710",
+        "0x001713",
+        "0x0008BB",
+        "0x001717",
+        "0x001718",
+        "0x00171E"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A851",
+          "value": "0x000719"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A854",
+          "value": "0xD1A8A1"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A857",
+          "value": "0xD00080"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A85A",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A85D",
+          "value": "0x05C67C"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A860",
+          "value": "0x08C339"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A863",
+          "value": "0x0019B5"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A866",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A869",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A86C",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A86F",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A872",
+          "value": "0xFFFFFF"
+        }
+      ],
+      "returnHints": [
+        "0x000719",
+        "0xD1A8A1",
+        "0xD00080",
+        "0xD1A860",
+        "0x05C67C",
+        "0x08C339"
+      ],
+      "ioTail": [],
+      "lastIoByPort": {}
+    },
+    "pre0067f8": {
+      "block": 12,
+      "target": "pre0067f8",
+      "pc": "0x0067F8",
+      "previousPc": "0x00171E",
+      "routeFields": {
+        "D00587": 26,
+        "D0058C": 144,
+        "D0058D": 144,
+        "D0058E": 144,
+        "D00080": 8,
+        "D0009F": 32,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805589,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x0067F8",
+        "sp": "0xD1A84B",
+        "ix": "0xD1A860",
+        "iy": "0xD00080",
+        "a": "0x00",
+        "f": "0x44",
+        "af": "0x0044",
+        "bc": "0x020000",
+        "de": "0x0080C0",
+        "hl": "0x000000",
+        "flags": {
+          "s": false,
+          "z": true,
+          "h": false,
+          "pv": true,
+          "n": false,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x08"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x40"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x20"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0xDD",
+        "0xE5",
+        "0xDD",
+        "0x21",
+        "0x00",
+        "0x00",
+        "0x00",
+        "0xDD",
+        "0x39",
+        "0xDD",
+        "0x27",
+        "0x06",
+        "0xCD",
+        "0x4F",
+        "0x1C",
+        "0x00"
+      ],
+      "recentBlocks": [
+        "0x08C331",
+        "0x05C634",
+        "0x000038",
+        "0x0006F3",
+        "0x000704",
+        "0x000710",
+        "0x001713",
+        "0x0008BB",
+        "0x001717",
+        "0x001718",
+        "0x00171E",
+        "0x0067F8"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A84B",
+          "value": "0x001727"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A84E",
+          "value": "0x020000"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A851",
+          "value": "0x000719"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A854",
+          "value": "0xD1A8A1"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A857",
+          "value": "0xD00080"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A85A",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A85D",
+          "value": "0x05C67C"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A860",
+          "value": "0x08C339"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A863",
+          "value": "0x0019B5"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A866",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A869",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A86C",
+          "value": "0xFFFFFF"
+        }
+      ],
+      "returnHints": [
+        "0x001727",
+        "0x020000",
+        "0x000719",
+        "0xD1A8A1",
+        "0xD00080",
+        "0xD1A860"
+      ],
+      "ioTail": [],
+      "lastIoByPort": {}
+    },
+    "pre001c4f": {
+      "block": 13,
+      "target": "pre001c4f",
+      "pc": "0x001C4F",
+      "previousPc": "0x0067F8",
+      "routeFields": {
+        "D00587": 26,
+        "D0058C": 144,
+        "D0058D": 144,
+        "D0058E": 144,
+        "D00080": 8,
+        "D0009F": 32,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805589,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x001C4F",
+        "sp": "0xD1A845",
+        "ix": "0xD1A848",
+        "iy": "0xD00080",
+        "a": "0x00",
+        "f": "0x44",
+        "af": "0x0044",
+        "bc": "0x020000",
+        "de": "0x0080C0",
+        "hl": "0x020000",
+        "flags": {
+          "s": false,
+          "z": true,
+          "h": false,
+          "pv": true,
+          "n": false,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x08"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x40"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x20"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0x23",
+        "0xCD",
+        "0xA6",
+        "0x1C",
+        "0x00",
+        "0xC9",
+        "0x21",
+        "0x01",
+        "0x00",
+        "0x3B",
+        "0xCD",
+        "0x33",
+        "0x1C",
+        "0x00",
+        "0xC0",
+        "0xC5"
+      ],
+      "recentBlocks": [
+        "0x08C331",
+        "0x05C634",
+        "0x000038",
+        "0x0006F3",
+        "0x000704",
+        "0x000710",
+        "0x001713",
+        "0x0008BB",
+        "0x001717",
+        "0x001718",
+        "0x00171E",
+        "0x0067F8",
+        "0x001C4F"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A845",
+          "value": "0x006808"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A848",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A84B",
+          "value": "0x001727"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A84E",
+          "value": "0x020000"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A851",
+          "value": "0x000719"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A854",
+          "value": "0xD1A8A1"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A857",
+          "value": "0xD00080"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A85A",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A85D",
+          "value": "0x05C67C"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A860",
+          "value": "0x08C339"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A863",
+          "value": "0x0019B5"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A866",
+          "value": "0xFFFFFF"
+        }
+      ],
+      "returnHints": [
+        "0x006808",
+        "0xD1A860",
+        "0x001727",
+        "0x020000",
+        "0x000719",
+        "0xD1A8A1"
+      ],
+      "ioTail": [],
+      "lastIoByPort": {}
+    },
+    "pre001ca6": {
+      "block": 14,
+      "target": "pre001ca6",
+      "pc": "0x001CA6",
+      "previousPc": "0x001C4F",
+      "routeFields": {
+        "D00587": 26,
+        "D0058C": 144,
+        "D0058D": 144,
+        "D0058E": 144,
+        "D00080": 8,
+        "D0009F": 32,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805589,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x001CA6",
+        "sp": "0xD1A842",
+        "ix": "0xD1A848",
+        "iy": "0xD00080",
+        "a": "0x00",
+        "f": "0x44",
+        "af": "0x0044",
+        "bc": "0x020000",
+        "de": "0x0080C0",
+        "hl": "0x020001",
+        "flags": {
+          "s": false,
+          "z": true,
+          "h": false,
+          "pv": true,
+          "n": false,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x08"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x40"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x20"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0xDD",
+        "0xE5",
+        "0xDD",
+        "0x21",
+        "0x00",
+        "0x00",
+        "0x00",
+        "0xDD",
+        "0x39",
+        "0xC5",
+        "0x01",
+        "0x00",
+        "0x00",
+        "0x00",
+        "0x7E",
+        "0x23"
+      ],
+      "recentBlocks": [
+        "0x08C331",
+        "0x05C634",
+        "0x000038",
+        "0x0006F3",
+        "0x000704",
+        "0x000710",
+        "0x001713",
+        "0x0008BB",
+        "0x001717",
+        "0x001718",
+        "0x00171E",
+        "0x0067F8",
+        "0x001C4F",
+        "0x001CA6"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A842",
+          "value": "0x001C54"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A845",
+          "value": "0x006808"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A848",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A84B",
+          "value": "0x001727"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A84E",
+          "value": "0x020000"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A851",
+          "value": "0x000719"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A854",
+          "value": "0xD1A8A1"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A857",
+          "value": "0xD00080"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A85A",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A85D",
+          "value": "0x05C67C"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A860",
+          "value": "0x08C339"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A863",
+          "value": "0x0019B5"
+        }
+      ],
+      "returnHints": [
+        "0x001C54",
+        "0x006808",
+        "0xD1A860",
+        "0x001727",
+        "0x020000",
+        "0x000719"
+      ],
+      "ioTail": [],
+      "lastIoByPort": {}
+    },
+    "pre001cc0": {
+      "block": 15,
+      "target": "pre001cc0",
+      "pc": "0x001CC0",
+      "previousPc": "0x001CA6",
+      "routeFields": {
+        "D00587": 26,
+        "D0058C": 144,
+        "D0058D": 144,
+        "D0058E": 144,
+        "D00080": 8,
+        "D0009F": 32,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805589,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x001CC0",
+        "sp": "0xD1A83C",
+        "ix": "0xD1A83F",
+        "iy": "0xD00080",
+        "a": "0x0F",
+        "f": "0x02",
+        "af": "0x0F02",
+        "bc": "0x000000",
+        "de": "0x0080C0",
+        "hl": "0x020002",
+        "flags": {
+          "s": false,
+          "z": false,
+          "h": false,
+          "pv": false,
+          "n": true,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x08"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x40"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x20"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0xFE",
+        "0x0E",
+        "0x20",
+        "0x06",
+        "0x46",
+        "0x23",
+        "0x4E",
+        "0x23",
+        "0x18",
+        "0x1B",
+        "0xFE",
+        "0x0F",
+        "0x20",
+        "0x16",
+        "0x7E",
+        "0xB7"
+      ],
+      "recentBlocks": [
+        "0x08C331",
+        "0x05C634",
+        "0x000038",
+        "0x0006F3",
+        "0x000704",
+        "0x000710",
+        "0x001713",
+        "0x0008BB",
+        "0x001717",
+        "0x001718",
+        "0x00171E",
+        "0x0067F8",
+        "0x001C4F",
+        "0x001CA6",
+        "0x001CC0"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A83C",
+          "value": "0x020000"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A83F",
+          "value": "0xD1A848"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A842",
+          "value": "0x001C54"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A845",
+          "value": "0x006808"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A848",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A84B",
+          "value": "0x001727"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A84E",
+          "value": "0x020000"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A851",
+          "value": "0x000719"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A854",
+          "value": "0xD1A8A1"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A857",
+          "value": "0xD00080"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A85A",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A85D",
+          "value": "0x05C67C"
+        }
+      ],
+      "returnHints": [
+        "0x020000",
+        "0xD1A848",
+        "0x001C54",
+        "0x006808",
+        "0xD1A860",
+        "0x001727"
+      ],
+      "ioTail": [],
+      "lastIoByPort": {}
+    },
+    "pre001cca": {
+      "block": 16,
+      "target": "pre001cca",
+      "pc": "0x001CCA",
+      "previousPc": "0x001CC0",
+      "routeFields": {
+        "D00587": 26,
+        "D0058C": 144,
+        "D0058D": 144,
+        "D0058E": 144,
+        "D00080": 8,
+        "D0009F": 32,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805589,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x001CCA",
+        "sp": "0xD1A83C",
+        "ix": "0xD1A83F",
+        "iy": "0xD00080",
+        "a": "0x0F",
+        "f": "0x02",
+        "af": "0x0F02",
+        "bc": "0x000000",
+        "de": "0x0080C0",
+        "hl": "0x020002",
+        "flags": {
+          "s": false,
+          "z": false,
+          "h": false,
+          "pv": false,
+          "n": true,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x08"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x40"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x20"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0xFE",
+        "0x0F",
+        "0x20",
+        "0x16",
+        "0x7E",
+        "0xB7",
+        "0x28",
+        "0x03",
+        "0x37",
+        "0x18",
+        "0x11",
+        "0x23",
+        "0x7E",
+        "0xDD",
+        "0x77",
+        "0xFF"
+      ],
+      "recentBlocks": [
+        "0x08C331",
+        "0x05C634",
+        "0x000038",
+        "0x0006F3",
+        "0x000704",
+        "0x000710",
+        "0x001713",
+        "0x0008BB",
+        "0x001717",
+        "0x001718",
+        "0x00171E",
+        "0x0067F8",
+        "0x001C4F",
+        "0x001CA6",
+        "0x001CC0",
+        "0x001CCA"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A83C",
+          "value": "0x020000"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A83F",
+          "value": "0xD1A848"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A842",
+          "value": "0x001C54"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A845",
+          "value": "0x006808"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A848",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A84B",
+          "value": "0x001727"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A84E",
+          "value": "0x020000"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A851",
+          "value": "0x000719"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A854",
+          "value": "0xD1A8A1"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A857",
+          "value": "0xD00080"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A85A",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A85D",
+          "value": "0x05C67C"
+        }
+      ],
+      "returnHints": [
+        "0x020000",
+        "0xD1A848",
+        "0x001C54",
+        "0x006808",
+        "0xD1A860",
+        "0x001727"
+      ],
+      "ioTail": [],
+      "lastIoByPort": {}
+    },
+    "pre001cce": {
+      "block": 17,
+      "target": "pre001cce",
+      "pc": "0x001CCE",
+      "previousPc": "0x001CCA",
+      "routeFields": {
+        "D00587": 26,
+        "D0058C": 144,
+        "D0058D": 144,
+        "D0058E": 144,
+        "D00080": 8,
+        "D0009F": 32,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805589,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x001CCE",
+        "sp": "0xD1A83C",
+        "ix": "0xD1A83F",
+        "iy": "0xD00080",
+        "a": "0x0F",
+        "f": "0x42",
+        "af": "0x0F42",
+        "bc": "0x000000",
+        "de": "0x0080C0",
+        "hl": "0x020002",
+        "flags": {
+          "s": false,
+          "z": true,
+          "h": false,
+          "pv": false,
+          "n": true,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x08"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x40"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x20"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0x7E",
+        "0xB7",
+        "0x28",
+        "0x03",
+        "0x37",
+        "0x18",
+        "0x11",
+        "0x23",
+        "0x7E",
+        "0xDD",
+        "0x77",
+        "0xFF",
+        "0xDD",
+        "0x07",
+        "0xFD",
+        "0x23"
+      ],
+      "recentBlocks": [
+        "0x08C331",
+        "0x05C634",
+        "0x000038",
+        "0x0006F3",
+        "0x000704",
+        "0x000710",
+        "0x001713",
+        "0x0008BB",
+        "0x001717",
+        "0x001718",
+        "0x00171E",
+        "0x0067F8",
+        "0x001C4F",
+        "0x001CA6",
+        "0x001CC0",
+        "0x001CCA",
+        "0x001CCE"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A83C",
+          "value": "0x020000"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A83F",
+          "value": "0xD1A848"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A842",
+          "value": "0x001C54"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A845",
+          "value": "0x006808"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A848",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A84B",
+          "value": "0x001727"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A84E",
+          "value": "0x020000"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A851",
+          "value": "0x000719"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A854",
+          "value": "0xD1A8A1"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A857",
+          "value": "0xD00080"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A85A",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A85D",
+          "value": "0x05C67C"
+        }
+      ],
+      "returnHints": [
+        "0x020000",
+        "0xD1A848",
+        "0x001C54",
+        "0x006808",
+        "0xD1A860",
+        "0x001727"
+      ],
+      "ioTail": [],
+      "lastIoByPort": {}
+    },
+    "pre001cd5": {
+      "block": 18,
+      "target": "pre001cd5",
+      "pc": "0x001CD5",
+      "previousPc": "0x001CCE",
+      "routeFields": {
+        "D00587": 26,
+        "D0058C": 144,
+        "D0058D": 144,
+        "D0058E": 144,
+        "D00080": 8,
+        "D0009F": 32,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805589,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x001CD5",
+        "sp": "0xD1A83C",
+        "ix": "0xD1A83F",
+        "iy": "0xD00080",
+        "a": "0x00",
+        "f": "0x44",
+        "af": "0x0044",
+        "bc": "0x000000",
+        "de": "0x0080C0",
+        "hl": "0x020002",
+        "flags": {
+          "s": false,
+          "z": true,
+          "h": false,
+          "pv": true,
+          "n": false,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x08"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x40"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x20"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0x23",
+        "0x7E",
+        "0xDD",
+        "0x77",
+        "0xFF",
+        "0xDD",
+        "0x07",
+        "0xFD",
+        "0x23",
+        "0x46",
+        "0x23",
+        "0x4E",
+        "0x23",
+        "0x18",
+        "0x01",
+        "0x4F"
+      ],
+      "recentBlocks": [
+        "0x08C331",
+        "0x05C634",
+        "0x000038",
+        "0x0006F3",
+        "0x000704",
+        "0x000710",
+        "0x001713",
+        "0x0008BB",
+        "0x001717",
+        "0x001718",
+        "0x00171E",
+        "0x0067F8",
+        "0x001C4F",
+        "0x001CA6",
+        "0x001CC0",
+        "0x001CCA",
+        "0x001CCE",
+        "0x001CD5"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A83C",
+          "value": "0x020000"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A83F",
+          "value": "0xD1A848"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A842",
+          "value": "0x001C54"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A845",
+          "value": "0x006808"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A848",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A84B",
+          "value": "0x001727"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A84E",
+          "value": "0x020000"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A851",
+          "value": "0x000719"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A854",
+          "value": "0xD1A8A1"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A857",
+          "value": "0xD00080"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A85A",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A85D",
+          "value": "0x05C67C"
+        }
+      ],
+      "returnHints": [
+        "0x020000",
+        "0xD1A848",
+        "0x001C54",
+        "0x006808",
+        "0xD1A860",
+        "0x001727"
+      ],
+      "ioTail": [],
+      "lastIoByPort": {}
+    },
+    "pre001ce5": {
+      "block": 19,
+      "target": "pre001ce5",
+      "pc": "0x001CE5",
+      "previousPc": "0x001CD5",
+      "routeFields": {
+        "D00587": 26,
+        "D0058C": 144,
+        "D0058D": 144,
+        "D0058E": 144,
+        "D00080": 8,
+        "D0009F": 32,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805589,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x001CE5",
+        "sp": "0xD1A83C",
+        "ix": "0xD1A83F",
+        "iy": "0xD00080",
+        "a": "0x09",
+        "f": "0x44",
+        "af": "0x0944",
+        "bc": "0x09D6B4",
+        "de": "0x0080C0",
+        "hl": "0x020006",
+        "flags": {
+          "s": false,
+          "z": true,
+          "h": false,
+          "pv": true,
+          "n": false,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x08"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x40"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x20"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0xB7",
+        "0xDD",
+        "0xF9",
+        "0xDD",
+        "0xE1",
+        "0xC9",
+        "0x11",
+        "0x30",
+        "0x03",
+        "0x00",
+        "0xCD",
+        "0x55",
+        "0x1C",
+        "0x00",
+        "0x20",
+        "0x14"
+      ],
+      "recentBlocks": [
+        "0x08C331",
+        "0x05C634",
+        "0x000038",
+        "0x0006F3",
+        "0x000704",
+        "0x000710",
+        "0x001713",
+        "0x0008BB",
+        "0x001717",
+        "0x001718",
+        "0x00171E",
+        "0x0067F8",
+        "0x001C4F",
+        "0x001CA6",
+        "0x001CC0",
+        "0x001CCA",
+        "0x001CCE",
+        "0x001CD5",
+        "0x001CE5"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A83C",
+          "value": "0x090000"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A83F",
+          "value": "0xD1A848"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A842",
+          "value": "0x001C54"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A845",
+          "value": "0x006808"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A848",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A84B",
+          "value": "0x001727"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A84E",
+          "value": "0x020000"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A851",
+          "value": "0x000719"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A854",
+          "value": "0xD1A8A1"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A857",
+          "value": "0xD00080"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A85A",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A85D",
+          "value": "0x05C67C"
+        }
+      ],
+      "returnHints": [
+        "0x090000",
+        "0xD1A848",
+        "0x001C54",
+        "0x006808",
+        "0xD1A860",
+        "0x001727"
+      ],
+      "ioTail": [],
+      "lastIoByPort": {}
+    },
+    "pre001c54": {
+      "block": 20,
+      "target": "pre001c54",
+      "pc": "0x001C54",
+      "previousPc": "0x001CE5",
+      "routeFields": {
+        "D00587": 26,
+        "D0058C": 144,
+        "D0058D": 144,
+        "D0058E": 144,
+        "D00080": 8,
+        "D0009F": 32,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805589,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x001C54",
+        "sp": "0xD1A845",
+        "ix": "0xD1A848",
+        "iy": "0xD00080",
+        "a": "0x09",
+        "f": "0x0C",
+        "af": "0x090C",
+        "bc": "0x09D6B4",
+        "de": "0x0080C0",
+        "hl": "0x020006",
+        "flags": {
+          "s": false,
+          "z": false,
+          "h": false,
+          "pv": true,
+          "n": false,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x08"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x40"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x20"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0xC9",
+        "0x21",
+        "0x01",
+        "0x00",
+        "0x3B",
+        "0xCD",
+        "0x33",
+        "0x1C",
+        "0x00",
+        "0xC0",
+        "0xC5",
+        "0xE5",
+        "0x01",
+        "0x00",
+        "0x00",
+        "0x3C"
+      ],
+      "recentBlocks": [
+        "0x08C331",
+        "0x05C634",
+        "0x000038",
+        "0x0006F3",
+        "0x000704",
+        "0x000710",
+        "0x001713",
+        "0x0008BB",
+        "0x001717",
+        "0x001718",
+        "0x00171E",
+        "0x0067F8",
+        "0x001C4F",
+        "0x001CA6",
+        "0x001CC0",
+        "0x001CCA",
+        "0x001CCE",
+        "0x001CD5",
+        "0x001CE5",
+        "0x001C54"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A845",
+          "value": "0x006808"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A848",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A84B",
+          "value": "0x001727"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A84E",
+          "value": "0x020000"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A851",
+          "value": "0x000719"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A854",
+          "value": "0xD1A8A1"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A857",
+          "value": "0xD00080"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A85A",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A85D",
+          "value": "0x05C67C"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A860",
+          "value": "0x08C339"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A863",
+          "value": "0x0019B5"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A866",
+          "value": "0xFFFFFF"
+        }
+      ],
+      "returnHints": [
+        "0x006808",
+        "0xD1A860",
+        "0x001727",
+        "0x020000",
+        "0x000719",
+        "0xD1A8A1"
+      ],
+      "ioTail": [],
+      "lastIoByPort": {}
+    },
+    "pre006808": {
+      "block": 21,
+      "target": "pre006808",
+      "pc": "0x006808",
+      "previousPc": "0x001C54",
+      "routeFields": {
+        "D00587": 26,
+        "D0058C": 144,
+        "D0058D": 144,
+        "D0058E": 144,
+        "D00080": 8,
+        "D0009F": 32,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805589,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x006808",
+        "sp": "0xD1A848",
+        "ix": "0xD1A848",
+        "iy": "0xD00080",
+        "a": "0x09",
+        "f": "0x0C",
+        "af": "0x090C",
+        "bc": "0x09D6B4",
+        "de": "0x0080C0",
+        "hl": "0x020006",
+        "flags": {
+          "s": false,
+          "z": false,
+          "h": false,
+          "pv": true,
+          "n": false,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x08"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x40"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x20"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0x11",
+        "0xC0",
+        "0x80",
+        "0x00",
+        "0xCD",
+        "0x33",
+        "0x1C",
+        "0x00",
+        "0x20",
+        "0x12",
+        "0xCD",
+        "0x4F",
+        "0x1C",
+        "0x00",
+        "0xED",
+        "0x38"
+      ],
+      "recentBlocks": [
+        "0x08C331",
+        "0x05C634",
+        "0x000038",
+        "0x0006F3",
+        "0x000704",
+        "0x000710",
+        "0x001713",
+        "0x0008BB",
+        "0x001717",
+        "0x001718",
+        "0x00171E",
+        "0x0067F8",
+        "0x001C4F",
+        "0x001CA6",
+        "0x001CC0",
+        "0x001CCA",
+        "0x001CCE",
+        "0x001CD5",
+        "0x001CE5",
+        "0x001C54",
+        "0x006808"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A848",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A84B",
+          "value": "0x001727"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A84E",
+          "value": "0x020000"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A851",
+          "value": "0x000719"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A854",
+          "value": "0xD1A8A1"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A857",
+          "value": "0xD00080"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A85A",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A85D",
+          "value": "0x05C67C"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A860",
+          "value": "0x08C339"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A863",
+          "value": "0x0019B5"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A866",
+          "value": "0xFFFFFF"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A869",
+          "value": "0xFFFFFF"
+        }
+      ],
+      "returnHints": [
+        "0xD1A860",
+        "0x001727",
+        "0x020000",
+        "0x000719",
+        "0xD1A8A1",
+        "0xD00080"
+      ],
+      "ioTail": [],
+      "lastIoByPort": {}
+    },
+    "gate001c33": {
+      "block": 22,
+      "target": "gate001c33",
+      "pc": "0x001C33",
+      "previousPc": "0x006808",
+      "routeFields": {
+        "D00587": 26,
+        "D0058C": 144,
+        "D0058D": 144,
+        "D0058E": 144,
+        "D00080": 8,
+        "D0009F": 32,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805589,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x001C33",
+        "sp": "0xD1A845",
+        "ix": "0xD1A848",
+        "iy": "0xD00080",
+        "a": "0x09",
+        "f": "0x0C",
+        "af": "0x090C",
+        "bc": "0x09D6B4",
+        "de": "0x0080C0",
+        "hl": "0x020006",
+        "flags": {
+          "s": false,
+          "z": false,
+          "h": false,
+          "pv": true,
+          "n": false,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x08"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x40"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x20"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0x7E",
+        "0xFE",
+        "0xFF",
+        "0x28",
+        "0x12",
+        "0x23",
+        "0xBA",
+        "0x20",
+        "0x08",
+        "0x7E",
+        "0xE6",
+        "0xF0",
+        "0xBB",
+        "0x20",
+        "0x02",
+        "0x2B"
+      ],
+      "recentBlocks": [
+        "0x08C331",
+        "0x05C634",
+        "0x000038",
+        "0x0006F3",
+        "0x000704",
+        "0x000710",
+        "0x001713",
+        "0x0008BB",
+        "0x001717",
+        "0x001718",
+        "0x00171E",
+        "0x0067F8",
+        "0x001C4F",
+        "0x001CA6",
+        "0x001CC0",
+        "0x001CCA",
+        "0x001CCE",
+        "0x001CD5",
+        "0x001CE5",
+        "0x001C54",
+        "0x006808",
+        "0x001C33"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A845",
+          "value": "0x006810"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A848",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A84B",
+          "value": "0x001727"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A84E",
+          "value": "0x020000"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A851",
+          "value": "0x000719"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A854",
+          "value": "0xD1A8A1"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A857",
+          "value": "0xD00080"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A85A",
+          "value": "0xD1A860"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A85D",
+          "value": "0x05C67C"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A860",
+          "value": "0x08C339"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A863",
+          "value": "0x0019B5"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A866",
+          "value": "0xFFFFFF"
+        }
+      ],
+      "returnHints": [
+        "0x006810",
+        "0xD1A860",
+        "0x001727",
+        "0x020000",
+        "0x000719",
+        "0xD1A8A1"
+      ],
+      "ioTail": [],
+      "lastIoByPort": {}
+    },
+    "gate001c4a": {
+      "block": 13027,
+      "target": "gate001c4a",
+      "pc": "0x001C4A",
+      "previousPc": "0x001C33",
+      "routeFields": {
+        "D00587": 0,
+        "D0058C": 0,
+        "D0058D": 26,
+        "D0058E": 0,
+        "D00080": 0,
+        "D0009F": 0,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805591,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x001C4A",
+        "sp": "0xD1A875",
+        "ix": "0x000000",
+        "iy": "0xD00080",
+        "a": "0xFF",
+        "f": "0x42",
+        "af": "0xFF42",
+        "bc": "0x000003",
+        "de": "0x000430",
+        "hl": "0x3B003B",
+        "flags": {
+          "s": false,
+          "z": true,
+          "h": false,
+          "pv": false,
+          "n": true,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x00"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x00"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x00"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0x3E",
+        "0xFF",
+        "0xCB",
+        "0x7F",
+        "0xC9",
+        "0x23",
+        "0xCD",
+        "0xA6",
+        "0x1C",
+        "0x00",
+        "0xC9",
+        "0x21",
+        "0x01",
+        "0x00",
+        "0x3B",
+        "0xCD"
+      ],
+      "recentBlocks": [
+        "0x001C44",
+        "0x001C7D",
+        "0x001CA6",
+        "0x001CBC",
+        "0x001CE5",
+        "0x001C81",
+        "0x001C82",
+        "0x001C48",
+        "0x001C33",
+        "0x001C38",
+        "0x001C44",
+        "0x001C7D",
+        "0x001CA6",
+        "0x001CC0",
+        "0x001CCA",
+        "0x001CE4",
+        "0x001C81",
+        "0x001C82",
+        "0x001C48",
+        "0x001C33",
+        "0x001C38",
+        "0x001C44",
+        "0x001C7D",
+        "0x001CA6",
+        "0x001CC0",
+        "0x001CCA",
+        "0x001CE4",
+        "0x001C81",
+        "0x001C82",
+        "0x001C48",
+        "0x001C33",
+        "0x001C4A"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A875",
+          "value": "0x0158D2"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A878",
+          "value": "0x0158EC"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A87B",
+          "value": "0x0013DA"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A87E",
+          "value": "0x000000"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A881",
+          "value": "0x000000"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A884",
+          "value": "0x000000"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A887",
+          "value": "0x000000"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A88A",
+          "value": "0x000000"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A88D",
+          "value": "0x008000"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A890",
+          "value": "0x000000"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A893",
+          "value": "0x000000"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A896",
+          "value": "0x008000"
+        }
+      ],
+      "returnHints": [
+        "0x0158D2",
+        "0x0158EC",
+        "0x0013DA",
+        "0x008000",
+        "0x008000"
+      ],
+      "ioTail": [
+        {
+          "type": "read",
+          "block": 11491,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11700,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11707,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11708,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11709,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11893,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11900,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11901,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11902,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12082,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12089,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12090,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12091,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12217,
+          "pc": "0x02B03B",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x00",
+          "f": "0x12",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": true,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12503,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12510,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12511,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12512,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0007",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0009",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12573,
+          "pc": "0x00067E",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x05",
+          "f": "0x04",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12576,
+          "pc": "0x0012E3",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x06",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12920,
+          "pc": "0x001379",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x76",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12925,
+          "pc": "0x001988",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x08",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        }
+      ],
+      "lastIoByPort": {
+        "0x0003": {
+          "type": "read",
+          "block": 12925,
+          "pc": "0x001988",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x08",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5016": {
+          "type": "read",
+          "block": 12510,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5015": {
+          "type": "read",
+          "block": 12511,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        "0x5014": {
+          "type": "read",
+          "block": 12512,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5004": {
+          "type": "read",
+          "block": 11349,
+          "pc": "0x03FAA2",
+          "port": "0x5004",
+          "value": "0x11",
+          "a": "0xCC",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5005": {
+          "type": "write",
+          "block": 11366,
+          "pc": "0x048ACC",
+          "port": "0x5005",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x45",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": true
+          }
+        },
+        "0x0007": {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0007",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        "0x0009": {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0009",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        }
+      }
+    },
+    "gate0158d2": {
+      "block": 13028,
+      "target": "gate0158d2",
+      "pc": "0x0158D2",
+      "previousPc": "0x001C4A",
+      "routeFields": {
+        "D00587": 0,
+        "D0058C": 0,
+        "D0058D": 26,
+        "D0058E": 0,
+        "D00080": 0,
+        "D0009F": 0,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805591,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x0158D2",
+        "sp": "0xD1A878",
+        "ix": "0x000000",
+        "iy": "0xD00080",
+        "a": "0xFF",
+        "f": "0x90",
+        "af": "0xFF90",
+        "bc": "0x000003",
+        "de": "0x000430",
+        "hl": "0x3B003B",
+        "flags": {
+          "s": true,
+          "z": false,
+          "h": true,
+          "pv": false,
+          "n": false,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x00"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x00"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x00"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0x20",
+        "0x06",
+        "0xCD",
+        "0x4F",
+        "0x1C",
+        "0x00",
+        "0x18",
+        "0x03",
+        "0xB7",
+        "0xED",
+        "0x62",
+        "0xC9",
+        "0xFD",
+        "0x21",
+        "0x80",
+        "0x00"
+      ],
+      "recentBlocks": [
+        "0x001C7D",
+        "0x001CA6",
+        "0x001CBC",
+        "0x001CE5",
+        "0x001C81",
+        "0x001C82",
+        "0x001C48",
+        "0x001C33",
+        "0x001C38",
+        "0x001C44",
+        "0x001C7D",
+        "0x001CA6",
+        "0x001CC0",
+        "0x001CCA",
+        "0x001CE4",
+        "0x001C81",
+        "0x001C82",
+        "0x001C48",
+        "0x001C33",
+        "0x001C38",
+        "0x001C44",
+        "0x001C7D",
+        "0x001CA6",
+        "0x001CC0",
+        "0x001CCA",
+        "0x001CE4",
+        "0x001C81",
+        "0x001C82",
+        "0x001C48",
+        "0x001C33",
+        "0x001C4A",
+        "0x0158D2"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A878",
+          "value": "0x0158EC"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A87B",
+          "value": "0x0013DA"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A87E",
+          "value": "0x000000"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A881",
+          "value": "0x000000"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A884",
+          "value": "0x000000"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A887",
+          "value": "0x000000"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A88A",
+          "value": "0x000000"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A88D",
+          "value": "0x008000"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A890",
+          "value": "0x000000"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A893",
+          "value": "0x000000"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A896",
+          "value": "0x008000"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A899",
+          "value": "0x000000"
+        }
+      ],
+      "returnHints": [
+        "0x0158EC",
+        "0x0013DA",
+        "0x008000",
+        "0x008000"
+      ],
+      "ioTail": [
+        {
+          "type": "read",
+          "block": 11491,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11700,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11707,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11708,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11709,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11893,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11900,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11901,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11902,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12082,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12089,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12090,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12091,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12217,
+          "pc": "0x02B03B",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x00",
+          "f": "0x12",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": true,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12503,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12510,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12511,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12512,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0007",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0009",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12573,
+          "pc": "0x00067E",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x05",
+          "f": "0x04",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12576,
+          "pc": "0x0012E3",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x06",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12920,
+          "pc": "0x001379",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x76",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12925,
+          "pc": "0x001988",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x08",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        }
+      ],
+      "lastIoByPort": {
+        "0x0003": {
+          "type": "read",
+          "block": 12925,
+          "pc": "0x001988",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x08",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5016": {
+          "type": "read",
+          "block": 12510,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5015": {
+          "type": "read",
+          "block": 12511,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        "0x5014": {
+          "type": "read",
+          "block": 12512,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5004": {
+          "type": "read",
+          "block": 11349,
+          "pc": "0x03FAA2",
+          "port": "0x5004",
+          "value": "0x11",
+          "a": "0xCC",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5005": {
+          "type": "write",
+          "block": 11366,
+          "pc": "0x048ACC",
+          "port": "0x5005",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x45",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": true
+          }
+        },
+        "0x0007": {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0007",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        "0x0009": {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0009",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        }
+      }
+    },
+    "gate0158da": {
+      "block": 13029,
+      "target": "gate0158da",
+      "pc": "0x0158DA",
+      "previousPc": "0x0158D2",
+      "routeFields": {
+        "D00587": 0,
+        "D0058C": 0,
+        "D0058D": 26,
+        "D0058E": 0,
+        "D00080": 0,
+        "D0009F": 0,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805591,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x0158DA",
+        "sp": "0xD1A878",
+        "ix": "0x000000",
+        "iy": "0xD00080",
+        "a": "0xFF",
+        "f": "0x90",
+        "af": "0xFF90",
+        "bc": "0x000003",
+        "de": "0x000430",
+        "hl": "0x3B003B",
+        "flags": {
+          "s": true,
+          "z": false,
+          "h": true,
+          "pv": false,
+          "n": false,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x00"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x00"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x00"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0xB7",
+        "0xED",
+        "0x62",
+        "0xC9",
+        "0xFD",
+        "0x21",
+        "0x80",
+        "0x00",
+        "0xD0",
+        "0xFD",
+        "0xCB",
+        "0x42",
+        "0x7E",
+        "0xC0",
+        "0xCD",
+        "0xBC"
+      ],
+      "recentBlocks": [
+        "0x001CA6",
+        "0x001CBC",
+        "0x001CE5",
+        "0x001C81",
+        "0x001C82",
+        "0x001C48",
+        "0x001C33",
+        "0x001C38",
+        "0x001C44",
+        "0x001C7D",
+        "0x001CA6",
+        "0x001CC0",
+        "0x001CCA",
+        "0x001CE4",
+        "0x001C81",
+        "0x001C82",
+        "0x001C48",
+        "0x001C33",
+        "0x001C38",
+        "0x001C44",
+        "0x001C7D",
+        "0x001CA6",
+        "0x001CC0",
+        "0x001CCA",
+        "0x001CE4",
+        "0x001C81",
+        "0x001C82",
+        "0x001C48",
+        "0x001C33",
+        "0x001C4A",
+        "0x0158D2",
+        "0x0158DA"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A878",
+          "value": "0x0158EC"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A87B",
+          "value": "0x0013DA"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A87E",
+          "value": "0x000000"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A881",
+          "value": "0x000000"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A884",
+          "value": "0x000000"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A887",
+          "value": "0x000000"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A88A",
+          "value": "0x000000"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A88D",
+          "value": "0x008000"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A890",
+          "value": "0x000000"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A893",
+          "value": "0x000000"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A896",
+          "value": "0x008000"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A899",
+          "value": "0x000000"
+        }
+      ],
+      "returnHints": [
+        "0x0158EC",
+        "0x0013DA",
+        "0x008000",
+        "0x008000"
+      ],
+      "ioTail": [
+        {
+          "type": "read",
+          "block": 11491,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11700,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11707,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11708,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11709,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11893,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11900,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11901,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11902,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12082,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12089,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12090,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12091,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12217,
+          "pc": "0x02B03B",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x00",
+          "f": "0x12",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": true,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12503,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12510,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12511,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12512,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0007",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0009",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12573,
+          "pc": "0x00067E",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x05",
+          "f": "0x04",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12576,
+          "pc": "0x0012E3",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x06",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12920,
+          "pc": "0x001379",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x76",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12925,
+          "pc": "0x001988",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x08",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        }
+      ],
+      "lastIoByPort": {
+        "0x0003": {
+          "type": "read",
+          "block": 12925,
+          "pc": "0x001988",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x08",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5016": {
+          "type": "read",
+          "block": 12510,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5015": {
+          "type": "read",
+          "block": 12511,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        "0x5014": {
+          "type": "read",
+          "block": 12512,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5004": {
+          "type": "read",
+          "block": 11349,
+          "pc": "0x03FAA2",
+          "port": "0x5004",
+          "value": "0x11",
+          "a": "0xCC",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5005": {
+          "type": "write",
+          "block": 11366,
+          "pc": "0x048ACC",
+          "port": "0x5005",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x45",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": true
+          }
+        },
+        "0x0007": {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0007",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        "0x0009": {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0009",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        }
+      }
+    },
+    "gate0158ec": {
+      "block": 13030,
+      "target": "gate0158ec",
+      "pc": "0x0158EC",
+      "previousPc": "0x0158DA",
+      "routeFields": {
+        "D00587": 0,
+        "D0058C": 0,
+        "D0058D": 26,
+        "D0058E": 0,
+        "D00080": 0,
+        "D0009F": 0,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805591,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x0158EC",
+        "sp": "0xD1A87B",
+        "ix": "0x000000",
+        "iy": "0xD00080",
+        "a": "0xFF",
+        "f": "0x6A",
+        "af": "0xFF6A",
+        "bc": "0x000003",
+        "de": "0x000430",
+        "hl": "0x000000",
+        "flags": {
+          "s": false,
+          "z": true,
+          "h": false,
+          "pv": false,
+          "n": true,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x00"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x00"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x00"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0x38",
+        "0x0A",
+        "0x28",
+        "0x08",
+        "0xFD",
+        "0xCB",
+        "0x42",
+        "0xFE",
+        "0x3E",
+        "0x01",
+        "0xB7",
+        "0xC9",
+        "0xAF",
+        "0xC9",
+        "0x22",
+        "0x95"
+      ],
+      "recentBlocks": [
+        "0x001CBC",
+        "0x001CE5",
+        "0x001C81",
+        "0x001C82",
+        "0x001C48",
+        "0x001C33",
+        "0x001C38",
+        "0x001C44",
+        "0x001C7D",
+        "0x001CA6",
+        "0x001CC0",
+        "0x001CCA",
+        "0x001CE4",
+        "0x001C81",
+        "0x001C82",
+        "0x001C48",
+        "0x001C33",
+        "0x001C38",
+        "0x001C44",
+        "0x001C7D",
+        "0x001CA6",
+        "0x001CC0",
+        "0x001CCA",
+        "0x001CE4",
+        "0x001C81",
+        "0x001C82",
+        "0x001C48",
+        "0x001C33",
+        "0x001C4A",
+        "0x0158D2",
+        "0x0158DA",
+        "0x0158EC"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A87B",
+          "value": "0x0013DA"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A87E",
+          "value": "0x000000"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A881",
+          "value": "0x000000"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A884",
+          "value": "0x000000"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A887",
+          "value": "0x000000"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A88A",
+          "value": "0x000000"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A88D",
+          "value": "0x008000"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A890",
+          "value": "0x000000"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A893",
+          "value": "0x000000"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A896",
+          "value": "0x008000"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A899",
+          "value": "0x000000"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A89C",
+          "value": "0x000000"
+        }
+      ],
+      "returnHints": [
+        "0x0013DA",
+        "0x008000",
+        "0x008000"
+      ],
+      "ioTail": [
+        {
+          "type": "read",
+          "block": 11491,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11700,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11707,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11708,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11709,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11893,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11900,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11901,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11902,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12082,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12089,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12090,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12091,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12217,
+          "pc": "0x02B03B",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x00",
+          "f": "0x12",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": true,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12503,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12510,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12511,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12512,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0007",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0009",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12573,
+          "pc": "0x00067E",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x05",
+          "f": "0x04",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12576,
+          "pc": "0x0012E3",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x06",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12920,
+          "pc": "0x001379",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x76",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12925,
+          "pc": "0x001988",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x08",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        }
+      ],
+      "lastIoByPort": {
+        "0x0003": {
+          "type": "read",
+          "block": 12925,
+          "pc": "0x001988",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x08",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5016": {
+          "type": "read",
+          "block": 12510,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5015": {
+          "type": "read",
+          "block": 12511,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        "0x5014": {
+          "type": "read",
+          "block": 12512,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5004": {
+          "type": "read",
+          "block": 11349,
+          "pc": "0x03FAA2",
+          "port": "0x5004",
+          "value": "0x11",
+          "a": "0xCC",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5005": {
+          "type": "write",
+          "block": 11366,
+          "pc": "0x048ACC",
+          "port": "0x5005",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x45",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": true
+          }
+        },
+        "0x0007": {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0007",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        "0x0009": {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0009",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        }
+      }
+    },
+    "gate0158ee": {
+      "block": 13031,
+      "target": "gate0158ee",
+      "pc": "0x0158EE",
+      "previousPc": "0x0158EC",
+      "routeFields": {
+        "D00587": 0,
+        "D0058C": 0,
+        "D0058D": 26,
+        "D0058E": 0,
+        "D00080": 0,
+        "D0009F": 0,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805591,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x0158EE",
+        "sp": "0xD1A87B",
+        "ix": "0x000000",
+        "iy": "0xD00080",
+        "a": "0xFF",
+        "f": "0x6A",
+        "af": "0xFF6A",
+        "bc": "0x000003",
+        "de": "0x000430",
+        "hl": "0x000000",
+        "flags": {
+          "s": false,
+          "z": true,
+          "h": false,
+          "pv": false,
+          "n": true,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x00"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x00"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x00"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0x28",
+        "0x08",
+        "0xFD",
+        "0xCB",
+        "0x42",
+        "0xFE",
+        "0x3E",
+        "0x01",
+        "0xB7",
+        "0xC9",
+        "0xAF",
+        "0xC9",
+        "0x22",
+        "0x95",
+        "0x05",
+        "0xD0"
+      ],
+      "recentBlocks": [
+        "0x001CE5",
+        "0x001C81",
+        "0x001C82",
+        "0x001C48",
+        "0x001C33",
+        "0x001C38",
+        "0x001C44",
+        "0x001C7D",
+        "0x001CA6",
+        "0x001CC0",
+        "0x001CCA",
+        "0x001CE4",
+        "0x001C81",
+        "0x001C82",
+        "0x001C48",
+        "0x001C33",
+        "0x001C38",
+        "0x001C44",
+        "0x001C7D",
+        "0x001CA6",
+        "0x001CC0",
+        "0x001CCA",
+        "0x001CE4",
+        "0x001C81",
+        "0x001C82",
+        "0x001C48",
+        "0x001C33",
+        "0x001C4A",
+        "0x0158D2",
+        "0x0158DA",
+        "0x0158EC",
+        "0x0158EE"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A87B",
+          "value": "0x0013DA"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A87E",
+          "value": "0x000000"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A881",
+          "value": "0x000000"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A884",
+          "value": "0x000000"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A887",
+          "value": "0x000000"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A88A",
+          "value": "0x000000"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A88D",
+          "value": "0x008000"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A890",
+          "value": "0x000000"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A893",
+          "value": "0x000000"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A896",
+          "value": "0x008000"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A899",
+          "value": "0x000000"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A89C",
+          "value": "0x000000"
+        }
+      ],
+      "returnHints": [
+        "0x0013DA",
+        "0x008000",
+        "0x008000"
+      ],
+      "ioTail": [
+        {
+          "type": "read",
+          "block": 11491,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11700,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11707,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11708,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11709,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11893,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11900,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11901,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11902,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12082,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12089,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12090,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12091,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12217,
+          "pc": "0x02B03B",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x00",
+          "f": "0x12",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": true,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12503,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12510,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12511,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12512,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0007",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0009",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12573,
+          "pc": "0x00067E",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x05",
+          "f": "0x04",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12576,
+          "pc": "0x0012E3",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x06",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12920,
+          "pc": "0x001379",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x76",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12925,
+          "pc": "0x001988",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x08",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        }
+      ],
+      "lastIoByPort": {
+        "0x0003": {
+          "type": "read",
+          "block": 12925,
+          "pc": "0x001988",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x08",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5016": {
+          "type": "read",
+          "block": 12510,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5015": {
+          "type": "read",
+          "block": 12511,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        "0x5014": {
+          "type": "read",
+          "block": 12512,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5004": {
+          "type": "read",
+          "block": 11349,
+          "pc": "0x03FAA2",
+          "port": "0x5004",
+          "value": "0x11",
+          "a": "0xCC",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5005": {
+          "type": "write",
+          "block": 11366,
+          "pc": "0x048ACC",
+          "port": "0x5005",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x45",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": true
+          }
+        },
+        "0x0007": {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0007",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        "0x0009": {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0009",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        }
+      }
+    },
+    "gate0158f8": {
+      "block": 13032,
+      "target": "gate0158f8",
+      "pc": "0x0158F8",
+      "previousPc": "0x0158EE",
+      "routeFields": {
+        "D00587": 0,
+        "D0058C": 0,
+        "D0058D": 26,
+        "D0058E": 0,
+        "D00080": 0,
+        "D0009F": 0,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805591,
+        "D0301B": 0,
+        "D177BA": 0,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x0158F8",
+        "sp": "0xD1A87B",
+        "ix": "0x000000",
+        "iy": "0xD00080",
+        "a": "0xFF",
+        "f": "0x6A",
+        "af": "0xFF6A",
+        "bc": "0x000003",
+        "de": "0x000430",
+        "hl": "0x000000",
+        "flags": {
+          "s": false,
+          "z": true,
+          "h": false,
+          "pv": false,
+          "n": true,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x00"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x00"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x00"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0xAF",
+        "0xC9",
+        "0x22",
+        "0x95",
+        "0x05",
+        "0xD0",
+        "0x24",
+        "0xCD",
+        "0xC6",
+        "0x59",
+        "0x00",
+        "0xC9",
+        "0xC5",
+        "0x11",
+        "0xFC",
+        "0x05"
+      ],
+      "recentBlocks": [
+        "0x001C81",
+        "0x001C82",
+        "0x001C48",
+        "0x001C33",
+        "0x001C38",
+        "0x001C44",
+        "0x001C7D",
+        "0x001CA6",
+        "0x001CC0",
+        "0x001CCA",
+        "0x001CE4",
+        "0x001C81",
+        "0x001C82",
+        "0x001C48",
+        "0x001C33",
+        "0x001C38",
+        "0x001C44",
+        "0x001C7D",
+        "0x001CA6",
+        "0x001CC0",
+        "0x001CCA",
+        "0x001CE4",
+        "0x001C81",
+        "0x001C82",
+        "0x001C48",
+        "0x001C33",
+        "0x001C4A",
+        "0x0158D2",
+        "0x0158DA",
+        "0x0158EC",
+        "0x0158EE",
+        "0x0158F8"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A87B",
+          "value": "0x0013DA"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A87E",
+          "value": "0x000000"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A881",
+          "value": "0x000000"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A884",
+          "value": "0x000000"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A887",
+          "value": "0x000000"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A88A",
+          "value": "0x000000"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A88D",
+          "value": "0x008000"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A890",
+          "value": "0x000000"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A893",
+          "value": "0x000000"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A896",
+          "value": "0x008000"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A899",
+          "value": "0x000000"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A89C",
+          "value": "0x000000"
+        }
+      ],
+      "returnHints": [
+        "0x0013DA",
+        "0x008000",
+        "0x008000"
+      ],
+      "ioTail": [
+        {
+          "type": "read",
+          "block": 11491,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11700,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11707,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11708,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11709,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11893,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11900,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11901,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11902,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12082,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12089,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12090,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12091,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12217,
+          "pc": "0x02B03B",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x00",
+          "f": "0x12",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": true,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12503,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12510,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12511,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12512,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0007",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0009",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12573,
+          "pc": "0x00067E",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x05",
+          "f": "0x04",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12576,
+          "pc": "0x0012E3",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x06",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12920,
+          "pc": "0x001379",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x76",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12925,
+          "pc": "0x001988",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x08",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        }
+      ],
+      "lastIoByPort": {
+        "0x0003": {
+          "type": "read",
+          "block": 12925,
+          "pc": "0x001988",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x08",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5016": {
+          "type": "read",
+          "block": 12510,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5015": {
+          "type": "read",
+          "block": 12511,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        "0x5014": {
+          "type": "read",
+          "block": 12512,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5004": {
+          "type": "read",
+          "block": 11349,
+          "pc": "0x03FAA2",
+          "port": "0x5004",
+          "value": "0x11",
+          "a": "0xCC",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5005": {
+          "type": "write",
+          "block": 11366,
+          "pc": "0x048ACC",
+          "port": "0x5005",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x45",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": true
+          }
+        },
+        "0x0007": {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0007",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        "0x0009": {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0009",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        }
+      }
+    },
+    "gate001872": {
+      "block": 13137,
+      "target": "gate001872",
+      "pc": "0x001872",
+      "previousPc": "0x0158F8",
+      "routeFields": {
+        "D00587": 0,
+        "D0058C": 0,
+        "D0058D": 26,
+        "D0058E": 0,
+        "D00080": 0,
+        "D0009F": 0,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805591,
+        "D0301B": 0,
+        "D177BA": 127,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x001872",
+        "sp": "0xD1A87B",
+        "ix": "0x000000",
+        "iy": "0xD00080",
+        "a": "0x00",
+        "f": "0x44",
+        "af": "0x0044",
+        "bc": "0x000003",
+        "de": "0x000430",
+        "hl": "0x000000",
+        "flags": {
+          "s": false,
+          "z": true,
+          "h": false,
+          "pv": true,
+          "n": false,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x00"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x00"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x00"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0xED",
+        "0x38",
+        "0x03",
+        "0xCB",
+        "0x67",
+        "0x20",
+        "0x36",
+        "0xED",
+        "0x38",
+        "0x09",
+        "0xCB",
+        "0xE7",
+        "0xED",
+        "0x39",
+        "0x09",
+        "0x21"
+      ],
+      "recentBlocks": [
+        "0x001C82",
+        "0x001C48",
+        "0x001C33",
+        "0x001C38",
+        "0x001C44",
+        "0x001C7D",
+        "0x001CA6",
+        "0x001CC0",
+        "0x001CCA",
+        "0x001CE4",
+        "0x001C81",
+        "0x001C82",
+        "0x001C48",
+        "0x001C33",
+        "0x001C38",
+        "0x001C44",
+        "0x001C7D",
+        "0x001CA6",
+        "0x001CC0",
+        "0x001CCA",
+        "0x001CE4",
+        "0x001C81",
+        "0x001C82",
+        "0x001C48",
+        "0x001C33",
+        "0x001C4A",
+        "0x0158D2",
+        "0x0158DA",
+        "0x0158EC",
+        "0x0158EE",
+        "0x0158F8",
+        "0x001872"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A87B",
+          "value": "0x0013E8"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A87E",
+          "value": "0x000000"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A881",
+          "value": "0x000000"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A884",
+          "value": "0x000000"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A887",
+          "value": "0x000000"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A88A",
+          "value": "0x000000"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A88D",
+          "value": "0x008000"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A890",
+          "value": "0x000000"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A893",
+          "value": "0x000000"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A896",
+          "value": "0x008000"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A899",
+          "value": "0x000000"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A89C",
+          "value": "0x000000"
+        }
+      ],
+      "returnHints": [
+        "0x0013E8",
+        "0x008000",
+        "0x008000"
+      ],
+      "ioTail": [
+        {
+          "type": "read",
+          "block": 11707,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11708,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11709,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11893,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11900,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11901,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11902,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12082,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12089,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12090,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12091,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12217,
+          "pc": "0x02B03B",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x00",
+          "f": "0x12",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": true,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12503,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12510,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12511,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12512,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0007",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0009",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12573,
+          "pc": "0x00067E",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x05",
+          "f": "0x04",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12576,
+          "pc": "0x0012E3",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x06",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12920,
+          "pc": "0x001379",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x76",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12925,
+          "pc": "0x001988",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x08",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 13035,
+          "pc": "0x001853",
+          "port": "0x0009",
+          "value": "0x02",
+          "a": "0x7F",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "write",
+          "block": 13035,
+          "pc": "0x001853",
+          "port": "0x0009",
+          "value": "0x42",
+          "a": "0x42",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        }
+      ],
+      "lastIoByPort": {
+        "0x0003": {
+          "type": "read",
+          "block": 12925,
+          "pc": "0x001988",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x08",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5016": {
+          "type": "read",
+          "block": 12510,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5015": {
+          "type": "read",
+          "block": 12511,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        "0x5014": {
+          "type": "read",
+          "block": 12512,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5004": {
+          "type": "read",
+          "block": 11349,
+          "pc": "0x03FAA2",
+          "port": "0x5004",
+          "value": "0x11",
+          "a": "0xCC",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5005": {
+          "type": "write",
+          "block": 11366,
+          "pc": "0x048ACC",
+          "port": "0x5005",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x45",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": true
+          }
+        },
+        "0x0007": {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0007",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        "0x0009": {
+          "type": "write",
+          "block": 13035,
+          "pc": "0x001853",
+          "port": "0x0009",
+          "value": "0x42",
+          "a": "0x42",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        }
+      }
+    },
+    "clear001879": {
+      "block": 13138,
+      "target": "clear001879",
+      "pc": "0x001879",
+      "previousPc": "0x001872",
+      "routeFields": {
+        "D00587": 0,
+        "D0058C": 0,
+        "D0058D": 26,
+        "D0058E": 0,
+        "D00080": 0,
+        "D0009F": 0,
+        "D007CA": 361961,
+        "D008E0": 13740131,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 13805591,
+        "D0301B": 0,
+        "D177BA": 127,
+        "D02A40": 0,
+        "VAT_D02590": 13893249,
+        "VAT_D0259D": 13893325
+      },
+      "cpu": {
+        "pc": "0x001879",
+        "sp": "0xD1A87B",
+        "ix": "0x000000",
+        "iy": "0xD00080",
+        "a": "0xEE",
+        "f": "0x54",
+        "af": "0xEE54",
+        "bc": "0x000003",
+        "de": "0x000430",
+        "hl": "0x000000",
+        "flags": {
+          "s": false,
+          "z": true,
+          "h": true,
+          "pv": true,
+          "n": false,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x00"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x0E"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x00"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x00"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0xED",
+        "0x38",
+        "0x09",
+        "0xCB",
+        "0xE7",
+        "0xED",
+        "0x39",
+        "0x09",
+        "0x21",
+        "0x00",
+        "0x00",
+        "0xD0",
+        "0x11",
+        "0x01",
+        "0x00",
+        "0xD0"
+      ],
+      "recentBlocks": [
+        "0x001C48",
+        "0x001C33",
+        "0x001C38",
+        "0x001C44",
+        "0x001C7D",
+        "0x001CA6",
+        "0x001CC0",
+        "0x001CCA",
+        "0x001CE4",
+        "0x001C81",
+        "0x001C82",
+        "0x001C48",
+        "0x001C33",
+        "0x001C38",
+        "0x001C44",
+        "0x001C7D",
+        "0x001CA6",
+        "0x001CC0",
+        "0x001CCA",
+        "0x001CE4",
+        "0x001C81",
+        "0x001C82",
+        "0x001C48",
+        "0x001C33",
+        "0x001C4A",
+        "0x0158D2",
+        "0x0158DA",
+        "0x0158EC",
+        "0x0158EE",
+        "0x0158F8",
+        "0x001872",
+        "0x001879"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A87B",
+          "value": "0x0013E8"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A87E",
+          "value": "0x000000"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A881",
+          "value": "0x000000"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A884",
+          "value": "0x000000"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A887",
+          "value": "0x000000"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A88A",
+          "value": "0x000000"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A88D",
+          "value": "0x008000"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A890",
+          "value": "0x000000"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A893",
+          "value": "0x000000"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A896",
+          "value": "0x008000"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A899",
+          "value": "0x000000"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A89C",
+          "value": "0x000000"
+        }
+      ],
+      "returnHints": [
+        "0x0013E8",
+        "0x008000",
+        "0x008000"
+      ],
+      "ioTail": [
+        {
+          "type": "read",
+          "block": 11708,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11709,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11893,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11900,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11901,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11902,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12082,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12089,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12090,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12091,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12217,
+          "pc": "0x02B03B",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x00",
+          "f": "0x12",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": true,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12503,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12510,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12511,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12512,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0007",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0009",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12573,
+          "pc": "0x00067E",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x05",
+          "f": "0x04",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12576,
+          "pc": "0x0012E3",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x06",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12920,
+          "pc": "0x001379",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x76",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12925,
+          "pc": "0x001988",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x08",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 13035,
+          "pc": "0x001853",
+          "port": "0x0009",
+          "value": "0x02",
+          "a": "0x7F",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "write",
+          "block": 13035,
+          "pc": "0x001853",
+          "port": "0x0009",
+          "value": "0x42",
+          "a": "0x42",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 13137,
+          "pc": "0x001872",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        }
+      ],
+      "lastIoByPort": {
+        "0x0003": {
+          "type": "read",
+          "block": 13137,
+          "pc": "0x001872",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        "0x5016": {
+          "type": "read",
+          "block": 12510,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5015": {
+          "type": "read",
+          "block": 12511,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        "0x5014": {
+          "type": "read",
+          "block": 12512,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5004": {
+          "type": "read",
+          "block": 11349,
+          "pc": "0x03FAA2",
+          "port": "0x5004",
+          "value": "0x11",
+          "a": "0xCC",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5005": {
+          "type": "write",
+          "block": 11366,
+          "pc": "0x048ACC",
+          "port": "0x5005",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x45",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": true
+          }
+        },
+        "0x0007": {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0007",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        "0x0009": {
+          "type": "write",
+          "block": 13035,
+          "pc": "0x001853",
+          "port": "0x0009",
+          "value": "0x42",
+          "a": "0x42",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        }
+      }
+    },
+    "cleanup0018f8": {
+      "block": 13139,
+      "target": "cleanup0018f8",
+      "pc": "0x0018F8",
+      "previousPc": "0x001879",
+      "routeFields": {
+        "D00587": 0,
+        "D0058C": 0,
+        "D0058D": 0,
+        "D0058E": 0,
+        "D00080": 0,
+        "D0009F": 0,
+        "D007CA": 0,
+        "D008E0": 0,
+        "D02A28": 0,
+        "D001B8": 0,
+        "D001D3": 0,
+        "D02A29": 0,
+        "D02A2B": 0,
+        "D02A1B": 0,
+        "D0059A": 0,
+        "D01150": 0,
+        "D0243D": 0,
+        "D0301B": 0,
+        "D177BA": 127,
+        "D02A40": 0,
+        "VAT_D02590": 0,
+        "VAT_D0259D": 0
+      },
+      "cpu": {
+        "pc": "0x0018F8",
+        "sp": "0xD1A87B",
+        "ix": "0x000000",
+        "iy": "0xD00080",
+        "a": "0x52",
+        "f": "0x00",
+        "af": "0x5200",
+        "bc": "0x0000FF",
+        "de": "0xD3FF00",
+        "hl": "0xD3FEFF",
+        "flags": {
+          "s": false,
+          "z": false,
+          "h": false,
+          "pv": false,
+          "n": false,
+          "c": false
+        },
+        "halted": false,
+        "madl": 1,
+        "mbase": "0xD0"
+      },
+      "iyFlags": {
+        "IY+00": {
+          "addr": "0xD00080",
+          "value": "0x00"
+        },
+        "IY+0D": {
+          "addr": "0xD0008D",
+          "value": "0x00"
+        },
+        "IY+1B": {
+          "addr": "0xD0009B",
+          "value": "0x00"
+        },
+        "IY+1F": {
+          "addr": "0xD0009F",
+          "value": "0x00"
+        },
+        "IY+23": {
+          "addr": "0xD000A3",
+          "value": "0x00"
+        },
+        "IY+27": {
+          "addr": "0xD000A7",
+          "value": "0x00"
+        },
+        "IY+28": {
+          "addr": "0xD000A8",
+          "value": "0x00"
+        },
+        "IY+2C": {
+          "addr": "0xD000AC",
+          "value": "0x00"
+        },
+        "IY+42": {
+          "addr": "0xD000C2",
+          "value": "0x00"
+        },
+        "IY+44": {
+          "addr": "0xD000C4",
+          "value": "0x00"
+        }
+      },
+      "bytesAtPc": [
+        "0x36",
+        "0x00",
+        "0xED",
+        "0xB0",
+        "0xAF",
+        "0x32",
+        "0xB7",
+        "0x77",
+        "0xD1",
+        "0x3E",
+        "0x95",
+        "0x32",
+        "0x8F",
+        "0x05",
+        "0xD0",
+        "0xCD"
+      ],
+      "recentBlocks": [
+        "0x001C33",
+        "0x001C38",
+        "0x001C44",
+        "0x001C7D",
+        "0x001CA6",
+        "0x001CC0",
+        "0x001CCA",
+        "0x001CE4",
+        "0x001C81",
+        "0x001C82",
+        "0x001C48",
+        "0x001C33",
+        "0x001C38",
+        "0x001C44",
+        "0x001C7D",
+        "0x001CA6",
+        "0x001CC0",
+        "0x001CCA",
+        "0x001CE4",
+        "0x001C81",
+        "0x001C82",
+        "0x001C48",
+        "0x001C33",
+        "0x001C4A",
+        "0x0158D2",
+        "0x0158DA",
+        "0x0158EC",
+        "0x0158EE",
+        "0x0158F8",
+        "0x001872",
+        "0x001879",
+        "0x0018F8"
+      ],
+      "stack24": [
+        {
+          "offset": 0,
+          "addr": "0xD1A87B",
+          "value": "0x0013E8"
+        },
+        {
+          "offset": 3,
+          "addr": "0xD1A87E",
+          "value": "0x000000"
+        },
+        {
+          "offset": 6,
+          "addr": "0xD1A881",
+          "value": "0x000000"
+        },
+        {
+          "offset": 9,
+          "addr": "0xD1A884",
+          "value": "0x000000"
+        },
+        {
+          "offset": 12,
+          "addr": "0xD1A887",
+          "value": "0x000000"
+        },
+        {
+          "offset": 15,
+          "addr": "0xD1A88A",
+          "value": "0x000000"
+        },
+        {
+          "offset": 18,
+          "addr": "0xD1A88D",
+          "value": "0x008000"
+        },
+        {
+          "offset": 21,
+          "addr": "0xD1A890",
+          "value": "0x000000"
+        },
+        {
+          "offset": 24,
+          "addr": "0xD1A893",
+          "value": "0x000000"
+        },
+        {
+          "offset": 27,
+          "addr": "0xD1A896",
+          "value": "0x008000"
+        },
+        {
+          "offset": 30,
+          "addr": "0xD1A899",
+          "value": "0x000000"
+        },
+        {
+          "offset": 33,
+          "addr": "0xD1A89C",
+          "value": "0x000000"
+        }
+      ],
+      "returnHints": [
+        "0x0013E8",
+        "0x008000",
+        "0x008000"
+      ],
+      "ioTail": [
+        {
+          "type": "read",
+          "block": 11893,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11900,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11901,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 11902,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12082,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12089,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12090,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12091,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12217,
+          "pc": "0x02B03B",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x00",
+          "f": "0x12",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": true,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12503,
+          "pc": "0x006816",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x02",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12510,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12511,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12512,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0007",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0009",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12573,
+          "pc": "0x00067E",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x05",
+          "f": "0x04",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12576,
+          "pc": "0x0012E3",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x06",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12920,
+          "pc": "0x001379",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x76",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 12925,
+          "pc": "0x001988",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x08",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 13035,
+          "pc": "0x001853",
+          "port": "0x0009",
+          "value": "0x02",
+          "a": "0x7F",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "write",
+          "block": 13035,
+          "pc": "0x001853",
+          "port": "0x0009",
+          "value": "0x42",
+          "a": "0x42",
+          "f": "0x00",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 13137,
+          "pc": "0x001872",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "read",
+          "block": 13138,
+          "pc": "0x001879",
+          "port": "0x0009",
+          "value": "0x42",
+          "a": "0xEE",
+          "f": "0x54",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": true,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        {
+          "type": "write",
+          "block": 13138,
+          "pc": "0x001879",
+          "port": "0x0009",
+          "value": "0x52",
+          "a": "0x52",
+          "f": "0x04",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        }
+      ],
+      "lastIoByPort": {
+        "0x0003": {
+          "type": "read",
+          "block": 13137,
+          "pc": "0x001872",
+          "port": "0x0003",
+          "value": "0xEE",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        "0x5016": {
+          "type": "read",
+          "block": 12510,
+          "pc": "0x03CF7D",
+          "port": "0x5016",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5015": {
+          "type": "read",
+          "block": 12511,
+          "pc": "0x03CFA4",
+          "port": "0x5015",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        "0x5014": {
+          "type": "read",
+          "block": 12512,
+          "pc": "0x03CFCF",
+          "port": "0x5014",
+          "value": "0x10",
+          "a": "0x00",
+          "f": "0x02",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5004": {
+          "type": "read",
+          "block": 11349,
+          "pc": "0x03FAA2",
+          "port": "0x5004",
+          "value": "0x11",
+          "a": "0xCC",
+          "f": "0x42",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": false,
+            "n": true,
+            "c": false
+          }
+        },
+        "0x5005": {
+          "type": "write",
+          "block": 11366,
+          "pc": "0x048ACC",
+          "port": "0x5005",
+          "value": "0x00",
+          "a": "0x00",
+          "f": "0x45",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": true
+          }
+        },
+        "0x0007": {
+          "type": "write",
+          "block": 12570,
+          "pc": "0x000658",
+          "port": "0x0007",
+          "value": "0x02",
+          "a": "0x02",
+          "f": "0x44",
+          "flags": {
+            "s": false,
+            "z": true,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        },
+        "0x0009": {
+          "type": "write",
+          "block": 13138,
+          "pc": "0x001879",
+          "port": "0x0009",
+          "value": "0x52",
+          "a": "0x52",
+          "f": "0x04",
+          "flags": {
+            "s": false,
+            "z": false,
+            "h": false,
+            "pv": true,
+            "n": false,
+            "c": false
+          }
+        }
+      }
+    }
+  }
+}
+```
+
