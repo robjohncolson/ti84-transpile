@@ -495,6 +495,29 @@ const TOKEN_BUFFER_B_ADDR = 0xD001D3;
 const EOL_TUPLE_SAVE_ENTRY = 0x08F54B;
 const KEY_CLEANUP_ENTRY = 0x0018F8;
 const EOL_PC_CODE = 'Escape';
+const COLDBOOT_EDIT_CURSOR_ADDR = 0xD0243A;
+const COLDBOOT_EDIT_BUFFER_BASE = 0xD1A8CC;
+const COLDBOOT_INSERT_SETTLE_BLOCKS = 1000;
+const COLDBOOT_INSERT_STOP = Symbol('coldboot-insert-stop');
+const COLDBOOT_INSERT_BYTE_BY_PC_CODE = Object.freeze({
+  Digit0: 0x30, Numpad0: 0x30,
+  Digit1: 0x31, Numpad1: 0x31,
+  Digit2: 0x32, Numpad2: 0x32,
+  Digit3: 0x33, Numpad3: 0x33,
+  Digit4: 0x34, Numpad4: 0x34,
+  Digit5: 0x35, Numpad5: 0x35,
+  Digit6: 0x36, Numpad6: 0x36,
+  Digit7: 0x37, Numpad7: 0x37,
+  Digit8: 0x38, Numpad8: 0x38,
+  Digit9: 0x39, Numpad9: 0x39,
+  Equal: 0x9E, NumpadAdd: 0x9E,
+  Minus: 0x71, NumpadSubtract: 0x71,
+  NumpadMultiply: 0x82,
+  Slash: 0x83, NumpadDivide: 0x83,
+  Period: 0x3A, NumpadDecimal: 0x3A,
+  BracketLeft: 0x10,
+  BracketRight: 0x11,
+});
 const TOKEN_BUFFER_SNAPSHOT_FIELDS = Object.freeze([
   ['D001B8', TOKEN_BUFFER_A_ADDR, 8],
   ['D001D3', TOKEN_BUFFER_B_ADDR, 8],
@@ -550,8 +573,8 @@ const GETCSC_SCAN_CODE_BY_PC_CODE = Object.freeze({
   ArrowRight: 0x03,
   ArrowUp: 0x04,
   Enter: 0x09,
-  Equal: 0x0A,
-  NumpadAdd: 0x0A,
+  Equal: 0x2A,
+  NumpadAdd: 0x2A,
   Minus: 0x0B,
   NumpadSubtract: 0x0B,
   NumpadMultiply: 0x0C,
@@ -667,6 +690,16 @@ function readMemoryFieldValue(mem, addr, len) {
   let value = 0;
   for (let i = 0; i < len; i++) value |= mem[addr + i] << (i * 8);
   return value >>> 0;
+}
+
+function getColdbootExpectedInsertByte(code) {
+  return COLDBOOT_INSERT_BYTE_BY_PC_CODE[code] ?? null;
+}
+
+function coldbootKeyInsertObserved(expectedByte, cursorBefore) {
+  if (!cpu?.memory || expectedByte == null || cursorBefore == null) return false;
+  return cpu.memory[cursorBefore] === expectedByte
+    && readMemoryFieldValue(cpu.memory, COLDBOOT_EDIT_CURSOR_ADDR, 3) === ((cursorBefore + 1) & 0xFFFFFF);
 }
 
 function captureMemoryFields(fields) {
@@ -867,6 +900,7 @@ function writeCoorMonKeyEventFromState() {
 
 function getColdbootInternalKeyCode(code, scanCode) {
   if (code === EOL_PC_CODE) return scanCode & 0xFF;
+  if (code === 'Equal' || code === 'NumpadAdd') return 0x70;
   const modifier = getKeyboardModifierIndex(cpu?.memory);
   return scanCodeToKeyCode[modifier]?.[scanCode] || (scanCode & 0xFF);
 }
@@ -2129,11 +2163,30 @@ $('btnBoot').addEventListener('click', async () => {
         prepareColdbootEventFrame();
         vramSnapshotPeak = 0;
         let blockCount = 0;
+        let lastObservedPc = lastPc;
+        let lastObservedMode = lastMode;
+        let lastObservedSteps = 0;
+        let stoppedAfterInsert = false;
+        let insertBlock = null;
+        const expectedInsertByte = getColdbootExpectedInsertByte(e.code);
+        const cursorBefore = expectedInsertByte == null || !cpu?.memory
+          ? null
+          : readMemoryFieldValue(cpu.memory, COLDBOOT_EDIT_CURSOR_ADDR, 3);
         const persistenceState = createColdbootPersistenceState();
         const opts = getColdbootRunOptions(stepCount);
-        opts.onBlock = (pc) => {
+        opts.onBlock = (pc, mode, meta, steps) => {
           observeColdbootPersistenceBlock(persistenceState, pc);
           blockCount++;
+          lastObservedPc = pc;
+          lastObservedMode = mode;
+          lastObservedSteps = steps;
+          if (insertBlock === null && coldbootKeyInsertObserved(expectedInsertByte, cursorBefore)) {
+            insertBlock = blockCount;
+          }
+          if (insertBlock !== null && blockCount - insertBlock >= COLDBOOT_INSERT_SETTLE_BLOCKS) {
+            stoppedAfterInsert = true;
+            throw COLDBOOT_INSERT_STOP;
+          }
           if (blockCount % VRAM_SNAPSHOT_SAMPLE_INTERVAL === 0) {
             const px = countVRAMPixels();
             if (px > vramSnapshotPeak) {
@@ -2142,10 +2195,21 @@ $('btnBoot').addEventListener('click', async () => {
             }
           }
         };
-        const result = executor.runFrom(lastPc, lastMode, opts);
+        let result;
+        try {
+          result = executor.runFrom(lastPc, lastMode, opts);
+        } catch (error) {
+          if (error !== COLDBOOT_INSERT_STOP) throw error;
+          result = {
+            steps: lastObservedSteps,
+            lastPc: lastObservedPc,
+            lastMode: lastObservedMode,
+            termination: 'insert_stop',
+          };
+        }
         totalSteps += result.steps;
-        lastPc = result.lastPc;
-        lastMode = result.lastMode;
+        lastPc = stoppedAfterInsert ? COLDBOOT_EVENT_LOOP_ENTRY : result.lastPc;
+        lastMode = stoppedAfterInsert ? 'adl' : result.lastMode;
         finalizeColdbootPersistenceState(persistenceState);
 
         // If VRAM was wiped (current < threshold but peak was significant), restore
@@ -2166,7 +2230,27 @@ $('btnBoot').addEventListener('click', async () => {
         if (lcd) lcd.renderFrame();
         updateKeyStateDisplay();
         updateKeyboardOverlay();
-        setStatus(`Key: ${mappedKey.label} → ${result.steps} steps (peak ${vramSnapshotPeak}px)`);
+        const inserted = insertBlock !== null && expectedInsertByte != null;
+        window.__coldbootLastKey = {
+          code: e.code,
+          label: mappedKey.label,
+          expectedInsertByte,
+          cursorBefore,
+          insertBlock,
+          stoppedAfterInsert,
+          steps: result.steps,
+          termination: result.termination,
+          wipes: persistenceState.wipeCount,
+          D0243A: cpu?.memory ? readMemoryFieldValue(cpu.memory, COLDBOOT_EDIT_CURSOR_ADDR, 3) : 0,
+          D007CA: cpu?.memory ? readMemoryFieldValue(cpu.memory, 0xD007CA, 3) : 0,
+          buffer: cpu?.memory ? Array.from(cpu.memory.slice(COLDBOOT_EDIT_BUFFER_BASE, COLDBOOT_EDIT_BUFFER_BASE + 8)) : [],
+          vramPeak: vramSnapshotPeak,
+          vramCurrent: countVRAMPixels(),
+        };
+        const insertInfo = inserted
+          ? `, insert=0x${hex(expectedInsertByte, 2)} @0x${hex(cursorBefore, 6)}`
+          : '';
+        setStatus(`Key: ${mappedKey.label} → ${result.steps} steps (${result.termination}${insertInfo}, peak ${vramSnapshotPeak}px)`);
       } else {
         runSteps(stepCount);
         flashStatus(`Key: ${mappedKey.label} → ${stepCount} steps`);
