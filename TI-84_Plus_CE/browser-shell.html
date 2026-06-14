@@ -497,6 +497,10 @@ const KEY_CLEANUP_ENTRY = 0x0018F8;
 const EOL_PC_CODE = 'Escape';
 const COLDBOOT_EDIT_CURSOR_ADDR = 0xD0243A;
 const COLDBOOT_EDIT_BUFFER_BASE = 0xD1A8CC;
+const COLDBOOT_EDIT_BUFFER_CLEAR_LEN = 0x80;
+const COLDBOOT_RENDER_ROW_ADDR = 0xD00595;
+const COLDBOOT_RENDER_COL_ADDR = 0xD00596;
+const COLDBOOT_ENTRY_LINE_ROI = Object.freeze({ x: 0, y: 34, width: 128, height: 26 });
 const COLDBOOT_INSERT_SETTLE_BLOCKS = 1000;
 const COLDBOOT_INSERT_STOP = Symbol('coldboot-insert-stop');
 const COLDBOOT_CONTROL_STOP = Symbol('coldboot-control-stop');
@@ -696,6 +700,84 @@ function readMemoryFieldValue(mem, addr, len) {
   for (let i = 0; i < len; i++) value |= mem[addr + i] << (i * 8);
   return value >>> 0;
 }
+
+function writeMemoryFieldValue(mem, addr, len, value) {
+  for (let i = 0; i < len; i++) mem[addr + i] = (value >>> (i * 8)) & 0xFF;
+}
+
+function countColdbootEntryLinePixels() {
+  if (!cpu?.memory) return 0;
+  const { x, y, width, height } = COLDBOOT_ENTRY_LINE_ROI;
+  let count = 0;
+  for (let row = y; row < y + height; row++) {
+    for (let col = x; col < x + width; col++) {
+      const off = LCD_VRAM_BASE + ((row * LCD_RENDER_WIDTH + col) << 1);
+      const word = cpu.memory[off] | (cpu.memory[off + 1] << 8);
+      if (word !== 0xFFFF) count++;
+    }
+  }
+  return count;
+}
+
+function getColdbootEditLineDiagnostics() {
+  if (!cpu?.memory) return null;
+  const mem = cpu.memory;
+  return {
+    D007CA: readMemoryFieldValue(mem, 0xD007CA, 3),
+    D008E0: readMemoryFieldValue(mem, 0xD008E0, 3),
+    D0243A: readMemoryFieldValue(mem, COLDBOOT_EDIT_CURSOR_ADDR, 3),
+    D0243D: readMemoryFieldValue(mem, 0xD0243D, 3),
+    D02590: readMemoryFieldValue(mem, 0xD02590, 3),
+    D00595: mem[COLDBOOT_RENDER_ROW_ADDR],
+    D00596: mem[COLDBOOT_RENDER_COL_ADDR],
+    buffer: Array.from(mem.slice(COLDBOOT_EDIT_BUFFER_BASE, COLDBOOT_EDIT_BUFFER_BASE + 8)),
+    entryLineRoi: {
+      ...COLDBOOT_ENTRY_LINE_ROI,
+      nonWhite: countColdbootEntryLinePixels(),
+    },
+    vramCurrent: countVRAMPixels(),
+    lastKey: window.__coldbootLastKey ?? null,
+  };
+}
+
+function whitenColdbootEntryLineRoi() {
+  if (!cpu?.memory) return;
+  const { x, y, width, height } = COLDBOOT_ENTRY_LINE_ROI;
+  for (let row = y; row < y + height; row++) {
+    for (let col = x; col < x + width; col++) {
+      const off = LCD_VRAM_BASE + ((row * LCD_RENDER_WIDTH + col) << 1);
+      cpu.memory[off] = 0xFF;
+      cpu.memory[off + 1] = 0xFF;
+    }
+  }
+}
+
+function applyColdbootUiLevelClear() {
+  if (!cpu?.memory) return { ok: false, reason: 'no-memory' };
+  const mem = cpu.memory;
+  const roiBefore = countColdbootEntryLinePixels();
+  mem.fill(0, COLDBOOT_EDIT_BUFFER_BASE, COLDBOOT_EDIT_BUFFER_BASE + COLDBOOT_EDIT_BUFFER_CLEAR_LEN);
+  writeMemoryFieldValue(mem, COLDBOOT_EDIT_CURSOR_ADDR, 3, COLDBOOT_EDIT_BUFFER_BASE);
+  mem[COLDBOOT_RENDER_ROW_ADDR] = 0;
+  mem[COLDBOOT_RENDER_COL_ADDR] = 0;
+  whitenColdbootEntryLineRoi();
+  syncLCDState();
+  if (lcd) lcd.renderFrame();
+  updateRegs();
+  return {
+    ok: true,
+    reason: 'clear-key',
+    editBase: COLDBOOT_EDIT_BUFFER_BASE,
+    clearLen: COLDBOOT_EDIT_BUFFER_CLEAR_LEN,
+    roiBefore,
+    roiAfter: countColdbootEntryLinePixels(),
+    D0243A: readMemoryFieldValue(mem, COLDBOOT_EDIT_CURSOR_ADDR, 3),
+    D00595: mem[COLDBOOT_RENDER_ROW_ADDR],
+    D00596: mem[COLDBOOT_RENDER_COL_ADDR],
+  };
+}
+window.__coldbootReadEditLineState = getColdbootEditLineDiagnostics;
+window.__coldbootApplyUiLevelClear = applyColdbootUiLevelClear;
 
 function getColdbootExpectedInsertByte(code) {
   return COLDBOOT_INSERT_BYTE_BY_PC_CODE[code] ?? null;
@@ -2180,6 +2262,7 @@ $('btnBoot').addEventListener('click', async () => {
         let insertBlock = null;
         let controlStopBlock = null;
         let controlStopPc = null;
+        let uiClearResult = null;
         const expectedInsertByte = getColdbootExpectedInsertByte(e.code);
         const controlPreStop = getColdbootControlPreStop(e.code);
         const cursorBefore = expectedInsertByte == null || !cpu?.memory
@@ -2231,6 +2314,13 @@ $('btnBoot').addEventListener('click', async () => {
         lastMode = (stoppedAfterInsert || stoppedBeforeControlClear) ? 'adl' : result.lastMode;
         finalizeColdbootPersistenceState(persistenceState);
 
+        if (stoppedBeforeControlClear && e.code === EOL_PC_CODE && controlStopPc === COLDBOOT_CONTROL_PRE_STOP_BY_PC_CODE[EOL_PC_CODE]?.pc) {
+          uiClearResult = applyColdbootUiLevelClear();
+          if (uiClearResult.ok) {
+            log(`<span class="info">CLEAR reset entry line: roi ${uiClearResult.roiBefore}->${uiClearResult.roiAfter}, cursor=0x${hex(uiClearResult.D0243A, 6)}</span>`);
+          }
+        }
+
         // If VRAM was wiped (current < threshold but peak was significant), restore
         const currentPx = countVRAMPixels();
         if (currentPx < VRAM_SNAPSHOT_THRESHOLD && vramSnapshotPeak > VRAM_SNAPSHOT_THRESHOLD && vramSnapshot) {
@@ -2260,6 +2350,8 @@ $('btnBoot').addEventListener('click', async () => {
           insertBlock,
           controlStopBlock,
           controlStopPc,
+          uiClearApplied: uiClearResult?.ok === true,
+          uiClearResult,
           stoppedAfterInsert,
           stoppedBeforeControlClear,
           steps: result.steps,
