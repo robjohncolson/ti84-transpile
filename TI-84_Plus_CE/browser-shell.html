@@ -877,6 +877,10 @@ function seedColdbootPendingKey(code, scanCode) {
   cpu.memory[KEY_PENDING_ADDR] = keyCode;
   cpu.memory[KEY_GETKEY_ADDR] = keyCode;
   cpu.memory[KEY_EVENT_BUFFER_ADDR] = keyCode;
+  // OS scan code (D00587): the key-dispatch chain reads this; without it the key
+  // routes to the bulk-clear/"Validating OS" path. The seedKey in
+  // probe-ground-truth-replay.mjs / probe-phase669 sets it (e.g. 0x1A for '2').
+  cpu.memory[0xD00587] = scanCode & 0xFF;
   cpu.memory[KEY_AVAILABLE_FLAG_ADDR] = (cpu.memory[KEY_AVAILABLE_FLAG_ADDR] | KEY_AVAILABLE_FLAG_MASK) & 0xFF;
   cpu.memory[KEY_DISPATCH_FLAGS_ADDR] |= KEY_DISPATCH_PENDING_MASK;
 }
@@ -1942,6 +1946,33 @@ function initializeColdbootRuntime() {
     vatSnapshotCaptured: Boolean(coldbootVatSnapshot),
   };
   log(`<span class="info">--- Phase 6 done: ${p6.steps} steps, ${p6.termination} at 0x${hex(p6.lastPc, 6)}; D007CA=0x${hex(evalRead24(mem, 0xD007CA), 6)}, VAT=0x${hex(evalRead24(mem, 0xD02590), 6)}, VRAM=${countVRAMPixels()}px ---</span>`);
+
+  // Edit-context seed: the cold populator (0x044D3F) never builds the home edit
+  // context, so without this typed keys route to the bulk-clear/"Validating OS"
+  // path. Seed the real layout (captured from a real CEmu, proven by
+  // probe-ground-truth-replay.mjs + probe-phase669) so keypresses deposit
+  // characters into the edit buffer instead of wiping. Run
+  // probe-browser-shell-replay-verify.mjs after editing this block.
+  (function seedColdbootEditContext() {
+    const EDIT_BASE = 0xD1A8CC, tokenCursor = 0xD2A83E;
+    evalWrite24(mem, 0xD02317, tokenCursor);
+    evalWrite24(mem, 0xD0231A, tokenCursor);
+    evalWrite24(mem, 0xD0231D, tokenCursor - 1);
+    mem.fill(0, 0xD02430, 0xD02460);
+    evalWrite24(mem, 0xD02437, EDIT_BASE);
+    evalWrite24(mem, 0xD0243A, EDIT_BASE);
+    evalWrite24(mem, 0xD0243D, tokenCursor);
+    evalWrite24(mem, 0xD02440, tokenCursor);
+    evalWrite24(mem, 0xD0244D, 0xD3FE89);
+    mem[0xD02455] = 0x07;
+    mem[0xD0245D] = 0x01;
+    mem[0xD000A3] = 0x0A;
+    evalWrite24(mem, 0xD02A40, tokenCursor);
+    mem[0xD02A29] = 0; mem[0xD02A2A] = 0;
+    mem.fill(0, EDIT_BASE, EDIT_BASE + 0x80);
+    mem[0xD1A8C0] = 0x0C; mem[0xD1A8C1] = 0x00; mem[0xD1A8C2] = 0x07;
+  })();
+  log(`<span class="info">--- Edit context seeded (cursor=0xD1A8CC, ready for typed input) ---</span>`);
 
   lastPc = COLDBOOT_EVENT_LOOP_ENTRY;
   lastMode = 'adl';
