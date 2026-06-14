@@ -499,6 +499,7 @@ const COLDBOOT_EDIT_CURSOR_ADDR = 0xD0243A;
 const COLDBOOT_EDIT_BUFFER_BASE = 0xD1A8CC;
 const COLDBOOT_INSERT_SETTLE_BLOCKS = 1000;
 const COLDBOOT_INSERT_STOP = Symbol('coldboot-insert-stop');
+const COLDBOOT_CONTROL_STOP = Symbol('coldboot-control-stop');
 const COLDBOOT_INSERT_BYTE_BY_PC_CODE = Object.freeze({
   Digit0: 0x30, Numpad0: 0x30,
   Digit1: 0x31, Numpad1: 0x31,
@@ -517,6 +518,10 @@ const COLDBOOT_INSERT_BYTE_BY_PC_CODE = Object.freeze({
   Period: 0x3A, NumpadDecimal: 0x3A,
   BracketLeft: 0x10,
   BracketRight: 0x11,
+});
+const COLDBOOT_CONTROL_PRE_STOP_BY_PC_CODE = Object.freeze({
+  Enter: { pc: 0x0A2150, label: 'enter-context-ldir' },
+  Escape: { pc: 0x001879, label: 'clear-bulk-clear-body' },
 });
 const TOKEN_BUFFER_SNAPSHOT_FIELDS = Object.freeze([
   ['D001B8', TOKEN_BUFFER_A_ADDR, 8],
@@ -694,6 +699,10 @@ function readMemoryFieldValue(mem, addr, len) {
 
 function getColdbootExpectedInsertByte(code) {
   return COLDBOOT_INSERT_BYTE_BY_PC_CODE[code] ?? null;
+}
+
+function getColdbootControlPreStop(code) {
+  return COLDBOOT_CONTROL_PRE_STOP_BY_PC_CODE[code] ?? null;
 }
 
 function coldbootKeyInsertObserved(expectedByte, cursorBefore) {
@@ -2167,8 +2176,12 @@ $('btnBoot').addEventListener('click', async () => {
         let lastObservedMode = lastMode;
         let lastObservedSteps = 0;
         let stoppedAfterInsert = false;
+        let stoppedBeforeControlClear = false;
         let insertBlock = null;
+        let controlStopBlock = null;
+        let controlStopPc = null;
         const expectedInsertByte = getColdbootExpectedInsertByte(e.code);
+        const controlPreStop = getColdbootControlPreStop(e.code);
         const cursorBefore = expectedInsertByte == null || !cpu?.memory
           ? null
           : readMemoryFieldValue(cpu.memory, COLDBOOT_EDIT_CURSOR_ADDR, 3);
@@ -2180,6 +2193,12 @@ $('btnBoot').addEventListener('click', async () => {
           lastObservedPc = pc;
           lastObservedMode = mode;
           lastObservedSteps = steps;
+          if (controlPreStop && (pc & 0xFFFFFF) === controlPreStop.pc) {
+            controlStopBlock = blockCount;
+            controlStopPc = pc & 0xFFFFFF;
+            stoppedBeforeControlClear = true;
+            throw COLDBOOT_CONTROL_STOP;
+          }
           if (insertBlock === null && coldbootKeyInsertObserved(expectedInsertByte, cursorBefore)) {
             insertBlock = blockCount;
           }
@@ -2199,17 +2218,17 @@ $('btnBoot').addEventListener('click', async () => {
         try {
           result = executor.runFrom(lastPc, lastMode, opts);
         } catch (error) {
-          if (error !== COLDBOOT_INSERT_STOP) throw error;
+          if (error !== COLDBOOT_INSERT_STOP && error !== COLDBOOT_CONTROL_STOP) throw error;
           result = {
             steps: lastObservedSteps,
             lastPc: lastObservedPc,
             lastMode: lastObservedMode,
-            termination: 'insert_stop',
+            termination: error === COLDBOOT_CONTROL_STOP ? 'control_pre_stop' : 'insert_stop',
           };
         }
         totalSteps += result.steps;
-        lastPc = stoppedAfterInsert ? COLDBOOT_EVENT_LOOP_ENTRY : result.lastPc;
-        lastMode = stoppedAfterInsert ? 'adl' : result.lastMode;
+        lastPc = (stoppedAfterInsert || stoppedBeforeControlClear) ? COLDBOOT_EVENT_LOOP_ENTRY : result.lastPc;
+        lastMode = (stoppedAfterInsert || stoppedBeforeControlClear) ? 'adl' : result.lastMode;
         finalizeColdbootPersistenceState(persistenceState);
 
         // If VRAM was wiped (current < threshold but peak was significant), restore
@@ -2235,14 +2254,22 @@ $('btnBoot').addEventListener('click', async () => {
           code: e.code,
           label: mappedKey.label,
           expectedInsertByte,
+          controlPreStopPc: controlPreStop?.pc ?? null,
+          controlPreStopLabel: controlPreStop?.label ?? null,
           cursorBefore,
           insertBlock,
+          controlStopBlock,
+          controlStopPc,
           stoppedAfterInsert,
+          stoppedBeforeControlClear,
           steps: result.steps,
           termination: result.termination,
           wipes: persistenceState.wipeCount,
           D0243A: cpu?.memory ? readMemoryFieldValue(cpu.memory, COLDBOOT_EDIT_CURSOR_ADDR, 3) : 0,
+          D0243D: cpu?.memory ? readMemoryFieldValue(cpu.memory, 0xD0243D, 3) : 0,
           D007CA: cpu?.memory ? readMemoryFieldValue(cpu.memory, 0xD007CA, 3) : 0,
+          D008E0: cpu?.memory ? readMemoryFieldValue(cpu.memory, 0xD008E0, 3) : 0,
+          D02590: cpu?.memory ? readMemoryFieldValue(cpu.memory, 0xD02590, 3) : 0,
           buffer: cpu?.memory ? Array.from(cpu.memory.slice(COLDBOOT_EDIT_BUFFER_BASE, COLDBOOT_EDIT_BUFFER_BASE + 8)) : [],
           vramPeak: vramSnapshotPeak,
           vramCurrent: countVRAMPixels(),
