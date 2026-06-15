@@ -501,8 +501,11 @@ const COLDBOOT_EDIT_BUFFER_CLEAR_LEN = 0x80;
 const COLDBOOT_RENDER_ROW_ADDR = 0xD00595;
 const COLDBOOT_RENDER_COL_ADDR = 0xD00596;
 const COLDBOOT_ENTRY_LINE_ROI = Object.freeze({ x: 0, y: 34, width: 128, height: 26 });
-const COLDBOOT_INSERT_SETTLE_BLOCKS = 1000;
-const COLDBOOT_INSERT_STOP = Symbol('coldboot-insert-stop');
+const COLDBOOT_D000C2_ADDR = 0xD000C2;
+const COLDBOOT_D000C2_BIT7_MASK = 0x80;
+const COLDBOOT_POST_INSERT_GATE_ENTRY = 0x0158DE;
+const COLDBOOT_POST_INSERT_GATE_RETURN = 0x0013DA;
+const COLDBOOT_POST_INSERT_GATE_STOP = Symbol('coldboot-post-insert-gate-stop');
 const COLDBOOT_CONTROL_STOP = Symbol('coldboot-control-stop');
 const COLDBOOT_INSERT_BYTE_BY_PC_CODE = Object.freeze({
   Digit0: 0x30, Numpad0: 0x30,
@@ -2257,9 +2260,12 @@ $('btnBoot').addEventListener('click', async () => {
         let lastObservedPc = lastPc;
         let lastObservedMode = lastMode;
         let lastObservedSteps = 0;
-        let stoppedAfterInsert = false;
+        let stoppedAtPostInsertGate = false;
         let stoppedBeforeControlClear = false;
         let insertBlock = null;
+        let postInsertGateBlock = null;
+        let previousD000C2Bit7 = null;
+        let D000C2Bit7Restored = false;
         let controlStopBlock = null;
         let controlStopPc = null;
         let uiClearResult = null;
@@ -2284,10 +2290,19 @@ $('btnBoot').addEventListener('click', async () => {
           }
           if (insertBlock === null && coldbootKeyInsertObserved(expectedInsertByte, cursorBefore)) {
             insertBlock = blockCount;
+            peripherals?.clearKeyPressed?.(cpu?.memory);
           }
-          if (insertBlock !== null && blockCount - insertBlock >= COLDBOOT_INSERT_SETTLE_BLOCKS) {
-            stoppedAfterInsert = true;
-            throw COLDBOOT_INSERT_STOP;
+          if (insertBlock !== null
+              && expectedInsertByte != null
+              && (pc & 0xFFFFFF) === COLDBOOT_POST_INSERT_GATE_ENTRY
+              && postInsertGateBlock === null) {
+            previousD000C2Bit7 = cpu.memory[COLDBOOT_D000C2_ADDR] & COLDBOOT_D000C2_BIT7_MASK;
+            cpu.memory[COLDBOOT_D000C2_ADDR] |= COLDBOOT_D000C2_BIT7_MASK;
+            postInsertGateBlock = blockCount;
+          }
+          if (postInsertGateBlock !== null && (pc & 0xFFFFFF) === COLDBOOT_POST_INSERT_GATE_RETURN) {
+            stoppedAtPostInsertGate = true;
+            throw COLDBOOT_POST_INSERT_GATE_STOP;
           }
           if (blockCount % VRAM_SNAPSHOT_SAMPLE_INTERVAL === 0) {
             const px = countVRAMPixels();
@@ -2301,17 +2316,23 @@ $('btnBoot').addEventListener('click', async () => {
         try {
           result = executor.runFrom(lastPc, lastMode, opts);
         } catch (error) {
-          if (error !== COLDBOOT_INSERT_STOP && error !== COLDBOOT_CONTROL_STOP) throw error;
+          if (error !== COLDBOOT_POST_INSERT_GATE_STOP && error !== COLDBOOT_CONTROL_STOP) throw error;
           result = {
             steps: lastObservedSteps,
             lastPc: lastObservedPc,
             lastMode: lastObservedMode,
-            termination: error === COLDBOOT_CONTROL_STOP ? 'control_pre_stop' : 'insert_stop',
+            termination: error === COLDBOOT_CONTROL_STOP
+              ? 'control_pre_stop'
+              : 'post_insert_gate_stop',
           };
         }
         totalSteps += result.steps;
-        lastPc = (stoppedAfterInsert || stoppedBeforeControlClear) ? COLDBOOT_EVENT_LOOP_ENTRY : result.lastPc;
-        lastMode = (stoppedAfterInsert || stoppedBeforeControlClear) ? 'adl' : result.lastMode;
+        lastPc = (stoppedAtPostInsertGate || stoppedBeforeControlClear) ? COLDBOOT_EVENT_LOOP_ENTRY : result.lastPc;
+        lastMode = (stoppedAtPostInsertGate || stoppedBeforeControlClear) ? 'adl' : result.lastMode;
+        if (postInsertGateBlock !== null && previousD000C2Bit7 != null && cpu?.memory) {
+          cpu.memory[COLDBOOT_D000C2_ADDR] = (cpu.memory[COLDBOOT_D000C2_ADDR] & ~COLDBOOT_D000C2_BIT7_MASK) | previousD000C2Bit7;
+          D000C2Bit7Restored = true;
+        }
         finalizeColdbootPersistenceState(persistenceState);
 
         if (stoppedBeforeControlClear && e.code === EOL_PC_CODE && controlStopPc === COLDBOOT_CONTROL_PRE_STOP_BY_PC_CODE[EOL_PC_CODE]?.pc) {
@@ -2348,11 +2369,13 @@ $('btnBoot').addEventListener('click', async () => {
           controlPreStopLabel: controlPreStop?.label ?? null,
           cursorBefore,
           insertBlock,
+          postInsertGateBlock,
+          stoppedAtPostInsertGate,
+          D000C2Bit7Restored,
           controlStopBlock,
           controlStopPc,
           uiClearApplied: uiClearResult?.ok === true,
           uiClearResult,
-          stoppedAfterInsert,
           stoppedBeforeControlClear,
           steps: result.steps,
           termination: result.termination,
@@ -2362,6 +2385,7 @@ $('btnBoot').addEventListener('click', async () => {
           D007CA: cpu?.memory ? readMemoryFieldValue(cpu.memory, 0xD007CA, 3) : 0,
           D008E0: cpu?.memory ? readMemoryFieldValue(cpu.memory, 0xD008E0, 3) : 0,
           D02590: cpu?.memory ? readMemoryFieldValue(cpu.memory, 0xD02590, 3) : 0,
+          D000C2: cpu?.memory ? cpu.memory[COLDBOOT_D000C2_ADDR] : 0,
           buffer: cpu?.memory ? Array.from(cpu.memory.slice(COLDBOOT_EDIT_BUFFER_BASE, COLDBOOT_EDIT_BUFFER_BASE + 8)) : [],
           vramPeak: vramSnapshotPeak,
           vramCurrent: countVRAMPixels(),
