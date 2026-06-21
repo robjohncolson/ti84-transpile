@@ -530,6 +530,7 @@ const COLDBOOT_INSERT_BYTE_BY_PC_CODE = Object.freeze({
 });
 const COLDBOOT_CONTROL_PRE_STOP_BY_PC_CODE = Object.freeze({
   ArrowDown: { pc: 0x001879, label: 'arrow-down-prewipe-vector-restore-stop' },
+  ArrowLeft: { pc: 0x001879, label: 'arrow-left-prewipe-vector-restore-stop' },
   ArrowUp: { pc: 0x0A229D, label: 'arrow-up-space-fill-bc-zero-owner' },
   Enter: { pc: 0x0A2150, label: 'enter-context-ldir' },
   Escape: { pc: 0x0A229D, label: 'clear-eol-bc-zero-owner' },
@@ -795,6 +796,14 @@ function getColdbootExpectedInsertByte(code) {
 
 function getColdbootControlPreStop(code) {
   return COLDBOOT_CONTROL_PRE_STOP_BY_PC_CODE[code] ?? null;
+}
+
+function shouldRestoreColdbootContextVector(code) {
+  return code === 'ArrowDown' || code === 'ArrowLeft';
+}
+
+function shouldRestoreColdbootEditCursorAtControlStop(code, controlPreStop) {
+  return code === 'ArrowLeft' && controlPreStop?.pc === 0x001879;
 }
 
 function coldbootKeyInsertObserved(expectedByte, cursorBefore) {
@@ -2280,13 +2289,17 @@ $('btnBoot').addEventListener('click', async () => {
         let contextVectorRestorePc = null;
         let contextVectorD007CABefore = null;
         let contextVectorD007CAAfter = null;
+        let controlStopCursorBefore = null;
+        let controlStopCursorAfter = null;
+        let controlStopCursorRestored = false;
         const expectedInsertByte = getColdbootExpectedInsertByte(e.code);
         const controlPreStop = getColdbootControlPreStop(e.code);
-        const shouldRestoreContextVector = e.code === 'ArrowDown';
+        const shouldRestoreContextVector = shouldRestoreColdbootContextVector(e.code);
+        const shouldRestoreControlStopCursor = shouldRestoreColdbootEditCursorAtControlStop(e.code, controlPreStop);
         const contextVectorSnapshot = shouldRestoreContextVector
           ? captureMemoryFields(COLDBOOT_CONTEXT_VECTOR_SNAPSHOT_FIELDS)
           : null;
-        const cursorBefore = expectedInsertByte == null || !cpu?.memory
+        const cursorBefore = (expectedInsertByte == null && !shouldRestoreControlStopCursor) || !cpu?.memory
           ? null
           : readMemoryFieldValue(cpu.memory, COLDBOOT_EDIT_CURSOR_ADDR, 3);
         const persistenceState = createColdbootPersistenceState();
@@ -2312,6 +2325,12 @@ $('btnBoot').addEventListener('click', async () => {
             controlStopBlock = blockCount;
             controlStopPc = pc & 0xFFFFFF;
             stoppedBeforeControlClear = true;
+            if (shouldRestoreControlStopCursor && cursorBefore != null && cpu?.memory) {
+              controlStopCursorBefore = readMemoryFieldValue(cpu.memory, COLDBOOT_EDIT_CURSOR_ADDR, 3);
+              writeMemoryFieldValue(cpu.memory, COLDBOOT_EDIT_CURSOR_ADDR, 3, cursorBefore);
+              controlStopCursorAfter = readMemoryFieldValue(cpu.memory, COLDBOOT_EDIT_CURSOR_ADDR, 3);
+              controlStopCursorRestored = controlStopCursorAfter === cursorBefore;
+            }
             throw COLDBOOT_CONTROL_STOP;
           }
           if (insertBlock === null && coldbootKeyInsertObserved(expectedInsertByte, cursorBefore)) {
@@ -2381,7 +2400,10 @@ $('btnBoot').addEventListener('click', async () => {
           log(`<span class="info">EOL tuple restored: D02A29=0x${hex(getSnapshotFieldValue(persistenceState.tupleSnapshot, 'D02A29'), 4)}, wipes=${persistenceState.wipeCount}</span>`);
         }
         if (contextVectorRestoreBlock !== null) {
-          log(`<span class="info">ArrowDown context vector restored at 0x${hex(contextVectorRestorePc, 6)}: D007CA 0x${hex(contextVectorD007CABefore, 6)}->0x${hex(contextVectorD007CAAfter, 6)}</span>`);
+          log(`<span class="info">${mappedKey.label} context vector restored at 0x${hex(contextVectorRestorePc, 6)}: D007CA 0x${hex(contextVectorD007CABefore, 6)}->0x${hex(contextVectorD007CAAfter, 6)}</span>`);
+        }
+        if (controlStopCursorRestored) {
+          log(`<span class="info">${mappedKey.label} cursor restored at control stop: D0243A 0x${hex(controlStopCursorBefore, 6)}->0x${hex(controlStopCursorAfter, 6)}</span>`);
         }
 
         updateRegs();
@@ -2403,6 +2425,9 @@ $('btnBoot').addEventListener('click', async () => {
           D000C2Bit7Restored,
           controlStopBlock,
           controlStopPc,
+          controlStopCursorBefore,
+          controlStopCursorAfter,
+          controlStopCursorRestored,
           uiClearApplied: uiClearResult?.ok === true,
           uiClearResult,
           stoppedBeforeControlClear,
