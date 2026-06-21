@@ -507,6 +507,8 @@ const COLDBOOT_POST_INSERT_GATE_ENTRY = 0x0158DE;
 const COLDBOOT_POST_INSERT_GATE_RETURN = 0x0013DA;
 const COLDBOOT_POST_INSERT_GATE_STOP = Symbol('coldboot-post-insert-gate-stop');
 const COLDBOOT_CONTROL_STOP = Symbol('coldboot-control-stop');
+const COLDBOOT_CONTEXT_VECTOR_BYTES = 21;
+const COLDBOOT_ARROW_DOWN_VECTOR_RESTORE_PC = 0x06C764;
 const COLDBOOT_INSERT_BYTE_BY_PC_CODE = Object.freeze({
   Digit0: 0x30, Numpad0: 0x30,
   Digit1: 0x31, Numpad1: 0x31,
@@ -527,6 +529,7 @@ const COLDBOOT_INSERT_BYTE_BY_PC_CODE = Object.freeze({
   BracketRight: 0x11,
 });
 const COLDBOOT_CONTROL_PRE_STOP_BY_PC_CODE = Object.freeze({
+  ArrowDown: { pc: 0x001879, label: 'arrow-down-prewipe-vector-restore-stop' },
   ArrowUp: { pc: 0x0A229D, label: 'arrow-up-space-fill-bc-zero-owner' },
   Enter: { pc: 0x0A2150, label: 'enter-context-ldir' },
   Escape: { pc: 0x0A229D, label: 'clear-eol-bc-zero-owner' },
@@ -544,6 +547,9 @@ const EOL_TUPLE_SNAPSHOT_FIELDS = Object.freeze([
   ['D0243D', 0xD0243D, 3],
   ['D02A40', 0xD02A40, 3],
   ['D02A28', TOKEN_OUTPUT_GATE_ADDR, 1],
+]);
+const COLDBOOT_CONTEXT_VECTOR_SNAPSHOT_FIELDS = Object.freeze([
+  ['D007CA_CONTEXT_VECTOR', COORMON_CXMAIN_ADDR, COLDBOOT_CONTEXT_VECTOR_BYTES],
 ]);
 const ROM_FONT_BASE = 0x003D6E;
 const ROM_FONT_GLYPH_BYTES = 0x1C;
@@ -2270,8 +2276,16 @@ $('btnBoot').addEventListener('click', async () => {
         let controlStopBlock = null;
         let controlStopPc = null;
         let uiClearResult = null;
+        let contextVectorRestoreBlock = null;
+        let contextVectorRestorePc = null;
+        let contextVectorD007CABefore = null;
+        let contextVectorD007CAAfter = null;
         const expectedInsertByte = getColdbootExpectedInsertByte(e.code);
         const controlPreStop = getColdbootControlPreStop(e.code);
+        const shouldRestoreContextVector = e.code === 'ArrowDown';
+        const contextVectorSnapshot = shouldRestoreContextVector
+          ? captureMemoryFields(COLDBOOT_CONTEXT_VECTOR_SNAPSHOT_FIELDS)
+          : null;
         const cursorBefore = expectedInsertByte == null || !cpu?.memory
           ? null
           : readMemoryFieldValue(cpu.memory, COLDBOOT_EDIT_CURSOR_ADDR, 3);
@@ -2283,6 +2297,17 @@ $('btnBoot').addEventListener('click', async () => {
           lastObservedPc = pc;
           lastObservedMode = mode;
           lastObservedSteps = steps;
+          if (shouldRestoreContextVector
+              && contextVectorSnapshot
+              && contextVectorRestoreBlock === null
+              && (pc & 0xFFFFFF) === COLDBOOT_ARROW_DOWN_VECTOR_RESTORE_PC) {
+            contextVectorD007CABefore = readMemoryFieldValue(cpu.memory, COORMON_CXMAIN_ADDR, 3);
+            if (restoreMemoryFields(contextVectorSnapshot)) {
+              contextVectorRestoreBlock = blockCount;
+              contextVectorRestorePc = pc & 0xFFFFFF;
+              contextVectorD007CAAfter = readMemoryFieldValue(cpu.memory, COORMON_CXMAIN_ADDR, 3);
+            }
+          }
           if (controlPreStop && (pc & 0xFFFFFF) === controlPreStop.pc) {
             controlStopBlock = blockCount;
             controlStopPc = pc & 0xFFFFFF;
@@ -2355,6 +2380,9 @@ $('btnBoot').addEventListener('click', async () => {
         if (persistenceState.tupleRestored) {
           log(`<span class="info">EOL tuple restored: D02A29=0x${hex(getSnapshotFieldValue(persistenceState.tupleSnapshot, 'D02A29'), 4)}, wipes=${persistenceState.wipeCount}</span>`);
         }
+        if (contextVectorRestoreBlock !== null) {
+          log(`<span class="info">ArrowDown context vector restored at 0x${hex(contextVectorRestorePc, 6)}: D007CA 0x${hex(contextVectorD007CABefore, 6)}->0x${hex(contextVectorD007CAAfter, 6)}</span>`);
+        }
 
         updateRegs();
         syncLCDState();
@@ -2378,6 +2406,12 @@ $('btnBoot').addEventListener('click', async () => {
           uiClearApplied: uiClearResult?.ok === true,
           uiClearResult,
           stoppedBeforeControlClear,
+          contextVectorRestoreEnabled: shouldRestoreContextVector,
+          contextVectorRestored: contextVectorRestoreBlock !== null,
+          contextVectorRestoreBlock,
+          contextVectorRestorePc,
+          contextVectorD007CABefore,
+          contextVectorD007CAAfter,
           steps: result.steps,
           termination: result.termination,
           wipes: persistenceState.wipeCount,
