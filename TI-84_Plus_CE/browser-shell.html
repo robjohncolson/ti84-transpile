@@ -556,9 +556,14 @@ const COLDBOOT_CONTROL_PRE_STOP_BY_PC_CODE = Object.freeze({
   F3: { pc: 0x001879, label: 'f3-prewipe-stop' },
   Tab: { pc: 0x001879, label: 'tab-prewipe-stop' },
   Backspace: { pc: 0x001879, label: 'backspace-prewipe-stop' },
-  // F4 (TRACE), F5 (GRAPH), Home (MODE) run away WITHOUT reaching 0x001879
-  //   (max_steps, wipes=0) — the pre-stop never fires, so they need a different
-  //   wipe owner; left unpatched pending diagnosis.
+  // F4 (TRACE), F5 (GRAPH), Home (MODE) do NOT reach 0x001879 (wipes=0): they
+  //   hang in the glyph/blit render engine. Traced (phase819-821): F4/F5 spin in
+  //   the 0x0A255F<->0x0A2588 render loop; Home spins in the 0x09EFDE blit loop.
+  //   State is preserved (no wipe), so a code-keyed stop at the render-loop head
+  //   bounds the hang with state intact.
+  F4: { pc: 0x0A255F, label: 'f4-render-hang-stop' },
+  F5: { pc: 0x0A255F, label: 'f5-render-hang-stop' },
+  Home: { pc: 0x09EFDE, label: 'home-blit-hang-stop' },
   // F1 (Y=), F2 (WINDOW) hit a missing/un-lifted ROM block (transpiler coverage
   //   gap) — not a pre-stop problem; need a transpiler seed.
 });
