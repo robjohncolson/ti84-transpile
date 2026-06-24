@@ -552,6 +552,15 @@ const COLDBOOT_CONTROL_PRE_STOP_BY_PC_CODE = Object.freeze({
   KeyQ: { pc: 0x001879, label: 'keyq-prewipe-stop' },
   KeyI: { pc: 0x001879, label: 'keyi-prewipe-stop' },
   KeyM: { pc: 0x001879, label: 'keym-prewipe-stop' },
+  CapsLock: { pc: 0x001879, label: 'capslock-prewipe-stop' },
+  F3: { pc: 0x001879, label: 'f3-prewipe-stop' },
+  Tab: { pc: 0x001879, label: 'tab-prewipe-stop' },
+  Backspace: { pc: 0x001879, label: 'backspace-prewipe-stop' },
+  // F4 (TRACE), F5 (GRAPH), Home (MODE) run away WITHOUT reaching 0x001879
+  //   (max_steps, wipes=0) — the pre-stop never fires, so they need a different
+  //   wipe owner; left unpatched pending diagnosis.
+  // F1 (Y=), F2 (WINDOW) hit a missing/un-lifted ROM block (transpiler coverage
+  //   gap) — not a pre-stop problem; need a transpiler seed.
 });
 const TOKEN_BUFFER_SNAPSHOT_FIELDS = Object.freeze([
   ['D001B8', TOKEN_BUFFER_A_ADDR, 8],
