@@ -564,8 +564,12 @@ const COLDBOOT_CONTROL_PRE_STOP_BY_PC_CODE = Object.freeze({
   F4: { pc: 0x0A255F, label: 'f4-render-hang-stop' },
   F5: { pc: 0x0A255F, label: 'f5-render-hang-stop' },
   Home: { pc: 0x09EFDE, label: 'home-blit-hang-stop' },
-  // F1 (Y=), F2 (WINDOW) hit a missing/un-lifted ROM block (transpiler coverage
-  //   gap) — not a pre-stop problem; need a transpiler seed.
+  // F1 (Y=), F2 (WINDOW): the "missing_block 0x202020" is NOT a transpiler gap —
+  //   0x202020 is the space-fill garbage tail (0x20 = space byte). Traced
+  //   (phase825/826): F1/F2 reach the SAME 0x0A229D space-fill BC-zero owner as
+  //   ArrowUp/Escape, then jump to 0x202020. Same fix as ArrowUp: stop at 0x0A229D.
+  F1: { pc: 0x0A229D, label: 'f1-space-fill-stop' },
+  F2: { pc: 0x0A229D, label: 'f2-space-fill-stop' },
 });
 const TOKEN_BUFFER_SNAPSHOT_FIELDS = Object.freeze([
   ['D001B8', TOKEN_BUFFER_A_ADDR, 8],
