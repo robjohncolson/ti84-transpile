@@ -1,0 +1,33 @@
+# GitNexus index scope for ti84-transpile.
+#
+# Keep the hand-written eZ80 engine + tooling; drop generated artifacts and the
+# disposable research scaffolding (2,154 one-off probes + 749 phase reports) that
+# inflated the graph to ~183K nodes and broke the LadybugDB checkpoint.
+#
+# .gitignore is already honored by GitNexus (ROM.transpiled.js, logs/,
+# state/cross-agent/ are skipped via it), so this file only adds what git still
+# tracks. To pull a specific probe back into the index, add a negation, e.g.
+#   !TI-84_Plus_CE/probe-phase99d-home-verify.mjs
+
+# --- Disposable research scripts: one-off probes (2,154 files) ---
+TI-84_Plus_CE/probe-*.mjs
+
+# --- Generated phase reports (749 files); keep the hand-written specs ---
+TI-84_Plus_CE/phase*.md
+!TI-84_Plus_CE/PHASE25_SPEC.md
+!TI-84_Plus_CE/PHASE25G_SPEC.md
+!TI-84_Plus_CE/AUTO_FRONTIER_SPEC.md
+
+# --- The 2.7 MB rolling handoff doc (full history lives in git) ---
+CONTINUATION_PROMPT_CODEX.md
+
+# --- Binary / generated artifacts (also size-skipped; listed for clarity) ---
+TI-84_Plus_CE/ROM.rom
+TI-84_Plus_CE/ROM.transpiled.js.gz
+*.rom
+*.gz
+
+# --- Runtime state + trace logs (state/cross-agent already gitignored) ---
+state/
+*.log
+*.stderr.txt

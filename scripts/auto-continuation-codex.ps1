@@ -174,6 +174,16 @@ try {
             & git commit -F $msgFile 2>&1 | ForEach-Object { Write-Log "git: $_" }
             Remove-Item $msgFile -Force -ErrorAction SilentlyContinue
             & git push origin master 2>&1 | ForEach-Object { Write-Log "git push: $_" }
+
+            # Refresh the GitNexus code-intelligence index in the background.
+            # Non-blocking + lock-guarded (see scripts/gitnexus-refresh.mjs); a
+            # no-op on most ticks since the churn is excluded probes/reports.
+            try {
+                & node (Join-Path $ProjectDir 'scripts\gitnexus-refresh.mjs') --now 2>&1 |
+                    ForEach-Object { Write-Log "gitnexus: $_" }
+                Write-Log 'gitnexus: background index refresh requested'
+            }
+            catch { Write-Log "gitnexus: refresh launch failed: $_" }
         }
         else {
             Write-Log 'git: no changes to commit'
