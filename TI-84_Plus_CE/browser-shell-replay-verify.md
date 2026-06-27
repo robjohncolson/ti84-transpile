@@ -19,7 +19,7 @@ repaint halt cleanly instead of running away in the `0x084711` VAT search.
 {
   "probe": "browser-shell-replay-verify",
   "chromePath": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-  "pageUrl": "http://127.0.0.1:49406/browser-shell.html",
+  "pageUrl": "http://127.0.0.1:60131/browser-shell.html",
   "pass": true,
   "phase6": {
     "steps": 49474,

@@ -2085,16 +2085,33 @@ function initializeColdbootRuntime() {
   evalWrite24(mem, cpu.sp, COLDBOOT_WARM_IDLE_ENTRY);
   evalWrite24(mem, 0xD008E0, cpu.sp);
   log(`<span class="info">--- Coldboot Phase 5: Launch-home init (0x${hex(COLDBOOT_LAUNCH_HOME_INIT, 6)}, 300K step cap) ---</span>`);
-  // VAT/context replay: the OS bulk-clear at 0x001879 zeroes the VAT pointers
-  // partway through Phase 5. Capture them at the first pre-clear hit and replay
-  // them before the Phase 6 repaint, otherwise the symbol-table search at
-  // 0x084711 walks zeroed bounds and runs away (the old browser max-step bug).
+  // Stable field replay: the OS bulk-clear at 0x001879 zeroes the VAT pointers
+  // and the D02505 display-window lifecycle byte partway through Phase 5.
+  // Capture them at the first pre-clear hit and replay them before the Phase 6
+  // repaint, otherwise the symbol-table/search and CLEAR paths use zeroed state.
   // Proven by probe-phase655-browser-vat-replay.mjs; regression-guarded by
   // probe-browser-shell-replay-verify.mjs (run it after any edit here).
-  const COLDBOOT_VAT_FIELDS = [
-    0xD007CA, 0xD008E0, 0xD02587, 0xD0258A, 0xD0258D, 0xD02590,
-    0xD02593, 0xD0259A, 0xD0259D, 0xD025A0, 0xD025C5,
+  const COLDBOOT_STABLE_REPLAY_FIELDS = [
+    ['D007CA', 0xD007CA, 3],
+    ['D008E0', 0xD008E0, 3],
+    ['D02505', 0xD02505, 1],
+    ['D02587', 0xD02587, 3],
+    ['D0258A', 0xD0258A, 3],
+    ['D0258D', 0xD0258D, 3],
+    ['D02590', 0xD02590, 3],
+    ['D02593', 0xD02593, 3],
+    ['D0259A', 0xD0259A, 3],
+    ['D0259D', 0xD0259D, 3],
+    ['D025A0', 0xD025A0, 3],
+    ['D025C5', 0xD025C5, 3],
   ];
+  const readColdbootReplayField = ([, addr, len]) => (
+    len === 1 ? mem[addr] : evalRead24(mem, addr)
+  );
+  const writeColdbootReplayField = ([, addr, len], value) => {
+    if (len === 1) mem[addr] = value & 0xFF;
+    else evalWrite24(mem, addr, value);
+  };
   let coldbootVatSnapshot = null;
   const p5 = executor.runFrom(COLDBOOT_LAUNCH_HOME_INIT, 'adl', {
     maxSteps: 300000,
@@ -2102,7 +2119,7 @@ function initializeColdbootRuntime() {
     onBlock(pc) {
       if (coldbootVatSnapshot || (pc & 0xFFFFFF) !== 0x001879) return;
       if (evalRead24(mem, 0xD02590) === 0) return; // VAT not live yet
-      coldbootVatSnapshot = COLDBOOT_VAT_FIELDS.map((addr) => [addr, evalRead24(mem, addr)]);
+      coldbootVatSnapshot = COLDBOOT_STABLE_REPLAY_FIELDS.map((field) => [field, readColdbootReplayField(field)]);
     },
   });
   totalSteps += p5.steps;
@@ -2111,7 +2128,7 @@ function initializeColdbootRuntime() {
   // Phase 6: repaint home once so the browser starts from the same post-paint
   // state used by the multi-key probes.
   if (coldbootVatSnapshot) {
-    for (const [addr, value] of coldbootVatSnapshot) evalWrite24(mem, addr, value);
+    for (const [field, value] of coldbootVatSnapshot) writeColdbootReplayField(field, value);
   }
   peripherals?.setTimerEnabled?.(true);
   prepareColdbootEventFrame();
