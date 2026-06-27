@@ -24,20 +24,38 @@
 // what corrupted the LadybugDB checkpoint that this whole fix addresses.
 
 import { spawn, execSync } from 'node:child_process';
-import { existsSync, writeFileSync, statSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, statSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
 const thisFile = fileURLToPath(import.meta.url);
 const repoRoot = resolve(dirname(thisFile), '..');
 const lockFile = resolve(repoRoot, '.gitnexus_refresh.lock');
+const metaFile = resolve(repoRoot, '.gitnexus/meta.json');
 const STALE_MINUTES = 15;
 const ANALYZE = 'npx --no-install gitnexus analyze --max-file-size 1024 --embeddings --skip-agents-md';
+
+// True when the graph is non-empty but its embeddings were dropped. This happens
+// when something ran a plain `gitnexus analyze` (no --embeddings) that did real
+// incremental work — it drops embeddings AND advances the commit stamp to HEAD.
+// After that, an incremental `--embeddings` run no-ops ("already up to date") and
+// does NOT regenerate them, so semantic search stays dead until a full re-index.
+function embeddingsMissing() {
+  try {
+    const meta = JSON.parse(readFileSync(metaFile, 'utf8'));
+    return (meta?.stats?.nodes ?? 0) > 0 && (meta?.stats?.embeddings ?? 0) === 0;
+  } catch {
+    return false;
+  }
+}
 
 // --- Worker: the detached child. Runs analyze, then always releases the lock. -----
 if (process.argv.includes('--worker')) {
   try {
-    execSync(ANALYZE, { cwd: repoRoot, stdio: 'ignore' });
+    // Force a full re-index (`-f`) when embeddings are missing so they regenerate;
+    // otherwise stay incremental (a ~2s no-op when nothing in-scope changed).
+    const cmd = embeddingsMissing() ? `${ANALYZE} -f` : ANALYZE;
+    execSync(cmd, { cwd: repoRoot, stdio: 'ignore' });
   } catch {
     // Swallow: a failed refresh must never wedge the lock or crash loudly in the
     // background. The next refresh retries; status/doctor surface real problems.
