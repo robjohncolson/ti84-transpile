@@ -2173,10 +2173,8 @@ function initializeColdbootRuntime() {
   // state used by the multi-key probes.
   if (coldbootVatSnapshot) {
     for (const [field, value] of coldbootVatSnapshot) writeColdbootReplayField(field, value);
-    // D0301B is the RAM-integrity magic (0x5AA55A). The browser shortcut boot never
-    // reached its ROM owners in phases 1-5; Phase885 now prototypes the A-side owner
-    // path above, but keep this proven force until a later gated tick retires it.
-    evalWrite24(mem, 0xD0301B, 0x5AA55A);
+    // D0301B is now expected to come from the Phase 5b natural owner leg above.
+    // Keep the stable replay packet here, but do not force the magic manually.
   }
   peripherals?.setTimerEnabled?.(true);
   prepareColdbootEventFrame();
