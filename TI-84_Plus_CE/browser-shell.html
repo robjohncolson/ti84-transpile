@@ -457,6 +457,8 @@ const COLDBOOT_HALT_IDLE = 0x0019B5;
 const COLDBOOT_LAUNCH_HOME_INIT = 0x09DD62;
 const COLDBOOT_HOME_REPAINT = 0x058241;
 const COLDBOOT_D0301B_OWNER_ENTRY = 0x0454BE;
+const COLDBOOT_D0301B_OWNER_STOP_BEFORE = 0x09DEE0;
+const COLDBOOT_D0301B_OWNER_STOP = 'COLDBOOT_D0301B_OWNER_STOP';
 const COLDBOOT_KEY_BURST_STEPS = 300000;
 const COLDBOOT_EOL_KEY_BURST_STEPS = 350000;
 const KEY_BURST_STEPS = 2000;
@@ -2152,10 +2154,30 @@ function initializeColdbootRuntime() {
     evalWrite24(mem, 0xD008E0, cpu.sp);
 
     const d0301bBeforeOwner = evalRead24(mem, 0xD0301B);
-    const owner = executor.runFrom(COLDBOOT_D0301B_OWNER_ENTRY, 'adl', {
-      maxSteps: 60000,
-      maxLoopIterations: 10000,
-    });
+    let owner;
+    try {
+      owner = executor.runFrom(COLDBOOT_D0301B_OWNER_ENTRY, 'adl', {
+        maxSteps: 60000,
+        maxLoopIterations: 10000,
+        onBlock(pc, mode, meta, steps) {
+          if ((pc & 0xFFFFFF) !== COLDBOOT_D0301B_OWNER_STOP_BEFORE) return;
+          owner = {
+            steps,
+            termination: 'stopped_before_target',
+            lastPc: COLDBOOT_D0301B_OWNER_STOP_BEFORE,
+            lastMode: mode,
+            halted: Boolean(cpu.halted),
+            loopsForced: null,
+            blockVisits: {},
+            dynamicTargets: [],
+            missingBlocks: [],
+          };
+          throw new Error(COLDBOOT_D0301B_OWNER_STOP);
+        },
+      });
+    } catch (error) {
+      if (String(error?.message || error) !== COLDBOOT_D0301B_OWNER_STOP) throw error;
+    }
     totalSteps += owner.steps;
     coldbootNaturalD0301BOwner = {
       entry: COLDBOOT_D0301B_OWNER_ENTRY,

@@ -10,7 +10,7 @@ repaint halt cleanly instead of running away in the `0x084711` VAT search.
 ## Result
 
 - Overall: **PASS**
-- Phase 6: halt after 47393 steps at 0x0019B5; VRAM=8482px; snapshot captured=true.
+- Phase 6: halt after 47298 steps at 0x0019B5; VRAM=8482px; snapshot captured=true.
 - Page errors: []
 
 ## Full JSON
@@ -19,19 +19,19 @@ repaint halt cleanly instead of running away in the `0x084711` VAT search.
 {
   "probe": "browser-shell-replay-verify",
   "chromePath": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-  "pageUrl": "http://127.0.0.1:54863/browser-shell.html",
+  "pageUrl": "http://127.0.0.1:53696/browser-shell.html",
   "pass": true,
   "phase6": {
-    "steps": 47393,
+    "steps": 47298,
     "termination": "halt",
     "lastPc": 6581,
     "vram": 8482,
     "vatSnapshotCaptured": true,
     "naturalD0301BOwner": {
       "entry": 283838,
-      "steps": 60000,
-      "termination": "max_steps",
-      "lastPc": 313507,
+      "steps": 39171,
+      "termination": "stopped_before_target",
+      "lastPc": 646880,
       "beforeD0301B": 0,
       "afterD0301B": 5940570
     }

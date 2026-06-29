@@ -5,14 +5,12 @@ Run: `node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-phase886-bro
 
 Serves a temporary observation-only copy of the patched `browser-shell.html`, boots coldboot mode, presses Escape/CLEAR through headless Chrome, and compares the post-key watched RAM fields to `captures/realram-home-afterCLEAR-D00000-D657FF.bin`. The disk browser shell is not edited.
 
-This is the no-force successor to the Phase880 audit: the historical `probe-phase880-browser-clear-field-audit.mjs` uses the retired `evalWrite24(mem, 0xD0301B, 0x5AA55A)` line as its injection marker, so it cannot instrument the source after PHASE886 removes that line.
-
 ## Summary
 
 - Probe completed: PASS.
 - Browser CLEAR oracle match: YES.
-- Key route: termination=control_pre_stop, steps=74406, controlStopPc=0x0A229D, uiClearApplied=true, wipes=0.
-- Phase 6: halt after 47393 steps at 0x0019B5; snapshot captured=true.
+- Key route: termination=control_pre_stop, steps=74340, controlStopPc=0x0A229D, uiClearApplied=true, wipes=0.
+- Phase 6: halt after 47298 steps at 0x0019B5; snapshot captured=true.
 - Page errors: [].
 - Adjudication: The patched browser Escape/CLEAR path matches the raw realram after-CLEAR oracle for every watched field. D0301B, the D010 mirror packet, D008E0, and the edit/VAT set all survive without any probe-side broad force-restore.
 
@@ -103,7 +101,7 @@ No rows.
       "runtimeMode": "coldboot",
       "lastPc": 574257,
       "lastMode": "adl",
-      "totalSteps": 770032,
+      "totalSteps": 749042,
       "cpu": {
         "pc": "0x0A229D",
         "currentBlockPc": "0x0A229D",
@@ -182,16 +180,16 @@ No rows.
       },
       "vram": 8482,
       "phase6": {
-        "steps": 47393,
+        "steps": 47298,
         "termination": "halt",
         "lastPc": 6581,
         "vram": 8482,
         "vatSnapshotCaptured": true,
         "naturalD0301BOwner": {
           "entry": 283838,
-          "steps": 60000,
-          "termination": "max_steps",
-          "lastPc": 313507,
+          "steps": 39171,
+          "termination": "stopped_before_target",
+          "lastPc": 646880,
           "beforeD0301B": 0,
           "afterD0301B": 5940570
         }
@@ -218,7 +216,7 @@ No rows.
       "runtimeMode": "coldboot",
       "lastPc": 574257,
       "lastMode": "adl",
-      "totalSteps": 770032,
+      "totalSteps": 749042,
       "cpu": {
         "pc": "0x0A229D",
         "currentBlockPc": "0x0A229D",
@@ -297,16 +295,16 @@ No rows.
       },
       "vram": 8482,
       "phase6": {
-        "steps": 47393,
+        "steps": 47298,
         "termination": "halt",
         "lastPc": 6581,
         "vram": 8482,
         "vatSnapshotCaptured": true,
         "naturalD0301BOwner": {
           "entry": 283838,
-          "steps": 60000,
-          "termination": "max_steps",
-          "lastPc": 313507,
+          "steps": 39171,
+          "termination": "stopped_before_target",
+          "lastPc": 646880,
           "beforeD0301B": 0,
           "afterD0301B": 5940570
         }
@@ -490,15 +488,15 @@ No rows.
     "runtimeMode": "coldboot",
     "lastPc": 574257,
     "lastMode": "adl",
-    "totalSteps": 695626,
+    "totalSteps": 674702,
     "cpu": {
       "pc": "0x0019B5",
       "currentBlockPc": "0x0019B5",
       "sp": "0xD1A866",
       "af": "0x1054",
       "bc": "0x000000",
-      "de": "0xD1A8A3",
-      "hl": "0x000000",
+      "de": "0xD2A815",
+      "hl": "0xD1A8A3",
       "ix": "0xD1A860",
       "iy": "0xD00080",
       "f": "0x54",
@@ -569,16 +567,16 @@ No rows.
     },
     "vram": 8482,
     "phase6": {
-      "steps": 47393,
+      "steps": 47298,
       "termination": "halt",
       "lastPc": 6581,
       "vram": 8482,
       "vatSnapshotCaptured": true,
       "naturalD0301BOwner": {
         "entry": 283838,
-        "steps": 60000,
-        "termination": "max_steps",
-        "lastPc": 313507,
+        "steps": 39171,
+        "termination": "stopped_before_target",
+        "lastPc": 646880,
         "beforeD0301B": 0,
         "afterD0301B": 5940570
       }
@@ -590,11 +588,11 @@ No rows.
   },
   "afterKey": {
     "label": "afterKey",
-    "status": "Key: CLEAR → 74406 steps (control_pre_stop, peak 8518px)",
+    "status": "Key: CLEAR → 74340 steps (control_pre_stop, peak 8518px)",
     "runtimeMode": "coldboot",
     "lastPc": 574257,
     "lastMode": "adl",
-    "totalSteps": 770032,
+    "totalSteps": 749042,
     "cpu": {
       "pc": "0x0A229D",
       "currentBlockPc": "0x0A229D",
@@ -665,7 +663,7 @@ No rows.
         "postInsertGateBlock": null,
         "stoppedAtPostInsertGate": false,
         "D000C2Bit7Restored": false,
-        "controlStopBlock": 74389,
+        "controlStopBlock": 74324,
         "controlStopPc": 664221,
         "controlStopCursorBefore": null,
         "controlStopCursorAfter": null,
@@ -689,7 +687,7 @@ No rows.
         "contextVectorRestorePc": null,
         "contextVectorD007CABefore": null,
         "contextVectorD007CAAfter": null,
-        "steps": 74406,
+        "steps": 74340,
         "termination": "control_pre_stop",
         "wipes": 0,
         "D0243A": 13740236,
@@ -729,16 +727,16 @@ No rows.
     },
     "vram": 8482,
     "phase6": {
-      "steps": 47393,
+      "steps": 47298,
       "termination": "halt",
       "lastPc": 6581,
       "vram": 8482,
       "vatSnapshotCaptured": true,
       "naturalD0301BOwner": {
         "entry": 283838,
-        "steps": 60000,
-        "termination": "max_steps",
-        "lastPc": 313507,
+        "steps": 39171,
+        "termination": "stopped_before_target",
+        "lastPc": 646880,
         "beforeD0301B": 0,
         "afterD0301B": 5940570
       }
@@ -754,7 +752,7 @@ No rows.
       "postInsertGateBlock": null,
       "stoppedAtPostInsertGate": false,
       "D000C2Bit7Restored": false,
-      "controlStopBlock": 74389,
+      "controlStopBlock": 74324,
       "controlStopPc": 664221,
       "controlStopCursorBefore": null,
       "controlStopCursorAfter": null,
@@ -778,7 +776,7 @@ No rows.
       "contextVectorRestorePc": null,
       "contextVectorD007CABefore": null,
       "contextVectorD007CAAfter": null,
-      "steps": 74406,
+      "steps": 74340,
       "termination": "control_pre_stop",
       "wipes": 0,
       "D0243A": 13740236,
@@ -807,7 +805,7 @@ No rows.
   "record": {
     "label": "Escape/CLEAR",
     "active": false,
-    "blockCount": 74389,
+    "blockCount": 74324,
     "prevPc": 664221,
     "start": {
       "label": "start",
@@ -815,15 +813,15 @@ No rows.
       "runtimeMode": "coldboot",
       "lastPc": 574257,
       "lastMode": "adl",
-      "totalSteps": 695626,
+      "totalSteps": 674702,
       "cpu": {
         "pc": "0x0019B5",
         "currentBlockPc": "0x0019B5",
         "sp": "0xD1A866",
         "af": "0x1054",
         "bc": "0x000000",
-        "de": "0xD1A8A3",
-        "hl": "0x000000",
+        "de": "0xD2A815",
+        "hl": "0xD1A8A3",
         "ix": "0xD1A860",
         "iy": "0xD00080",
         "f": "0x54",
@@ -894,16 +892,16 @@ No rows.
       },
       "vram": 8482,
       "phase6": {
-        "steps": 47393,
+        "steps": 47298,
         "termination": "halt",
         "lastPc": 6581,
         "vram": 8482,
         "vatSnapshotCaptured": true,
         "naturalD0301BOwner": {
           "entry": 283838,
-          "steps": 60000,
-          "termination": "max_steps",
-          "lastPc": 313507,
+          "steps": 39171,
+          "termination": "stopped_before_target",
+          "lastPc": 646880,
           "beforeD0301B": 0,
           "afterD0301B": 5940570
         }
@@ -915,11 +913,11 @@ No rows.
     },
     "end": {
       "label": "end",
-      "status": "Key: CLEAR → 74406 steps (control_pre_stop, peak 8518px)",
+      "status": "Key: CLEAR → 74340 steps (control_pre_stop, peak 8518px)",
       "runtimeMode": "coldboot",
       "lastPc": 574257,
       "lastMode": "adl",
-      "totalSteps": 770032,
+      "totalSteps": 749042,
       "cpu": {
         "pc": "0x0A229D",
         "currentBlockPc": "0x0A229D",
@@ -990,7 +988,7 @@ No rows.
           "postInsertGateBlock": null,
           "stoppedAtPostInsertGate": false,
           "D000C2Bit7Restored": false,
-          "controlStopBlock": 74389,
+          "controlStopBlock": 74324,
           "controlStopPc": 664221,
           "controlStopCursorBefore": null,
           "controlStopCursorAfter": null,
@@ -1014,7 +1012,7 @@ No rows.
           "contextVectorRestorePc": null,
           "contextVectorD007CABefore": null,
           "contextVectorD007CAAfter": null,
-          "steps": 74406,
+          "steps": 74340,
           "termination": "control_pre_stop",
           "wipes": 0,
           "D0243A": 13740236,
@@ -1054,16 +1052,16 @@ No rows.
       },
       "vram": 8482,
       "phase6": {
-        "steps": 47393,
+        "steps": 47298,
         "termination": "halt",
         "lastPc": 6581,
         "vram": 8482,
         "vatSnapshotCaptured": true,
         "naturalD0301BOwner": {
           "entry": 283838,
-          "steps": 60000,
-          "termination": "max_steps",
-          "lastPc": 313507,
+          "steps": 39171,
+          "termination": "stopped_before_target",
+          "lastPc": 646880,
           "beforeD0301B": 0,
           "afterD0301B": 5940570
         }
@@ -1079,7 +1077,7 @@ No rows.
         "postInsertGateBlock": null,
         "stoppedAtPostInsertGate": false,
         "D000C2Bit7Restored": false,
-        "controlStopBlock": 74389,
+        "controlStopBlock": 74324,
         "controlStopPc": 664221,
         "controlStopCursorBefore": null,
         "controlStopCursorAfter": null,
@@ -1103,7 +1101,7 @@ No rows.
         "contextVectorRestorePc": null,
         "contextVectorD007CABefore": null,
         "contextVectorD007CAAfter": null,
-        "steps": 74406,
+        "steps": 74340,
         "termination": "control_pre_stop",
         "wipes": 0,
         "D0243A": 13740236,
@@ -1165,7 +1163,7 @@ No rows.
         "runtimeMode": "coldboot",
         "lastPc": 574257,
         "lastMode": "adl",
-        "totalSteps": 695626,
+        "totalSteps": 674702,
         "cpu": {
           "pc": "0x058A16",
           "currentBlockPc": "0x058A16",
@@ -1244,23 +1242,23 @@ No rows.
         },
         "vram": 8518,
         "phase6": {
-          "steps": 47393,
+          "steps": 47298,
           "termination": "halt",
           "lastPc": 6581,
           "vram": 8482,
           "vatSnapshotCaptured": true,
           "naturalD0301BOwner": {
             "entry": 283838,
-            "steps": 60000,
-            "termination": "max_steps",
-            "lastPc": 313507,
+            "steps": 39171,
+            "termination": "stopped_before_target",
+            "lastPc": 646880,
             "beforeD0301B": 0,
             "afterD0301B": 5940570
           }
         },
         "lastKey": null,
         "pageErrors": [],
-        "block": 5238,
+        "block": 5291,
         "pc": "0x058A16",
         "prevPc": "0x058A14"
       },
@@ -1270,7 +1268,7 @@ No rows.
         "runtimeMode": "coldboot",
         "lastPc": 574257,
         "lastMode": "adl",
-        "totalSteps": 695626,
+        "totalSteps": 674702,
         "cpu": {
           "pc": "0x0A223A",
           "currentBlockPc": "0x0A223A",
@@ -1349,23 +1347,23 @@ No rows.
         },
         "vram": 8518,
         "phase6": {
-          "steps": 47393,
+          "steps": 47298,
           "termination": "halt",
           "lastPc": 6581,
           "vram": 8482,
           "vatSnapshotCaptured": true,
           "naturalD0301BOwner": {
             "entry": 283838,
-            "steps": 60000,
-            "termination": "max_steps",
-            "lastPc": 313507,
+            "steps": 39171,
+            "termination": "stopped_before_target",
+            "lastPc": 646880,
             "beforeD0301B": 0,
             "afterD0301B": 5940570
           }
         },
         "lastKey": null,
         "pageErrors": [],
-        "block": 5239,
+        "block": 5292,
         "pc": "0x0A223A",
         "prevPc": "0x058A16"
       },
@@ -1375,7 +1373,7 @@ No rows.
         "runtimeMode": "coldboot",
         "lastPc": 574257,
         "lastMode": "adl",
-        "totalSteps": 695626,
+        "totalSteps": 674702,
         "cpu": {
           "pc": "0x0A229D",
           "currentBlockPc": "0x0A229D",
@@ -1454,23 +1452,23 @@ No rows.
         },
         "vram": 8482,
         "phase6": {
-          "steps": 47393,
+          "steps": 47298,
           "termination": "halt",
           "lastPc": 6581,
           "vram": 8482,
           "vatSnapshotCaptured": true,
           "naturalD0301BOwner": {
             "entry": 283838,
-            "steps": 60000,
-            "termination": "max_steps",
-            "lastPc": 313507,
+            "steps": 39171,
+            "termination": "stopped_before_target",
+            "lastPc": 646880,
             "beforeD0301B": 0,
             "afterD0301B": 5940570
           }
         },
         "lastKey": null,
         "pageErrors": [],
-        "block": 74389,
+        "block": 74324,
         "pc": "0x0A229D",
         "prevPc": "0x0A2A37"
       }
@@ -1482,7 +1480,7 @@ No rows.
         "runtimeMode": "coldboot",
         "lastPc": 574257,
         "lastMode": "adl",
-        "totalSteps": 695626,
+        "totalSteps": 674702,
         "cpu": {
           "pc": "0x058A16",
           "currentBlockPc": "0x058A16",
@@ -1561,23 +1559,23 @@ No rows.
         },
         "vram": 8518,
         "phase6": {
-          "steps": 47393,
+          "steps": 47298,
           "termination": "halt",
           "lastPc": 6581,
           "vram": 8482,
           "vatSnapshotCaptured": true,
           "naturalD0301BOwner": {
             "entry": 283838,
-            "steps": 60000,
-            "termination": "max_steps",
-            "lastPc": 313507,
+            "steps": 39171,
+            "termination": "stopped_before_target",
+            "lastPc": 646880,
             "beforeD0301B": 0,
             "afterD0301B": 5940570
           }
         },
         "lastKey": null,
         "pageErrors": [],
-        "block": 5238,
+        "block": 5291,
         "pc": "0x058A16",
         "prevPc": "0x058A14"
       },
@@ -1587,7 +1585,7 @@ No rows.
         "runtimeMode": "coldboot",
         "lastPc": 574257,
         "lastMode": "adl",
-        "totalSteps": 695626,
+        "totalSteps": 674702,
         "cpu": {
           "pc": "0x058A16",
           "currentBlockPc": "0x058A16",
@@ -1666,23 +1664,23 @@ No rows.
         },
         "vram": 8518,
         "phase6": {
-          "steps": 47393,
+          "steps": 47298,
           "termination": "halt",
           "lastPc": 6581,
           "vram": 8482,
           "vatSnapshotCaptured": true,
           "naturalD0301BOwner": {
             "entry": 283838,
-            "steps": 60000,
-            "termination": "max_steps",
-            "lastPc": 313507,
+            "steps": 39171,
+            "termination": "stopped_before_target",
+            "lastPc": 646880,
             "beforeD0301B": 0,
             "afterD0301B": 5940570
           }
         },
         "lastKey": null,
         "pageErrors": [],
-        "block": 5238,
+        "block": 5291,
         "pc": "0x058A16",
         "prevPc": "0x058A14"
       },
@@ -1692,7 +1690,7 @@ No rows.
         "runtimeMode": "coldboot",
         "lastPc": 574257,
         "lastMode": "adl",
-        "totalSteps": 695626,
+        "totalSteps": 674702,
         "cpu": {
           "pc": "0x0A223A",
           "currentBlockPc": "0x0A223A",
@@ -1771,23 +1769,23 @@ No rows.
         },
         "vram": 8518,
         "phase6": {
-          "steps": 47393,
+          "steps": 47298,
           "termination": "halt",
           "lastPc": 6581,
           "vram": 8482,
           "vatSnapshotCaptured": true,
           "naturalD0301BOwner": {
             "entry": 283838,
-            "steps": 60000,
-            "termination": "max_steps",
-            "lastPc": 313507,
+            "steps": 39171,
+            "termination": "stopped_before_target",
+            "lastPc": 646880,
             "beforeD0301B": 0,
             "afterD0301B": 5940570
           }
         },
         "lastKey": null,
         "pageErrors": [],
-        "block": 5239,
+        "block": 5292,
         "pc": "0x0A223A",
         "prevPc": "0x058A16"
       },
@@ -1797,7 +1795,7 @@ No rows.
         "runtimeMode": "coldboot",
         "lastPc": 574257,
         "lastMode": "adl",
-        "totalSteps": 695626,
+        "totalSteps": 674702,
         "cpu": {
           "pc": "0x0A223A",
           "currentBlockPc": "0x0A223A",
@@ -1876,23 +1874,23 @@ No rows.
         },
         "vram": 8518,
         "phase6": {
-          "steps": 47393,
+          "steps": 47298,
           "termination": "halt",
           "lastPc": 6581,
           "vram": 8482,
           "vatSnapshotCaptured": true,
           "naturalD0301BOwner": {
             "entry": 283838,
-            "steps": 60000,
-            "termination": "max_steps",
-            "lastPc": 313507,
+            "steps": 39171,
+            "termination": "stopped_before_target",
+            "lastPc": 646880,
             "beforeD0301B": 0,
             "afterD0301B": 5940570
           }
         },
         "lastKey": null,
         "pageErrors": [],
-        "block": 5239,
+        "block": 5292,
         "pc": "0x0A223A",
         "prevPc": "0x058A16"
       },
@@ -1902,7 +1900,7 @@ No rows.
         "runtimeMode": "coldboot",
         "lastPc": 574257,
         "lastMode": "adl",
-        "totalSteps": 695626,
+        "totalSteps": 674702,
         "cpu": {
           "pc": "0x0A229D",
           "currentBlockPc": "0x0A229D",
@@ -1981,23 +1979,23 @@ No rows.
         },
         "vram": 8482,
         "phase6": {
-          "steps": 47393,
+          "steps": 47298,
           "termination": "halt",
           "lastPc": 6581,
           "vram": 8482,
           "vatSnapshotCaptured": true,
           "naturalD0301BOwner": {
             "entry": 283838,
-            "steps": 60000,
-            "termination": "max_steps",
-            "lastPc": 313507,
+            "steps": 39171,
+            "termination": "stopped_before_target",
+            "lastPc": 646880,
             "beforeD0301B": 0,
             "afterD0301B": 5940570
           }
         },
         "lastKey": null,
         "pageErrors": [],
-        "block": 74389,
+        "block": 74324,
         "pc": "0x0A229D",
         "prevPc": "0x0A2A37"
       },
@@ -2007,7 +2005,7 @@ No rows.
         "runtimeMode": "coldboot",
         "lastPc": 574257,
         "lastMode": "adl",
-        "totalSteps": 695626,
+        "totalSteps": 674702,
         "cpu": {
           "pc": "0x0A229D",
           "currentBlockPc": "0x0A229D",
@@ -2086,23 +2084,23 @@ No rows.
         },
         "vram": 8482,
         "phase6": {
-          "steps": 47393,
+          "steps": 47298,
           "termination": "halt",
           "lastPc": 6581,
           "vram": 8482,
           "vatSnapshotCaptured": true,
           "naturalD0301BOwner": {
             "entry": 283838,
-            "steps": 60000,
-            "termination": "max_steps",
-            "lastPc": 313507,
+            "steps": 39171,
+            "termination": "stopped_before_target",
+            "lastPc": 646880,
             "beforeD0301B": 0,
             "afterD0301B": 5940570
           }
         },
         "lastKey": null,
         "pageErrors": [],
-        "block": 74389,
+        "block": 74324,
         "pc": "0x0A229D",
         "prevPc": "0x0A2A37"
       }
@@ -2119,75 +2117,74 @@ No rows.
     ],
     "hotBlocks": {
       "0x08C331": 1,
-      "0x000038": 18,
-      "0x0006F3": 18,
-      "0x000704": 18,
-      "0x000710": 18,
-      "0x001713": 18,
-      "0x0008BB": 18,
-      "0x001717": 18,
-      "0x001718": 18,
-      "0x00171E": 18,
-      "0x0067F8": 18,
-      "0x001C4F": 36,
-      "0x001CA6": 108,
-      "0x001CC0": 108,
-      "0x001CCA": 108,
-      "0x001CCE": 18,
-      "0x001CD5": 18,
-      "0x001CE5": 18,
-      "0x001C54": 36,
-      "0x006808": 18,
-      "0x001C33": 90,
-      "0x001C38": 90,
-      "0x001C3C": 90,
-      "0x001C44": 72,
-      "0x001C7D": 72,
-      "0x001CE4": 90,
-      "0x001C81": 72,
-      "0x001C82": 72,
-      "0x001C48": 72,
-      "0x001C42": 18,
-      "0x006810": 18,
-      "0x006812": 18,
-      "0x006816": 18,
-      "0x00681E": 18,
-      "0x006828": 18,
-      "0x001727": 18,
-      "0x000719": 18,
-      "0x00071D": 18,
-      "0x02010C": 18,
-      "0x03CF7D": 18,
-      "0x03CFA4": 18,
-      "0x03CFCF": 18,
-      "0x03CFD4": 14,
-      "0x03CFDB": 14,
-      "0x03CFE0": 14,
-      "0x03CFE5": 14,
-      "0x03CFEA": 14,
-      "0x03D029": 14,
-      "0x03D033": 14,
-      "0x03D038": 14,
-      "0x03D044": 14,
-      "0x03D04C": 14,
-      "0x03D054": 14,
-      "0x03F994": 14,
-      "0x0003D4": 14,
-      "0x003CC2": 14,
-      "0x003CD4": 14,
-      "0x003CE0": 14,
-      "0x003CEE": 14,
-      "0x003CF3": 14,
-      "0x03F998": 14,
-      "0x03F99A": 14,
-      "0x03F9AB": 14,
-      "0x03F9AE": 14,
-      "0x03D058": 14,
-      "0x03D060": 14,
-      "0x03D066": 14,
-      "0x03D073": 14,
-      "0x03D0E0": 18,
-      "0x03CFFE": 4,
+      "0x000038": 17,
+      "0x0006F3": 17,
+      "0x000704": 17,
+      "0x000710": 17,
+      "0x001713": 17,
+      "0x0008BB": 17,
+      "0x001717": 17,
+      "0x001718": 17,
+      "0x00171E": 17,
+      "0x0067F8": 17,
+      "0x001C4F": 34,
+      "0x001CA6": 102,
+      "0x001CC0": 102,
+      "0x001CCA": 102,
+      "0x001CCE": 17,
+      "0x001CD5": 17,
+      "0x001CE5": 17,
+      "0x001C54": 34,
+      "0x006808": 17,
+      "0x001C33": 85,
+      "0x001C38": 85,
+      "0x001C3C": 85,
+      "0x001C44": 68,
+      "0x001C7D": 68,
+      "0x001CE4": 85,
+      "0x001C81": 68,
+      "0x001C82": 68,
+      "0x001C48": 68,
+      "0x001C42": 17,
+      "0x006810": 17,
+      "0x006812": 17,
+      "0x006816": 17,
+      "0x00681E": 17,
+      "0x006828": 17,
+      "0x001727": 17,
+      "0x000719": 17,
+      "0x00071D": 17,
+      "0x02010C": 17,
+      "0x03CF7D": 17,
+      "0x03CFA4": 17,
+      "0x03CFCF": 17,
+      "0x03CFD4": 15,
+      "0x03CFDB": 15,
+      "0x03CFE0": 15,
+      "0x03CFE5": 15,
+      "0x03CFEA": 15,
+      "0x03D029": 15,
+      "0x03D033": 15,
+      "0x03D038": 15,
+      "0x03D044": 15,
+      "0x03D04C": 15,
+      "0x03D054": 15,
+      "0x03F994": 15,
+      "0x0003D4": 15,
+      "0x003CC2": 15,
+      "0x003CD4": 15,
+      "0x003CE0": 15,
+      "0x003CEE": 15,
+      "0x003CF3": 15,
+      "0x03F998": 15,
+      "0x03F99A": 15,
+      "0x03F9AB": 15,
+      "0x03F9AE": 15,
+      "0x03D058": 15,
+      "0x03D060": 15,
+      "0x03D066": 15,
+      "0x03D073": 15,
+      "0x03D0E0": 17,
       "0x05C634": 3,
       "0x05C67C": 3,
       "0x08C339": 1,
@@ -2228,6 +2225,7 @@ No rows.
       "0x05C75B": 2,
       "0x05C760": 2,
       "0x05C768": 2,
+      "0x05C623": 4,
       "0x05C771": 3,
       "0x05C795": 3,
       "0x05C7A5": 3,
@@ -2242,7 +2240,6 @@ No rows.
       "0x0A2A37": 8,
       "0x0A2389": 7,
       "0x05C819": 2,
-      "0x05C623": 3,
       "0x05C82C": 3,
       "0x05C832": 3,
       "0x05E3D6": 3,
@@ -2338,6 +2335,7 @@ No rows.
       "0x0A3418": 16,
       "0x03D1D1": 2,
       "0x0A27F9": 2,
+      "0x03CFFE": 2,
       "0x0A1A36": 2,
       "0x08C3AC": 2,
       "0x08C3C3": 2,
@@ -2631,15 +2629,15 @@ No rows.
       },
       {
         "pc": "0x001CA6",
-        "count": 108
+        "count": 102
       },
       {
         "pc": "0x001CC0",
-        "count": 108
+        "count": 102
       },
       {
         "pc": "0x001CCA",
-        "count": 108
+        "count": 102
       },
       {
         "pc": "0x0A3408",
@@ -2651,7 +2649,7 @@ No rows.
       },
       {
         "pc": "0x001C33",
-        "count": 90
+        "count": 85
       }
     ]
   }
