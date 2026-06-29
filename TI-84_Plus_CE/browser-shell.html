@@ -2013,7 +2013,10 @@ function prepareColdbootEventFrame() {
   fillSentinel(mem, cpu.sp, 24);
   cpu.sp = (cpu.sp - 3) & 0xFFFFFF;
   evalWrite24(mem, cpu.sp, COLDBOOT_HALT_IDLE);
-  evalWrite24(mem, 0xD008E0, cpu.sp);
+  // errSP anchor: the real after-CLEAR oracle keeps D008E0 at the frame base
+  // SCREEN_STACK_TOP-18 (0xD1A86C), not the pushed-return SP (-27). The normal halt
+  // still returns via cpu.sp; D008E0 is only the error-longjmp anchor. (PHASE878.)
+  evalWrite24(mem, 0xD008E0, SCREEN_STACK_TOP - 18);
   lastPc = COLDBOOT_EVENT_LOOP_ENTRY;
   lastMode = 'adl';
 }
@@ -2104,6 +2107,12 @@ function initializeColdbootRuntime() {
     ['D0259D', 0xD0259D, 3],
     ['D025A0', 0xD025A0, 3],
     ['D025C5', 0xD025C5, 3],
+    // D010 mirror packet: holds the real after-CLEAR values (D010EF=0xD2A83E,
+    // D010FE=0xD1A8CC, D010F4=0x1F) at the 0x001879 snapshot, then the later
+    // 0x0018F8 bulk wipe zeroes them. Replaying restores the oracle. (PHASE876/877.)
+    ['D010EF', 0xD010EF, 3],
+    ['D010FE', 0xD010FE, 3],
+    ['D010F4', 0xD010F4, 1],
   ];
   const readColdbootReplayField = ([, addr, len]) => (
     len === 1 ? mem[addr] : evalRead24(mem, addr)
@@ -2129,6 +2138,11 @@ function initializeColdbootRuntime() {
   // state used by the multi-key probes.
   if (coldbootVatSnapshot) {
     for (const [field, value] of coldbootVatSnapshot) writeColdbootReplayField(field, value);
+    // D0301B is the RAM-integrity magic (0x5AA55A). The browser shortcut boot never
+    // reaches its ROM owners (0x040BF0/0x040C62 are off-route), so it stays 0 and the
+    // 0x0018F8 integrity check spuriously re-clears. Force it so the check passes and
+    // the after-CLEAR state matches realram-home-afterCLEAR. (PHASE876/877.)
+    evalWrite24(mem, 0xD0301B, 0x5AA55A);
   }
   peripherals?.setTimerEnabled?.(true);
   prepareColdbootEventFrame();
