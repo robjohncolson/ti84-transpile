@@ -10,7 +10,7 @@ repaint halt cleanly instead of running away in the `0x084711` VAT search.
 ## Result
 
 - Overall: **PASS**
-- Phase 6: halt after 49474 steps at 0x0019B5; VRAM=8549px; snapshot captured=true.
+- Phase 6: halt after 47393 steps at 0x0019B5; VRAM=8482px; snapshot captured=true.
 - Page errors: []
 
 ## Full JSON
@@ -19,16 +19,24 @@ repaint halt cleanly instead of running away in the `0x084711` VAT search.
 {
   "probe": "browser-shell-replay-verify",
   "chromePath": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-  "pageUrl": "http://127.0.0.1:57462/browser-shell.html",
+  "pageUrl": "http://127.0.0.1:53411/browser-shell.html",
   "pass": true,
   "phase6": {
-    "steps": 49474,
+    "steps": 47393,
     "termination": "halt",
     "lastPc": 6581,
-    "vram": 8549,
-    "vatSnapshotCaptured": true
+    "vram": 8482,
+    "vatSnapshotCaptured": true,
+    "naturalD0301BOwner": {
+      "entry": 283838,
+      "steps": 60000,
+      "termination": "max_steps",
+      "lastPc": 313507,
+      "beforeD0301B": 0,
+      "afterD0301B": 5940570
+    }
   },
-  "vram": 8549,
+  "vram": 8482,
   "errors": [],
   "status": "Coldboot complete. OS event loop is ready."
 }

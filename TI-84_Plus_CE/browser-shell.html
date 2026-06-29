@@ -456,6 +456,7 @@ const COLDBOOT_WARM_IDLE_ENTRY = 0x0019BE;
 const COLDBOOT_HALT_IDLE = 0x0019B5;
 const COLDBOOT_LAUNCH_HOME_INIT = 0x09DD62;
 const COLDBOOT_HOME_REPAINT = 0x058241;
+const COLDBOOT_D0301B_OWNER_ENTRY = 0x0454BE;
 const COLDBOOT_KEY_BURST_STEPS = 300000;
 const COLDBOOT_EOL_KEY_BURST_STEPS = 350000;
 const KEY_BURST_STEPS = 2000;
@@ -2122,6 +2123,7 @@ function initializeColdbootRuntime() {
     else evalWrite24(mem, addr, value);
   };
   let coldbootVatSnapshot = null;
+  let coldbootNaturalD0301BOwner = null;
   const p5 = executor.runFrom(COLDBOOT_LAUNCH_HOME_INIT, 'adl', {
     maxSteps: 300000,
     maxLoopIterations: 30000,
@@ -2134,14 +2136,46 @@ function initializeColdbootRuntime() {
   totalSteps += p5.steps;
   log(`<span class="info">--- Phase 5 done: ${p5.steps} steps, ${p5.termination} at 0x${hex(p5.lastPc, 6)}${coldbootVatSnapshot ? ' (VAT snapshot captured)' : ' (no VAT snapshot!)'} ---</span>`);
 
+  if (coldbootVatSnapshot) {
+    peripherals?.setTimerEnabled?.(false);
+    cpu.halted = false;
+    cpu.iff1 = 1;
+    cpu.iff2 = 1;
+    cpu.f = 0x40;
+    cpu.madl = 1;
+    cpu.mbase = 0xD0;
+    cpu._ix = 0xD1A860;
+    cpu._iy = 0xD00080;
+    cpu.sp = SCREEN_STACK_TOP - 24;
+    fillSentinel(mem, cpu.sp, 24);
+    evalWrite24(mem, cpu.sp, COLDBOOT_WARM_IDLE_ENTRY);
+    evalWrite24(mem, 0xD008E0, cpu.sp);
+
+    const d0301bBeforeOwner = evalRead24(mem, 0xD0301B);
+    const owner = executor.runFrom(COLDBOOT_D0301B_OWNER_ENTRY, 'adl', {
+      maxSteps: 60000,
+      maxLoopIterations: 10000,
+    });
+    totalSteps += owner.steps;
+    coldbootNaturalD0301BOwner = {
+      entry: COLDBOOT_D0301B_OWNER_ENTRY,
+      steps: owner.steps,
+      termination: owner.termination,
+      lastPc: owner.lastPc,
+      beforeD0301B: d0301bBeforeOwner,
+      afterD0301B: evalRead24(mem, 0xD0301B),
+    };
+    log(`<span class="info">--- Phase 5b natural D0301B owner: ${owner.steps} steps, ${owner.termination} at 0x${hex(owner.lastPc, 6)}; D0301B 0x${hex(d0301bBeforeOwner, 6)} -> 0x${hex(coldbootNaturalD0301BOwner.afterD0301B, 6)} ---</span>`);
+  }
+  window.__coldbootNaturalD0301BOwner = coldbootNaturalD0301BOwner;
+
   // Phase 6: repaint home once so the browser starts from the same post-paint
   // state used by the multi-key probes.
   if (coldbootVatSnapshot) {
     for (const [field, value] of coldbootVatSnapshot) writeColdbootReplayField(field, value);
     // D0301B is the RAM-integrity magic (0x5AA55A). The browser shortcut boot never
-    // reaches its ROM owners (0x040BF0/0x040C62 are off-route), so it stays 0 and the
-    // 0x0018F8 integrity check spuriously re-clears. Force it so the check passes and
-    // the after-CLEAR state matches realram-home-afterCLEAR. (PHASE876/877.)
+    // reached its ROM owners in phases 1-5; Phase885 now prototypes the A-side owner
+    // path above, but keep this proven force until a later gated tick retires it.
     evalWrite24(mem, 0xD0301B, 0x5AA55A);
   }
   peripherals?.setTimerEnabled?.(true);
@@ -2156,6 +2190,7 @@ function initializeColdbootRuntime() {
     lastPc: p6.lastPc,
     vram: countVRAMPixels(),
     vatSnapshotCaptured: Boolean(coldbootVatSnapshot),
+    naturalD0301BOwner: coldbootNaturalD0301BOwner,
   };
   log(`<span class="info">--- Phase 6 done: ${p6.steps} steps, ${p6.termination} at 0x${hex(p6.lastPc, 6)}; D007CA=0x${hex(evalRead24(mem, 0xD007CA), 6)}, VAT=0x${hex(evalRead24(mem, 0xD02590), 6)}, VRAM=${countVRAMPixels()}px ---</span>`);
 
