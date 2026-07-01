@@ -158,6 +158,19 @@ try {
     }
     elseif ($goldenPass -and $browserPass) {
         Set-Location $ProjectDir
+        # Size guard: a runaway probe once dumped a 349 MB trace report that was
+        # committed and blocked every GitHub push for ~2 days (>100 MB limit).
+        # Delete any changed (non-ignored) file over the cap before staging.
+        $sizeCapBytes = 50MB
+        foreach ($line in (& git status --porcelain --untracked-files=all)) {
+            $rel = $line.Substring(3).Trim().Trim('"')
+            if (-not $rel -or $rel -match ' -> ') { continue }
+            $full = Join-Path $ProjectDir ($rel -replace '/', '\')
+            if ((Test-Path $full -PathType Leaf) -and ((Get-Item $full).Length -gt $sizeCapBytes)) {
+                Write-Log "SIZE GUARD: removing oversize uncommitted file ($([math]::Round((Get-Item $full).Length/1MB)) MB): $rel"
+                Remove-Item $full -Force -ErrorAction SilentlyContinue
+            }
+        }
         & git add -A 2>$null
         $staged = & git diff --cached --name-only
         if ($staged) {
