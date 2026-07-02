@@ -609,8 +609,17 @@ function fieldTable(fields, oracleFields, actualFields) {
   return table(fields.map(([name]) => ({ name })), [
     { label: 'Field', value: (row) => row.name },
     { label: 'Oracle digit3', value: (row) => formatValue(row.name, oracleFields[row.name]) },
-    { label: 'Browser Digit3', value: (row) => formatValue(row.name, actualFields[row.name]) },
-    { label: 'Match', value: (row) => (actualFields[row.name] === oracleFields[row.name] ? 'yes' : 'NO') },
+    { label: 'Browser Digit3', value: (row) => (
+      typeof actualFields[row.name] === 'string'
+        ? actualFields[row.name]
+        : formatValue(row.name, actualFields[row.name])
+    ) },
+    { label: 'Match', value: (row) => {
+      const actual = typeof actualFields[row.name] === 'string'
+        ? actualFields[row.name]
+        : formatValue(row.name, actualFields[row.name]);
+      return actual === formatValue(row.name, oracleFields[row.name]) ? 'yes' : 'NO';
+    } },
   ]);
 }
 
