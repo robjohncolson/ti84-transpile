@@ -24,27 +24,42 @@
 // what corrupted the LadybugDB checkpoint that this whole fix addresses.
 
 import { spawn, execSync } from 'node:child_process';
-import { existsSync, writeFileSync, statSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, statSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
 const thisFile = fileURLToPath(import.meta.url);
 const repoRoot = resolve(dirname(thisFile), '..');
 const lockFile = resolve(repoRoot, '.gitnexus_refresh.lock');
+const metaFile = resolve(repoRoot, '.gitnexus/meta.json');
 const STALE_MINUTES = 15;
 
-// EMBEDDINGS DISABLED (2026-07-01): the local ONNX Runtime (1.17.1) is too old for the
-// current embedding model (needs API 24) and SEGFAULTS, which aborts the entire
-// re-index. So refresh keeps the GRAPH fresh only (keyword + graph search work;
-// semantic search is offline). Re-add `--embeddings` here once
-// `npx gitnexus analyze --embeddings` no longer segfaults (likely a gitnexus/ONNX
-// reinstall or a machine reboot). Using --embeddings now would wedge every refresh.
-const ANALYZE = 'npx --no-install gitnexus analyze --max-file-size 1024 --skip-agents-md';
+// EMBEDDINGS RE-ENABLED (2026-07-02). The 07-01 segfault was a Windows DLL-shadow:
+// a Windows Update dropped an old onnxruntime.dll (1.17.1) into System32, which
+// bare-name LoadLibrary resolves BEFORE the copy bundled in onnxruntime-node, so
+// any newer wrapper (API 24/27) aborted. Fix: gitnexus's tree now pins
+// onnxruntime-node@1.17.3 (wrapper requests API 17 -> System32's DLL satisfies it)
+// and the nested @huggingface/transformers copy is parked (.disabled). NOTE: a
+// future `npm i -g gitnexus` reverts both — see memory note gitnexus-index-scoped.
+const ANALYZE = 'npx --no-install gitnexus analyze --max-file-size 1024 --embeddings --skip-agents-md';
+
+// True when the graph is non-empty but its embeddings were dropped (a plain analyze
+// that did incremental work drops them and stamps HEAD; an incremental --embeddings
+// run then no-ops and never regenerates). Self-heal: force a full re-index.
+function embeddingsMissing() {
+  try {
+    const meta = JSON.parse(readFileSync(metaFile, 'utf8'));
+    return (meta?.stats?.nodes ?? 0) > 0 && (meta?.stats?.embeddings ?? 0) === 0;
+  } catch {
+    return false;
+  }
+}
 
 // --- Worker: the detached child. Runs analyze, then always releases the lock. -----
 if (process.argv.includes('--worker')) {
   try {
-    execSync(ANALYZE, { cwd: repoRoot, stdio: 'ignore' });
+    const cmd = embeddingsMissing() ? `${ANALYZE} -f` : ANALYZE;
+    execSync(cmd, { cwd: repoRoot, stdio: 'ignore' });
   } catch {
     // Swallow: a failed refresh must never wedge the lock or crash loudly in the
     // background. The next refresh retries; status/doctor surface real problems.
