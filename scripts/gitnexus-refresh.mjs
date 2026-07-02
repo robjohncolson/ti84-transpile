@@ -24,24 +24,47 @@
 // what corrupted the LadybugDB checkpoint that this whole fix addresses.
 
 import { spawn, execSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync, statSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, statSync, rmSync, renameSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { dirname, resolve, join } from 'node:path';
 
 const thisFile = fileURLToPath(import.meta.url);
 const repoRoot = resolve(dirname(thisFile), '..');
 const lockFile = resolve(repoRoot, '.gitnexus_refresh.lock');
 const metaFile = resolve(repoRoot, '.gitnexus/meta.json');
 const STALE_MINUTES = 15;
-
-// EMBEDDINGS RE-ENABLED (2026-07-02). The 07-01 segfault was a Windows DLL-shadow:
-// a Windows Update dropped an old onnxruntime.dll (1.17.1) into System32, which
-// bare-name LoadLibrary resolves BEFORE the copy bundled in onnxruntime-node, so
-// any newer wrapper (API 24/27) aborted. Fix: gitnexus's tree now pins
-// onnxruntime-node@1.17.3 (wrapper requests API 17 -> System32's DLL satisfies it)
-// and the nested @huggingface/transformers copy is parked (.disabled). NOTE: a
-// future `npm i -g gitnexus` reverts both — see memory note gitnexus-index-scoped.
 const ANALYZE = 'npx --no-install gitnexus analyze --max-file-size 1024 --embeddings --skip-agents-md';
+
+// --- ONNX pin self-repair (2026-07-02) -------------------------------------------
+// Windows system-manages onnxruntime.dll: the System32 copy (ORT 1.17.1, Windows ML)
+// wins by-name resolution in EVERY load context tested (addon-adjacent, node app dir,
+// PATH, explicit full-path preload). Any modern onnxruntime-node wrapper (API 24/27)
+// therefore aborts/segfaults, killing `analyze --embeddings`. The working fix is to
+// pin gitnexus's onnxruntime-node to 1.17.3 (requests API 17 -> the OS DLL satisfies
+// it) and park the nested @huggingface/transformers copy so it resolves to the pin.
+// `npm i -g gitnexus` silently reverts both, so the worker re-applies them on demand.
+// Full story: memory note gitnexus-index-scoped.
+const ORT_PIN = '1.17.3';
+const gitnexusRoot = resolve(process.env.APPDATA ?? '', 'npm/node_modules/gitnexus');
+
+function ensureOrtPin() {
+  try {
+    const ortPkg = join(gitnexusRoot, 'node_modules/onnxruntime-node/package.json');
+    if (!existsSync(ortPkg)) return;
+    const version = JSON.parse(readFileSync(ortPkg, 'utf8')).version ?? '';
+    if (!version.startsWith('1.17.')) {
+      execSync(`npm install onnxruntime-node@${ORT_PIN} --no-save --no-audit --no-fund`, {
+        cwd: gitnexusRoot,
+        stdio: 'ignore',
+      });
+    }
+    const nested = join(gitnexusRoot, 'node_modules/@huggingface/transformers/node_modules/onnxruntime-node');
+    if (existsSync(nested)) renameSync(nested, `${nested}.disabled`);
+  } catch {
+    // Best effort: if repair fails, analyze may still work (or fail visibly via
+    // status/doctor). Never block the refresh on the repair.
+  }
+}
 
 // True when the graph is non-empty but its embeddings were dropped (a plain analyze
 // that did incremental work drops them and stamps HEAD; an incremental --embeddings
@@ -58,6 +81,7 @@ function embeddingsMissing() {
 // --- Worker: the detached child. Runs analyze, then always releases the lock. -----
 if (process.argv.includes('--worker')) {
   try {
+    ensureOrtPin();
     const cmd = embeddingsMissing() ? `${ANALYZE} -f` : ANALYZE;
     execSync(cmd, { cwd: repoRoot, stdio: 'ignore' });
   } catch {
