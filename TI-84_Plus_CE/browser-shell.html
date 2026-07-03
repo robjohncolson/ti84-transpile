@@ -445,6 +445,7 @@ let lcd = null;
 let autoRunning = false;
 let autoRunSession = 0;
 let runtimeMode = 'direct';
+let pendingColdbootPostInsertFirstZeroDrain = null;
 const RUNTIME_MODE_DIRECT = 'direct';
 const RUNTIME_MODE_COORMON = 'coormon';
 const RUNTIME_MODE_COLDBOOT = 'coldboot';
@@ -508,7 +509,12 @@ const COLDBOOT_D000C2_ADDR = 0xD000C2;
 const COLDBOOT_D000C2_BIT7_MASK = 0x80;
 const COLDBOOT_POST_INSERT_GATE_ENTRY = 0x0158DE;
 const COLDBOOT_POST_INSERT_GATE_RETURN = 0x0013DA;
+const COLDBOOT_KEY_DEBOUNCE_FIRST_ZERO_HANDOFF = 0x03F9B0;
+const COLDBOOT_PRE_WIPE_ENTRY = 0x001879;
+const COLDBOOT_POST_INSERT_FIRST_ZERO_DRAIN_STEPS = 10000;
 const COLDBOOT_POST_INSERT_GATE_STOP = Symbol('coldboot-post-insert-gate-stop');
+const COLDBOOT_POST_INSERT_FIRST_ZERO_STOP = Symbol('coldboot-post-insert-first-zero-stop');
+const COLDBOOT_POST_INSERT_FIRST_ZERO_GUARD_STOP = Symbol('coldboot-post-insert-first-zero-guard-stop');
 const COLDBOOT_CONTROL_STOP = Symbol('coldboot-control-stop');
 const COLDBOOT_CONTEXT_VECTOR_BYTES = 21;
 const COLDBOOT_ARROW_DOWN_VECTOR_RESTORE_PC = 0x06C764;
@@ -2254,6 +2260,102 @@ function initializeColdbootRuntime() {
   log(`<span class="info">--- Coldboot seeded (entry=0x${hex(COLDBOOT_EVENT_LOOP_ENTRY, 6)}, halt=0x${hex(COLDBOOT_HALT_IDLE, 6)}, SP=0x${hex(cpu.sp, 6)}, IY=0xD00080, timerInterrupt=true) ---</span>`);
 }
 
+function runColdbootPostInsertFirstZeroDrain() {
+  if (!executor || !cpu?.memory) return { ok: false, reason: 'not-ready' };
+  prepareColdbootEventFrame();
+  const persistenceState = createColdbootPersistenceState();
+  const opts = getColdbootRunOptions(COLDBOOT_POST_INSERT_FIRST_ZERO_DRAIN_STEPS);
+  let blockCount = 0;
+  let lastObservedPc = lastPc;
+  let lastObservedMode = lastMode;
+  let lastObservedSteps = 0;
+  let stopKind = null;
+  let stopPc = null;
+  let stopD0058B = null;
+  let guardPc = null;
+  opts.onBlock = (pc, mode, meta, steps) => {
+    observeColdbootPersistenceBlock(persistenceState, pc);
+    blockCount++;
+    const addr = pc & 0xFFFFFF;
+    lastObservedPc = addr;
+    lastObservedMode = mode;
+    lastObservedSteps = steps;
+    if (addr === COLDBOOT_KEY_DEBOUNCE_FIRST_ZERO_HANDOFF) {
+      stopD0058B = cpu.memory[0xD0058B] ?? 0;
+      if (stopD0058B === 0) {
+        stopKind = 'first_zero_handoff';
+        stopPc = addr;
+        throw COLDBOOT_POST_INSERT_FIRST_ZERO_STOP;
+      }
+    }
+    if (addr === COLDBOOT_PRE_WIPE_ENTRY || addr === KEY_CLEANUP_ENTRY) {
+      stopKind = 'guard_pre_wipe';
+      guardPc = addr;
+      throw COLDBOOT_POST_INSERT_FIRST_ZERO_GUARD_STOP;
+    }
+  };
+  let result;
+  try {
+    result = executor.runFrom(lastPc, lastMode, opts);
+  } catch (error) {
+    if (error !== COLDBOOT_POST_INSERT_FIRST_ZERO_STOP && error !== COLDBOOT_POST_INSERT_FIRST_ZERO_GUARD_STOP) throw error;
+    result = {
+      steps: lastObservedSteps,
+      lastPc: lastObservedPc,
+      lastMode: lastObservedMode,
+      termination: stopKind,
+    };
+  }
+  totalSteps += result.steps;
+  lastPc = stopKind === 'first_zero_handoff' ? COLDBOOT_EVENT_LOOP_ENTRY : result.lastPc;
+  lastMode = stopKind === 'first_zero_handoff' ? 'adl' : result.lastMode;
+  finalizeColdbootPersistenceState(persistenceState);
+  return {
+    ok: stopKind === 'first_zero_handoff',
+    stopKind,
+    stopPc,
+    guardPc,
+    stopD0058B,
+    blockCount,
+    steps: result.steps,
+    termination: result.termination,
+    lastPc,
+    lastMode,
+    wipes: persistenceState.wipeCount,
+    D007CA: readMemoryFieldValue(cpu.memory, 0xD007CA, 3),
+    D0243A: readMemoryFieldValue(cpu.memory, COLDBOOT_EDIT_CURSOR_ADDR, 3),
+    token: cpu.memory[COLDBOOT_EDIT_BUFFER_BASE],
+  };
+}
+
+function finishPendingColdbootPostInsertFirstZeroDrain(code) {
+  const pending = pendingColdbootPostInsertFirstZeroDrain;
+  if (!pending || pending.code !== code || !isColdbootRuntime()) return null;
+  pendingColdbootPostInsertFirstZeroDrain = null;
+  const result = runColdbootPostInsertFirstZeroDrain();
+  if (result?.ok) {
+    log(`<span class="info">${pending.label} debounce drained at 0x${hex(result.stopPc, 6)}: D0058B=0x${hex(result.stopD0058B, 2)}, steps=${result.steps}</span>`);
+  } else {
+    log(`<span class="warn">${pending.label} debounce drain did not reach first-zero handoff: ${result?.termination ?? result?.reason ?? 'unknown'}${result?.guardPc != null ? ` at 0x${hex(result.guardPc, 6)}` : ''}</span>`);
+  }
+  if (window.__coldbootLastKey?.code === code) {
+    window.__coldbootLastKey.postInsertFirstZeroDrain = result;
+    window.__coldbootLastKey.D0243A = cpu?.memory ? readMemoryFieldValue(cpu.memory, COLDBOOT_EDIT_CURSOR_ADDR, 3) : 0;
+    window.__coldbootLastKey.D0243D = cpu?.memory ? readMemoryFieldValue(cpu.memory, 0xD0243D, 3) : 0;
+    window.__coldbootLastKey.D007CA = cpu?.memory ? readMemoryFieldValue(cpu.memory, 0xD007CA, 3) : 0;
+    window.__coldbootLastKey.D008E0 = cpu?.memory ? readMemoryFieldValue(cpu.memory, 0xD008E0, 3) : 0;
+    window.__coldbootLastKey.D02590 = cpu?.memory ? readMemoryFieldValue(cpu.memory, 0xD02590, 3) : 0;
+    window.__coldbootLastKey.buffer = cpu?.memory ? Array.from(cpu.memory.slice(COLDBOOT_EDIT_BUFFER_BASE, COLDBOOT_EDIT_BUFFER_BASE + 8)) : [];
+    window.__coldbootLastKey.vramCurrent = countVRAMPixels();
+  }
+  updateRegs();
+  syncLCDState();
+  if (lcd) lcd.renderFrame();
+  updateKeyStateDisplay();
+  updateKeyboardOverlay();
+  return result;
+}
+
 function runColdbootFrame(stepBudget = COLDBOOT_FRAME_STEPS) {
   if (!executor || !cpu?.memory) return;
   prepareColdbootEventFrame();
@@ -2415,6 +2517,7 @@ $('btnBoot').addEventListener('click', async () => {
         let controlStopCursorBefore = null;
         let controlStopCursorAfter = null;
         let controlStopCursorRestored = false;
+        let postInsertFirstZeroDrainResult = null;
         const expectedInsertByte = getColdbootExpectedInsertByte(e.code);
         const controlPreStop = getColdbootControlPreStop(e.code);
         const shouldRestoreContextVector = shouldRestoreColdbootContextVector(e.code);
@@ -2503,6 +2606,14 @@ $('btnBoot').addEventListener('click', async () => {
         }
         finalizeColdbootPersistenceState(persistenceState);
 
+        if (stoppedAtPostInsertGate && expectedInsertByte != null) {
+          pendingColdbootPostInsertFirstZeroDrain = {
+            code: e.code,
+            label: mappedKey.label,
+            expectedInsertByte,
+          };
+        }
+
         if (stoppedBeforeControlClear && e.code === EOL_PC_CODE && controlStopPc === COLDBOOT_CONTROL_PRE_STOP_BY_PC_CODE[EOL_PC_CODE]?.pc) {
           uiClearResult = applyColdbootUiLevelClear();
           if (uiClearResult.ok) {
@@ -2560,6 +2671,7 @@ $('btnBoot').addEventListener('click', async () => {
           contextVectorRestorePc,
           contextVectorD007CABefore,
           contextVectorD007CAAfter,
+          postInsertFirstZeroDrain: postInsertFirstZeroDrainResult,
           steps: result.steps,
           termination: result.termination,
           wipes: persistenceState.wipeCount,
@@ -2589,6 +2701,7 @@ $('btnBoot').addEventListener('click', async () => {
     if (KEY_MAP[e.code]) {
       peripherals?.clearKeyPressed?.(cpu?.memory);
     }
+    finishPendingColdbootPostInsertFirstZeroDrain(e.code);
     if (isCoorMonRuntime()) {
       writeCoorMonKeyEventFromState();
     }
