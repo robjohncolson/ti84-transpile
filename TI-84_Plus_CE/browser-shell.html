@@ -2282,7 +2282,9 @@ function runColdbootPostInsertFirstZeroDrain() {
     lastObservedSteps = steps;
     if (addr === COLDBOOT_KEY_DEBOUNCE_FIRST_ZERO_HANDOFF) {
       stopD0058B = cpu.memory[0xD0058B] ?? 0;
-      if (stopD0058B === 0 && ((cpu.memory[0xD000C3] ?? 0) & 0x04) === 0) {
+      if (stopD0058B === 0
+        && ((cpu.memory[0xD000C3] ?? 0) & 0x04) === 0
+        && ((cpu.memory[0xD0009B] ?? 0) & 0x40) === 0) {
         stopKind = 'first_zero_handoff';
         stopPc = addr;
         throw COLDBOOT_POST_INSERT_FIRST_ZERO_STOP;
