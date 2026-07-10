@@ -18,10 +18,12 @@ param(
     [string]$PromptFile = '',
     [switch]$SkipGit,
     [int]$TimeoutMinutes = 40,
-    # Per-invocation override; global config.toml stays at "low" so the
-    # OLD_APP 15-min loop keeps its cheap-tick economics. Research ticks
-    # here get gpt-5.5 at xhigh (quota is otherwise underused).
-    [string]$ReasoningEffort = 'xhigh'
+    # Per-invocation overrides passed via `codex -c`, so the loop's model/effort
+    # are scoped HERE and do NOT touch the global ~/.codex/config.toml default
+    # (which other projects + the cross-agent runner still inherit). This loop
+    # runs gpt-5.6-sol at xhigh; global config stays gpt-5.5.
+    [string]$ReasoningEffort = 'xhigh',
+    [string]$Model = 'gpt-5.6-sol'
 )
 
 $ErrorActionPreference = 'Continue'
@@ -81,7 +83,7 @@ if (Test-Path $LockFile) {
 
 $lockJson = @{ pid = $PID; created = (Get-Date -Format 'o'); worker = 'codex-supervisor' } | ConvertTo-Json -Compress
 Set-Content -Path $LockFile -Value $lockJson -Encoding ASCII
-Write-Log "tick start: prompt=$(Split-Path $PromptFile -Leaf) timeout=${TimeoutMinutes}m skipGit=$SkipGit"
+Write-Log "tick start: prompt=$(Split-Path $PromptFile -Leaf) model=$Model effort=$ReasoningEffort timeout=${TimeoutMinutes}m skipGit=$SkipGit"
 
 try {
     # --- 2. Back up the handoff file (keep last 20) -------------------------
@@ -99,6 +101,7 @@ try {
     $q = '"'
     $cmdLine = $q + $codexCmd + $q + ' exec --cd ' + $q + $ProjectDir + $q +
         ' --dangerously-bypass-approvals-and-sandbox --color never' +
+        ' -c model=' + $q + $Model + $q +
         ' -c model_reasoning_effort=' + $q + $ReasoningEffort + $q +
         ' --output-last-message ' + $q + $LastMsgFile + $q +
         ' - < ' + $q + $PromptFile + $q + ' > ' + $q + $LogFile + $q + ' 2>&1'
