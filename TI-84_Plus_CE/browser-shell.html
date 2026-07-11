@@ -2600,6 +2600,10 @@ $('btnBoot').addEventListener('click', async () => {
             postInsertGateBlock = blockCount;
           }
           if (postInsertGateBlock !== null && (pc & 0xFFFFFF) === COLDBOOT_POST_INSERT_GATE_RETURN) {
+            if ((e.code === 'Digit1' || e.code === 'Digit2' || e.code === 'Digit3') && cpu?.memory) {
+              const cursorPixelOffset = readMemoryFieldValue(cpu.memory, 0xD02A29, 2);
+              writeMemoryFieldValue(cpu.memory, 0xD02A29, 2, (cursorPixelOffset + 0x000C) & 0xFFFF);
+            }
             stoppedAtPostInsertGate = true;
             throw COLDBOOT_POST_INSERT_GATE_STOP;
           }
