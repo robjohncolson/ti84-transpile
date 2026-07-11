@@ -2519,6 +2519,12 @@ $('btnBoot').addEventListener('click', async () => {
         let controlStopCursorBefore = null;
         let controlStopCursorAfter = null;
         let controlStopCursorRestored = false;
+        let arrowLeftTupleShadow = null;
+        let arrowLeftTupleShadowPc = null;
+        let arrowLeftTupleReplayPc = null;
+        let arrowLeftTupleReplayCount = 0;
+        let arrowLeftDescriptorBeforeReplay = null;
+        let arrowLeftDescriptorAfterReplay = null;
         let postInsertFirstZeroDrainResult = null;
         const expectedInsertByte = getColdbootExpectedInsertByte(e.code);
         const controlPreStop = getColdbootControlPreStop(e.code);
@@ -2549,15 +2555,35 @@ $('btnBoot').addEventListener('click', async () => {
               contextVectorD007CAAfter = readMemoryFieldValue(cpu.memory, COORMON_CXMAIN_ADDR, 3);
             }
           }
+          if (e.code === 'ArrowLeft'
+              && arrowLeftTupleShadow === null
+              && cursorBefore !== null
+              && cpu?.memory
+              && (pc & 0xFFFFFF) === 0x05E453) {
+            const liveCursor = readMemoryFieldValue(cpu.memory, COLDBOOT_EDIT_CURSOR_ADDR, 3);
+            const liveDescriptor = readMemoryFieldValue(cpu.memory, 0xD0243D, 3);
+            if (liveCursor === ((cursorBefore - 1) & 0xFFFFFF)) {
+              arrowLeftTupleShadow = { cursor: liveCursor, descriptor: liveDescriptor };
+              arrowLeftTupleShadowPc = pc & 0xFFFFFF;
+            }
+          }
           if (controlPreStop && (pc & 0xFFFFFF) === controlPreStop.pc) {
             controlStopBlock = blockCount;
             controlStopPc = pc & 0xFFFFFF;
             stoppedBeforeControlClear = true;
             if (shouldRestoreControlStopCursor && cursorBefore != null && cpu?.memory) {
               controlStopCursorBefore = readMemoryFieldValue(cpu.memory, COLDBOOT_EDIT_CURSOR_ADDR, 3);
-              writeMemoryFieldValue(cpu.memory, COLDBOOT_EDIT_CURSOR_ADDR, 3, cursorBefore);
+              const replayCursor = arrowLeftTupleShadow?.cursor ?? cursorBefore;
+              writeMemoryFieldValue(cpu.memory, COLDBOOT_EDIT_CURSOR_ADDR, 3, replayCursor);
+              if (arrowLeftTupleShadow) {
+                arrowLeftDescriptorBeforeReplay = readMemoryFieldValue(cpu.memory, 0xD0243D, 3);
+                writeMemoryFieldValue(cpu.memory, 0xD0243D, 3, arrowLeftTupleShadow.descriptor);
+                arrowLeftDescriptorAfterReplay = readMemoryFieldValue(cpu.memory, 0xD0243D, 3);
+                arrowLeftTupleReplayPc = pc & 0xFFFFFF;
+                arrowLeftTupleReplayCount++;
+              }
               controlStopCursorAfter = readMemoryFieldValue(cpu.memory, COLDBOOT_EDIT_CURSOR_ADDR, 3);
-              controlStopCursorRestored = controlStopCursorAfter === cursorBefore;
+              controlStopCursorRestored = controlStopCursorAfter === replayCursor;
             }
             throw COLDBOOT_CONTROL_STOP;
           }
@@ -2664,6 +2690,12 @@ $('btnBoot').addEventListener('click', async () => {
           controlStopCursorBefore,
           controlStopCursorAfter,
           controlStopCursorRestored,
+          arrowLeftTupleShadow,
+          arrowLeftTupleShadowPc,
+          arrowLeftTupleReplayPc,
+          arrowLeftTupleReplayCount,
+          arrowLeftDescriptorBeforeReplay,
+          arrowLeftDescriptorAfterReplay,
           uiClearApplied: uiClearResult?.ok === true,
           uiClearResult,
           stoppedBeforeControlClear,
