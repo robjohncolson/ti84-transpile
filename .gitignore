@@ -7,6 +7,7 @@ TI-84_Plus_CE/ROM.transpiled.js
 logs/
 state/cross-agent/
 .ti84_codex_loop.lock
+.auto-continuation-disabled
 .gitnexus_refresh.lock
 .auto-session-*.md
 probe*.stderr.txt
