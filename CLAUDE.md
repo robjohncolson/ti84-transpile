@@ -29,6 +29,8 @@ A research project that lifts the TI-84 Plus CE OS ROM (eZ80 machine code) into 
 | `scripts/auto-continuation-codex.ps1` | Active launcher for the auto-continuation schtask (Codex tick supervisor: lock + timeout + golden-regression commit gate) |
 | `.auto-continuation-codex-prompt.md` | Single-tick prompt the schtask pipes into headless Codex |
 | `scripts/auto-continuation.bat` + `.auto-continuation-prompt.md` | RETIRED Claude launcher + prompt (kept for reference; retired 2026-06-11 to save Claude credits) |
+| `scripts/auto-continuation.sh` | Linux/cron port of the retired Claude launcher (see `scripts/README-automation.md`) |
+| `scripts/secret-gate.sh` | Blocks pushes containing credential-shaped strings |
 
 ## How To Regenerate
 
@@ -53,17 +55,21 @@ When the user says "go for it", "keep going", or invokes the auto-continuation l
 2. **Default to parallel Codex dispatch**: Use the cross-agent.py runner for any file-writing, probe-running, or disassembly work. CC focuses on investigation, analysis, and orchestration. Give Codex self-contained prompts with exact addresses, reference commits, file paths, and calling-convention details — it has NO conversation context. **Default posture: spawn 3-4 Codex agents in parallel** for independent priorities. Only serialize when a task depends on another task's output.
 3. **At every pause** (after a phase completes, before picking the next target): run `/context` AND **update `CONTINUATION_PROMPT_CODEX.md`** with what just ran (artifacts, findings, next-phase priorities). Keep the "last updated" header current. Both steps are non-negotiable — the file is the only handoff mechanism.
 4. **Continue or stop based on context**: < 70% of 1M → proceed to next priority without asking. ≥ 70% → make sure `CONTINUATION_PROMPT_CODEX.md` is fully up-to-date, then stop and hand off.
-5. **Auto-continuation schtask**: `\TI84-AutoContinuation` fires `scripts/auto-continuation-codex.ps1` — a headless **Codex** tick (the Claude launcher is retired; task currently **Disabled** pending user re-enable). One fire = one Codex tick: one priority from CONTINUATION_PROMPT_CODEX.md, wrapper-owned golden-regression gate, commit/push only on PASS. Disable with `schtasks /change /tn \TI84-AutoContinuation /disable` if a human session is editing the handoff file. Re-enable with `/enable`. Change interval via elevated PowerShell `Set-ScheduledTask` (`schtasks /change /ri` hangs on a password prompt). Logs in `logs/` (gitignored).
+5. **Auto-continuation schtask (Windows, the real loop)**: `\TI84-AutoContinuation` fires `scripts/auto-continuation-codex.ps1` — a headless **Codex** tick (the Claude launcher is retired; task currently **Disabled** pending user re-enable). One fire = one Codex tick: one priority from CONTINUATION_PROMPT_CODEX.md, wrapper-owned golden-regression gate, commit/push only on PASS. Disable with `schtasks /change /tn \TI84-AutoContinuation /disable` if a human session is editing the handoff file. Re-enable with `/enable`. Change interval via elevated PowerShell `Set-ScheduledTask` (`schtasks /change /ri` hangs on a password prompt). Logs in `logs/` (gitignored).
+
+6. **Linux/cron port**: `scripts/auto-continuation.sh` is a bash port of the *retired Claude* launcher, added 2026-08-07 so the loop can run on the Surface Pro. It is **not installed** — see `scripts/README-automation.md` for the crontab line. Pause it with `touch .auto-continuation-disabled` rather than editing crontab. Because it wraps the retired Claude prompt it burns Claude credits, which is exactly why the Windows loop moved to Codex; porting `auto-continuation-codex.ps1`'s tick supervisor (lock, timeout, golden-regression commit gate) to bash is the better follow-up.
+
+   Both launchers refuse to push when outgoing commits contain credential-shaped strings (`scripts/secret-gate.sh`) — a headless session that quotes a key it read into the handoff file must not publish it.
 
 **Do NOT** ask for approval between reasonable next-phase targets. The user delegated that judgment. Only stop for: (a) context ≥ 70%, (b) genuinely ambiguous fork, (c) destructive operation not previously authorized.
 
 ## Cross-Agent Dispatch (Codex)
 
 ```bash
-python "C:/Users/rober/Downloads/Projects/Agent/runner/cross-agent.py" \
+python3 "${CROSS_AGENT:-../Agent/runner/cross-agent.py}" \
   --direction cc-to-codex --task-type implement \
   --prompt "<self-contained task: exact addresses, file paths, calling conventions>" \
-  --working-dir "C:/Users/rober/Downloads/Projects/school/ti84-transpile" \
+  --working-dir "$PWD" \
   --timeout 600
 ```
 
@@ -85,7 +91,7 @@ python "C:/Users/rober/Downloads/Projects/Agent/runner/cross-agent.py" \
 
 ## Sibling Repo
 
-The TI-84 **trainer** (separate project, real CEmu WASM + native state machine for keystroke training) lives in `C:/Users/rober/Downloads/Projects/school/follow-alongs/ti84-trainer-v2/`. That repo also hosts the AP Stats worksheets and study guide. **Do not modify anything in `follow-alongs` from a transpile session** — that was the GH Pages collision that motivated this split.
+The TI-84 **trainer** (separate project, real CEmu WASM + native state machine for keystroke training) lives inside the `apstats-live-worksheet` repo (a sibling checkout; `ti84-trainer-v2/`, historically called `follow-alongs`). That repo also hosts the AP Stats worksheets and study guide. **Do not modify anything in it from a transpile session** — that was the GH Pages collision that motivated this split.
 
 ## Code Style
 

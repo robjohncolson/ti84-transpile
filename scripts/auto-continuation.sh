@@ -76,24 +76,16 @@ trap 'rm -f "$LOCK"' EXIT
     echo "claude exited with code $?"
   fi
 
-  # Secret gate (same logic as jetson/scripts/synthesis-cycle.sh). A headless
-  # session reading logs or a sibling repo will happily quote a credential it
-  # found into the handoff file. Refuse to publish rather than push a secret
-  # to a public repo; the cycle's work stays committed locally for triage.
-  if git diff --stat origin/HEAD..HEAD >/dev/null 2>&1; then
-    leaked=$(git diff -U0 origin/HEAD..HEAD 2>/dev/null \
-      | grep -E '^\+' \
-      | grep -oE 'eyJhbGciOiJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+|sk-[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{30,}|AKIA[0-9A-Z]{16}' \
-      | sort -u | head -5)
-    if [ -n "$leaked" ]; then
-      echo "push: BLOCKED — outgoing commits contain credential-shaped strings:"
-      echo "$leaked" | sed 's/^\(.\{24\}\).*/  \1... [redacted]/'
-      echo "Scrub them, then push by hand. Not pushing."
-      dur=$(( $(date +%s) - start ))
-      echo "===== auto-continuation session done in ${dur}s (push blocked) ====="
-      echo
-      exit 0
-    fi
+  # Secret gate (shared implementation; canonical copy lives in
+  # jetson/scripts/secret-gate.sh). A headless session reading logs or a sibling
+  # repo will happily quote a credential it found into the handoff file. Refuse
+  # to publish rather than push a secret to a public repo; the cycle's work
+  # stays committed locally for triage.
+  if ! bash "${REPO}/scripts/secret-gate.sh"; then
+    dur=$(( $(date +%s) - start ))
+    echo "===== auto-continuation session done in ${dur}s (push blocked) ====="
+    echo
+    exit 0
   fi
 
   # Push backstop — the session pushes itself in its Step 9, but if it ran out
