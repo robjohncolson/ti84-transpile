@@ -1,5 +1,15 @@
 # Auto-Continuation Automation (Linux)
 
+> **Read this first.** `auto-continuation.bat` and the Claude prompt it wraps were
+> **retired on 2026-06-11 to save Claude credits**. The loop that actually ran
+> afterwards — auto-sessions through 2026-07-13 — is `auto-continuation-codex.ps1`,
+> a Codex tick supervisor with a wrapper-owned golden-regression commit gate, and
+> its schtask is currently Disabled. This script is a faithful bash port of the
+> *retired Claude* launcher, so running it resumes the expensive mechanism, not
+> the current one. If you want the Linux loop to match what Windows actually does,
+> port the ps1's tick supervisor instead. Ported anyway because the Surface is the
+> always-on machine now and having the launcher on Linux is a prerequisite either way.
+
 `scripts/auto-continuation.sh` is the Linux port of `scripts/auto-continuation.bat`,
 the Windows Task Scheduler launcher that drove auto-sessions 1-445. Each run
 starts one fresh headless Claude Code session that reads
