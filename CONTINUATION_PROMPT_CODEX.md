@@ -7,7 +7,55 @@ neither full functional equivalence nor a readable, annotated decompilation is
 complete. Treat the historical automated-session claims below as historical.
 The scheduled continuation task was found Disabled and was not changed.
 
-Uncommitted implementation changes in this session:
+## Strict execution and copied RAM code checkpoint
+
+The calculator fixes below were committed and pushed as `51765fa` after a clean
+rebase onto the remote automation updates. The user explicitly authorized commit,
+push, and continued work until decompilation is concluded. It is not concluded.
+
+New work adds opt-in `strictExecution`, `liftMissingBlocks`, and `flash` executor
+options. Strict mode stops on missing code and loop limits, rejects cached fake
+RAM returns, and disables stack repair and artificial HALT wakeups. The browser's
+existing defaults remain unchanged. Strict mode does not establish instruction
+or peripheral accuracy, and the two existing delay overrides still exist.
+
+`ez80-lifter.js` now contains the instruction emitter shared by the build script
+and runtime. Missing executable RAM is lifted one instruction at a time to observe
+self-modification. Cached translations are invalidated after byte changes; flash
+changes also invalidate prelifted blocks. `parallel-flash.js` models the observed
+parallel NOR unlock/program/sector-erase/protection-query commands. It is opt-in
+and incomplete: electrical timing, ASIC privilege gates, and other commands remain
+unimplemented. Mutations affect the probe's memory, never the ROM file on disk.
+
+Validation: strict executor 6 tests, runtime lifting 4 tests, flash 6 tests PASS;
+existing word/key tests 16 PASS. `probe-lifter-parity.mjs` reproduces source/exits
+for all 145,930 normal generated blocks (two manual 006202 overrides excluded).
+Browser `probe-rom-calculator.mjs` and phase99d home verification PASS after the
+shared-lifter/runtime changes. No generated ROM update is needed for this exact
+emitter extraction.
+
+`probe-strict-boot.mjs` uses reset entry 0, no RAM replay, gpioValue=0, parallel
+flash, strict execution, and runtime lifting. Including the final wide-bus hooks,
+it reached DI/HALT at 0019B5 after 328,126 blocks, zero forced loops and zero missing
+blocks. It performed 64 erases and 126 byte programs, including OS sectors. This is
+a shutdown/erase path, NOT successful boot. The probe is diagnostic, not a boot
+pass/fail gate. First erase: 0139A3 -> 013ADD -> 0068D0 -> 000E3D -> copied routine
+D18C22; first erase command at D18C4F targets 020000. It has a recent trace in
+ignored `logs/strict-boot.json`. Loop limit 131072 is required for legitimate long
+flash scans; the earlier 8192 limit stopped CPI loops.
+
+Next: trace why initialization selects this erase path. Existing peripherals are
+scaffolding: control port 28 is currently modeled as a PLL although CEmu's control
+model identifies it as flash unlock state; port 06 is protected-port unlock state.
+Investigate accurately without declaring a HALT or lack of missing blocks to mean
+boot success. Reference primary emulator implementation:
+https://github.com/CE-Programming/CEmu/blob/master/core/control.c and core/mem.c.
+Full decompilation also still needs instruction-prefix correctness, hardware
+equivalence, broader OS behavior, and readable annotations.
+
+## Calculator fixes (committed as 51765fa)
+
+Implementation changes:
 
 - Corrected CPU ADD/ADC/SBC word arithmetic: mask operands to the selected width
   before computing carry/borrow, and use the documented bit-11 half carry for

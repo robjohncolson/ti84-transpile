@@ -1,5 +1,6 @@
 // CPU runtime scaffold for executing lifted Z80/eZ80 ROM blocks
 // Implements all cpu.* methods referenced by ROM.transpiled.js
+import { buildBlock } from './ez80-lifter.js';
 
 const FLAG_C = 0x01;
 const FLAG_N = 0x02;
@@ -844,6 +845,31 @@ export class CPU {
 
 export function createExecutor(blocks, memory, options = {}) {
   const cpu = new CPU(memory);
+  if (options.flash) {
+    const read = cpu.read8.bind(cpu);
+    const write = cpu.write8.bind(cpu);
+    cpu.read8 = address => {
+      const normalized = address & cpu._memMask;
+      return normalized < 0x400000 ? options.flash.read8(normalized) : read(normalized);
+    };
+    cpu.write8 = (address, value) => {
+      const normalized = address & cpu._memMask;
+      if (normalized < 0x400000) options.flash.write8(normalized, value);
+      else write(normalized, value);
+    };
+    // Multi-byte transfers use the same bus so flash status and commands are
+    // observed consistently, including transfers across address boundaries.
+    cpu.read16 = address => cpu.read8(address) | (cpu.read8(address + 1) << 8);
+    cpu.read24 = address => cpu.read16(address) | (cpu.read8(address + 2) << 16);
+    cpu.write16 = (address, value) => {
+      cpu.write8(address, value);
+      cpu.write8(address + 1, value >> 8);
+    };
+    cpu.write24 = (address, value) => {
+      cpu.write16(address, value);
+      cpu.write8(address + 2, value >> 16);
+    };
+  }
 
   if (options.peripherals) {
     cpu._ioRead = (port) => options.peripherals.read(port);
@@ -1057,6 +1083,9 @@ export function createExecutor(blocks, memory, options = {}) {
   // Compile block source strings into callable functions
   const compiledBlocks = {};
   const blockMeta = {};
+  const syntheticBlocks = new Set();
+  const dynamicBlocks = new Map();
+  const flashImage = options.flash ? memory.slice(0, 0x400000) : null;
 
   for (const [key, block] of Object.entries(blocks)) {
     try {
@@ -1095,6 +1124,9 @@ export function createExecutor(blocks, memory, options = {}) {
     blockMeta,
 
     runFrom(startAddress, startMode = 'adl', opts = {}) {
+      // Audit execution must expose gaps instead of repairing machine state.
+      const strictExecution = opts.strictExecution ?? options.strictExecution ?? false;
+      const liftMissingBlocks = opts.liftMissingBlocks ?? options.liftMissingBlocks ?? false;
       const maxSteps = opts.maxSteps ?? 100000;
       const onBlock = opts.onBlock ?? null;
       const maxLoopIter = opts.maxLoopIterations ?? 64;
@@ -1139,6 +1171,10 @@ export function createExecutor(blocks, memory, options = {}) {
         if (recentKeys.length > recentMax) recentKeys.shift();
 
         if (loopHitCount > maxLoopIter) {
+          if (strictExecution) {
+            termination = 'loop_limit';
+            break;
+          }
           // Force-break: find fallthrough exit from this block
           const meta = blockMeta[key];
           const fallthrough = meta?.exits?.find(e => e.type === 'fallthrough');
@@ -1163,13 +1199,50 @@ export function createExecutor(blocks, memory, options = {}) {
           loopsForced++;
         }
 
-        const fn = compiledBlocks[key];
+        const cached = dynamicBlocks.get(key);
+        if (flashImage && pc < flashImage.length && !cached && blockMeta[key]?.instructions?.length) {
+          const lastInstruction = blockMeta[key].instructions.at(-1);
+          const end = lastInstruction.pc + lastInstruction.length;
+          for (let address = pc; address < end; address++) {
+            if (memory[address] === flashImage[address]) continue;
+            delete compiledBlocks[key];
+            delete blockMeta[key];
+            break;
+          }
+        }
+        if (cached && cached.bytes.some((byte, offset) => memory[pc + offset] !== byte)) {
+          // RAM routines can rewrite themselves or be replaced by another copy.
+          delete compiledBlocks[key];
+          delete blockMeta[key];
+          dynamicBlocks.delete(key);
+        }
+        let fn = compiledBlocks[key];
+        const isRamCode = pc >= 0xD00000 && pc < 0xD65800;
+        if (liftMissingBlocks && (!fn || syntheticBlocks.has(key))
+            && pc >= 0 && pc < memory.length && (pc < 0x400000 || isRamCode)) {
+          // One instruction per RAM block observes writes to the next opcode
+          // before executing it. ROM blocks can safely contain more instructions.
+          const lifted = buildBlock(memory, pc, mode, { instructionsPerBlock: isRamCode ? 1 : 64 });
+          if (lifted.instructions.length && lifted.instructions.every(i => i.tag !== 'unsupported')) {
+            const body = lifted.source.slice(lifted.source.indexOf('{') + 1, lifted.source.lastIndexOf('}'));
+            fn = new Function('cpu', body);
+            compiledBlocks[key] = fn;
+            blockMeta[key] = lifted;
+            syntheticBlocks.delete(key);
+            const byteCount = lifted.instructions.reduce((count, instruction) => count + instruction.length, 0);
+            dynamicBlocks.set(key, { bytes: memory.slice(pc, pc + byteCount) });
+          }
+        }
 
-        if (!fn) {
+        if (!fn || (strictExecution && syntheticBlocks.has(key))) {
           if (opts.onMissingBlock) {
             opts.onMissingBlock(pc, mode, steps);
           }
           missingBlocks.add(key);
+          if (strictExecution) {
+            termination = 'missing_block';
+            break;
+          }
 
           // RAM trampoline: for missing blocks at RAM addresses (>= 0xD00000),
           // inject a synthetic RET that pops the return address and continues.
@@ -1183,6 +1256,7 @@ export function createExecutor(blocks, memory, options = {}) {
               return retAddr;
             };
             compiledBlocks[key] = trampolineFn;
+            syntheticBlocks.add(key);
             // Don't increment steps or continue - fall through to re-execute
             // this block on the next loop iteration (it's now in compiledBlocks)
             continue;
@@ -1242,7 +1316,7 @@ export function createExecutor(blocks, memory, options = {}) {
         steps++;
         // SP safety clamp restores a known-good RAM stack after ROM-space corruption.
         const spAfterBlock = cpu.sp & 0xFFFFFF;
-        if (spAfterBlock < 0x400000 && spAfterBlock !== 0 && lastGoodSp !== null) {
+        if (!strictExecution && spAfterBlock < 0x400000 && spAfterBlock !== 0 && lastGoodSp !== null) {
           cpu.sp = lastGoodSp;
         }
         blockVisits.set(key, (blockVisits.get(key) || 0) + 1);
@@ -1253,7 +1327,7 @@ export function createExecutor(blocks, memory, options = {}) {
         }
 
         if (result < 0) {
-          if (result === -1 && opts.wakeFromHalt) {
+          if (!strictExecution && result === -1 && opts.wakeFromHalt) {
             const haltPc = pc;
             // HALT returns from the lifted block, so approximate the post-HALT PC.
             const haltReturnPc = haltPc + 1;
@@ -1366,7 +1440,7 @@ export function createExecutor(blocks, memory, options = {}) {
 
           // Coldboot sleep path: DI + HALT disables IRQ wake, so re-enter the
           // OS event loop instead of dead-stopping the runtime forever.
-          if (result === -1 && diHaltBypassEnabled && cpu.halted && !cpu.iff1) {
+          if (!strictExecution && result === -1 && diHaltBypassEnabled && cpu.halted && !cpu.iff1) {
             cpu.halted = false;
             cpu.iff1 = 1;
             cpu.iff2 = 1;
