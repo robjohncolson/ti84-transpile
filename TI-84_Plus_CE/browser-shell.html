@@ -500,7 +500,7 @@ const EOL_TUPLE_SAVE_ENTRY = 0x08F54B;
 const KEY_CLEANUP_ENTRY = 0x0018F8;
 const EOL_PC_CODE = 'Escape';
 const COLDBOOT_EDIT_CURSOR_ADDR = 0xD0243A;
-const COLDBOOT_EDIT_BUFFER_BASE = 0xD1A8CC;
+let COLDBOOT_EDIT_BUFFER_BASE = 0xD1A8CC;
 const COLDBOOT_EDIT_BUFFER_CLEAR_LEN = 0x80;
 const COLDBOOT_RENDER_ROW_ADDR = 0xD00595;
 const COLDBOOT_RENDER_COL_ADDR = 0xD00596;
@@ -529,7 +529,7 @@ const COLDBOOT_INSERT_BYTE_BY_PC_CODE = Object.freeze({
   Digit7: 0x37, Numpad7: 0x37,
   Digit8: 0x38, Numpad8: 0x38,
   Digit9: 0x39, Numpad9: 0x39,
-  Equal: 0x9E, NumpadAdd: 0x9E,
+  Equal: 0x70, NumpadAdd: 0x70,
   Minus: 0x71, NumpadSubtract: 0x71,
   NumpadMultiply: 0x82,
   Slash: 0x83, NumpadDivide: 0x83,
@@ -542,7 +542,7 @@ const COLDBOOT_CONTROL_PRE_STOP_BY_PC_CODE = Object.freeze({
   ArrowLeft: { pc: 0x001879, label: 'arrow-left-prewipe-vector-restore-stop' },
   ArrowRight: { pc: 0x001879, label: 'arrow-right-prewipe-stop' },
   ArrowUp: { pc: 0x0A229D, label: 'arrow-up-space-fill-bc-zero-owner' },
-  Enter: { pc: 0x001879, label: 'enter-prewipe-cursor-restore-stop' },
+  Enter: { pc: 0x001879, label: 'enter-prewipe-stop' },
   Escape: { pc: 0x0A229D, label: 'clear-eol-bc-zero-owner' },
   Comma: { pc: 0x001879, label: 'comma-prewipe-stop' },
   NumpadComma: { pc: 0x001879, label: 'numpadcomma-prewipe-stop' },
@@ -639,8 +639,8 @@ const GETCSC_SCAN_CODE_BY_PC_CODE = Object.freeze({
   ArrowRight: 0x03,
   ArrowUp: 0x04,
   Enter: 0x09,
-  Equal: 0x2A,
-  NumpadAdd: 0x2A,
+  Equal: 0x0A,
+  NumpadAdd: 0x0A,
   Minus: 0x0B,
   NumpadSubtract: 0x0B,
   NumpadMultiply: 0x0C,
@@ -849,7 +849,7 @@ function shouldRestoreColdbootContextVector(code) {
 }
 
 function shouldRestoreColdbootEditCursorAtControlStop(code, controlPreStop) {
-  return (code === 'ArrowLeft' || code === 'Enter') && controlPreStop?.pc === 0x001879;
+  return code === 'ArrowLeft' && controlPreStop?.pc === 0x001879;
 }
 
 function coldbootKeyInsertObserved(expectedByte, cursorBefore) {
@@ -1056,7 +1056,6 @@ function writeCoorMonKeyEventFromState() {
 
 function getColdbootInternalKeyCode(code, scanCode) {
   if (code === EOL_PC_CODE) return scanCode & 0xFF;
-  if (code === 'Equal' || code === 'NumpadAdd') return 0x70;
   const modifier = getKeyboardModifierIndex(cpu?.memory);
   return scanCodeToKeyCode[modifier]?.[scanCode] || (scanCode & 0xFF);
 }
@@ -2107,6 +2106,11 @@ function initializeColdbootRuntime() {
     ['D007CA', 0xD007CA, 3],
     ['D008E0', 0xD008E0, 3],
     ['D02505', 0xD02505, 1],
+    // The history manager subtracts its base from this end pointer on ENTER.
+    // Replaying the ROM-initialized empty history prevents a zero pointer from
+    // becoming a multi-megabyte LDDR at 0x092263 after the boot-time clear.
+    ['D01508', 0xD01508, 3],
+    ['D01D0B', 0xD01D0B, 1],
     ['D02587', 0xD02587, 3],
     ['D0258A', 0xD0258A, 3],
     ['D0258D', 0xD0258D, 3],
@@ -2227,7 +2231,15 @@ function initializeColdbootRuntime() {
   // characters into the edit buffer instead of wiping. Run
   // probe-browser-shell-replay-verify.mjs after editing this block.
   (function seedColdbootEditContext() {
-    const EDIT_BASE = 0xD1A8CC, tokenCursor = 0xD2A83E;
+    // The captured editor layout is reusable, but its absolute addresses are
+    // not. iMathPtr1 owns the equation's two-byte length; iMathPtr3 is its end.
+    // The ROM closes this buffer on ENTER and parses that same equation.
+    const EDIT_BASE = evalRead24(mem, 0xD0066F) + 2;
+    const tokenCursor = evalRead24(mem, 0xD00675);
+    if (EDIT_BASE < 0xD0000C || tokenCursor <= EDIT_BASE || tokenCursor >= 0xD40000) {
+      throw new Error('Coldboot did not initialize the equation edit buffer');
+    }
+    COLDBOOT_EDIT_BUFFER_BASE = EDIT_BASE;
     evalWrite24(mem, 0xD02317, tokenCursor);
     evalWrite24(mem, 0xD0231A, tokenCursor);
     evalWrite24(mem, 0xD0231D, tokenCursor - 1);
@@ -2243,9 +2255,11 @@ function initializeColdbootRuntime() {
     evalWrite24(mem, 0xD02A40, tokenCursor);
     mem[0xD02A29] = 0; mem[0xD02A2A] = 0;
     mem.fill(0, EDIT_BASE, EDIT_BASE + 0x80);
-    mem[0xD1A8C0] = 0x0C; mem[0xD1A8C1] = 0x00; mem[0xD1A8C2] = 0x07;
+    mem[EDIT_BASE - 12] = 0x0C;
+    mem[EDIT_BASE - 11] = 0x00;
+    mem[EDIT_BASE - 10] = 0x07;
   })();
-  log(`<span class="info">--- Edit context seeded (cursor=0xD1A8CC, ready for typed input) ---</span>`);
+  log(`<span class="info">--- Edit context seeded (cursor=0x${hex(COLDBOOT_EDIT_BUFFER_BASE, 6)}, ready for typed input) ---</span>`);
 
   lastPc = COLDBOOT_EVENT_LOOP_ENTRY;
   lastMode = 'adl';
@@ -2544,6 +2558,13 @@ $('btnBoot').addEventListener('click', async () => {
           lastObservedPc = pc;
           lastObservedMode = mode;
           lastObservedSteps = steps;
+          // A synchronous burst cannot receive the browser's keyup event.
+          // Release ENTER once cxMain accepts it, or the held matrix key is
+          // scanned again and evaluates the same expression a second time.
+          if (e.code === 'Enter' && (pc & 0xFFFFFF) === 0x0585E9) {
+            kbd.handleKeyUp(e);
+            peripherals?.clearKeyPressed?.(cpu?.memory);
+          }
           if (shouldRestoreContextVector
               && contextVectorSnapshot
               && contextVectorRestoreBlock === null
@@ -7345,49 +7366,22 @@ function runDirectEvalTemplate(expr, useBuffer) {
   return null;
 }
 
-// ── ROM Parser: PushErrorHandler + z80 RET intercept pattern ──────────
-// Uses the proven probe-phase190 approach: BufInsert tokens into the edit
-// buffer, PushErrorHandler with recovery at 0x099929, ParseInp with z80
-// RET intercept at block 03e1b1:z80, then read BCD result from OP1.
+// ROM Parser
+// Create a temporary ROM program, install the ROM error handler, and call ParseInp.
 
-const ROMP_PUSH_ERROR_HANDLER_ENTRY = 0x07C88B;
-const ROMP_PUSH_ERROR_HANDLER_RET   = 0x7FFFEA;
 const ROMP_PARSEINP_ENTRY           = 0x099914;
-const ROMP_PARSEINP_RET             = 0x7FFFF2;
-const ROMP_PARSEINP_ERR             = 0x7FFFEE;
-const ROMP_HLPAYLOAD_TARGET         = 0x099929;
-const ROMP_ERROR_HELPER_RET_BLOCK   = 0x03E1B1;
-const ROMP_ERROR_WRAPPER_AFTER      = 0x03E1CA;
-const ROMP_JERROR_ENTRY             = 0x061DB2;
 const ROMP_CREATEREAL_ENTRY         = 0x08238A;
 const ROMP_MEMINIT_ENTRY            = 0x09DEE0;
 
 const ROMP_OP1_ADDR      = 0xD005F8;
-const ROMP_OP2_ADDR      = 0xD00603;
 const ROMP_ERRNO_ADDR    = 0xD008DF;
 const ROMP_ERRSP_ADDR    = 0xD008E0;
-const ROMP_BEGPC_ADDR    = 0xD02317;
-const ROMP_CURPC_ADDR    = 0xD0231A;
-const ROMP_ENDPC_ADDR    = 0xD0231D;
-const ROMP_FPSBASE_ADDR  = 0xD0258A;
-const ROMP_FPS_ADDR      = 0xD0258D;
-const ROMP_OPBASE_ADDR   = 0xD02590;
-const ROMP_OPS_ADDR      = 0xD02593;
-const ROMP_EDIT_TOP      = 0xD02437;
-const ROMP_EDIT_CURSOR   = 0xD0243A;
-const ROMP_EDIT_TAIL     = 0xD0243D;
-const ROMP_EDIT_BTM      = 0xD02440;
-const ROMP_BUF_START     = 0xD00A00;
-const ROMP_BUF_END       = 0xD00B00;
 const ROMP_STACK_TOP     = 0xD1A87E;
 const ROMP_ANS_OP1       = [0x00, 0x72, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
-const ROMP_FAKE_RET      = 0x7FFFFE;
 const ROMP_ERR_CATCH     = 0x7FFFFA;
 const ROMP_MEMINIT_RET   = 0x7FFFF6;
 const ROMP_CREATEREAL_RET = 0x7FFFF2;
 
-const ROMP_INTERCEPT_STOP = '__ROMP_INTERCEPT__';
-const ROMP_TRACE_STOP     = '__ROMP_TRACE_STOP__';
 
 // Cached runtime for ROM Parser mode (separate from direct-eval runtime)
 let rompCachedMem = null;
@@ -7398,10 +7392,6 @@ function rompWrite24(mem, addr, val) {
   mem[addr]     =  val        & 0xFF;
   mem[addr + 1] = (val >>> 8) & 0xFF;
   mem[addr + 2] = (val >>> 16) & 0xFF;
-}
-
-function rompRead24(mem, addr) {
-  return ((mem[addr] & 0xFF) | ((mem[addr + 1] & 0xFF) << 8) | ((mem[addr + 2] & 0xFF) << 16)) >>> 0;
 }
 
 function rompResetCpu(c, mem) {
@@ -7517,327 +7507,89 @@ function rompEnsureRuntime() {
   return { mem, ex, c };
 }
 
-function rompRunBufInsertToken(ex, c, mem, token) {
-  rompResetCpu(c, mem);
-  c.sp -= 3;
-  rompWrite24(mem, c.sp, ROMP_FAKE_RET);
-  c._de = token & 0xFF;
-
-  let returned = false;
-  try {
-    ex.runFrom(EVAL_BUFINSERT_ENTRY, 'adl', {
-      maxSteps: 10000, maxLoopIterations: 8192,
-      onBlock(pc) { if ((pc & 0xFFFFFF) === ROMP_FAKE_RET) throw new Error('__RET__'); },
-      onMissingBlock(pc) { if ((pc & 0xFFFFFF) === ROMP_FAKE_RET) throw new Error('__RET__'); },
-    });
-  } catch (e) {
-    if (e?.message === '__RET__') returned = true;
-    else throw e;
-  }
-  return returned;
-}
-
-function rompRunPushErrorHandler(ex, c, mem) {
-  rompResetCpu(c, mem);
-  mem.fill(0x00, ROMP_OP1_ADDR, ROMP_OP1_ADDR + 9);
-
-  c._hl = ROMP_HLPAYLOAD_TARGET;
-  c.sp -= 3;
-  rompWrite24(mem, c.sp, ROMP_PUSH_ERROR_HANDLER_RET);
-
-  let returned = false;
-  try {
-    ex.runFrom(ROMP_PUSH_ERROR_HANDLER_ENTRY, 'adl', {
-      maxSteps: 8000, maxLoopIterations: 8192,
-      onBlock(pc) { if ((pc & 0xFFFFFF) === ROMP_PUSH_ERROR_HANDLER_RET) throw new Error('__RET__'); },
-      onMissingBlock(pc) { if ((pc & 0xFFFFFF) === ROMP_PUSH_ERROR_HANDLER_RET) throw new Error('__RET__'); },
-    });
-  } catch (e) {
-    if (e?.message === '__RET__') returned = true;
-    else throw e;
-  }
-  return returned;
-}
-
-function rompRunParseInpWithIntercept(ex, c, mem) {
-  // Push return sentinel onto stack
-  c.sp -= 3;
-  rompWrite24(mem, c.sp, ROMP_PARSEINP_RET);
-
-  let currentPc = ROMP_PARSEINP_ENTRY & 0xFFFFFF;
-  let currentMode = 'adl';
-  let totalSteps = 0;
-  let hit = null;
-  let interceptCount = 0;
-  let hlPayloadReached = false;
-
-  const MAX_STEPS = 5000;
-  const SEGMENT_LIMIT = 2000;
-
-  const sentinels = {
-    ret: ROMP_PARSEINP_RET,
-    err: ROMP_PARSEINP_ERR,
-    hlPayload: ROMP_HLPAYLOAD_TARGET,
-  };
-
-  while (totalSteps < MAX_STEPS && !hit) {
-    const budget = Math.min(SEGMENT_LIMIT, MAX_STEPS - totalSteps);
-
-    try {
-      const result = ex.runFrom(currentPc, currentMode, {
-        maxSteps: budget,
-        maxLoopIterations: 8192,
-        onBlock(pc, mode) {
-          const norm = pc & 0xFFFFFF;
-
-          if (norm === ROMP_HLPAYLOAD_TARGET) hlPayloadReached = true;
-
-          // Check sentinels
-          for (const [name, target] of Object.entries(sentinels)) {
-            if (norm === target) {
-              hit = name;
-              throw new Error(ROMP_TRACE_STOP);
-            }
-          }
-
-          // z80-mode RET intercept: force back to ADL mode
-          if (norm === ROMP_ERROR_HELPER_RET_BLOCK) {
-            interceptCount++;
-            const err = new Error(ROMP_INTERCEPT_STOP);
-            err.isIntercept = true;
-            throw err;
-          }
-        },
-        onMissingBlock(pc) {
-          const norm = pc & 0xFFFFFF;
-          for (const [name, target] of Object.entries(sentinels)) {
-            if (norm === target) {
-              hit = name;
-              throw new Error(ROMP_TRACE_STOP);
-            }
-          }
-        },
-      });
-
-      totalSteps += result.steps ?? 0;
-      currentPc = (result.lastPc ?? currentPc) & 0xFFFFFF;
-      currentMode = result.lastMode ?? currentMode;
-
-      if ((result.termination ?? null) !== 'max_steps') break;
-    } catch (error) {
-      if (error?.message === ROMP_TRACE_STOP) break;
-      if (error?.isIntercept) {
-        // Force ADL mode and continue from the wrapper after the helper
-        c.madl = 1;
-        currentPc = ROMP_ERROR_WRAPPER_AFTER;
-        currentMode = 'adl';
-        continue;
-      }
-      throw error;
-    }
-  }
-
-  return { hit, totalSteps, interceptCount, hlPayloadReached };
-}
-
-// Trace recovery continuation from 0x099929 to reach the return sentinel
-function rompTraceRecovery(ex, c, mem) {
-  let currentPc = ROMP_HLPAYLOAD_TARGET & 0xFFFFFF;
-  let currentMode = 'adl';
-  let totalSteps = 0;
-  let hit = null;
-
-  const MAX_STEPS = 2000;
-  const SEGMENT_LIMIT = 2000;
-
-  const sentinels = {
-    ret: ROMP_PARSEINP_RET,
-    err: ROMP_PARSEINP_ERR,
-  };
-
-  while (totalSteps < MAX_STEPS && !hit) {
-    const budget = Math.min(SEGMENT_LIMIT, MAX_STEPS - totalSteps);
-
-    try {
-      const result = ex.runFrom(currentPc, currentMode, {
-        maxSteps: budget,
-        maxLoopIterations: 8192,
-        onBlock(pc) {
-          const norm = pc & 0xFFFFFF;
-          for (const [name, target] of Object.entries(sentinels)) {
-            if (norm === target) {
-              hit = name;
-              throw new Error(ROMP_TRACE_STOP);
-            }
-          }
-          // Continue intercept pattern if it fires during recovery
-          if (norm === ROMP_ERROR_HELPER_RET_BLOCK) {
-            const err = new Error(ROMP_INTERCEPT_STOP);
-            err.isIntercept = true;
-            throw err;
-          }
-        },
-        onMissingBlock(pc) {
-          const norm = pc & 0xFFFFFF;
-          for (const [name, target] of Object.entries(sentinels)) {
-            if (norm === target) {
-              hit = name;
-              throw new Error(ROMP_TRACE_STOP);
-            }
-          }
-        },
-      });
-
-      totalSteps += result.steps ?? 0;
-      currentPc = (result.lastPc ?? currentPc) & 0xFFFFFF;
-      currentMode = result.lastMode ?? currentMode;
-
-      if ((result.termination ?? null) !== 'max_steps') break;
-    } catch (error) {
-      if (error?.message === ROMP_TRACE_STOP) break;
-      if (error?.isIntercept) {
-        c.madl = 1;
-        currentPc = ROMP_ERROR_WRAPPER_AFTER;
-        currentMode = 'adl';
-        continue;
-      }
-      throw error;
-    }
-  }
-
-  return { hit, totalSteps };
-}
-
-/**
- * Evaluate an expression using the ROM's ParseInp via the PushErrorHandler
- * + z80 RET intercept pattern (probe-phase190 approach).
- *
- * Steps:
- * 1. Boot runtime + MEM_INIT + CreateReal(Ans) (cached after first call)
- * 2. BufInsert each token into the edit buffer
- * 3. PushErrorHandler with HL=0x099929 (recovery address)
- * 4. ParseInp with z80 RET intercept at 0x03E1B1
- * 5. Recovery runs to 0x099929 -> read OP1 BCD float result
- */
+/** Evaluate a named input program through the ROM's normal ParseInp contract. */
 function evaluateViaParseInp(expression) {
-  const expr = expression;
-  if (!PRELIFTED_BLOCKS) return { error: 'Boot the ROM first.' };
+  const { tokens, error } = tokenizeExpression(expression);
+  if (error) return { error };
+  if (tokens.length === 0 || tokens.length > 65535) {
+    return { error: 'Expression must contain between 1 and 65535 tokens.' };
+  }
+  const base = rompEnsureRuntime();
+  if (base.error) return base;
 
-  const { tokens, error: tokErr } = tokenizeExpression(expr);
-  if (tokErr) return { error: tokErr };
+  // Each evaluation starts with the same initialized allocator and Ans variable.
+  // ROM allocations and error-stack unwinding cannot contaminate the next call.
+  const mem = base.mem.slice();
+  const ex = createExecutor(PRELIFTED_BLOCKS, mem, {
+    peripherals: createPeripheralBus({ pllDelay: 2, timerInterrupt: false }),
+  });
+  const c = ex.cpu;
+  rompResetCpu(c, mem);
+  mem[ROMP_ERRNO_ADDR] = 0;
+  const returnPc = 0x7FFF00;
+  const errorPc = 0x7FFF04;
+  const stop = {};
+  let steps = 0;
 
-  const runtime = rompEnsureRuntime();
-  if (runtime.error) return { error: runtime.error };
-
-  const { mem, ex, c } = runtime;
-
-  // Save allocator pointers for reset
-  const savedFps = rompRead24(mem, ROMP_FPS_ADDR);
-  const savedFpsBase = rompRead24(mem, ROMP_FPSBASE_ADDR);
-  const savedOpBase = rompRead24(mem, ROMP_OPBASE_ADDR);
-  const savedOps = rompRead24(mem, ROMP_OPS_ADDR);
-
-  // Step 1: Initialize edit buffer gap-buffer pointers
-  rompWrite24(mem, ROMP_EDIT_TOP, ROMP_BUF_START);
-  rompWrite24(mem, ROMP_EDIT_CURSOR, ROMP_BUF_START);
-  rompWrite24(mem, ROMP_EDIT_TAIL, ROMP_BUF_END);
-  rompWrite24(mem, ROMP_EDIT_BTM, ROMP_BUF_END);
-  mem.fill(0x00, ROMP_BUF_START, ROMP_BUF_END);
-
-  // Step 2: BufInsert each token
-  for (let i = 0; i < tokens.length; i++) {
-    const ok = rompRunBufInsertToken(ex, c, mem, tokens[i]);
-    if (!ok) {
-      return { error: `BufInsert stalled on token 0x${tokens[i].toString(16).toUpperCase()} (index ${i})` };
+  function callRom(entry) {
+    c.push(returnPc);
+    let hit = null;
+    let segmentSteps = 0;
+    try {
+      const result = ex.runFrom(entry, 'adl', {
+        maxSteps: 100000,
+        maxLoopIterations: 8192,
+        onBlock(pc, mode, meta, count) {
+          segmentSteps = count;
+          if (pc === returnPc || pc === errorPc) {
+            hit = pc;
+            throw stop;
+          }
+        },
+        onMissingBlock(pc) {
+          hit = pc;
+          throw stop;
+        },
+      });
+      segmentSteps = result.steps;
+    } catch (error) {
+      if (error !== stop) throw error;
     }
+    steps += segmentSteps;
+    return hit === returnPc;
   }
 
-  // Set parse pointers from edit buffer cursor
-  const cursorPos = rompRead24(mem, ROMP_EDIT_CURSOR);
-  const preGapLen = cursorPos - ROMP_BUF_START;
-  rompWrite24(mem, ROMP_BEGPC_ADDR, ROMP_BUF_START);
-  rompWrite24(mem, ROMP_CURPC_ADDR, ROMP_BUF_START);
-  rompWrite24(mem, ROMP_ENDPC_ADDR, ROMP_BUF_START + preGapLen - 1);
-
-  // Re-seed allocator pointers after BufInsert calls
-  rompWrite24(mem, ROMP_OPS_ADDR, savedOps);
-  rompWrite24(mem, ROMP_FPS_ADDR, savedFps);
-  rompWrite24(mem, ROMP_FPSBASE_ADDR, savedFpsBase);
-  rompWrite24(mem, ROMP_OPBASE_ADDR, savedOpBase);
-
-  // Step 3: PushErrorHandler with HL=0x099929
-  const pehOk = rompRunPushErrorHandler(ex, c, mem);
-  if (!pehOk) {
-    return { error: 'PushErrorHandler did not return.' };
+  function failure(stage) {
+    const errNo = mem[ROMP_ERRNO_ADDR];
+    return { error: errNo
+      ? 'ROM parser error 0x' + errNo.toString(16).padStart(2, '0')
+      : 'ROM parser did not return from ' + stage,
+      errNo, steps, romParser: true };
   }
 
-  // Step 4: ParseInp with z80 RET intercept
-  const parseResult = rompRunParseInpWithIntercept(ex, c, mem);
-
-  // Step 5: Check result
-  if (parseResult.hit === 'hlPayload') {
-    // Recovery path: trace from 0x099929 to reach return
-    const recovery = rompTraceRecovery(ex, c, mem);
-
-    // Read OP1 BCD result
-    const val = rompBcdToNumber(mem, ROMP_OP1_ADDR);
-    const op1Hex = Array.from(mem.slice(ROMP_OP1_ADDR, ROMP_OP1_ADDR + 9),
-      b => b.toString(16).padStart(2, '0')).join(' ');
-    const errNo = mem[ROMP_ERRNO_ADDR] & 0xFF;
-
-    // Reset allocator for next call
-    rompWrite24(mem, ROMP_OPS_ADDR, savedOps);
-    rompWrite24(mem, ROMP_FPS_ADDR, savedFps);
-    rompWrite24(mem, ROMP_FPSBASE_ADDR, savedFpsBase);
-    rompWrite24(mem, ROMP_OPBASE_ADDR, savedOpBase);
-
-    return {
-      value: val,
-      display: formatResult(val),
-      steps: parseResult.totalSteps + (recovery.totalSteps || 0),
-      errNo,
-      op1Hex,
-      interceptCount: parseResult.interceptCount,
-      romParser: true,
-    };
+  // The ROM jump table resolves PushErrorHandler to 061DEF, CreateProg to
+  // 082448. Use their lifted bodies; jump-table stubs are not all lifted.
+  c.hl = errorPc;
+  if (!callRom(0x061DEF)) return failure('PushErrorHandler');
+  const name = [5, 84, 69, 83, 84, 0, 0, 0, 0]; // temporary program TEST
+  mem.set(name, ROMP_OP1_ADDR);
+  c.hl = tokens.length;
+  if (!callRom(0x082448)) return failure('CreateProg');
+  const data = c.de;
+  if (data < 0xD00000 || data + 2 + tokens.length > 0xD40000) {
+    return { error: 'ROM returned an invalid input-program address.', steps, romParser: true };
   }
+  mem[data] = tokens.length & 0xFF;
+  mem[data + 1] = tokens.length >>> 8;
+  mem.set(tokens, data + 2);
+  mem.set(name, ROMP_OP1_ADDR);
+  if (!callRom(ROMP_PARSEINP_ENTRY)) return failure('ParseInp');
+  if (mem[ROMP_ERRNO_ADDR]) return failure('ParseInp');
 
-  if (parseResult.hit === 'ret') {
-    // Direct return (no error handler needed)
-    const val = rompBcdToNumber(mem, ROMP_OP1_ADDR);
-    const op1Hex = Array.from(mem.slice(ROMP_OP1_ADDR, ROMP_OP1_ADDR + 9),
-      b => b.toString(16).padStart(2, '0')).join(' ');
-    const errNo = mem[ROMP_ERRNO_ADDR] & 0xFF;
-
-    rompWrite24(mem, ROMP_OPS_ADDR, savedOps);
-    rompWrite24(mem, ROMP_FPS_ADDR, savedFps);
-    rompWrite24(mem, ROMP_FPSBASE_ADDR, savedFpsBase);
-    rompWrite24(mem, ROMP_OPBASE_ADDR, savedOpBase);
-
-    return {
-      value: val,
-      display: formatResult(val),
-      steps: parseResult.totalSteps,
-      errNo,
-      op1Hex,
-      interceptCount: parseResult.interceptCount,
-      romParser: true,
-    };
-  }
-
-  // ParseInp did not produce a result
-  const errNo = mem[ROMP_ERRNO_ADDR] & 0xFF;
-
-  // Reset allocator for next call
-  rompWrite24(mem, ROMP_OPS_ADDR, savedOps);
-  rompWrite24(mem, ROMP_FPS_ADDR, savedFps);
-  rompWrite24(mem, ROMP_FPSBASE_ADDR, savedFpsBase);
-  rompWrite24(mem, ROMP_OPBASE_ADDR, savedOpBase);
-
-  return {
-    error: `ROM Parser: ParseInp hit=${parseResult.hit}, steps=${parseResult.totalSteps}, ` +
-           `intercepts=${parseResult.interceptCount}, errNo=0x${errNo.toString(16).padStart(2, '0')}`,
-  };
+  const value = rompBcdToNumber(mem, ROMP_OP1_ADDR);
+  const op1Hex = Array.from(mem.slice(ROMP_OP1_ADDR, ROMP_OP1_ADDR + 9),
+    byte => byte.toString(16).padStart(2, '0')).join(' ');
+  return { value, display: formatResult(value), steps, errNo: 0, op1Hex, romParser: true };
 }
 
 const runROMParserEval = evaluateViaParseInp;
@@ -8142,31 +7894,11 @@ $('btnEval').addEventListener('click', () => {
 
   const t0 = performance.now();
   let result;
-  let usedFallback = false;
-
   if (useROMParser) {
-    // Try ROM Parser (PushErrorHandler + z80 RET intercept) first
     try {
       result = evaluateViaParseInp(expr);
     } catch (e) {
-      console.warn('ROM Parser exception, falling back to direct eval:', e);
       result = { error: `ROM Parser exception: ${e?.message || e}` };
-    }
-
-    // Fall back to direct eval if ROM Parser failed
-    if (result.error) {
-      const romErr = result.error;
-      console.warn('ROM Parser failed, falling back:', romErr);
-      try {
-        result = runDirectEval(expr, useBuffer);
-        usedFallback = true;
-        log(`<span class="info">--- ROM Parser fallback: ${romErr} ---</span>`);
-      } catch (e) {
-        resultEl.style.color = '#df7d7d';
-        resultEl.textContent = `ROM Parser failed: ${romErr}`;
-        log(`<span class="info">--- ROM Parser "${expr}": FAILED: ${romErr} ---</span>`);
-        return;
-      }
     }
   } else {
     // Standard direct eval path
@@ -8186,7 +7918,7 @@ $('btnEval').addEventListener('click', () => {
   if (result.error) {
     resultEl.style.color = '#df7d7d';
     resultEl.textContent = result.error;
-    log(`<span class="info">--- Direct Eval "${expr}": ERROR: ${result.error} ---</span>`);
+    log(`<span class="info">--- ${useROMParser ? 'ROM Parser' : 'Direct Eval'} "${expr}": ERROR: ${result.error} ---</span>`);
     return;
   }
 
@@ -8194,15 +7926,14 @@ $('btnEval').addEventListener('click', () => {
   const stoNote = result.stored ? '  (stored)' : '';
   const ansNote = (!result.stored && result.ansStored) ? '  (Ans stored)' : '';
   const romNote = result.romParser ? '  [ROM Parser]' : '';
-  const fallbackNote = usedFallback ? '  [fallback]' : '';
-  resultEl.textContent = `= ${result.display}${stoNote}${ansNote}${romNote}${fallbackNote}`;
+  resultEl.textContent = `= ${result.display}${stoNote}${ansNote}${romNote}`;
 
   if (result.romParser) {
-    log(`<span class="info">--- ROM Parser "${expr}" = ${result.display} (${result.steps} steps, ${dt} ms, OP1=[${result.op1Hex}], errNo=0x${hex(result.errNo, 2)}, intercepts=${result.interceptCount}) ---</span>`);
+    log(`<span class="info">--- ROM Parser "${expr}" = ${result.display} (${result.steps} steps, ${dt} ms, OP1=[${result.op1Hex}], errNo=0x${hex(result.errNo, 2)}) ---</span>`);
   } else {
     const modeNote = result.bufferMode ? ' [buffer]' : '';
     const pathNote = result.commonTail ? ' [common-tail]' : result.commonTail === false ? ' [direct]' : '';
-    log(`<span class="info">--- Direct Eval "${expr}" = ${result.display} (${result.steps} steps, ${dt} ms, OP1=[${result.op1Hex}], errNo=0x${hex(result.errNo, 2)}${modeNote}${pathNote}${fallbackNote ? ' [ROM Parser fallback]' : ''}) ---</span>`);
+    log(`<span class="info">--- Direct Eval "${expr}" = ${result.display} (${result.steps} steps, ${dt} ms, OP1=[${result.op1Hex}], errNo=0x${hex(result.errNo, 2)}${modeNote}${pathNote}) ---</span>`);
   }
 });
 

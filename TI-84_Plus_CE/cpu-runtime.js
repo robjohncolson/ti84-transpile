@@ -355,10 +355,12 @@ export class CPU {
   // --- 16/24-bit ALU ---
 
   addWord(a, b, forceShort) {
-    const result = a + b;
     const mask = forceShort === undefined ? this.addressMask : (forceShort ? 0xffff : 0xffffff);
-    const halfBit = mask === 0xffff ? 0x1000 : 0x100000;
-    this._setFlag(FLAG_H, ((a ^ b ^ result) & halfBit) !== 0);
+    a &= mask;
+    b &= mask;
+    const result = a + b;
+    // eZ80 word arithmetic uses bit 11 for half-carry in both widths.
+    this._setFlag(FLAG_H, ((a ^ b ^ result) & 0x1000) !== 0);
     this._setFlag(FLAG_N, false);
     this._setFlag(FLAG_C, result > mask);
     return result & mask;
@@ -366,14 +368,15 @@ export class CPU {
 
   addWithCarryWord(a, b, forceShort) {
     const carry = this._getFlag(FLAG_C) ? 1 : 0;
-    const result = a + b + carry;
     const mask = forceShort === undefined ? this.addressMask : (forceShort ? 0xffff : 0xffffff);
+    a &= mask;
+    b &= mask;
+    const result = a + b + carry;
     const msb = mask === 0xffff ? 0x8000 : 0x800000;
-    const halfBit = mask === 0xffff ? 0x1000 : 0x100000;
     const masked = result & mask;
     this._setFlag(FLAG_S, masked & msb);
     this._setFlag(FLAG_Z, masked === 0);
-    this._setFlag(FLAG_H, ((a ^ b ^ result) & halfBit) !== 0);
+    this._setFlag(FLAG_H, ((a ^ b ^ result) & 0x1000) !== 0);
     this._setFlag(FLAG_PV, ((a ^ result) & (b ^ result) & msb) !== 0);
     this._setFlag(FLAG_N, false);
     this._setFlag(FLAG_C, result > mask);
@@ -382,14 +385,15 @@ export class CPU {
 
   subtractWithBorrowWord(a, b, forceShort) {
     const carry = this._getFlag(FLAG_C) ? 1 : 0;
-    const result = a - b - carry;
     const mask = forceShort === undefined ? this.addressMask : (forceShort ? 0xffff : 0xffffff);
+    a &= mask;
+    b &= mask;
+    const result = a - b - carry;
     const msb = mask === 0xffff ? 0x8000 : 0x800000;
-    const halfBit = mask === 0xffff ? 0x1000 : 0x100000;
     const masked = result & mask;
     this._setFlag(FLAG_S, masked & msb);
     this._setFlag(FLAG_Z, masked === 0);
-    this._setFlag(FLAG_H, ((a ^ b ^ result) & halfBit) !== 0);
+    this._setFlag(FLAG_H, ((a ^ b ^ result) & 0x1000) !== 0);
     this._setFlag(FLAG_PV, ((a ^ b) & (a ^ result) & msb) !== 0);
     this._setFlag(FLAG_N, true);
     this._setFlag(FLAG_C, result < 0);

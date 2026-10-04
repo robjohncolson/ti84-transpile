@@ -1,5 +1,76 @@
 # Continuation Prompt — TI-84 Plus CE ROM Transpilation
 
+## Current human-requested work — 2026-10-03
+
+The user asked to finish ROM decompilation in this repository. Work is ongoing;
+neither full functional equivalence nor a readable, annotated decompilation is
+complete. Treat the historical automated-session claims below as historical.
+The scheduled continuation task was found Disabled and was not changed.
+
+Uncommitted implementation changes in this session:
+
+- Corrected CPU ADD/ADC/SBC word arithmetic: mask operands to the selected width
+  before computing carry/borrow, and use the documented bit-11 half carry for
+  both 16-bit and 24-bit operations (Zilog UM0077).
+- Fixed browser addition mapping: scan 0x0A -> internal key 0x80 -> token 0x70.
+  The old scan 0x2A and internal override 0x70 produced the wrong token 0x9E.
+- Added ROM-initialized history end/count to the existing stable replay packet.
+  A zero D01508 previously caused 0x092263 LDDR to overwrite megabytes on Enter.
+- Seed the editor from live iMathPtr1+2 and iMathPtr3, rather than absolute
+  addresses copied from a CEmu capture. In this boot the expression starts at
+  D1A8A3, not D1A8CC. The mismatch made ParseCmd read [0,0,31] instead of [49,112,49].
+- Release Enter's matrix/pending key when cxMain accepts it at 0585E9. Otherwise
+  the synchronous burst scans the held key again before browser keyup arrives.
+  Removed Enter's obsolete restoration of its pre-evaluation edit cursor.
+- Replaced the direct ROM-parser helper's forced error recovery with the real
+  calling contract: PushErrorHandler at 061DEF, CreateProg at 082448, a named
+  tokenized input program, then ParseInp at 099914. Each evaluation clones the
+  initialized memory so allocations and error-stack unwinding cannot leak into
+  subsequent calls. Removed the unused intercept/recovery helpers. ROM Parser
+  mode in the UI now shows ROM errors instead of falling back to another evaluator.
+
+Validation:
+
+- `node --test TI-84_Plus_CE/test-word-alu.mjs TI-84_Plus_CE/test-browser-key-tokens.mjs`:
+  16 tests PASS; word arithmetic covers 7,056 operand/flag combinations.
+- Existing `test-alu.mjs`: 72 assertions PASS.
+- Existing phase99d home verification passed (its historical report also has
+  an unrelated composite-drawn-count caveat; do not hide that).
+- Browser replay verification PASS after the final production changes:
+  Phase 6 47,298 steps, halt 0019B5, 8,482 VRAM pixels, no browser errors.
+- New `probe-rom-calculator.mjs` types actual browser key events, observes ROM
+  execution, and decodes LCD pixels. Successive keyboard calculations PASS:
+  1+1 -> 2, 2+3 -> 5, 6*7 -> 42, with one evaluation per Enter.
+- Direct parser arithmetic now PASS with errNo=0 and real step counts, including
+  22/7. Division by zero and malformed `2+` return errors without a numeric value.
+  The old helper's errNo=141 was a real undefined-variable error, not stale state:
+  it cleared OP1 before ParseInp's variable lookup and mislabeled 07C88B as
+  PushErrorHandler. The new probe keeps negative and recovery checks as gates.
+
+Run browser probes ONLY through the out-of-process watchdog:
+
+`node scripts/run-probe.mjs --max-time 180 TI-84_Plus_CE/probe-rom-calculator.mjs`
+
+Evidence is reproducible; generated JSON/PNG and verbose logs live under ignored
+`logs/rom-calculator-probe.json`, `logs/rom-calculator-screen.png`, and
+`logs/20261003-*.log`. The new probe uses isolated Chrome profiles and kills its
+own process tree on Windows. It does not substitute JavaScript arithmetic.
+
+Next work: expand keyboard and parser behavior beyond the arithmetic/error cases
+above, then tackle remaining runtime/peripheral correctness. The isolated parser
+does not share user variables with the interactive calculator. Existing pre-wipe
+and other safety prestops still exist;
+the boot still uses staged initialization and replay, not unrestricted cold boot.
+No generated-ROM coverage expansion was attempted: all 145,932 lifted blocks
+have implementations, but 17.0149% raw-byte coverage is not functional correctness
+or proof that every executable path is known. Historical phase696/697 classified
+most uncovered non-erased bytes as data; blind seeding was already exhausted.
+
+GitNexus impact was run before changes. Browser HTML/new probe symbols return
+UNKNOWN/not found, so browser caller scope was reviewed manually. CPU arithmetic
+has generated callers not fully represented in the index. No commit or push was
+made. Keep all current source/test changes when continuing.
+
 > ✅ **LOOP RE-ENABLED (2026-06-24, human CC session)** — `TI84-AutoContinuation` is **Enabled/Ready** again (re-enabled via PowerShell `Enable-ScheduledTask`; next fire 2026-06-24 21:13 on the existing ~30-min grid, last result 0). It was human-paused 2026-06-23 ("stop the loop for now"); during the pause a long **human-driven CC session ran the loop manually** (commits `1532d1a`→`f41b024`, "cc-driven session 787-824") and **completed the interactive-browser keyboard coverage sweep**. **The keyboard coverage sweep is now COMPLETE** — every canonical key has a pre-stop in `COLDBOOT_CONTROL_PRE_STOP_BY_PC_CODE` (**32 entries** across 4 owners: `0x001879` pre-wipe ×25 / `0x0A229D` space-fill ×4 / `0x0A255F` render-hang ×2 / `0x09EFDE` blit-hang ×1). F1/F2 (initially flagged "transpiler gap") turned out to be the SAME space-fill family as ArrowUp/Escape (their `missing_block 0x202020` is just space bytes) — fixed with a 1-line `0x0A229D` stop each, **NO transpiler seed needed**.
 > >
 > > ⚠ **TICK GUIDANCE (updated 2026-06-25)**: the canonical-key sweep AND the Numpad-alias closer are DONE, and the post-sweep no-op loop (sessions 828-832) is OVER. The user green-lit RETARGETING the parked **"HISTORICAL 0x006D BROWSER DIFF"** blocker, now re-scoped as the **EOL/Escape engine-divergence frontier**: post-sweep the browser EOL/Escape key stops at the `0x0A229D` space-fill pre-stop and never reaches the real OS tuple-save engine `0x08F54B`. The engine-side pre-burst reference was banked this session (`probe-phase833-eol-engine-prekey-reference.mjs`). **The bottom-most UPDATE block now has a RUNNABLE auto-safe list**: (a) PHASE 834 capture the current browser EOL route, (b) PHASE 835 diff+pinpoint the controlling field, (c) HOLD. Do NOT reopen the closed phase693-697 blind coverage frontier and do NOT re-run the dead phase743 EOL diff. Pause/resume: `schtasks /change /tn "TI84-AutoContinuation" /enable|/disable` (or PowerShell `Enable/Disable-ScheduledTask`).
