@@ -1,0 +1,873 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "model": "TI-84 Plus CE",
+    "os": "5.8.2.0029",
+    "romSha256": "11e5dae8cb21eb04e612ef54f4f1cfad3bea1f1a55126168240c4e1d19b874f1",
+    "sdkSha256": "bb6f74b3b5a8f64ff6be0fa0018c6e2aa615b705d775a062ea48f6c249741815",
+    "mode": "adl"
+  },
+  "scope": "Static evidence for the unhooked built-in STAT menu, not whole-ROM parity",
+  "descriptors": {
+    "normal": {
+      "menuId": 7,
+      "pointerAddress": "0x086C88",
+      "address": "0x08709A",
+      "tabs": [
+        {
+          "name": "EDIT",
+          "count": 5,
+          "commands": [
+            {
+              "prefix": "1",
+              "address": "0x0870A1",
+              "bytes": [
+                0,
+                67
+              ]
+            },
+            {
+              "prefix": "2",
+              "address": "0x0870A3",
+              "bytes": [
+                255,
+                49
+              ]
+            },
+            {
+              "prefix": "3",
+              "address": "0x0870A5",
+              "bytes": [
+                255,
+                50
+              ]
+            },
+            {
+              "prefix": "4",
+              "address": "0x0870A7",
+              "bytes": [
+                255,
+                73
+              ]
+            },
+            {
+              "prefix": "5",
+              "address": "0x0870A9",
+              "bytes": [
+                255,
+                203
+              ]
+            }
+          ]
+        },
+        {
+          "name": "CALC",
+          "count": 15,
+          "commands": [
+            {
+              "prefix": "1",
+              "address": "0x0870AB",
+              "bytes": [
+                255,
+                65
+              ]
+            },
+            {
+              "prefix": "2",
+              "address": "0x0870AD",
+              "bytes": [
+                255,
+                66
+              ]
+            },
+            {
+              "prefix": "3",
+              "address": "0x0870AF",
+              "bytes": [
+                255,
+                71
+              ]
+            },
+            {
+              "prefix": "4",
+              "address": "0x0870B1",
+              "bytes": [
+                255,
+                20
+              ]
+            },
+            {
+              "prefix": "5",
+              "address": "0x0870B3",
+              "bytes": [
+                255,
+                72
+              ]
+            },
+            {
+              "prefix": "6",
+              "address": "0x0870B5",
+              "bytes": [
+                255,
+                25
+              ]
+            },
+            {
+              "prefix": "7",
+              "address": "0x0870B7",
+              "bytes": [
+                255,
+                26
+              ]
+            },
+            {
+              "prefix": "8",
+              "address": "0x0870B9",
+              "bytes": [
+                255,
+                67
+              ]
+            },
+            {
+              "prefix": "9",
+              "address": "0x0870BB",
+              "bytes": [
+                255,
+                69
+              ]
+            },
+            {
+              "prefix": "0",
+              "address": "0x0870BD",
+              "bytes": [
+                255,
+                68
+              ]
+            },
+            {
+              "prefix": "A",
+              "address": "0x0870BF",
+              "bytes": [
+                255,
+                70
+              ]
+            },
+            {
+              "prefix": "B",
+              "address": "0x0870C1",
+              "bytes": [
+                255,
+                205
+              ]
+            },
+            {
+              "prefix": "C",
+              "address": "0x0870C3",
+              "bytes": [
+                255,
+                165
+              ]
+            },
+            {
+              "prefix": "D",
+              "address": "0x0870C5",
+              "bytes": [
+                251,
+                189
+              ]
+            },
+            {
+              "prefix": "E",
+              "address": "0x0870C7",
+              "bytes": [
+                251,
+                248
+              ]
+            }
+          ]
+        },
+        {
+          "name": "TESTS",
+          "count": 18,
+          "commands": [
+            {
+              "prefix": "1",
+              "address": "0x0870C9",
+              "bytes": [
+                0,
+                86
+              ]
+            },
+            {
+              "prefix": "2",
+              "address": "0x0870CB",
+              "bytes": [
+                1,
+                86
+              ]
+            },
+            {
+              "prefix": "3",
+              "address": "0x0870CD",
+              "bytes": [
+                2,
+                86
+              ]
+            },
+            {
+              "prefix": "4",
+              "address": "0x0870CF",
+              "bytes": [
+                3,
+                86
+              ]
+            },
+            {
+              "prefix": "5",
+              "address": "0x0870D1",
+              "bytes": [
+                4,
+                86
+              ]
+            },
+            {
+              "prefix": "6",
+              "address": "0x0870D3",
+              "bytes": [
+                5,
+                86
+              ]
+            },
+            {
+              "prefix": "7",
+              "address": "0x0870D5",
+              "bytes": [
+                6,
+                86
+              ]
+            },
+            {
+              "prefix": "8",
+              "address": "0x0870D7",
+              "bytes": [
+                7,
+                86
+              ]
+            },
+            {
+              "prefix": "9",
+              "address": "0x0870D9",
+              "bytes": [
+                8,
+                86
+              ]
+            },
+            {
+              "prefix": "0",
+              "address": "0x0870DB",
+              "bytes": [
+                9,
+                86
+              ]
+            },
+            {
+              "prefix": "A",
+              "address": "0x0870DD",
+              "bytes": [
+                10,
+                86
+              ]
+            },
+            {
+              "prefix": "B",
+              "address": "0x0870DF",
+              "bytes": [
+                11,
+                86
+              ]
+            },
+            {
+              "prefix": "C",
+              "address": "0x0870E1",
+              "bytes": [
+                12,
+                86
+              ]
+            },
+            {
+              "prefix": "D",
+              "address": "0x0870E3",
+              "bytes": [
+                34,
+                86
+              ]
+            },
+            {
+              "prefix": "E",
+              "address": "0x0870E5",
+              "bytes": [
+                13,
+                86
+              ]
+            },
+            {
+              "prefix": "F",
+              "address": "0x0870E7",
+              "bytes": [
+                14,
+                86
+              ]
+            },
+            {
+              "prefix": "G",
+              "address": "0x0870E9",
+              "bytes": [
+                35,
+                86
+              ]
+            },
+            {
+              "prefix": "H",
+              "address": "0x0870EB",
+              "bytes": [
+                255,
+                237
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "program": {
+      "menuId": 47,
+      "pointerAddress": "0x086D00",
+      "address": "0x0870ED",
+      "tabs": [
+        {
+          "name": "EDIT",
+          "count": 5,
+          "commands": [
+            {
+              "prefix": "1",
+              "address": "0x0870F4",
+              "bytes": [
+                0,
+                67
+              ]
+            },
+            {
+              "prefix": "2",
+              "address": "0x0870F6",
+              "bytes": [
+                255,
+                49
+              ]
+            },
+            {
+              "prefix": "3",
+              "address": "0x0870F8",
+              "bytes": [
+                255,
+                50
+              ]
+            },
+            {
+              "prefix": "4",
+              "address": "0x0870FA",
+              "bytes": [
+                255,
+                73
+              ]
+            },
+            {
+              "prefix": "5",
+              "address": "0x0870FC",
+              "bytes": [
+                255,
+                203
+              ]
+            }
+          ]
+        },
+        {
+          "name": "CALC",
+          "count": 14,
+          "commands": [
+            {
+              "prefix": "1",
+              "address": "0x0870FE",
+              "bytes": [
+                255,
+                65
+              ]
+            },
+            {
+              "prefix": "2",
+              "address": "0x087100",
+              "bytes": [
+                255,
+                66
+              ]
+            },
+            {
+              "prefix": "3",
+              "address": "0x087102",
+              "bytes": [
+                255,
+                71
+              ]
+            },
+            {
+              "prefix": "4",
+              "address": "0x087104",
+              "bytes": [
+                255,
+                20
+              ]
+            },
+            {
+              "prefix": "5",
+              "address": "0x087106",
+              "bytes": [
+                255,
+                72
+              ]
+            },
+            {
+              "prefix": "6",
+              "address": "0x087108",
+              "bytes": [
+                255,
+                25
+              ]
+            },
+            {
+              "prefix": "7",
+              "address": "0x08710A",
+              "bytes": [
+                255,
+                26
+              ]
+            },
+            {
+              "prefix": "8",
+              "address": "0x08710C",
+              "bytes": [
+                255,
+                67
+              ]
+            },
+            {
+              "prefix": "9",
+              "address": "0x08710E",
+              "bytes": [
+                255,
+                69
+              ]
+            },
+            {
+              "prefix": "0",
+              "address": "0x087110",
+              "bytes": [
+                255,
+                68
+              ]
+            },
+            {
+              "prefix": "A",
+              "address": "0x087112",
+              "bytes": [
+                255,
+                70
+              ]
+            },
+            {
+              "prefix": "B",
+              "address": "0x087114",
+              "bytes": [
+                255,
+                205
+              ]
+            },
+            {
+              "prefix": "C",
+              "address": "0x087116",
+              "bytes": [
+                255,
+                165
+              ]
+            },
+            {
+              "prefix": "D",
+              "address": "0x087118",
+              "bytes": [
+                251,
+                189
+              ]
+            }
+          ]
+        },
+        {
+          "name": "TESTS",
+          "count": 18,
+          "commands": [
+            {
+              "prefix": "1",
+              "address": "0x08711A",
+              "bytes": [
+                255,
+                206
+              ]
+            },
+            {
+              "prefix": "2",
+              "address": "0x08711C",
+              "bytes": [
+                255,
+                207
+              ]
+            },
+            {
+              "prefix": "3",
+              "address": "0x08711E",
+              "bytes": [
+                255,
+                208
+              ]
+            },
+            {
+              "prefix": "4",
+              "address": "0x087120",
+              "bytes": [
+                255,
+                209
+              ]
+            },
+            {
+              "prefix": "5",
+              "address": "0x087122",
+              "bytes": [
+                255,
+                210
+              ]
+            },
+            {
+              "prefix": "6",
+              "address": "0x087124",
+              "bytes": [
+                255,
+                211
+              ]
+            },
+            {
+              "prefix": "7",
+              "address": "0x087126",
+              "bytes": [
+                255,
+                214
+              ]
+            },
+            {
+              "prefix": "8",
+              "address": "0x087128",
+              "bytes": [
+                255,
+                215
+              ]
+            },
+            {
+              "prefix": "9",
+              "address": "0x08712A",
+              "bytes": [
+                255,
+                217
+              ]
+            },
+            {
+              "prefix": "0",
+              "address": "0x08712C",
+              "bytes": [
+                255,
+                216
+              ]
+            },
+            {
+              "prefix": "A",
+              "address": "0x08712E",
+              "bytes": [
+                255,
+                218
+              ]
+            },
+            {
+              "prefix": "B",
+              "address": "0x087130",
+              "bytes": [
+                255,
+                219
+              ]
+            },
+            {
+              "prefix": "C",
+              "address": "0x087132",
+              "bytes": [
+                255,
+                212
+              ]
+            },
+            {
+              "prefix": "D",
+              "address": "0x087134",
+              "bytes": [
+                251,
+                186
+              ]
+            },
+            {
+              "prefix": "E",
+              "address": "0x087136",
+              "bytes": [
+                255,
+                213
+              ]
+            },
+            {
+              "prefix": "F",
+              "address": "0x087138",
+              "bytes": [
+                255,
+                250
+              ]
+            },
+            {
+              "prefix": "G",
+              "address": "0x08713A",
+              "bytes": [
+                251,
+                187
+              ]
+            },
+            {
+              "prefix": "H",
+              "address": "0x08713C",
+              "bytes": [
+                255,
+                237
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "instructions": [
+    {
+      "address": "0x08505B",
+      "tag": "ld-pair-imm",
+      "pair": "hl",
+      "value": 552051
+    },
+    {
+      "address": "0x085060",
+      "tag": "rotate-reg",
+      "op": "sla",
+      "reg": "a"
+    },
+    {
+      "address": "0x085062",
+      "tag": "alu-reg",
+      "op": "add",
+      "src": "d"
+    },
+    {
+      "address": "0x085069",
+      "tag": "ld-pair-ind",
+      "pair": "hl",
+      "src": "hl"
+    },
+    {
+      "address": "0x084F04",
+      "tag": "alu-reg",
+      "op": "sub",
+      "src": "a"
+    },
+    {
+      "address": "0x084F05",
+      "tag": "ld-mem-reg",
+      "addr": 13633574,
+      "src": "a"
+    },
+    {
+      "address": "0x08588B",
+      "tag": "alu-imm",
+      "op": "cp",
+      "value": 1
+    },
+    {
+      "address": "0x0858C3",
+      "tag": "alu-imm",
+      "op": "cp",
+      "value": 2
+    },
+    {
+      "address": "0x085AED",
+      "tag": "alu-imm",
+      "op": "cp",
+      "value": 3
+    },
+    {
+      "address": "0x085BC9",
+      "tag": "alu-imm",
+      "op": "cp",
+      "value": 4
+    },
+    {
+      "address": "0x085C13",
+      "tag": "alu-imm",
+      "op": "cp",
+      "value": 5
+    },
+    {
+      "address": "0x08582A",
+      "tag": "alu-imm",
+      "op": "cp",
+      "value": 9
+    },
+    {
+      "address": "0x085C19",
+      "tag": "ld-reg-mem",
+      "dest": "a",
+      "addr": 13633574
+    },
+    {
+      "address": "0x085C1D",
+      "tag": "call",
+      "target": 550631
+    },
+    {
+      "address": "0x0866E8",
+      "tag": "ld-pair-imm",
+      "pair": "hl",
+      "value": 13633576
+    },
+    {
+      "address": "0x0866EC",
+      "tag": "alu-reg",
+      "op": "cp",
+      "src": "(hl)"
+    },
+    {
+      "address": "0x0866ED",
+      "tag": "ret-conditional",
+      "condition": "nc"
+    },
+    {
+      "address": "0x085F4D",
+      "tag": "ld-reg-imm",
+      "dest": "b",
+      "value": 143
+    },
+    {
+      "address": "0x085F59",
+      "tag": "alu-imm",
+      "op": "cp",
+      "value": 142
+    },
+    {
+      "address": "0x085F6D",
+      "tag": "alu-reg",
+      "op": "sub",
+      "src": "b"
+    },
+    {
+      "address": "0x085F6E",
+      "tag": "call",
+      "target": 550631
+    }
+  ],
+  "ranges": [
+    {
+      "start": "0x084ED3",
+      "endExclusive": "0x084F13",
+      "sha256": "8146da90ed90e6bd9ab496cb9cf034c69d847796c9785ac75a9423d6d1af0c22"
+    },
+    {
+      "start": "0x085023",
+      "endExclusive": "0x08506C",
+      "sha256": "2cf11dbd620e46514e65a201f7032e2409e1d35ea9f9e74505388855903af0ed"
+    },
+    {
+      "start": "0x08532E",
+      "endExclusive": "0x08535B",
+      "sha256": "6b48c48be473e013f1d8dea056b7f6420e8026a20a1b14b69eb3691aada93604"
+    },
+    {
+      "start": "0x0856A8",
+      "endExclusive": "0x086000",
+      "sha256": "5e680e1725b92b4a8fb38a4809fb9370c924c445d864697ea686b9321a519282"
+    },
+    {
+      "start": "0x0866E7",
+      "endExclusive": "0x08673F",
+      "sha256": "fc3a286db67adeb52b517c62439f94f6e4ab9fdff2401b56030fb447b872c77f"
+    }
+  ],
+  "quickPlot": {
+    "commandBytes": [
+      251,
+      248
+    ],
+    "titleAddress": "0x0A15C8",
+    "title": "QuickPlot&Fit-EQ"
+  },
+  "rules": {
+    "tabRight": [
+      "0x08588B",
+      "0x0858AE",
+      "0x0858BF"
+    ],
+    "tabLeft": [
+      "0x0858C3",
+      "0x0858E6",
+      "0x0858F7"
+    ],
+    "resetCursorOnTabChange": [
+      "0x0858F8",
+      "0x084F04"
+    ],
+    "upAndWrap": [
+      "0x085AED",
+      "0x085AFB",
+      "0x085B14",
+      "0x085B47"
+    ],
+    "downAndWrap": [
+      "0x085BC9",
+      "0x085BEB",
+      "0x085A04"
+    ],
+    "enter": [
+      "0x085C13",
+      "0x085C19",
+      "0x085C1D"
+    ],
+    "prefixAndBounds": [
+      "0x085F43",
+      "0x085F6D",
+      "0x0866E7"
+    ]
+  },
+  "assumptions": [
+    "No menu hooks",
+    "Ordinary menu context",
+    "Menu wrap-disable flag is clear"
+  ],
+  "unresolved": [
+    "Selected command handlers, including QuickPlot & Fit-EQ",
+    "2ND arrow paging and cursor viewport state",
+    "CLEAR return contexts, application switching, and modifier translation",
+    "List header editing, formulas, named lists, insertion, deletion and errors",
+    "1-Var Stats wizard editing and error recovery",
+    "TI decimal arithmetic, weighted quartiles and numeric formatting"
+  ]
+}
